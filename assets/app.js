@@ -24,18 +24,18 @@
     },
     {
       id: 'dram',
-      shortName: 'DRAM',
-      title: 'DRAM 가격 랩',
-      description: 'DRAM 현물가, 고정가, 주간 현물 프록시를 모니터링하는 가격 대시보드입니다.',
+      shortName: 'D램',
+      title: 'D램(DRAM) 가격 랩',
+      description: 'D램(DRAM) 현물가, 고정가, 주간 현물 프록시를 모니터링하는 가격 대시보드입니다.',
       url: 'https://sonchanggi.github.io/dram-price/',
       accent: 'DR',
       panelAdapter: 'dram',
       panel: {
         eyebrow: 'DRAM Price',
-        title: '대표 DRAM 가격 그래프',
+        title: '대표 D램 가격 그래프',
         contentType: 'chart',
-        metricLoading: 'DRAM 가격 데이터를 불러오는 중...',
-        chartLabel: '대표 DRAM 가격 추이 그래프',
+        metricLoading: 'D램 가격 데이터를 불러오는 중...',
+        chartLabel: '대표 D램(DRAM) 가격 추이 그래프',
       },
     },
     {
@@ -552,7 +552,7 @@
     if (!target) return;
     const chartSeries = normalizeChartSeries(series);
     if (!chartSeries.length) {
-      target.innerHTML = '<div class="skeleton-line">표시할 DRAM 가격 그래프 데이터가 없습니다.</div>';
+      target.innerHTML = '<div class="skeleton-line">표시할 D램 가격 그래프 데이터가 없습니다.</div>';
       return;
     }
 

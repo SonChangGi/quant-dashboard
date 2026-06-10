@@ -4,7 +4,7 @@
 
 ## 목적
 
-- 모멘텀 팩터 랩, DRAM 가격 랩, Best Factor Lab을 한 화면에서 요약합니다.
+- 모멘텀 팩터 랩, D램(DRAM) 가격 랩, Best Factor Lab을 한 화면에서 요약합니다.
 - 각 프로젝트 카드의 버튼으로 원본 GitHub Pages 페이지를 바로 엽니다.
 - 공개 배포 JSON만 best-effort로 읽고, 실패하면 fallback/준비중 상태를 보여줍니다.
 
@@ -39,7 +39,7 @@ npm test
 
 - 세 프로젝트 원본 링크 존재
 - 공개 JSON endpoint 상수 존재
-- Momentum / DRAM / Best Factor parser와 fallback 존재
+- Momentum / D램(DRAM) / Best Factor parser와 fallback 존재
 - freshness/status 표시 hook 존재
 - 투자 조언이 아니라는 disclaimer 존재
 - sibling 프로젝트 로컬 경로를 참조하지 않음

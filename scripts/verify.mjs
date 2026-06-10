@@ -50,6 +50,7 @@ assert(contains(files.app, 'parseMomentum'), 'momentum parser exists');
 assert(contains(files.app, 'latest_output_rows'), 'momentum latest output optional field is handled');
 assert(contains(files.app, 'parseDram'), 'DRAM parser exists');
 assert(contains(files.app, 'renderDramChart'), 'DRAM SVG chart renderer exists');
+assert(contains(files.app, 'D램 가격'), 'Korean D램 price label exists');
 assert(contains(files.app, 'isValidChartPoint'), 'DRAM chart validates date/value points');
 assert(contains(files.app, 'parseBestFactor'), 'best factor parser exists');
 assert(contains(files.app, 'latest_holdings'), 'best factor holdings optional field is handled');
