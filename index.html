@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="모멘텀 팩터, DRAM 가격, 베스트 팩터 프로젝트를 한 화면에서 확인하는 통합 퀀트 대시보드" />
+  <title>Quant Dashboard</title>
+  <link rel="stylesheet" href="assets/styles.css" />
+  <script src="assets/app.js" defer></script>
+</head>
+<body>
+  <header class="hero" aria-labelledby="page-title">
+    <nav class="top-nav" id="top-nav" aria-label="프로젝트 바로가기"></nav>
+    <div class="hero-grid">
+      <div>
+        <p class="eyebrow">Quant Dashboard</p>
+        <h1 id="page-title">투자 리서치 프로젝트 통합 대시보드</h1>
+        <p class="hero-copy">
+          모멘텀 팩터, DRAM 가격, 베스트 팩터 결과를 한 화면에서 빠르게 훑어보고
+          각 프로젝트 원본으로 바로 이동하는 개인 리서치 허브입니다.
+        </p>
+        <div class="hero-actions" id="hero-actions" aria-label="주요 프로젝트 바로가기"></div>
+      </div>
+      <aside class="hero-note" aria-label="데이터 정책">
+        <strong>데이터 정책</strong>
+        <p>
+          이 페이지는 세 프로젝트의 공개 GitHub Pages JSON만 best-effort로 읽습니다.
+          원본 프로젝트 코드나 산출물을 수정하지 않으며, 데이터가 비어도 바로가기와 설명은 유지됩니다.
+        </p>
+      </aside>
+    </div>
+  </header>
+
+  <main>
+    <section class="section intro-section" aria-labelledby="projects-title">
+      <div class="section-heading">
+        <p class="eyebrow">Projects</p>
+        <h2 id="projects-title">프로젝트 바로가기</h2>
+        <p>각 카드의 버튼을 누르면 기존 작업물 원본 페이지로 이동합니다.</p>
+      </div>
+      <div class="project-grid" id="project-grid"></div>
+    </section>
+
+    <section class="section dashboard-section" aria-labelledby="dashboard-title">
+      <div class="section-heading centered">
+        <p class="eyebrow">Live Summary</p>
+        <h2 id="dashboard-title">중앙 요약 패널</h2>
+        <p>
+          공개 정적 JSON에서 읽을 수 있는 핵심 결과만 요약합니다. 실패 시 스냅샷 또는 준비중 상태로 대체됩니다.
+        </p>
+      </div>
+
+      <div class="summary-grid" id="summary-grid" aria-live="polite">
+        <article class="panel panel-wide">
+          <div class="skeleton-line">요약 패널을 준비하는 중...</div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section roadmap-section" aria-labelledby="roadmap-title">
+      <div class="section-heading">
+        <p class="eyebrow">Expandable Hub</p>
+        <h2 id="roadmap-title">앞으로 추가할 수 있는 기능</h2>
+      </div>
+      <div class="feature-grid">
+        <article>
+          <h3>소스 상태 모니터</h3>
+          <p>각 프로젝트의 생성 시각과 fetch 상태를 모아 보여줍니다.</p>
+        </article>
+        <article>
+          <h3>새 프로젝트 카드</h3>
+          <p><code>PROJECTS</code> registry에 URL과 설명을 추가하면 같은 디자인으로 확장할 수 있습니다.</p>
+        </article>
+        <article>
+          <h3>스냅샷 fallback</h3>
+          <p>공개 JSON 구조가 바뀌어도 대시보드가 빈 화면이 되지 않도록 마지막 알려진 형태를 표시합니다.</p>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>
+      본 페이지는 개인 리서치 대시보드이며 투자, 세무, 법률 또는 매매 조언이 아닙니다.
+      원본 프로젝트의 공개 데이터가 지연되거나 변경될 수 있습니다.
+    </p>
+  </footer>
+</body>
+</html>
