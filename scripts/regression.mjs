@@ -28,6 +28,11 @@ const bestState = fallbackFor(malformedBest, malformedBest.rows.length > 0, 'Bes
 assert(bestState.mode === 'fallback', 'HTTP 200 malformed Best Factor payload resolves to fallback mode');
 assert(/Best Factor payload/.test(bestState.error), 'Best Factor fallback keeps explicit schema reason');
 
+const malformedEtf = api.parseEtfTracking({ generatedAt: '2026-06-17T00:00:00Z', etfs: [{ id: 'bad', latest: { top10: [] } }] });
+const etfState = fallbackFor(malformedEtf, malformedEtf.rows.length > 0, 'ETF Tracking payload did not contain usable ETF rows.');
+assert(etfState.mode === 'fallback', 'HTTP 200 malformed ETF Tracking payload resolves to fallback mode');
+assert(/ETF Tracking payload/.test(etfState.error), 'ETF Tracking fallback keeps explicit schema reason');
+
 
 const validMomentum = api.parseMomentum({ runs: [{ summary: { selected_factor: 'mom_valid', data_as_of: '2026-06-10' }, latest_output_rows: [{ rank: 1, symbol: 'AAA', score: 2, proposed_weight: 0.2, weight: 0.1 }] }], latest_run_index: 0 });
 assert(validMomentum.rows.length === 1 && validMomentum.factor === 'mom_valid', 'recorded valid Momentum fixture produces top row');
@@ -38,7 +43,10 @@ assert(validDram.series.length === 1 && validDram.series[0].points.length === 1,
 const validBest = api.parseBestFactor({ summary: { best_factor: 'quality', data_end_date: '2026-06-10' }, latest_holdings: [{ factor: 'quality', ticker: 'BBB', score: 1, weight: 0.3, rebalance_date: '2026-06-01' }] });
 assert(validBest.rows.length === 1 && validBest.factor === 'quality', 'recorded valid Best Factor fixture produces holding row');
 
-assert(Object.keys(api.PANEL_ADAPTERS).length === 3, 'panel adapter manifest has three current adapters');
+const validEtf = api.parseEtfTracking({ generatedAt: '2026-06-17T00:00:00Z', etfs: [{ shortName: 'ETF Fixture', code: '0000', availableEndDate: '2026-06-17', metrics: { signalCount: 1, entryExitSignalCount: 1, returnCoverage: 1 }, latest: { date: '2026-06-17', sourceStatus: 'live', top10: [{ rank: 1, ticker: 'AAA', name: 'Alpha', weightPercent: 6.5 }] } }] });
+assert(validEtf.rows.length === 1 && validEtf.rows[0].topWeight === 0.065, 'recorded valid ETF Tracking fixture produces ETF row');
+
+assert(Object.keys(api.PANEL_ADAPTERS).length === 4, 'panel adapter manifest has four current adapters');
 
 
 const nullEntryMomentum = api.parseMomentum({ runs: [{ summary: { selected_factor: 'null_drift' }, latest_output_rows: [null, 'bad'], holdings: [null] }], latest_run_index: 0 });
@@ -52,6 +60,10 @@ assert(nullDramState.mode === 'fallback', 'DRAM null/non-object entries resolve 
 const nullEntryBest = api.parseBestFactor({ summary: { best_factor: 'null_drift' }, rankings: [null], latest_holdings: [null, 'bad'] });
 const nullBestState = fallbackFor(nullEntryBest, nullEntryBest.rows.length > 0, 'Best Factor payload did not contain usable holdings.');
 assert(nullBestState.mode === 'fallback', 'Best Factor null/non-object entries resolve to fallback without throwing');
+
+const nullEntryEtf = api.parseEtfTracking({ etfs: [null, 'bad', { latest: { top10: [null] } }] });
+const nullEtfState = fallbackFor(nullEntryEtf, nullEntryEtf.rows.length > 0, 'ETF Tracking payload did not contain usable ETF rows.');
+assert(nullEtfState.mode === 'fallback', 'ETF Tracking null/non-object entries resolve to fallback without throwing');
 
 const throwingAdapter = { parse: () => { throw new Error('fixture boom'); } };
 const safeParse = api.parsePanelSafely(throwingAdapter, {});
@@ -89,9 +101,9 @@ context.document = {
 };
 api.renderProjectNavigation();
 api.renderDashboardPanels();
-assert(domTargets['#top-nav'].children.length === 3, 'manifest renderer creates top navigation links');
-assert(domTargets['#hero-actions'].children.length === 3, 'manifest renderer creates hero action links');
-assert(domTargets['#summary-grid'].children.length === 3, 'manifest renderer creates three dashboard panel shells');
+assert(domTargets['#top-nav'].children.length === 4, 'manifest renderer creates top navigation links');
+assert(domTargets['#hero-actions'].children.length === 4, 'manifest renderer creates hero action links');
+assert(domTargets['#summary-grid'].children.length === 4, 'manifest renderer creates four dashboard panel shells');
 assert(domTargets['#summary-grid'].children.every((child) => /원본 열기/.test(child.innerHTML)), 'dashboard panel shells preserve original page links');
 
 const failed = checks.filter((check) => !check.ok);

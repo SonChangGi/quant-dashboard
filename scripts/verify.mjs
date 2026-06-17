@@ -19,6 +19,7 @@ const projectUrls = [
   'https://sonchanggi.github.io/momentum-factor-lab/',
   'https://sonchanggi.github.io/dram-price/',
   'https://sonchanggi.github.io/best-factor/',
+  'https://sonchanggi.github.io/etf-tracking/',
 ];
 for (const url of projectUrls) {
   assert(contains(files.html, url) || contains(files.app, url), `project URL present: ${url}`);
@@ -30,6 +31,7 @@ const dataUrls = [
   'https://sonchanggi.github.io/dram-price/data/series.json',
   'https://sonchanggi.github.io/dram-price/data/status.json',
   'https://sonchanggi.github.io/best-factor/data/latest-results.json',
+  'https://sonchanggi.github.io/etf-tracking/data/dashboard.json',
 ];
 for (const url of dataUrls) {
   assert(contains(files.app, url), `public data endpoint present: ${url}`);
@@ -53,6 +55,8 @@ assert(contains(files.app, 'renderDramChart'), 'DRAM SVG chart renderer exists')
 assert(contains(files.app, 'D램 가격'), 'Korean D램 price label exists');
 assert(contains(files.app, 'isValidChartPoint'), 'DRAM chart validates date/value points');
 assert(contains(files.app, 'parseBestFactor'), 'best factor parser exists');
+assert(contains(files.app, 'parseEtfTracking'), 'ETF Tracking parser exists');
+assert(contains(files.app, 'ETF TOP10 변동'), 'ETF Tracking panel label exists');
 assert(contains(files.app, 'latest_holdings'), 'best factor holdings optional field is handled');
 assert(contains(files.app, 'formatFreshness'), 'freshness formatter exists');
 assert(contains(files.app, '업데이트 시각 알 수 없음'), 'freshness fallback text exists');
@@ -60,10 +64,11 @@ assert(contains(files.app, "panelDomId(project, 'status')"), 'manifest-generated
 assert(contains(files.app, 'status-line'), 'panel status line renderer exists');
 assert(contains(files.html, '투자, 세무, 법률 또는 매매 조언이 아닙니다'), 'research disclaimer exists');
 assert(contains(files.readme, '다른 프로젝트의 로컬 소스 코드를 수정하지 않습니다'), 'README isolation note exists');
+assert(contains(files.readme, 'etf-tracking/data/dashboard.json'), 'README documents ETF Tracking data endpoint');
 assert(contains(readFileSync('scripts/regression.mjs', 'utf8'), 'malformed momentum payload resolves to fallback mode'), 'malformed payload regression exists');
 assert(contains(readFileSync('scripts/regression.mjs', 'utf8'), 'null/non-object entries resolve to fallback'), 'null-entry payload regression exists');
 assert(contains(readFileSync('scripts/static-smoke.mjs', 'utf8'), 'static server smoke'), 'static server smoke exists');
-assert(!contains(files.app, '../momentum-factor-lab') && !contains(files.app, '../dram-price') && !contains(files.app, '../best-factor'), 'no sibling local source paths referenced');
+assert(!contains(files.app, '../momentum-factor-lab') && !contains(files.app, '../dram-price') && !contains(files.app, '../best-factor') && !contains(files.app, '../etf-tracking'), 'no sibling local source paths referenced');
 
 const failed = checks.filter((check) => !check.ok);
 for (const check of checks) {

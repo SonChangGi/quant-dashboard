@@ -33,6 +33,7 @@ try {
     fetch(`http://127.0.0.1:${port}/assets/styles.css`).then((response) => response.text()),
   ]);
   if (!html.includes('투자 리서치 프로젝트 통합 대시보드')) throw new Error('index hero missing');
+  if (!app.includes('parseEtfTracking')) throw new Error('ETF Tracking parser missing');
   if (!html.includes('id="top-nav"')) throw new Error('dynamic top navigation mount missing');
   if (!html.includes('id="summary-grid"')) throw new Error('dynamic dashboard mount missing');
   if (!app.includes('PANEL_ADAPTERS')) throw new Error('panel adapter manifest missing');

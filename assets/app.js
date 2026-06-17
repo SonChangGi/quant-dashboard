@@ -58,6 +58,26 @@
         },
       },
     },
+    {
+      id: 'etf',
+      shortName: 'ETF Tracking',
+      title: 'ETF TOP10 Tracking',
+      description: '한국 상장 액티브 ETF 3종의 TOP10 편입 종목, 비중 변화, 편입·편출 신호를 추적합니다.',
+      url: 'https://sonchanggi.github.io/etf-tracking/',
+      accent: 'ETF',
+      panelAdapter: 'etf',
+      panel: {
+        eyebrow: 'ETF Tracking',
+        title: 'ETF TOP10 변동 · 최근 스냅샷',
+        contentType: 'table',
+        metricLoading: 'ETF 추적 데이터를 불러오는 중...',
+        table: {
+          caption: 'ETF별 최근 TOP1 종목과 특별 신호 요약',
+          columns: ['ETF', '기준일', 'TOP1', '신호', '상태'],
+          loadingText: 'ETF 데이터를 불러오는 중...',
+        },
+      },
+    },
   ];
 
   const PANEL_ADAPTERS = {
@@ -95,6 +115,17 @@
       fallback: normalizeBestFallback,
       render: renderBestFactor,
       emptyReason: 'Best Factor payload did not contain usable holdings.',
+    },
+    etf: {
+      sourceUrls: {
+        etf: 'https://sonchanggi.github.io/etf-tracking/data/dashboard.json',
+      },
+      primarySourceKey: 'etf',
+      parse: (sources) => parseEtfTracking(sources.etf),
+      hasUsableData: (summary) => Boolean(summary?.rows?.length),
+      fallback: normalizeEtfFallback,
+      render: renderEtfTracking,
+      emptyReason: 'ETF Tracking payload did not contain usable ETF rows.',
     },
   };
 
@@ -145,6 +176,15 @@
         { rank: 3, ticker: 'CAT', score: 1.342891001, weight: 0.1822874356, date: '2026-05-29' },
         { rank: 4, ticker: 'GOOGL', score: 1.037325583, weight: 0.1166135822, date: '2026-05-29' },
         { rank: 5, ticker: 'GOOG', score: 1.010097312, weight: 0.1107615278, date: '2026-05-29' },
+      ],
+    },
+    etf: {
+      generatedAt: '2026-06-17T07:04:33Z',
+      status: '마지막 확인 스냅샷 표시 중',
+      rows: [
+        { name: 'TIME 나스닥100', code: '426030', date: '2026-06-17', topName: 'Micron Technology Inc', topTicker: 'MU', topWeight: 0.0673, signalCount: 2, entryExitCount: 2, sourceStatus: 'live', returnCoverage: 1 },
+        { name: 'TIME 글로벌AI', code: '456600', date: '2026-06-17', topName: 'Kioxia Holdings Corp', topTicker: '285A.T', topWeight: 0.0852, signalCount: 2, entryExitCount: 2, sourceStatus: 'live', returnCoverage: 0.9239 },
+        { name: 'KoAct 나스닥성장', code: '2ETFQ1', date: '2026-06-17', topName: 'Space Exploration Technologies Corp', topTicker: '', topWeight: 0.0963, signalCount: 0, entryExitCount: 0, sourceStatus: 'live', returnCoverage: 0.8491 },
       ],
     },
   };
@@ -281,6 +321,10 @@
 
   async function loadBestPanel() {
     return loadProjectPanel('best');
+  }
+
+  async function loadEtfPanel() {
+    return loadProjectPanel('etf');
   }
 
   async function loadDashboardPanels() {
@@ -460,6 +504,40 @@
     };
   }
 
+
+  function parseEtfTracking(payload) {
+    const rows = asRecords(payload?.etfs).map((etf) => {
+      const latest = isRecord(etf.latest) ? etf.latest : {};
+      const top10 = asRecords(latest.top10);
+      const top = top10[0] || {};
+      const metrics = isRecord(etf.metrics) ? etf.metrics : {};
+      const latestSignals = asRecords(latest.signals);
+      const signalCount = numberOr(metrics.signalCount, latestSignals.length);
+      const entryExitCount = numberOr(metrics.entryExitSignalCount, latestSignals.filter((signal) => ['top10_entry', 'top10_exit'].includes(signal.type)).length);
+      const weightFraction = coerceWeightFraction(top.weight, top.weightPercent);
+      return {
+        name: stringOr(etf.shortName, etf.name, 'ETF'),
+        fullName: stringOr(etf.name, ''),
+        code: stringOr(etf.code, ''),
+        date: stringOr(latest.date, etf.availableEndDate, ''),
+        topName: stringOr(top.name, '-'),
+        topTicker: stringOr(top.ticker, top.codeRaw, ''),
+        topWeight: weightFraction,
+        signalCount,
+        entryExitCount,
+        sourceStatus: stringOr(latest.sourceStatus, 'unknown'),
+        sourceWarning: stringOr(latest.sourceWarning, ''),
+        returnCoverage: finiteOrNull(metrics.returnCoverage),
+      };
+    }).filter((row) => row.name && row.date);
+
+    return {
+      generatedAt: stringOr(payload?.generatedAt, ''),
+      status: stringOr(payload?.disclaimer, '라이브 공개 JSON 표시 중'),
+      rows,
+    };
+  }
+
   function renderMomentum(summary, mode, error, project) {
     renderMetricCards(panelSelector(project, 'metrics'), [
       ['선택/베스트 팩터', summary.factor],
@@ -502,6 +580,28 @@
       formatNumber(row.score),
       formatPercent(row.weight),
       formatMaybeDate(row.date),
+    ], 5);
+    setStatus(panelSelector(project, 'status'), buildStatusText(mode, summary.generatedAt, error, summary.status), mode);
+  }
+
+
+  function renderEtfTracking(summary, mode, error, project) {
+    const latestDate = maxString(summary.rows.map((row) => row.date));
+    const signalTotal = summary.rows.reduce((sum, row) => sum + numberOr(row.signalCount, 0), 0);
+    const avgCoverageRows = summary.rows.map((row) => finiteOrNull(row.returnCoverage)).filter((value) => value !== null);
+    const avgCoverage = avgCoverageRows.length ? avgCoverageRows.reduce((sum, value) => sum + value, 0) / avgCoverageRows.length : null;
+    renderMetricCards(panelSelector(project, 'metrics'), [
+      ['추적 ETF', `${summary.rows.length || 0}개`],
+      ['최근 기준일', formatMaybeDate(latestDate)],
+      ['특별 신호', `${signalTotal.toLocaleString('ko-KR')}건`],
+      ['평균 종가 커버리지', formatPercent(avgCoverage)],
+    ]);
+    renderRows(panelSelector(project, 'rows'), summary.rows, (row) => [
+      `${row.name}${row.code ? ` (${row.code})` : ''}`,
+      formatMaybeDate(row.date),
+      `${row.topTicker ? `${row.topTicker} · ` : ''}${row.topName} ${formatPercent(row.topWeight)}`,
+      `${row.signalCount}건 / 편입·편출 ${row.entryExitCount}건`,
+      `${row.sourceStatus}${row.sourceWarning ? ` · ${row.sourceWarning}` : ''}`,
     ], 5);
     setStatus(panelSelector(project, 'status'), buildStatusText(mode, summary.generatedAt, error, summary.status), mode);
   }
@@ -659,6 +759,21 @@
     return { ...FALLBACK_SNAPSHOT.best };
   }
 
+  function normalizeEtfFallback() {
+    return {
+      generatedAt: FALLBACK_SNAPSHOT.etf.generatedAt,
+      status: FALLBACK_SNAPSHOT.etf.status,
+      rows: FALLBACK_SNAPSHOT.etf.rows,
+    };
+  }
+
+  function coerceWeightFraction(weight, weightPercent) {
+    const direct = finiteOrNull(weight);
+    if (direct !== null) return direct;
+    const percent = finiteOrNull(weightPercent);
+    return percent === null ? null : percent / 100;
+  }
+
   function badge(text) {
     const span = document.createElement('span');
     span.className = 'badge';
@@ -757,8 +872,10 @@
       parseMomentum,
       parseDram,
       parseBestFactor,
+      parseEtfTracking,
       resolveLoadState,
       loadProjectPanel,
+      loadEtfPanel,
       parsePanelSafely,
       renderProjectNavigation,
       renderDashboardPanels,
