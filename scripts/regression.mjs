@@ -43,8 +43,30 @@ assert(validDram.series.length === 1 && validDram.series[0].points.length === 1,
 const validBest = api.parseBestFactor({ summary: { best_factor: 'quality', data_end_date: '2026-06-10' }, latest_holdings: [{ factor: 'quality', ticker: 'BBB', score: 1, weight: 0.3, rebalance_date: '2026-06-01' }] });
 assert(validBest.rows.length === 1 && validBest.factor === 'quality', 'recorded valid Best Factor fixture produces holding row');
 
-const validEtf = api.parseEtfTracking({ generatedAt: '2026-06-17T00:00:00Z', etfs: [{ shortName: 'ETF Fixture', code: '0000', availableEndDate: '2026-06-17', metrics: { signalCount: 1, entryExitSignalCount: 1, returnCoverage: 1 }, latest: { date: '2026-06-17', sourceStatus: 'live', top10: [{ rank: 1, ticker: 'AAA', name: 'Alpha', weightPercent: 6.5 }] } }] });
+const validEtf = api.parseEtfTracking({
+  generatedAt: '2026-06-17T00:00:00Z',
+  etfs: [{
+    shortName: 'ETF Fixture',
+    code: '0000',
+    availableEndDate: '2026-06-17',
+    metrics: { signalCount: 1, entryExitSignalCount: 1, returnCoverage: 1 },
+    history: [
+      { date: '2026-06-16', holdings: [{ rank: 1, ticker: 'AAA', name: 'Alpha', weightPercent: 5.5 }, { rank: 2, ticker: 'BBB', name: 'Beta', weightPercent: 4 }] },
+      { date: '2026-06-17', holdings: [{ rank: 1, ticker: 'AAA', name: 'Alpha', weightPercent: 6.5 }, { rank: 2, ticker: 'BBB', name: 'Beta', weightPercent: 4.5 }] },
+    ],
+    latest: {
+      date: '2026-06-17',
+      sourceStatus: 'live',
+      top10: [
+        { rank: 1, ticker: 'AAA', name: 'Alpha', weightPercent: 6.5 },
+        { rank: 2, ticker: 'BBB', name: 'Beta', weightPercent: 4.5 },
+      ],
+    },
+  }],
+});
 assert(validEtf.rows.length === 1 && validEtf.rows[0].topWeight === 0.065, 'recorded valid ETF Tracking fixture produces ETF row');
+assert(validEtf.rows[0].top10.length === 2 && validEtf.rows[0].top10Weight === 0.11, 'recorded valid ETF Tracking fixture preserves top10 list and total weight');
+assert(validEtf.rows[0].chartSeries.length === 2 && validEtf.rows[0].chartSeries[0].points.length === 2, 'recorded valid ETF Tracking fixture builds mini chart series');
 
 assert(Object.keys(api.PANEL_ADAPTERS).length === 4, 'panel adapter manifest has four current adapters');
 
@@ -92,6 +114,7 @@ const domTargets = {
   '#hero-actions': new ElementStub('div'),
   '#project-grid': new ElementStub('div'),
   '#summary-grid': new ElementStub('div'),
+  '#etf-details': new ElementStub('div'),
 };
 context.Node = ElementStub;
 context.document = {
@@ -105,6 +128,11 @@ assert(domTargets['#top-nav'].children.length === 4, 'manifest renderer creates 
 assert(domTargets['#hero-actions'].children.length === 4, 'manifest renderer creates hero action links');
 assert(domTargets['#summary-grid'].children.length === 4, 'manifest renderer creates four dashboard panel shells');
 assert(domTargets['#summary-grid'].children.every((child) => /원본 열기/.test(child.innerHTML)), 'dashboard panel shells preserve original page links');
+assert(domTargets['#summary-grid'].children.some((child) => /panel-detail/.test(child.innerHTML)), 'ETF panel shell includes detail mount for TOP10 cards');
+api.renderEtfDetailCards('#etf-details', validEtf.rows);
+assert(/etf-detail-card/.test(domTargets['#etf-details'].innerHTML), 'ETF detail renderer creates per-ETF card markup');
+assert(/AAA/.test(domTargets['#etf-details'].innerHTML) && /BBB/.test(domTargets['#etf-details'].innerHTML), 'ETF detail renderer includes TOP10 holdings');
+assert(/TOP10 비중 변화 미니 그래프/.test(domTargets['#etf-details'].innerHTML), 'ETF detail renderer includes mini chart markup');
 
 const failed = checks.filter((check) => !check.ok);
 for (const check of checks) console.log(`${check.ok ? 'PASS' : 'FAIL'} ${check.label}`);

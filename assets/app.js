@@ -68,12 +68,13 @@
       panelAdapter: 'etf',
       panel: {
         eyebrow: 'ETF Tracking',
-        title: 'ETF TOP10 변동 · 최근 스냅샷',
+        title: 'ETF별 TOP10 비중 · 미니 그래프',
         contentType: 'table',
         metricLoading: 'ETF 추적 데이터를 불러오는 중...',
+        detailSlot: true,
         table: {
-          caption: 'ETF별 최근 TOP1 종목과 특별 신호 요약',
-          columns: ['ETF', '기준일', 'TOP1', '신호', '상태'],
+          caption: 'ETF별 TOP10 합계와 특별 신호 요약',
+          columns: ['ETF', '기준일', 'TOP10 합계', '신호', '종가 커버리지'],
           loadingText: 'ETF 데이터를 불러오는 중...',
         },
       },
@@ -181,11 +182,7 @@
     etf: {
       generatedAt: '2026-06-17T07:04:33Z',
       status: '마지막 확인 스냅샷 표시 중',
-      rows: [
-        { name: 'TIME 나스닥100', code: '426030', date: '2026-06-17', topName: 'Micron Technology Inc', topTicker: 'MU', topWeight: 0.0673, signalCount: 2, entryExitCount: 2, sourceStatus: 'live', returnCoverage: 1 },
-        { name: 'TIME 글로벌AI', code: '456600', date: '2026-06-17', topName: 'Kioxia Holdings Corp', topTicker: '285A.T', topWeight: 0.0852, signalCount: 2, entryExitCount: 2, sourceStatus: 'live', returnCoverage: 0.9239 },
-        { name: 'KoAct 나스닥성장', code: '2ETFQ1', date: '2026-06-17', topName: 'Space Exploration Technologies Corp', topTicker: '', topWeight: 0.0963, signalCount: 0, entryExitCount: 0, sourceStatus: 'live', returnCoverage: 0.8491 },
-      ],
+      rows: [{"name":"TIME 나스닥100","fullName":"TIME 미국나스닥100액티브","code":"426030","date":"2026-06-17","topName":"Micron Technology Inc","topTicker":"MU","topWeight":0.0673,"signalCount":2,"entryExitCount":2,"sourceStatus":"live","returnCoverage":0.9762047590481904,"top10":[{"rank":1,"ticker":"MU","codeRaw":"MU US EQUITY","name":"Micron Technology Inc","weight":0.0673},{"rank":2,"ticker":"SNDK","codeRaw":"SNDK US EQUITY","name":"Sandisk Corp","weight":0.0666},{"rank":3,"ticker":"INTC","codeRaw":"INTC US EQUITY","name":"Intel Corp","weight":0.0554},{"rank":4,"ticker":"ARM","codeRaw":"ARM US EQUITY","name":"ARM Holdings PLC","weight":0.053200000000000004},{"rank":5,"ticker":"NVDA","codeRaw":"NVDA US EQUITY","name":"NVIDIA Corp","weight":0.0467},{"rank":6,"ticker":"MRVL","codeRaw":"MRVL US EQUITY","name":"Marvell Technology Inc","weight":0.04019999999999999},{"rank":7,"ticker":"AMD","codeRaw":"AMD US EQUITY","name":"Advanced Micro Devices Inc","weight":0.0346},{"rank":8,"ticker":"DELL","codeRaw":"DELL US EQUITY","name":"Dell Technologies Inc","weight":0.0315},{"rank":9,"ticker":"CRDO","codeRaw":"CRDO US EQUITY","name":"Credo Technology Group Holding Ltd","weight":0.0302},{"rank":10,"ticker":"","codeRaw":"SPCX US EQUITY","name":"Space Exploration Technologies Corp","weight":0.0302}],"top10Weight":0.45589999999999997,"chartSeries":[{"rank":1,"label":"MU","points":[{"date":"2026-04-01","value":0.026600000000000002},{"date":"2026-04-14","value":0.0276},{"date":"2026-04-27","value":0.026099999999999998},{"date":"2026-05-12","value":0.0507},{"date":"2026-05-26","value":0.0475},{"date":"2026-06-09","value":0.0501},{"date":"2026-06-17","value":0.0673}]},{"rank":2,"label":"SNDK","points":[{"date":"2026-04-01","value":0.06860000000000001},{"date":"2026-04-14","value":0.0816},{"date":"2026-04-27","value":0.0567},{"date":"2026-05-12","value":0.0862},{"date":"2026-05-26","value":0.0512},{"date":"2026-06-09","value":0.0375},{"date":"2026-06-17","value":0.0666}]},{"rank":3,"label":"INTC","points":[{"date":"2026-04-01","value":0.020099999999999996},{"date":"2026-04-14","value":0.028300000000000002},{"date":"2026-04-27","value":0.044199999999999996},{"date":"2026-05-12","value":0.07400000000000001},{"date":"2026-05-26","value":0.0594},{"date":"2026-06-09","value":0.0416},{"date":"2026-06-17","value":0.0554}]},{"rank":4,"label":"ARM","points":[{"date":"2026-04-01","value":0.0385},{"date":"2026-04-14","value":0.0333},{"date":"2026-04-27","value":0.050499999999999996},{"date":"2026-05-12","value":0.0437},{"date":"2026-05-26","value":0.044199999999999996},{"date":"2026-06-09","value":0.0528},{"date":"2026-06-17","value":0.053200000000000004}]},{"rank":5,"label":"NVDA","points":[{"date":"2026-04-01","value":0.051100000000000007},{"date":"2026-04-14","value":0.04650000000000001},{"date":"2026-04-27","value":0.0676},{"date":"2026-05-12","value":0.0554},{"date":"2026-05-26","value":0.0851},{"date":"2026-06-09","value":0.0742},{"date":"2026-06-17","value":0.0467}]}]},{"name":"TIME 글로벌AI","fullName":"TIME 글로벌AI인공지능액티브","code":"456600","date":"2026-06-17","topName":"Kioxia Holdings Corp","topTicker":"285A.T","topWeight":0.0852,"signalCount":2,"entryExitCount":2,"sourceStatus":"live","returnCoverage":0.9604039596040396,"top10":[{"rank":1,"ticker":"285A.T","codeRaw":"285A JP EQUITY","name":"Kioxia Holdings Corp","weight":0.0852},{"rank":2,"ticker":"INTC","codeRaw":"INTC US EQUITY","name":"Intel Corp","weight":0.0722},{"rank":3,"ticker":"AMD","codeRaw":"AMD US EQUITY","name":"Advanced Micro Devices Inc","weight":0.0678},{"rank":4,"ticker":"STX","codeRaw":"STX US EQUITY","name":"Seagate Technology Holdings PLC","weight":0.0621},{"rank":5,"ticker":"WDC","codeRaw":"WDC US EQUITY","name":"Western Digital Corp","weight":0.052199999999999996},{"rank":6,"ticker":"ARM","codeRaw":"ARM US EQUITY","name":"ARM Holdings PLC","weight":0.0412},{"rank":7,"ticker":"","codeRaw":"NQU6 INDEX","name":"NASDAQ 100 E-MINI INDEX SEPT 2026","weight":0.038900000000000004},{"rank":8,"ticker":"SNDK","codeRaw":"SNDK US EQUITY","name":"Sandisk Corp","weight":0.037599999999999995},{"rank":9,"ticker":"SNOW","codeRaw":"SNOW US EQUITY","name":"Snowflake Inc","weight":0.037200000000000004},{"rank":10,"ticker":"NVDA","codeRaw":"NVDA US EQUITY","name":"NVIDIA Corp","weight":0.0332}],"top10Weight":0.5276,"chartSeries":[{"rank":1,"label":"285A.T","points":[{"date":"2026-05-15","value":0.0197},{"date":"2026-05-21","value":0.0209},{"date":"2026-05-28","value":0.0621},{"date":"2026-06-04","value":0.06559999999999999},{"date":"2026-06-10","value":0.07339999999999999},{"date":"2026-06-16","value":0.0806},{"date":"2026-06-17","value":0.0852}]},{"rank":2,"label":"INTC","points":[{"date":"2026-04-01","value":0.024},{"date":"2026-04-14","value":0.0526},{"date":"2026-04-27","value":0.0555},{"date":"2026-05-12","value":0.07980000000000001},{"date":"2026-05-26","value":0.0796},{"date":"2026-06-09","value":0.0621},{"date":"2026-06-17","value":0.0722}]},{"rank":3,"label":"AMD","points":[{"date":"2026-04-01","value":0.0199},{"date":"2026-04-14","value":0.018799999999999997},{"date":"2026-04-27","value":0.018600000000000002},{"date":"2026-05-12","value":0.0375},{"date":"2026-05-26","value":0.0463},{"date":"2026-06-09","value":0.0644},{"date":"2026-06-17","value":0.0678}]},{"rank":4,"label":"STX","points":[{"date":"2026-04-01","value":0.0412},{"date":"2026-04-14","value":0.0434},{"date":"2026-04-27","value":0.0358},{"date":"2026-05-12","value":0.057},{"date":"2026-05-26","value":0.058600000000000006},{"date":"2026-06-09","value":0.056600000000000004},{"date":"2026-06-17","value":0.0621}]},{"rank":5,"label":"WDC","points":[{"date":"2026-04-01","value":0.0461},{"date":"2026-04-14","value":0.04769999999999999},{"date":"2026-04-27","value":0.0452},{"date":"2026-05-12","value":0.045899999999999996},{"date":"2026-05-26","value":0.0461},{"date":"2026-06-09","value":0.0454},{"date":"2026-06-17","value":0.052199999999999996}]}]},{"name":"KoAct 나스닥성장","fullName":"KoAct 미국나스닥성장기업액티브","code":"2ETFQ1","date":"2026-06-17","topName":"Space Exploration Technologies Corp","topTicker":"SPCX US Equity","topWeight":0.09630000000000001,"signalCount":0,"entryExitCount":0,"sourceStatus":"live","returnCoverage":1.0,"top10":[{"rank":1,"ticker":"","codeRaw":"SPCX US Equity","name":"Space Exploration Technologies Corp","weight":0.09630000000000001},{"rank":2,"ticker":"AMD","codeRaw":"AMD US Equity","name":"ADVANCED MICRO DEVICES","weight":0.0745},{"rank":3,"ticker":"ARM","codeRaw":"ARM US Equity","name":"ARM Holdings PLC","weight":0.07339999999999999},{"rank":4,"ticker":"SNDK","codeRaw":"SNDK US Equity","name":"Sandisk Corp/DE","weight":0.0594},{"rank":5,"ticker":"INTC","codeRaw":"INTC US Equity","name":"INTEL Corp","weight":0.0557},{"rank":6,"ticker":"NVDA","codeRaw":"NVDA US Equity","name":"NVIDIA Corp","weight":0.049100000000000005},{"rank":7,"ticker":"GOOGL","codeRaw":"GOOGL US Equity","name":"ALPHABET INC-CL A","weight":0.047},{"rank":8,"ticker":"BE","codeRaw":"BE US Equity","name":"BLOOM ENERGY CORPORATION","weight":0.042},{"rank":9,"ticker":"MU","codeRaw":"MU US Equity","name":"MICRON TECH","weight":0.0405},{"rank":10,"ticker":"AMZN","codeRaw":"AMZN US Equity","name":"Amazon.com Inc","weight":0.0371}],"top10Weight":0.575,"chartSeries":[{"rank":1,"label":"SPCX US Equity","points":[{"date":"2026-06-16","value":0.0858},{"date":"2026-06-17","value":0.09630000000000001}]},{"rank":2,"label":"AMD","points":[{"date":"2026-06-08","value":0.0711},{"date":"2026-06-10","value":0.0757},{"date":"2026-06-12","value":0.0781},{"date":"2026-06-16","value":0.0742},{"date":"2026-06-17","value":0.0745}]},{"rank":3,"label":"ARM","points":[{"date":"2026-06-08","value":0.0698},{"date":"2026-06-10","value":0.0699},{"date":"2026-06-12","value":0.0694},{"date":"2026-06-16","value":0.0722},{"date":"2026-06-17","value":0.07339999999999999}]},{"rank":4,"label":"SNDK","points":[{"date":"2026-06-08","value":0.0637},{"date":"2026-06-10","value":0.0501},{"date":"2026-06-12","value":0.056100000000000004},{"date":"2026-06-16","value":0.059500000000000004},{"date":"2026-06-17","value":0.0594}]},{"rank":5,"label":"INTC","points":[{"date":"2026-06-08","value":0.0537},{"date":"2026-06-10","value":0.0545},{"date":"2026-06-12","value":0.0591},{"date":"2026-06-16","value":0.0579},{"date":"2026-06-17","value":0.0557}]}]}],
     },
   };
 
@@ -282,6 +279,7 @@
           </tbody>
         </table>
       </div>
+      ${panel.detailSlot ? `<div class="panel-detail" id="${escapeAttribute(panelDomId(project, 'details'))}"></div>` : ''}
     `;
   }
 
@@ -507,27 +505,33 @@
 
   function parseEtfTracking(payload) {
     const rows = asRecords(payload?.etfs).map((etf) => {
-      const latest = isRecord(etf.latest) ? etf.latest : {};
-      const top10 = asRecords(latest.top10);
+      const history = asRecords(etf.history).map(normalizeEtfSnapshot).filter((snapshot) => snapshot.date).sort((a, b) => a.date.localeCompare(b.date));
+      const latest = normalizeEtfSnapshot(etf.latest) || history.at(-1) || {};
+      const top10 = latest.top10.slice(0, 10);
       const top = top10[0] || {};
       const metrics = isRecord(etf.metrics) ? etf.metrics : {};
       const latestSignals = asRecords(latest.signals);
       const signalCount = numberOr(metrics.signalCount, latestSignals.length);
       const entryExitCount = numberOr(metrics.entryExitSignalCount, latestSignals.filter((signal) => ['top10_entry', 'top10_exit'].includes(signal.type)).length);
-      const weightFraction = coerceWeightFraction(top.weight, top.weightPercent);
+      const top10Weight = top10.reduce((sum, holding) => sum + (finiteOrNull(holding.weight) || 0), 0);
+      const chartHistory = history.length ? history : (latest.date ? [latest] : []);
       return {
+        id: stringOr(etf.id, etf.code, etf.shortName, etf.name, ''),
         name: stringOr(etf.shortName, etf.name, 'ETF'),
         fullName: stringOr(etf.name, ''),
         code: stringOr(etf.code, ''),
         date: stringOr(latest.date, etf.availableEndDate, ''),
         topName: stringOr(top.name, '-'),
         topTicker: stringOr(top.ticker, top.codeRaw, ''),
-        topWeight: weightFraction,
+        topWeight: finiteOrNull(top.weight),
+        top10,
+        top10Weight,
+        chartSeries: buildEtfWeightSeries(chartHistory, top10),
         signalCount,
         entryExitCount,
         sourceStatus: stringOr(latest.sourceStatus, 'unknown'),
         sourceWarning: stringOr(latest.sourceWarning, ''),
-        returnCoverage: finiteOrNull(metrics.returnCoverage),
+        returnCoverage: finiteOrNull(metrics.returnCoverage ?? latest.analysisSummary?.returnCoverage),
       };
     }).filter((row) => row.name && row.date);
 
@@ -536,6 +540,51 @@
       status: stringOr(payload?.disclaimer, '라이브 공개 JSON 표시 중'),
       rows,
     };
+  }
+
+  function normalizeEtfSnapshot(snapshot) {
+    if (!isRecord(snapshot)) return null;
+    return {
+      date: stringOr(snapshot.date, snapshot.asOfDate, ''),
+      sourceStatus: stringOr(snapshot.sourceStatus, ''),
+      sourceWarning: stringOr(snapshot.sourceWarning, ''),
+      holdings: asRecords(snapshot.holdings).map(normalizeEtfHolding),
+      top10: asRecords(snapshot.top10).map(normalizeEtfHolding).sort((a, b) => numberOr(a.rank, 9999) - numberOr(b.rank, 9999)),
+      signals: asRecords(snapshot.signals),
+      analysisSummary: isRecord(snapshot.analysisSummary) ? snapshot.analysisSummary : {},
+    };
+  }
+
+  function normalizeEtfHolding(row, index = 0) {
+    const weight = coerceWeightFraction(row.weight, row.weightPercent);
+    return {
+      rank: numberOr(row.rank, index + 1),
+      ticker: stringOr(row.ticker, ''),
+      codeRaw: stringOr(row.codeRaw, row.code, ''),
+      name: stringOr(row.name, row.ticker, row.codeRaw, row.code, '-'),
+      weight,
+    };
+  }
+
+  function buildEtfWeightSeries(history, latestTop10) {
+    return asRecords(latestTop10).slice(0, 10).map((latest, index) => {
+      const key = holdingKey(latest);
+      const points = asRecords(history).map((snapshot) => {
+        const universe = snapshot.holdings?.length ? snapshot.holdings : snapshot.top10;
+        const holding = asRecords(universe).find((row) => holdingKey(row) === key);
+        return { date: snapshot.date, value: finiteOrNull(holding?.weight) };
+      });
+      return {
+        key,
+        rank: numberOr(latest.rank, index + 1),
+        label: stringOr(latest.ticker, latest.codeRaw, latest.name, key),
+        points,
+      };
+    }).filter((item) => item.key && item.points.some((point) => Number.isFinite(point.value)));
+  }
+
+  function holdingKey(row) {
+    return stringOr(row?.ticker, row?.codeRaw, row?.code, row?.name, '').toUpperCase();
   }
 
   function renderMomentum(summary, mode, error, project) {
@@ -590,20 +639,149 @@
     const signalTotal = summary.rows.reduce((sum, row) => sum + numberOr(row.signalCount, 0), 0);
     const avgCoverageRows = summary.rows.map((row) => finiteOrNull(row.returnCoverage)).filter((value) => value !== null);
     const avgCoverage = avgCoverageRows.length ? avgCoverageRows.reduce((sum, value) => sum + value, 0) / avgCoverageRows.length : null;
+    const avgTop10WeightRows = summary.rows.map((row) => finiteOrNull(row.top10Weight)).filter((value) => value !== null);
+    const avgTop10Weight = avgTop10WeightRows.length ? avgTop10WeightRows.reduce((sum, value) => sum + value, 0) / avgTop10WeightRows.length : null;
     renderMetricCards(panelSelector(project, 'metrics'), [
       ['추적 ETF', `${summary.rows.length || 0}개`],
       ['최근 기준일', formatMaybeDate(latestDate)],
       ['특별 신호', `${signalTotal.toLocaleString('ko-KR')}건`],
+      ['평균 TOP10 비중', formatPercent(avgTop10Weight)],
       ['평균 종가 커버리지', formatPercent(avgCoverage)],
     ]);
     renderRows(panelSelector(project, 'rows'), summary.rows, (row) => [
       `${row.name}${row.code ? ` (${row.code})` : ''}`,
       formatMaybeDate(row.date),
-      `${row.topTicker ? `${row.topTicker} · ` : ''}${row.topName} ${formatPercent(row.topWeight)}`,
+      `${formatPercent(row.top10Weight)} · TOP1 ${row.topTicker ? `${row.topTicker} ` : ''}${formatPercent(row.topWeight)}`,
       `${row.signalCount}건 / 편입·편출 ${row.entryExitCount}건`,
-      `${row.sourceStatus}${row.sourceWarning ? ` · ${row.sourceWarning}` : ''}`,
+      formatPercent(row.returnCoverage),
     ], 5);
+    renderEtfDetailCards(panelSelector(project, 'details'), summary.rows);
     setStatus(panelSelector(project, 'status'), buildStatusText(mode, summary.generatedAt, error, summary.status), mode);
+  }
+
+  function renderEtfDetailCards(selector, rows) {
+    const target = $(selector);
+    if (!target) return;
+    const cards = asRecords(rows).map((row) => `
+      <article class="etf-detail-card">
+        <div class="etf-detail-head">
+          <div>
+            <strong>${escapeHtml(row.name)}</strong>
+            <span>${escapeHtml(row.code || row.fullName || '')} · ${escapeHtml(formatMaybeDate(row.date))}</span>
+          </div>
+          <a href="https://sonchanggi.github.io/etf-tracking/" aria-label="${escapeAttribute(row.name)} ETF Tracking 원본 열기">상세</a>
+        </div>
+        ${renderEtfMiniChart(row)}
+        <ol class="etf-top10-list" aria-label="${escapeAttribute(row.name)} 최신 TOP10 보유종목">
+          ${renderEtfTop10Items(row.top10)}
+        </ol>
+      </article>
+    `).join('');
+    target.innerHTML = `
+      <div class="etf-detail-heading">
+        <div>
+          <strong>ETF별 최신 TOP10과 비중 변화</strong>
+          <span>미니 그래프는 현재 TOP10 종목의 저장된 비중 히스토리를 표시합니다.</span>
+        </div>
+      </div>
+      <div class="etf-detail-grid">${cards || '<div class="skeleton-line">ETF 상세 요약을 표시할 데이터가 없습니다.</div>'}</div>
+    `;
+  }
+
+  function renderEtfTop10Items(top10) {
+    const holdings = asRecords(top10).slice(0, 10);
+    if (!holdings.length) return '<li class="etf-top10-empty">표시할 TOP10 데이터가 없습니다.</li>';
+    return holdings.map((holding, index) => {
+      const identifier = stringOr(holding.ticker, holding.codeRaw, holding.name, '-');
+      return `
+        <li>
+          <span class="etf-rank">${numberOr(holding.rank, index + 1)}</span>
+          <strong>${escapeHtml(identifier)}</strong>
+          <em>${escapeHtml(formatPercent(holding.weight))}</em>
+          <small>${escapeHtml(holding.name)}</small>
+        </li>
+      `;
+    }).join('');
+  }
+
+  function renderEtfMiniChart(row) {
+    const chartSeries = asRecords(row.chartSeries)
+      .map((item) => ({
+        ...item,
+        points: asArray(item.points)
+          .map((point) => ({
+            date: stringOr(point?.date, point?.[0], ''),
+            value: finiteOrNull(point?.value ?? point?.[1]),
+          }))
+          .filter((point) => Number.isFinite(Date.parse(point.date))),
+      }))
+      .filter((item) => item.points.some((point) => Number.isFinite(point.value)));
+    if (!chartSeries.length) return '<div class="etf-mini-empty">표시할 비중 그래프 데이터가 없습니다.</div>';
+
+    const points = chartSeries.flatMap((item) => item.points);
+    const dates = points.map((point) => Date.parse(point.date)).filter(Number.isFinite);
+    const values = points.map((point) => point.value).filter(Number.isFinite);
+    const minDate = Math.min(...dates);
+    const maxDate = Math.max(...dates);
+    const minValue = Math.min(...values);
+    const maxValue = Math.max(...values);
+    const yPad = Math.max((maxValue - minValue) * 0.18, 0.004);
+    const yMin = Math.max(0, minValue - yPad);
+    const yMax = Math.max(maxValue + yPad, yMin + 0.01);
+    const width = 640;
+    const height = 190;
+    const margin = { top: 18, right: 16, bottom: 34, left: 42 };
+    const innerWidth = width - margin.left - margin.right;
+    const innerHeight = height - margin.top - margin.bottom;
+    const x = (date) => margin.left + ((Date.parse(date) - minDate) / Math.max(maxDate - minDate, 1)) * innerWidth;
+    const y = (value) => margin.top + (1 - ((value - yMin) / Math.max(yMax - yMin, 1))) * innerHeight;
+    const gridValues = [yMin, yMax];
+    const grid = gridValues.map((tick) => {
+      const yy = y(tick);
+      return `<g><line x1="${margin.left}" x2="${width - margin.right}" y1="${yy.toFixed(1)}" y2="${yy.toFixed(1)}" stroke="#d9e2f1"/><text x="${margin.left - 8}" y="${(yy + 4).toFixed(1)}" text-anchor="end" fill="#667085" font-size="11">${escapeHtml(formatPercent(tick))}</text></g>`;
+    }).join('');
+    const paths = chartSeries.map((item, index) => {
+      const color = COLORS[index % COLORS.length];
+      const segments = splitChartPointSegments(item.points);
+      const segmentPaths = segments.map((segment) => {
+        const pathData = segment.map((point, pointIndex) => `${pointIndex ? 'L' : 'M'} ${x(point.date).toFixed(1)} ${y(point.value).toFixed(1)}`).join(' ');
+        return `<path d="${pathData}" fill="none" stroke="${color}" stroke-width="${item.rank <= 3 ? 2.6 : 1.8}" stroke-linecap="round" stroke-linejoin="round"/>`;
+      }).join('');
+      const last = item.points.filter((point) => Number.isFinite(point.value)).at(-1);
+      const lastPoint = last ? `<circle cx="${x(last.date).toFixed(1)}" cy="${y(last.value).toFixed(1)}" r="${item.rank <= 3 ? 3.4 : 2.6}" fill="${color}"><title>${escapeHtml(item.label)} ${formatPercent(last.value)}</title></circle>` : '';
+      return `${segmentPaths}${lastPoint}`;
+    }).join('');
+    const legend = chartSeries.slice(0, 5).map((item, index) => `<span><i class="legend-key" style="background:${COLORS[index % COLORS.length]}"></i>${escapeHtml(item.label)}</span>`).join('');
+    const firstDate = new Date(minDate).toISOString().slice(0, 10);
+    const lastDate = new Date(maxDate).toISOString().slice(0, 10);
+    return `
+      <div class="etf-mini-chart">
+        <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeAttribute(row.name)} TOP10 비중 변화 미니 그래프">
+          <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"/>
+          ${grid}
+          <line x1="${margin.left}" x2="${width - margin.right}" y1="${height - margin.bottom}" y2="${height - margin.bottom}" stroke="#aab7cf"/>
+          <text x="${margin.left}" y="${height - 12}" fill="#667085" font-size="11">${escapeHtml(formatMaybeDate(firstDate))}</text>
+          <text x="${width - margin.right}" y="${height - 12}" text-anchor="end" fill="#667085" font-size="11">${escapeHtml(formatMaybeDate(lastDate))}</text>
+          ${paths}
+        </svg>
+        <div class="chart-legend etf-mini-legend">${legend}</div>
+      </div>
+    `;
+  }
+
+  function splitChartPointSegments(points) {
+    const segments = [];
+    let current = [];
+    asArray(points).forEach((point) => {
+      if (point && Number.isFinite(Date.parse(point.date)) && Number.isFinite(point.value)) {
+        current.push(point);
+      } else if (current.length) {
+        segments.push(current);
+        current = [];
+      }
+    });
+    if (current.length) segments.push(current);
+    return segments;
   }
 
   function renderMetricCards(selector, entries) {
@@ -873,6 +1051,9 @@
       parseDram,
       parseBestFactor,
       parseEtfTracking,
+      buildEtfWeightSeries,
+      renderEtfMiniChart,
+      renderEtfDetailCards,
       resolveLoadState,
       loadProjectPanel,
       loadEtfPanel,
