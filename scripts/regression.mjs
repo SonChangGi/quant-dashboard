@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
 const source = readFileSync('assets/app.js', 'utf8');
-const context = vm.createContext({ console });
+const context = vm.createContext({ console, URL });
 vm.runInContext(source, context, { filename: 'assets/app.js' });
 const api = context.__QUANT_DASHBOARD_TESTS__;
 
@@ -109,8 +109,49 @@ assert(nullEntryValuation.rows.length === 1 && nullEntryValuation.rows[0].ticker
 const throwingAdapter = { parse: () => { throw new Error('fixture boom'); } };
 const safeParse = api.parsePanelSafely(throwingAdapter, {});
 assert(safeParse.ok === false && /Payload parse failed/.test(safeParse.error), 'panel parser exceptions convert to explicit fallback reason');
-const contractMismatch = api.validateAdapterContract(api.PANEL_ADAPTERS.valuation, { valuation: { schemaVersion: 999, tickers: [], modelPolicy: {}, methodologyReferences: [] } });
+const contractMismatch = api.validateAdapterContract(api.PANEL_ADAPTERS.valuation, { summary: { schemaVersion: 999, contract: 'quant-research-summary', projectId: 'valuation', status: {}, primaryEntities: [] } });
 assert(/expected 1/.test(contractMismatch), 'contract version mismatch is rejected before parsing');
+
+const summaryFixture = {
+  schemaVersion: 1,
+  contract: 'quant-research-summary',
+  projectId: 'valuation',
+  projectName: 'Valuation Fixture',
+  generatedAt: '2026-06-19T00:00:00Z',
+  dataAsOf: '2026-06-18',
+  status: { state: 'ok', label: 'fixture', cadence: 'manual', expectedFreshnessDays: 14 },
+  coverage: { entityCount: 1, sectors: ['기술'] },
+  primaryEntities: [{
+    symbol: 'NVDA',
+    name: 'NVIDIA',
+    label: 'NVDA · 기술',
+    sectorLabel: '기술',
+    themes: ['AI', 'Semiconductors'],
+    metrics: { price: 100, dcfPerShare: 120, qualityStatus: '충분', priceAsOf: '2026-06-18' },
+    warnings: ['상대가치 비교군 확인 필요'],
+  }],
+  limitations: ['모형은 판단 주체가 아니라 계산 보조 도구입니다.'],
+  automation: { workflowUrl: 'https://github.com/SonChangGi/valuation/actions/workflows/data-refresh.yml' },
+};
+assert(api.isResearchSummary(summaryFixture, 'valuation'), 'summary fixture satisfies common contract helper');
+
+assert(api.safeAutomationUrl('https://github.com/SonChangGi/valuation/actions/workflows/data-refresh.yml').startsWith('https://github.com/'), 'automation URL allowlist accepts GitHub HTTPS links');
+assert(api.safeAutomationUrl('javascript:alert(1)') === '', 'automation URL allowlist rejects javascript scheme');
+assert(api.safeAutomationUrl('https://evil.example/actions') === '', 'automation URL allowlist rejects unexpected hosts');
+const parsedSummaryValuation = api.parseValuation(summaryFixture);
+assert(parsedSummaryValuation.rows.length === 1 && parsedSummaryValuation.rows[0].ticker === 'NVDA', 'Valuation summary contract parses into panel rows');
+const dossierMatches = api.watchlistMatchesForToken([
+  { project: { id: 'valuation', shortName: 'Valuation' }, summary: parsedSummaryValuation },
+], 'AI');
+assert(dossierMatches.length === 1 && /비교군/.test(dossierMatches[0].limit), 'watchlist dossier uses summary entities and limitation text without duplicate legacy rows');
+
+const etfEntityDossier = api.watchlistMatchesForToken([
+  { project: api.PROJECTS.find((project) => project.id === 'etf'), summary: { meta: { statusState: 'ok' }, entities: [
+    { symbol: 'AAA', label: 'AAA · ETF One', metrics: { etf: 'ETF One', weight: 0.1, date: '2026-06-18' }, warnings: ['ETF One warning'] },
+    { symbol: 'AAA', label: 'AAA · ETF Two', metrics: { etf: 'ETF Two', weight: 0.2, date: '2026-06-18' }, warnings: ['ETF Two warning'] },
+  ] } },
+], 'AAA');
+assert(etfEntityDossier.length === 2, 'ETF dossier identity preserves same ticker across ETF contexts');
 
 
 class ElementStub {

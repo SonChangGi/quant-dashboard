@@ -78,9 +78,9 @@ async function fetchJson(url) {
 
 
 function rowCountFor(projectId, summary) {
-  if (projectId === 'dram') return summary?.series?.length || 0;
+  if (projectId === 'dram') return summary?.series?.length || summary?.entities?.length || 0;
   if (projectId === 'valuation') return summary?.tickerCount || summary?.rows?.length || 0;
-  return summary?.rows?.length || 0;
+  return summary?.rows?.length || summary?.entities?.length || 0;
 }
 
 function freshnessDays(value) {

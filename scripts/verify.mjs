@@ -29,13 +29,15 @@ for (const url of projectUrls) {
 }
 
 const dataUrls = [
-  'https://sonchanggi.github.io/momentum-factor-lab/data/dashboard.json',
+  'https://sonchanggi.github.io/momentum-factor-lab/data/summary.json',
+  'https://sonchanggi.github.io/dram-price/data/summary.json',
   'https://sonchanggi.github.io/dram-price/data/prices.json',
   'https://sonchanggi.github.io/dram-price/data/series.json',
   'https://sonchanggi.github.io/dram-price/data/status.json',
-  'https://sonchanggi.github.io/best-factor/data/latest-results.json',
+  'https://sonchanggi.github.io/best-factor/data/summary.json',
+  'https://sonchanggi.github.io/etf-tracking/data/summary.json',
   'https://sonchanggi.github.io/etf-tracking/data/dashboard.json',
-  'https://sonchanggi.github.io/valuation/data/index.json',
+  'https://sonchanggi.github.io/valuation/data/summary.json',
 ];
 for (const url of dataUrls) {
   assert(contains(files.app, url), `public data endpoint present: ${url}`);
@@ -43,6 +45,8 @@ for (const url of dataUrls) {
 
 assert(contains(files.app, 'const PROJECTS = ['), 'project registry exists');
 assert(contains(files.app, 'PANEL_ADAPTERS'), 'panel adapter manifest exists');
+assert(contains(files.app, 'quant-research-summary'), 'common summary contract is validated');
+assert(contains(files.app, 'summaryEntities'), 'common summary entities feed dossier search');
 assert(contains(files.app, 'renderDashboardPanels'), 'manifest-driven dashboard panel renderer exists');
 assert(contains(files.app, 'loadProjectPanel'), 'shared panel loader exists');
 assert(contains(files.html, 'id="top-nav"'), 'dynamic top navigation mount exists');
@@ -55,7 +59,7 @@ assert(contains(files.app, 'getJsonBestEffort'), 'best-effort fetch helper exist
 assert(contains(files.app, 'resolveLoadState'), 'schema/empty-data load state resolver exists');
 assert(contains(files.app, 'parsePanelSafely'), 'parser exception fallback guard exists');
 assert(contains(files.app, 'validateAdapterContract'), 'versioned public JSON contract validator exists');
-assert(contains(files.app, 'expectedVersion') && contains(files.app, 'schemaVersion') && contains(files.app, 'schema_version'), 'public data contract versions are explicit');
+assert(contains(files.app, 'expectedVersion') && contains(files.app, 'schemaVersion') && contains(files.app, 'quant-research-summary'), 'public data contract versions are explicit');
 assert(contains(files.app, 'asRecords'), 'external arrays are filtered to records');
 assert(contains(files.app, 'parseMomentum'), 'momentum parser exists');
 assert(contains(files.app, 'latest_output_rows'), 'momentum latest output optional field is handled');
@@ -76,13 +80,14 @@ assert(contains(files.app, 'formatFreshness'), 'freshness formatter exists');
 assert(contains(files.app, 'renderResearchBriefing'), 'research briefing renderer exists');
 assert(contains(files.app, 'renderDataHealth'), 'data health renderer exists');
 assert(contains(files.app, 'watchlistMatchesForToken'), 'watchlist matcher exists');
+assert(contains(files.app, 'health-link'), 'data health links automation/manual update workflows');
+assert(contains(files.app, 'entitySummaryLine'), 'watchlist dossier uses entity-level summary lines');
 assert(contains(files.app, '업데이트 시각 알 수 없음'), 'freshness fallback text exists');
 assert(contains(files.app, "panelDomId(project, 'status')"), 'manifest-generated freshness/status hooks exist');
 assert(contains(files.app, 'status-line'), 'panel status line renderer exists');
 assert(contains(files.html, '투자, 세무, 법률 또는 매매 조언이 아닙니다'), 'research disclaimer exists');
 assert(contains(files.readme, '다른 프로젝트의 로컬 소스 코드를 직접 import하지 않습니다'), 'README isolation note exists');
-assert(contains(files.readme, 'etf-tracking/data/dashboard.json'), 'README documents ETF Tracking data endpoint');
-assert(contains(files.readme, 'valuation/data/index.json'), 'README documents Valuation data endpoint');
+assert(contains(files.readme, 'summary.json'), 'README documents summary contract endpoint');
 assert(contains(readFileSync('scripts/regression.mjs', 'utf8'), 'malformed momentum payload resolves to fallback mode'), 'malformed payload regression exists');
 assert(contains(readFileSync('scripts/regression.mjs', 'utf8'), 'null/non-object entries resolve to fallback'), 'null-entry payload regression exists');
 assert(contains(readFileSync('scripts/static-smoke.mjs', 'utf8'), 'static server smoke'), 'static server smoke exists');

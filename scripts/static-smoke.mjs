@@ -39,10 +39,13 @@ try {
   if (!html.includes('id="top-nav"')) throw new Error('dynamic top navigation mount missing');
   if (!html.includes('id="summary-grid"')) throw new Error('dynamic dashboard mount missing');
   if (!html.includes('id="research-briefing"') || !html.includes('id="data-health"')) throw new Error('research cockpit mounts missing');
+  if (!html.includes('티커·테마 Dossier')) throw new Error('dossier copy missing');
   if (!app.includes('PANEL_ADAPTERS')) throw new Error('panel adapter manifest missing');
+  if (!app.includes('quant-research-summary') || !app.includes('summaryEntities')) throw new Error('summary contract support missing');
   if (!app.includes('renderDashboardPanels')) throw new Error('manifest-driven panel renderer missing');
   if (!css.includes('.panel')) throw new Error('panel CSS missing');
   if (!css.includes('.etf-detail-grid') || !css.includes('.etf-top10-list')) throw new Error('ETF detail CSS missing');
+  if (!css.includes('.health-link')) throw new Error('automation health link CSS missing');
   console.log('PASS static server smoke served index.html, assets/app.js, and assets/styles.css');
 } finally {
   await new Promise((resolve) => server.close(resolve));

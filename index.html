@@ -37,7 +37,7 @@
         <p class="eyebrow">Research Cockpit</p>
         <h2 id="cockpit-title">오늘 먼저 볼 것</h2>
         <p>
-          각 프로젝트의 최신 공개 데이터에서 의사결정 질문, 데이터 상태, 관심 티커 노출을 한 번에 정리합니다.
+          각 프로젝트의 공통 summary contract와 최신 공개 데이터에서 의사결정 질문, 데이터 상태, 관심 티커 노출을 한 번에 정리합니다.
           숫자는 투자 결론이 아니라 추가 확인을 시작하는 체크리스트입니다.
         </p>
       </div>
@@ -57,7 +57,7 @@
           <div class="panel-header compact">
             <div>
               <p class="eyebrow">Watchlist</p>
-              <h3 id="watchlist-title">관심 티커 연결</h3>
+          <h3 id="watchlist-title">티커·테마 Dossier</h3>
             </div>
           </div>
           <form id="watchlist-form" class="watchlist-form">
@@ -68,7 +68,7 @@
             </div>
           </form>
           <div id="watchlist-results" class="watchlist-results" aria-live="polite">
-            관심 티커를 입력하면 가치평가, 팩터, ETF 보유종목 노출을 연결해 보여줍니다.
+            관심 티커를 입력하면 가치평가, 팩터, ETF 보유종목, DRAM 테마 노출과 각 방법론의 한계를 함께 보여줍니다.
           </div>
         </article>
         <article class="panel health-panel" aria-labelledby="health-title">
@@ -113,20 +113,20 @@
     <section class="section roadmap-section" aria-labelledby="roadmap-title">
       <div class="section-heading">
         <p class="eyebrow">Expandable Hub</p>
-        <h2 id="roadmap-title">앞으로 추가할 수 있는 기능</h2>
+        <h2 id="roadmap-title">현재 허브가 확장되는 방식</h2>
       </div>
       <div class="feature-grid">
         <article>
           <h3>소스 상태 모니터</h3>
-          <p>각 프로젝트의 생성 시각, fetch 상태, fallback 여부를 모아 보여줍니다.</p>
+          <p>각 프로젝트의 생성 시각, 기준일, cadence, fallback 여부와 수동 업데이트 링크를 모아 보여줍니다.</p>
         </article>
         <article>
           <h3>Watchlist 중심 분석</h3>
-          <p>티커와 테마를 입력하면 가치평가, 팩터, ETF 노출을 연결해 다음 확인 질문을 제시합니다.</p>
+          <p>티커와 테마를 입력하면 가치평가, 팩터, ETF, DRAM 노출을 연결해 다음 확인 질문과 한계를 제시합니다.</p>
         </article>
         <article>
           <h3>경량 요약 계약</h3>
-          <p>대형 JSON은 원본 프로젝트에 두고 중앙 허브는 작고 안정적인 요약 데이터부터 읽도록 확장할 수 있습니다.</p>
+          <p>대형 JSON은 원본 프로젝트에 두고 중앙 허브는 작고 안정적인 <code>summary.json</code>부터 읽습니다.</p>
         </article>
       </div>
     </section>

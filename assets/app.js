@@ -1,6 +1,16 @@
 (() => {
   'use strict';
 
+  const SAFE_AUTOMATION_HOSTS = new Set(['github.com', 'www.github.com', 'sonchanggi.github.io']);
+
+  const ENTITY_METRIC_RENDERERS = {
+    valuation: (metrics) => `현재가 ${formatNumber(metrics.price)} · DCF ${formatNumber(metrics.dcfPerShare)} · 품질 ${metrics.qualityStatus || '확인 필요'}`,
+    etf: (metrics) => `${metrics.etf || 'ETF'} TOP10 비중 ${formatPercent(metrics.weight)} · 기준일 ${formatMaybeDate(metrics.date)}`,
+    best: (metrics) => `팩터 ${metrics.factor || '-'} · 비중 ${formatPercent(metrics.weight)} · 점수 ${formatNumber(metrics.score)}`,
+    momentum: (metrics) => `팩터 ${metrics.factor || '-'} · 신호 ${formatNumber(metrics.signal)} · 최종 비중 ${formatPercent(metrics.finalWeight)}`,
+    dram: (metrics) => `${metrics.kind || '가격'} · ${formatMaybeDate(metrics.date)} · ${metrics.source || 'source N/A'}`,
+  };
+
   const PROJECTS = [
     {
       id: 'momentum',
@@ -101,72 +111,72 @@
     },
   ];
 
+  const SUMMARY_CONTRACT = { versionField: 'schemaVersion', expectedVersion: 1, requiredKeys: ['contract', 'projectId', 'status', 'primaryEntities'] };
+
   const PANEL_ADAPTERS = {
     momentum: {
       sourceUrls: {
-        momentum: 'https://sonchanggi.github.io/momentum-factor-lab/data/dashboard.json',
+        summary: 'https://sonchanggi.github.io/momentum-factor-lab/data/summary.json',
       },
-      primarySourceKey: 'momentum',
-      contracts: { momentum: { versionField: 'schema_version', expectedVersion: 1, requiredKeys: ['runs', 'latest_run_index'] } },
-      parse: (sources) => parseMomentum(sources.momentum),
+      primarySourceKey: 'summary',
+      contracts: { summary: SUMMARY_CONTRACT },
+      parse: (sources) => parseMomentum(sources.summary),
       hasUsableData: (summary) => Boolean(summary?.rows?.length),
       fallback: normalizeMomentumFallback,
       render: renderMomentum,
-      emptyReason: 'Momentum payload did not contain usable top rows.',
+      emptyReason: 'Momentum summary did not contain usable top rows.',
     },
     dram: {
       sourceUrls: {
+        summary: 'https://sonchanggi.github.io/dram-price/data/summary.json',
         dramPrices: 'https://sonchanggi.github.io/dram-price/data/prices.json',
         dramSeries: 'https://sonchanggi.github.io/dram-price/data/series.json',
         dramStatus: 'https://sonchanggi.github.io/dram-price/data/status.json',
       },
-      primarySourceKey: 'dramPrices',
-      contracts: {
-        dramPrices: { versionField: 'schema_version', expectedVersion: 1, requiredKeys: ['observations'] },
-        dramSeries: { versionField: 'schema_version', expectedVersion: 1, requiredKeys: ['series'] },
-        dramStatus: { versionField: 'schema_version', expectedVersion: 1, requiredKeys: ['observation_count'] },
-      },
-      parse: (sources) => parseDram(sources.dramPrices, sources.dramSeries, sources.dramStatus),
-      hasUsableData: (summary) => Boolean(summary?.series?.length),
+      primarySourceKey: 'summary',
+      contracts: { summary: SUMMARY_CONTRACT },
+      parse: (sources) => parseDram(sources.dramPrices, sources.dramSeries, sources.dramStatus, sources.summary),
+      hasUsableData: (summary) => Boolean(summary?.series?.length || summary?.entities?.length),
       fallback: normalizeDramFallback,
       render: renderDram,
-      emptyReason: 'DRAM payload did not contain usable dated price points.',
+      emptyReason: 'DRAM summary/details did not contain usable price points.',
     },
     best: {
       sourceUrls: {
-        best: 'https://sonchanggi.github.io/best-factor/data/latest-results.json',
+        summary: 'https://sonchanggi.github.io/best-factor/data/summary.json',
       },
-      primarySourceKey: 'best',
-      contracts: { best: { versionField: 'schema_version', expectedVersion: 1, requiredKeys: ['rankings', 'latest_holdings', 'summary'] } },
-      parse: (sources) => parseBestFactor(sources.best),
+      primarySourceKey: 'summary',
+      contracts: { summary: SUMMARY_CONTRACT },
+      parse: (sources) => parseBestFactor(sources.summary),
       hasUsableData: (summary) => Boolean(summary?.rows?.length),
       fallback: normalizeBestFallback,
       render: renderBestFactor,
-      emptyReason: 'Best Factor payload did not contain usable holdings.',
+      emptyReason: 'Best Factor summary did not contain usable holdings.',
     },
     etf: {
       sourceUrls: {
+        summary: 'https://sonchanggi.github.io/etf-tracking/data/summary.json',
         etf: 'https://sonchanggi.github.io/etf-tracking/data/dashboard.json',
       },
-      primarySourceKey: 'etf',
-      contracts: { etf: { versionField: 'schemaVersion', expectedVersion: '1.3.0', requiredKeys: ['etfs', 'signals'] } },
-      parse: (sources) => parseEtfTracking(sources.etf),
-      hasUsableData: (summary) => Boolean(summary?.rows?.length),
+      primarySourceKey: 'summary',
+      contracts: { summary: SUMMARY_CONTRACT },
+      parse: (sources) => parseEtfTracking(sources.etf, sources.summary),
+      hasUsableData: (summary) => Boolean(summary?.rows?.length || summary?.entities?.length),
       fallback: normalizeEtfFallback,
       render: renderEtfTracking,
-      emptyReason: 'ETF Tracking payload did not contain usable ETF rows.',
+      emptyReason: 'ETF Tracking summary/details did not contain usable ETF rows.',
     },
     valuation: {
       sourceUrls: {
-        valuation: 'https://sonchanggi.github.io/valuation/data/index.json',
+        summary: 'https://sonchanggi.github.io/valuation/data/summary.json',
       },
-      primarySourceKey: 'valuation',
-      contracts: { valuation: { versionField: 'schemaVersion', expectedVersion: 1, requiredKeys: ['tickers', 'modelPolicy', 'methodologyReferences'] } },
-      parse: (sources) => parseValuation(sources.valuation),
+      primarySourceKey: 'summary',
+      contracts: { summary: SUMMARY_CONTRACT },
+      parse: (sources) => parseValuation(sources.summary),
       hasUsableData: (summary) => Boolean(summary?.rows?.length),
       fallback: normalizeValuationFallback,
       render: renderValuation,
-      emptyReason: 'Valuation payload did not contain usable ticker rows.',
+      emptyReason: 'Valuation summary did not contain usable ticker rows.',
     },
   };
 
@@ -432,6 +442,9 @@
       for (const key of asArray(contract.requiredKeys)) {
         if (!(key in payload)) return `${sourceKey} contract missing required key: ${key}.`;
       }
+      if (payload.contract && payload.contract !== 'quant-research-summary') {
+        return `${sourceKey} contract expected quant-research-summary, received ${payload.contract}.`;
+      }
     }
     return null;
   }
@@ -457,8 +470,10 @@
     try {
       const response = await fetch(url, { signal: controller.signal, cache: 'no-store' });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const bytes = finiteOrNull(response.headers.get('content-length'));
-      return { ok: true, data: await response.json(), url, bytes };
+      const text = await response.text();
+      const headerBytes = finiteOrNull(response.headers.get('content-length'));
+      const bytes = headerBytes ?? (typeof TextEncoder === 'undefined' ? text.length : new TextEncoder().encode(text).length);
+      return { ok: true, data: JSON.parse(text), url, bytes };
     } catch (error) {
       return { ok: false, error: error instanceof Error ? error.message : String(error), url };
     } finally {
@@ -466,7 +481,86 @@
     }
   }
 
+  function isResearchSummary(payload, projectId = '') {
+    return isRecord(payload)
+      && payload.contract === 'quant-research-summary'
+      && (!projectId || payload.projectId === projectId);
+  }
+
+  function summaryMeta(payload) {
+    if (!isResearchSummary(payload)) return {};
+    return {
+      contract: payload.contract,
+      projectId: payload.projectId,
+      projectName: stringOr(payload.projectName, ''),
+      generatedAt: stringOr(payload.generatedAt, ''),
+      dataAsOf: stringOr(payload.dataAsOf, ''),
+      statusState: stringOr(payload.status?.state, ''),
+      statusLabel: stringOr(payload.status?.label, ''),
+      cadence: stringOr(payload.status?.cadence, ''),
+      expectedFreshnessDays: finiteOrNull(payload.status?.expectedFreshnessDays),
+      degradedReasons: asArray(payload.status?.degradedReasons).map(String).filter(Boolean),
+      limitations: asArray(payload.limitations).map(String).filter(Boolean),
+      highlights: asRecords(payload.highlights),
+      coverage: isRecord(payload.coverage) ? payload.coverage : {},
+      automation: isRecord(payload.automation) ? payload.automation : {},
+      sources: asRecords(payload.sources),
+      payload: isRecord(payload.payload) ? payload.payload : {},
+      detailUrl: stringOr(payload.detailUrl, ''),
+      detailDataUrl: stringOr(payload.detailDataUrl, ''),
+    };
+  }
+
+  function summaryEntities(payload) {
+    return asRecords(payload?.primaryEntities).map((entity) => ({
+      symbol: stringOr(entity.symbol, ''),
+      name: stringOr(entity.name, entity.symbol, ''),
+      label: stringOr(entity.label, entity.symbol, entity.name, ''),
+      sector: stringOr(entity.sector, ''),
+      sectorLabel: stringOr(entity.sectorLabel, entity.sector, ''),
+      themes: asArray(entity.themes).map(String).filter(Boolean),
+      metrics: isRecord(entity.metrics) ? entity.metrics : {},
+      signals: asArray(entity.signals).map(String).filter(Boolean),
+      warnings: asArray(entity.warnings).map(String).filter(Boolean),
+      detailPath: stringOr(entity.detailPath, ''),
+    }));
+  }
+
+  function highlightValue(meta, labelNeedle) {
+    const lowerNeedle = String(labelNeedle || '').toLowerCase();
+    const found = asRecords(meta.highlights).find((item) => String(item.label || '').toLowerCase().includes(lowerNeedle));
+    return found?.value;
+  }
+
+  function firstLimitation(meta) {
+    return asArray(meta.limitations).find(Boolean) || '원본 프로젝트의 방법론과 한계를 함께 확인하세요.';
+  }
+
   function parseMomentum(payload) {
+    if (isResearchSummary(payload, 'momentum')) {
+      const meta = summaryMeta(payload);
+      const rows = summaryEntities(payload)
+        .sort((a, b) => numberOr(a.metrics.rank, 9999) - numberOr(b.metrics.rank, 9999))
+        .map((entity, index) => ({
+          rank: numberOr(entity.metrics.rank, index + 1),
+          symbol: stringOr(entity.symbol, entity.name, '-'),
+          signal: finiteOrNull(entity.metrics.signal ?? entity.metrics.score),
+          displayWeight: finiteOrNull(entity.metrics.displayWeight),
+          finalWeight: finiteOrNull(entity.metrics.finalWeight),
+          themes: entity.themes,
+          warnings: entity.warnings,
+        }));
+      return {
+        factor: stringOr(highlightValue(meta, 'factor'), meta.coverage?.selectedFactor, FALLBACK_SNAPSHOT.momentum.factor),
+        generatedAt: meta.generatedAt,
+        dataAsOf: meta.dataAsOf,
+        outputLabel: stringOr(highlightValue(meta, 'output'), meta.statusLabel, 'Research signal'),
+        status: stringOr(meta.statusLabel, '공통 summary contract 표시 중'),
+        rows: rows.slice(0, 5),
+        entities: summaryEntities(payload),
+        meta,
+      };
+    }
     const runs = Array.isArray(payload?.runs) ? payload.runs : [];
     const latestIndex = Number.isInteger(payload?.latest_run_index) ? payload.latest_run_index : runs.length - 1;
     const run = runs[latestIndex] || runs.at(-1) || payload || {};
@@ -482,6 +576,7 @@
       outputLabel: stringOr(summary.recommendation_output_label, summary.recommendation_status, 'Research signal'),
       status: stringOr(summary.recommendation_output_label, '라이브 공개 JSON 표시 중'),
       rows: rows.slice(0, 5),
+      meta: {},
     };
   }
 
@@ -519,7 +614,9 @@
     return leaders.find((row) => row.date === latestDate) || leaders.at(-1) || null;
   }
 
-  function parseDram(pricesPayload, seriesPayload, statusPayload) {
+  function parseDram(pricesPayload, seriesPayload, statusPayload, summaryPayload) {
+    const meta = isResearchSummary(summaryPayload, 'dram') ? summaryMeta(summaryPayload) : {};
+    const entities = summaryEntities(summaryPayload);
     const observations = asRecords(pricesPayload?.observations);
     const representativeNames = new Set(
       asRecords(seriesPayload?.series)
@@ -555,8 +652,10 @@
     return {
       generatedAt: stringOr(pricesPayload?.generated_at, statusPayload?.generated_at, ''),
       observationCount: observations.length || finiteOrNull(statusPayload?.observation_count),
-      status: '라이브 공개 JSON 표시 중',
+      status: stringOr(meta.statusLabel, '라이브 공개 JSON 표시 중'),
       series: selected,
+      entities,
+      meta,
     };
   }
 
@@ -570,6 +669,31 @@
   }
 
   function parseBestFactor(payload) {
+    if (isResearchSummary(payload, 'best')) {
+      const meta = summaryMeta(payload);
+      const entities = summaryEntities(payload);
+      const rows = entities
+        .sort((a, b) => numberOr(a.metrics.rank, 9999) - numberOr(b.metrics.rank, 9999))
+        .map((entity, index) => ({
+          rank: numberOr(entity.metrics.rank, index + 1),
+          ticker: stringOr(entity.symbol, entity.name, '-'),
+          score: finiteOrNull(entity.metrics.score),
+          weight: finiteOrNull(entity.metrics.weight),
+          date: stringOr(entity.metrics.rebalanceDate, meta.dataAsOf, ''),
+          themes: entity.themes,
+          warnings: entity.warnings,
+        }));
+      return {
+        factor: stringOr(highlightValue(meta, 'factor'), FALLBACK_SNAPSHOT.best.factor),
+        generatedAt: meta.generatedAt,
+        dataEndDate: meta.dataAsOf,
+        compositeScore: finiteOrNull(highlightValue(meta, 'composite')),
+        status: stringOr(meta.statusLabel, '공통 summary contract 표시 중'),
+        rows: rows.slice(0, 5),
+        entities,
+        meta,
+      };
+    }
     const summary = isRecord(payload?.summary) ? payload.summary : {};
     const bestRanking = asRecords(payload?.rankings).slice().sort((a, b) => numberOr(a.rank, 9999) - numberOr(b.rank, 9999))[0] || {};
     const factor = stringOr(summary.best_factor, bestRanking.factor, FALLBACK_SNAPSHOT.best.factor);
@@ -592,11 +716,14 @@
       compositeScore: finiteOrNull(summary.best_composite_score ?? bestRanking.composite_score),
       status: stringOr(summary.static_data_warning, '라이브 공개 JSON 표시 중'),
       rows: rows.slice(0, 5),
+      meta: {},
     };
   }
 
 
-  function parseEtfTracking(payload) {
+  function parseEtfTracking(payload, summaryPayload) {
+    const meta = isResearchSummary(summaryPayload, 'etf') ? summaryMeta(summaryPayload) : {};
+    const entities = summaryEntities(summaryPayload);
     const rows = asRecords(payload?.etfs).map((etf) => {
       const history = asRecords(etf.history).map(normalizeEtfSnapshot).filter((snapshot) => snapshot.date).sort((a, b) => a.date.localeCompare(b.date));
       const latest = normalizeEtfSnapshot(etf.latest) || history.at(-1) || {};
@@ -629,13 +756,94 @@
     }).filter((row) => row.name && row.date);
 
     return {
-      generatedAt: stringOr(payload?.generatedAt, ''),
+      generatedAt: stringOr(payload?.generatedAt, meta.generatedAt, ''),
       status: stringOr(payload?.disclaimer, '라이브 공개 JSON 표시 중'),
-      rows,
+      rows: rows.length ? rows : etfRowsFromSummaryEntities(entities, meta),
+      entities,
+      meta,
     };
   }
 
+  function etfRowsFromSummaryEntities(entities, meta = {}) {
+    const byEtf = new Map();
+    asArray(entities).forEach((entity) => {
+      const etfName = stringOr(entity.metrics?.etf, 'ETF');
+      if (!byEtf.has(etfName)) {
+        byEtf.set(etfName, {
+          name: etfName,
+          fullName: etfName,
+          code: '',
+          date: stringOr(entity.metrics?.date, meta.dataAsOf, ''),
+          top10: [],
+          signalCount: finiteOrNull(meta.coverage?.signalCount) || 0,
+          entryExitCount: 0,
+          sourceStatus: meta.statusState || 'summary',
+          returnCoverage: finiteOrNull(entity.metrics?.returnCoverage),
+        });
+      }
+      const row = byEtf.get(etfName);
+      row.top10.push({
+        rank: numberOr(entity.metrics?.rank, row.top10.length + 1),
+        ticker: entity.symbol,
+        codeRaw: entity.symbol,
+        name: entity.name,
+        weight: finiteOrNull(entity.metrics?.weight),
+      });
+    });
+    return [...byEtf.values()].map((row) => {
+      const top = row.top10[0] || {};
+      return {
+        ...row,
+        topName: stringOr(top.name, '-'),
+        topTicker: stringOr(top.ticker, top.codeRaw, ''),
+        topWeight: finiteOrNull(top.weight),
+        top10Weight: row.top10.reduce((sum, holding) => sum + numberOr(holding.weight, 0), 0),
+        chartSeries: [],
+      };
+    });
+  }
+
   function parseValuation(payload) {
+    if (isResearchSummary(payload, 'valuation')) {
+      const meta = summaryMeta(payload);
+      const rows = summaryEntities(payload)
+        .map((entity) => {
+          const price = finiteOrNull(entity.metrics.price);
+          const dcfPerShare = finiteOrNull(entity.metrics.dcfPerShare);
+          const dcfGap = price && dcfPerShare !== null ? (dcfPerShare / price) - 1 : null;
+          return {
+            ticker: stringOr(entity.symbol, ''),
+            name: stringOr(entity.name, ''),
+            sectorLabel: stringOr(entity.sectorLabel, entity.sector, '분류 없음'),
+            themeTags: entity.themes.slice(0, 4),
+            price,
+            currency: 'USD',
+            priceAsOf: stringOr(entity.metrics.priceAsOf, ''),
+            dcfPerShare,
+            dcfGap,
+            qualityStatus: stringOr(entity.metrics.qualityStatus, '확인 필요'),
+            companyFile: stringOr(entity.detailPath, ''),
+            warnings: entity.warnings,
+          };
+        })
+        .filter((row) => row.ticker)
+        .sort((a, b) => numberOr(b.dcfGap, -999) - numberOr(a.dcfGap, -999));
+      const sectors = asArray(meta.coverage?.sectors).length
+        ? asArray(meta.coverage.sectors).map(String)
+        : [...new Set(rows.map((row) => row.sectorLabel).filter(Boolean))];
+      return {
+        generatedAt: meta.generatedAt,
+        status: firstLimitation(meta),
+        tickerCount: finiteOrNull(meta.coverage?.entityCount) || rows.length,
+        sectors,
+        methodologyCount: finiteOrNull(highlightValue(meta, '방법론')) || 0,
+        contractVersion: stringOr(payload.schemaVersion, ''),
+        rows: rows.slice(0, 5),
+        allRows: rows,
+        entities: summaryEntities(payload),
+        meta,
+      };
+    }
     const rows = asRecords(payload?.tickers)
       .map((row) => {
         const price = finiteOrNull(row.price);
@@ -668,6 +876,7 @@
       contractVersion: stringOr(payload?.schemaVersion, ''),
       rows: rows.slice(0, 5),
       allRows: rows,
+      meta: {},
     };
   }
 
@@ -1121,25 +1330,30 @@
   function briefingItemForRecord(record) {
     const summary = record.summary || {};
     if (record.project.id === 'momentum') {
+      const limit = firstLimitation(summary.meta || {});
       return {
         kicker: 'Momentum',
         title: `${summary.factor || '-'} · ${formatMaybeDate(summary.dataAsOf)}`,
-        detail: `${summary.outputLabel || 'Research signal'} — 신호는 매매 지시가 아니라 팩터 점검 출발점입니다.`,
+        detail: `${summary.outputLabel || 'Research signal'} — ${limit}`,
+        tone: summary.meta?.statusState === 'ok' ? '' : 'warning',
       };
     }
     if (record.project.id === 'dram') {
       const latest = latestSeriesPoint(summary.series);
+      const limit = firstLimitation(summary.meta || {});
       return {
         kicker: 'DRAM',
         title: latest ? `${latest.name} ${formatNumber(latest.value)} USD` : '대표 가격 확인 필요',
-        detail: `관측치 ${formatInteger(summary.observationCount)}개 · 업황 민감 종목을 볼 때 가격 방향과 데이터 원천을 함께 확인합니다.`,
+        detail: `관측치 ${formatInteger(summary.observationCount)}개 · ${limit}`,
+        tone: summary.meta?.statusState === 'ok' ? '' : 'warning',
       };
     }
     if (record.project.id === 'best') {
+      const limit = firstLimitation(summary.meta || {});
       return {
         kicker: 'Best Factor',
         title: `${summary.factor || '-'} · 점수 ${formatNumber(summary.compositeScore)}`,
-        detail: `데이터 기준일 ${formatMaybeDate(summary.dataEndDate)} · 과거 검증 성과와 현재 적용 가능성은 분리해서 읽습니다.`,
+        detail: `데이터 기준일 ${formatMaybeDate(summary.dataEndDate)} · ${limit}`,
       };
     }
     if (record.project.id === 'etf') {
@@ -1148,14 +1362,14 @@
       return {
         kicker: 'ETF',
         title: `${summary.rows?.length || 0}개 ETF · ${signalTotal}개 신호`,
-        detail: `최근 기준일 ${formatMaybeDate(latestDate)} · 테마 ETF가 실제로 어떤 종목을 담는지 확인합니다.`,
+        detail: `최근 기준일 ${formatMaybeDate(latestDate)} · ${firstLimitation(summary.meta || {})}`,
       };
     }
     if (record.project.id === 'valuation') {
       return {
         kicker: 'Valuation',
         title: `${formatInteger(summary.tickerCount)}개 기업 · ${asArray(summary.sectors).slice(0, 2).join('/') || '다중 섹터'}`,
-        detail: 'DCF와 PER/PBR은 평균내지 않고, 가정의 현실성과 비교군 적합성을 사용자가 검토합니다.',
+        detail: firstLimitation(summary.meta || {}),
       };
     }
     return null;
@@ -1165,16 +1379,53 @@
     const target = $('#data-health');
     if (!target) return;
     const rows = records.map((record) => `
-      <article class="health-item ${record.mode === 'live' ? 'ok' : 'warn'}">
+      <article class="health-item ${healthTone(record)}">
         <div>
           <strong>${escapeHtml(record.project.shortName)}</strong>
-          <span>${escapeHtml(record.mode === 'live' ? 'live' : 'fallback')}</span>
+          <span>${escapeHtml(healthLabel(record))}</span>
         </div>
-        <p>${escapeHtml(formatFreshness(record.generatedAt))}</p>
-        <small>${escapeHtml(`${formatBytes(record.payloadBytes)} · ${record.sourceCount}개 JSON${record.error ? ` · ${record.error}` : ''}`)}</small>
+        <p>${escapeHtml(formatFreshness(record.generatedAt))}${record.summary?.meta?.dataAsOf ? ` · 기준일 ${escapeHtml(formatMaybeDate(record.summary.meta.dataAsOf))}` : ''}</p>
+        <small>${escapeHtml(`${formatBytes(record.payloadBytes)} · ${record.sourceCount}개 JSON · ${record.summary?.meta?.cadence || 'cadence 확인 필요'}${record.error ? ` · ${record.error}` : ''}`)}</small>
+        ${safeAutomationUrl(record.summary?.meta?.automation?.workflowUrl) ? `<a class="health-link" href="${escapeAttribute(safeAutomationUrl(record.summary.meta.automation.workflowUrl))}" rel="noopener noreferrer">자동화/수동 실행</a>` : ''}
       </article>
     `).join('');
     target.innerHTML = rows || '<div class="skeleton-line">데이터 상태를 표시할 수 없습니다.</div>';
+  }
+
+  function healthTone(record) {
+    if (record.mode !== 'live') return 'warn';
+    if (isRecordStale(record)) return 'warn';
+    if (['degraded', 'stale'].includes(record.summary?.meta?.statusState)) return 'warn';
+    return 'ok';
+  }
+
+  function healthLabel(record) {
+    const state = record.summary?.meta?.statusState;
+    if (record.mode !== 'live') return 'fallback';
+    if (isRecordStale(record)) return 'stale';
+    if (state) return state;
+    return 'live';
+  }
+
+  function isRecordStale(record) {
+    const expectedDays = finiteOrNull(record.summary?.meta?.expectedFreshnessDays);
+    const generatedAt = Date.parse(record.generatedAt || '');
+    if (expectedDays === null || !Number.isFinite(generatedAt)) return false;
+    const days = (Date.now() - generatedAt) / (24 * 60 * 60 * 1000);
+    return days > expectedDays;
+  }
+
+  function safeAutomationUrl(value) {
+    if (!value) return '';
+    try {
+      const url = new URL(String(value), 'https://sonchanggi.github.io/');
+      const host = url.hostname.toLowerCase();
+      const githubSubdomain = host.endsWith('.github.com');
+      if (url.protocol !== 'https:' || (!SAFE_AUTOMATION_HOSTS.has(host) && !githubSubdomain)) return '';
+      return url.href;
+    } catch {
+      return '';
+    }
   }
 
   function bindWatchlist(records = []) {
@@ -1220,11 +1471,12 @@
       target.innerHTML = `<p class="muted">${escapeHtml(tokens.join(', '))}와 직접 연결되는 공개 요약 신호가 없습니다. 원본 프로젝트에서 더 넓은 검색을 확인하세요.</p>`;
       return;
     }
-    target.innerHTML = matches.slice(0, 18).map((match) => `
-      <article class="watch-match">
+    target.innerHTML = matches.slice(0, 24).map((match) => `
+      <article class="watch-match ${match.tone || ''}">
         <span>${escapeHtml(match.project)}</span>
         <strong>${escapeHtml(match.label)}</strong>
         <p>${escapeHtml(match.detail)}</p>
+        ${match.limit ? `<small>${escapeHtml(match.limit)}</small>` : ''}
       </article>
     `).join('');
   }
@@ -1233,6 +1485,30 @@
     const matches = [];
     for (const record of records) {
       const project = record.project.shortName;
+      const meta = record.summary?.meta || {};
+      const genericEntities = asRecords(record.summary?.entities).length ? asRecords(record.summary.entities) : [];
+      genericEntities.forEach((entity) => {
+        const haystack = [
+          entity.symbol,
+          entity.name,
+          entity.label,
+          entity.sectorLabel,
+          entity.sector,
+          ...asArray(entity.themes),
+          ...asArray(entity.signals),
+        ].join(' ').toUpperCase();
+        if (haystack.includes(token)) {
+          matches.push({
+            project,
+            matchKey: summaryEntityIdentity(record.project.id, entity),
+            label: entity.label || entity.symbol || entity.name,
+            detail: entitySummaryLine(record.project.id, entity),
+            limit: entity.warnings?.[0] || firstLimitation(meta),
+            tone: meta.statusState === 'ok' ? '' : 'warning',
+          });
+        }
+      });
+      if (genericEntities.length) continue;
       if (record.project.id === 'valuation') {
         asRecords(record.summary.allRows || record.summary.rows).forEach((row) => {
           const haystack = [row.ticker, row.name, row.sectorLabel, ...asArray(row.themeTags)].join(' ').toUpperCase();
@@ -1241,19 +1517,20 @@
               project,
               label: `${row.ticker} · ${row.sectorLabel}`,
               detail: `현재가 ${formatNumber(row.price)} ${row.currency || 'USD'}, DCF ${formatNumber(row.dcfPerShare)}, 품질 ${row.qualityStatus}`,
+              limit: firstLimitation(meta),
             });
           }
         });
       } else if (record.project.id === 'momentum') {
         asRecords(record.summary.rows).forEach((row) => {
           if (String(row.symbol || '').toUpperCase().includes(token)) {
-            matches.push({ project, label: `${row.symbol} · rank ${row.rank}`, detail: `모멘텀 신호 ${formatNumber(row.signal)}, 표시용 비중 ${formatPercent(row.displayWeight)}` });
+            matches.push({ project, matchKey: matchIdentity(record.project.id, row.symbol), label: `${row.symbol} · rank ${row.rank}`, detail: `모멘텀 신호 ${formatNumber(row.signal)}, 표시용 비중 ${formatPercent(row.displayWeight)}`, limit: firstLimitation(meta), tone: meta.statusState === 'ok' ? '' : 'warning' });
           }
         });
       } else if (record.project.id === 'best') {
         asRecords(record.summary.rows).forEach((row) => {
           if (String(row.ticker || '').toUpperCase().includes(token)) {
-            matches.push({ project, label: `${row.ticker} · rank ${row.rank}`, detail: `팩터 ${record.summary.factor}, 비중 ${formatPercent(row.weight)}, 점수 ${formatNumber(row.score)}` });
+            matches.push({ project, matchKey: matchIdentity(record.project.id, row.ticker), label: `${row.ticker} · rank ${row.rank}`, detail: `팩터 ${record.summary.factor}, 비중 ${formatPercent(row.weight)}, 점수 ${formatNumber(row.score)}`, limit: firstLimitation(meta) });
           }
         });
       } else if (record.project.id === 'etf') {
@@ -1262,16 +1539,44 @@
           asRecords(etf.top10).forEach((holding) => {
             const holdingText = [holding.ticker, holding.codeRaw, holding.name].join(' ').toUpperCase();
             if (etfText.includes(token) || holdingText.includes(token)) {
-              matches.push({ project, label: `${etf.name} · ${holding.ticker || holding.codeRaw || holding.name}`, detail: `TOP10 보유 비중 ${formatPercent(holding.weight)} · 기준일 ${formatMaybeDate(etf.date)}` });
+              matches.push({ project, matchKey: matchIdentity(record.project.id, holding.ticker || holding.codeRaw || holding.name), label: `${etf.name} · ${holding.ticker || holding.codeRaw || holding.name}`, detail: `TOP10 보유 비중 ${formatPercent(holding.weight)} · 기준일 ${formatMaybeDate(etf.date)}`, limit: firstLimitation(meta) });
             }
           });
         });
       } else if (record.project.id === 'dram' && ['DRAM', 'D램', 'MEMORY', '반도체'].includes(token)) {
         const latest = latestSeriesPoint(record.summary.series);
-        matches.push({ project, label: 'DRAM 가격', detail: latest ? `${latest.name} ${formatNumber(latest.value)} USD · 메모리 업황 확인용` : '대표 가격 확인 필요' });
+        matches.push({ project, matchKey: matchIdentity(record.project.id, 'DRAM'), label: 'DRAM 가격', detail: latest ? `${latest.name} ${formatNumber(latest.value)} USD · 메모리 업황 확인용` : '대표 가격 확인 필요', limit: firstLimitation(meta) });
       }
     }
-    return matches;
+    return dedupeMatches(matches);
+  }
+
+  function entitySummaryLine(projectId, entity) {
+    const metrics = entity.metrics || {};
+    const render = ENTITY_METRIC_RENDERERS[projectId];
+    return render ? render(metrics) : asArray(entity.signals).join(' · ') || '공통 summary contract entity';
+  }
+
+  function dedupeMatches(matches) {
+    const seen = new Set();
+    return matches.filter((match) => {
+      const key = match.matchKey || `${match.project}|${match.label}|${match.detail}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
+  function summaryEntityIdentity(projectId, entity) {
+    const metrics = entity.metrics || {};
+    if (entity.entityKey || entity.id) return matchIdentity(projectId, entity.entityKey || entity.id);
+    if (projectId === 'etf') return matchIdentity(projectId, [entity.symbol || entity.label || entity.name, metrics.etf || entity.label].join('|'));
+    return matchIdentity(projectId, entity.symbol || entity.label || entity.name);
+  }
+
+  function matchIdentity(projectId, value) {
+    const normalized = String(value || '').trim().toUpperCase();
+    return normalized ? `${projectId}|${normalized}` : '';
   }
 
   function formatBytes(value) {
@@ -1402,6 +1707,12 @@
       loadValuationPanel,
       parsePanelSafely,
       validateAdapterContract,
+      isResearchSummary,
+      summaryMeta,
+      summaryEntities,
+      entitySummaryLine,
+      isRecordStale,
+      safeAutomationUrl,
       renderProjectNavigation,
       renderDashboardPanels,
       PROJECTS,
