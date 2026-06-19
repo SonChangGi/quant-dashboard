@@ -145,6 +145,7 @@ h3 { font-size: clamp(1.25rem, 2.3vw, 2rem); }
 .centered { text-align: center; }
 .centered p:not(.eyebrow) { margin-left: auto; margin-right: auto; }
 
+.cockpit-grid,
 .project-grid,
 .feature-grid {
   display: grid;
@@ -191,6 +192,126 @@ h3 { font-size: clamp(1.25rem, 2.3vw, 2rem); }
 .panel {
   padding: clamp(20px, 3vw, 32px);
   overflow: hidden;
+}
+
+.panel-header.compact {
+  margin-bottom: 14px;
+}
+
+.briefing-list,
+.health-list,
+.watchlist-results {
+  display: grid;
+  gap: 10px;
+}
+
+.briefing-item,
+.health-item,
+.watch-match {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: #f8fbff;
+  padding: 14px;
+}
+
+.briefing-item span,
+.watch-match span,
+.health-item span {
+  display: inline-flex;
+  margin-bottom: 6px;
+  color: var(--primary);
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.briefing-item strong,
+.watch-match strong,
+.health-item strong {
+  display: block;
+  line-height: 1.35;
+}
+
+.briefing-item p,
+.watch-match p,
+.health-item p,
+.health-item small,
+.muted {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.briefing-item p,
+.watch-match p,
+.health-item p {
+  margin: 6px 0 0;
+}
+
+.health-item {
+  display: grid;
+  gap: 3px;
+}
+
+.health-item > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.health-item.ok {
+  border-color: rgba(15, 118, 110, 0.24);
+  background: #f0fdfa;
+}
+
+.health-item.warn {
+  border-color: rgba(180, 83, 9, 0.28);
+  background: #fff7ed;
+}
+
+.watchlist-form {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.watchlist-form label {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.watchlist-row {
+  display: flex;
+  gap: 8px;
+}
+
+.watchlist-row input {
+  min-width: 0;
+  flex: 1;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 11px 14px;
+  color: var(--ink);
+  font: inherit;
+}
+
+.watchlist-row button,
+.watchlist-results button {
+  border: 1px solid rgba(36, 87, 214, 0.28);
+  border-radius: 999px;
+  background: var(--primary);
+  color: white;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 900;
+  padding: 10px 14px;
+}
+
+.watchlist-results button {
+  margin: 0 4px 6px 0;
+  background: var(--surface-soft);
+  color: var(--primary-dark);
 }
 
 .panel-header {
@@ -517,6 +638,7 @@ tr:last-child td { border-bottom: 0; }
 
 @media (max-width: 900px) {
   .hero-grid,
+  .cockpit-grid,
   .project-grid,
   .feature-grid,
   .metric-row,

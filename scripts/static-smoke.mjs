@@ -32,11 +32,13 @@ try {
     fetch(`http://127.0.0.1:${port}/assets/app.js`).then((response) => response.text()),
     fetch(`http://127.0.0.1:${port}/assets/styles.css`).then((response) => response.text()),
   ]);
-  if (!html.includes('투자 리서치 프로젝트 통합 대시보드')) throw new Error('index hero missing');
+  if (!html.includes('투자 리서치 허브')) throw new Error('index hero missing');
   if (!app.includes('parseEtfTracking')) throw new Error('ETF Tracking parser missing');
+  if (!app.includes('parseValuation')) throw new Error('Valuation parser missing');
   if (!app.includes('renderEtfDetailCards') || !app.includes('renderEtfMiniChart')) throw new Error('ETF Tracking detail card/chart renderer missing');
   if (!html.includes('id="top-nav"')) throw new Error('dynamic top navigation mount missing');
   if (!html.includes('id="summary-grid"')) throw new Error('dynamic dashboard mount missing');
+  if (!html.includes('id="research-briefing"') || !html.includes('id="data-health"')) throw new Error('research cockpit mounts missing');
   if (!app.includes('PANEL_ADAPTERS')) throw new Error('panel adapter manifest missing');
   if (!app.includes('renderDashboardPanels')) throw new Error('manifest-driven panel renderer missing');
   if (!css.includes('.panel')) throw new Error('panel CSS missing');

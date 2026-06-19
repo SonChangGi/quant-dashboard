@@ -79,6 +79,26 @@
         },
       },
     },
+    {
+      id: 'valuation',
+      shortName: 'Valuation',
+      title: '기업 가치평가 Lab',
+      description: '티커별 DCF 절대가치와 PER/PBR 상대가치의 근거, 진단, 한계를 함께 확인하는 가치평가 워크스페이스입니다.',
+      url: 'https://sonchanggi.github.io/valuation/',
+      accent: 'VAL',
+      panelAdapter: 'valuation',
+      panel: {
+        eyebrow: 'Valuation',
+        title: '기업 가치평가 · 근거 점검 Top 5',
+        contentType: 'table',
+        metricLoading: '가치평가 데이터를 불러오는 중...',
+        table: {
+          caption: 'DCF 기준 주당가치, 현재가 괴리, 데이터 품질을 함께 보는 점검 목록',
+          columns: ['티커', '섹터/테마', '현재가', 'DCF 기준', '근거/한계'],
+          loadingText: '가치평가 데이터를 불러오는 중...',
+        },
+      },
+    },
   ];
 
   const PANEL_ADAPTERS = {
@@ -87,6 +107,7 @@
         momentum: 'https://sonchanggi.github.io/momentum-factor-lab/data/dashboard.json',
       },
       primarySourceKey: 'momentum',
+      contracts: { momentum: { versionField: 'schema_version', expectedVersion: 1, requiredKeys: ['runs', 'latest_run_index'] } },
       parse: (sources) => parseMomentum(sources.momentum),
       hasUsableData: (summary) => Boolean(summary?.rows?.length),
       fallback: normalizeMomentumFallback,
@@ -100,6 +121,11 @@
         dramStatus: 'https://sonchanggi.github.io/dram-price/data/status.json',
       },
       primarySourceKey: 'dramPrices',
+      contracts: {
+        dramPrices: { versionField: 'schema_version', expectedVersion: 1, requiredKeys: ['observations'] },
+        dramSeries: { versionField: 'schema_version', expectedVersion: 1, requiredKeys: ['series'] },
+        dramStatus: { versionField: 'schema_version', expectedVersion: 1, requiredKeys: ['observation_count'] },
+      },
       parse: (sources) => parseDram(sources.dramPrices, sources.dramSeries, sources.dramStatus),
       hasUsableData: (summary) => Boolean(summary?.series?.length),
       fallback: normalizeDramFallback,
@@ -111,6 +137,7 @@
         best: 'https://sonchanggi.github.io/best-factor/data/latest-results.json',
       },
       primarySourceKey: 'best',
+      contracts: { best: { versionField: 'schema_version', expectedVersion: 1, requiredKeys: ['rankings', 'latest_holdings', 'summary'] } },
       parse: (sources) => parseBestFactor(sources.best),
       hasUsableData: (summary) => Boolean(summary?.rows?.length),
       fallback: normalizeBestFallback,
@@ -122,11 +149,24 @@
         etf: 'https://sonchanggi.github.io/etf-tracking/data/dashboard.json',
       },
       primarySourceKey: 'etf',
+      contracts: { etf: { versionField: 'schemaVersion', expectedVersion: '1.3.0', requiredKeys: ['etfs', 'signals'] } },
       parse: (sources) => parseEtfTracking(sources.etf),
       hasUsableData: (summary) => Boolean(summary?.rows?.length),
       fallback: normalizeEtfFallback,
       render: renderEtfTracking,
       emptyReason: 'ETF Tracking payload did not contain usable ETF rows.',
+    },
+    valuation: {
+      sourceUrls: {
+        valuation: 'https://sonchanggi.github.io/valuation/data/index.json',
+      },
+      primarySourceKey: 'valuation',
+      contracts: { valuation: { versionField: 'schemaVersion', expectedVersion: 1, requiredKeys: ['tickers', 'modelPolicy', 'methodologyReferences'] } },
+      parse: (sources) => parseValuation(sources.valuation),
+      hasUsableData: (summary) => Boolean(summary?.rows?.length),
+      fallback: normalizeValuationFallback,
+      render: renderValuation,
+      emptyReason: 'Valuation payload did not contain usable ticker rows.',
     },
   };
 
@@ -184,9 +224,24 @@
       status: '마지막 확인 스냅샷 표시 중',
       rows: [{"name":"TIME 나스닥100","fullName":"TIME 미국나스닥100액티브","code":"426030","date":"2026-06-17","topName":"Micron Technology Inc","topTicker":"MU","topWeight":0.0673,"signalCount":2,"entryExitCount":2,"sourceStatus":"live","returnCoverage":0.9762047590481904,"top10":[{"rank":1,"ticker":"MU","codeRaw":"MU US EQUITY","name":"Micron Technology Inc","weight":0.0673},{"rank":2,"ticker":"SNDK","codeRaw":"SNDK US EQUITY","name":"Sandisk Corp","weight":0.0666},{"rank":3,"ticker":"INTC","codeRaw":"INTC US EQUITY","name":"Intel Corp","weight":0.0554},{"rank":4,"ticker":"ARM","codeRaw":"ARM US EQUITY","name":"ARM Holdings PLC","weight":0.053200000000000004},{"rank":5,"ticker":"NVDA","codeRaw":"NVDA US EQUITY","name":"NVIDIA Corp","weight":0.0467},{"rank":6,"ticker":"MRVL","codeRaw":"MRVL US EQUITY","name":"Marvell Technology Inc","weight":0.04019999999999999},{"rank":7,"ticker":"AMD","codeRaw":"AMD US EQUITY","name":"Advanced Micro Devices Inc","weight":0.0346},{"rank":8,"ticker":"DELL","codeRaw":"DELL US EQUITY","name":"Dell Technologies Inc","weight":0.0315},{"rank":9,"ticker":"CRDO","codeRaw":"CRDO US EQUITY","name":"Credo Technology Group Holding Ltd","weight":0.0302},{"rank":10,"ticker":"","codeRaw":"SPCX US EQUITY","name":"Space Exploration Technologies Corp","weight":0.0302}],"top10Weight":0.45589999999999997,"chartSeries":[{"rank":1,"label":"MU","points":[{"date":"2026-04-01","value":0.026600000000000002},{"date":"2026-04-14","value":0.0276},{"date":"2026-04-27","value":0.026099999999999998},{"date":"2026-05-12","value":0.0507},{"date":"2026-05-26","value":0.0475},{"date":"2026-06-09","value":0.0501},{"date":"2026-06-17","value":0.0673}]},{"rank":2,"label":"SNDK","points":[{"date":"2026-04-01","value":0.06860000000000001},{"date":"2026-04-14","value":0.0816},{"date":"2026-04-27","value":0.0567},{"date":"2026-05-12","value":0.0862},{"date":"2026-05-26","value":0.0512},{"date":"2026-06-09","value":0.0375},{"date":"2026-06-17","value":0.0666}]},{"rank":3,"label":"INTC","points":[{"date":"2026-04-01","value":0.020099999999999996},{"date":"2026-04-14","value":0.028300000000000002},{"date":"2026-04-27","value":0.044199999999999996},{"date":"2026-05-12","value":0.07400000000000001},{"date":"2026-05-26","value":0.0594},{"date":"2026-06-09","value":0.0416},{"date":"2026-06-17","value":0.0554}]},{"rank":4,"label":"ARM","points":[{"date":"2026-04-01","value":0.0385},{"date":"2026-04-14","value":0.0333},{"date":"2026-04-27","value":0.050499999999999996},{"date":"2026-05-12","value":0.0437},{"date":"2026-05-26","value":0.044199999999999996},{"date":"2026-06-09","value":0.0528},{"date":"2026-06-17","value":0.053200000000000004}]},{"rank":5,"label":"NVDA","points":[{"date":"2026-04-01","value":0.051100000000000007},{"date":"2026-04-14","value":0.04650000000000001},{"date":"2026-04-27","value":0.0676},{"date":"2026-05-12","value":0.0554},{"date":"2026-05-26","value":0.0851},{"date":"2026-06-09","value":0.0742},{"date":"2026-06-17","value":0.0467}]}]},{"name":"TIME 글로벌AI","fullName":"TIME 글로벌AI인공지능액티브","code":"456600","date":"2026-06-17","topName":"Kioxia Holdings Corp","topTicker":"285A.T","topWeight":0.0852,"signalCount":2,"entryExitCount":2,"sourceStatus":"live","returnCoverage":0.9604039596040396,"top10":[{"rank":1,"ticker":"285A.T","codeRaw":"285A JP EQUITY","name":"Kioxia Holdings Corp","weight":0.0852},{"rank":2,"ticker":"INTC","codeRaw":"INTC US EQUITY","name":"Intel Corp","weight":0.0722},{"rank":3,"ticker":"AMD","codeRaw":"AMD US EQUITY","name":"Advanced Micro Devices Inc","weight":0.0678},{"rank":4,"ticker":"STX","codeRaw":"STX US EQUITY","name":"Seagate Technology Holdings PLC","weight":0.0621},{"rank":5,"ticker":"WDC","codeRaw":"WDC US EQUITY","name":"Western Digital Corp","weight":0.052199999999999996},{"rank":6,"ticker":"ARM","codeRaw":"ARM US EQUITY","name":"ARM Holdings PLC","weight":0.0412},{"rank":7,"ticker":"","codeRaw":"NQU6 INDEX","name":"NASDAQ 100 E-MINI INDEX SEPT 2026","weight":0.038900000000000004},{"rank":8,"ticker":"SNDK","codeRaw":"SNDK US EQUITY","name":"Sandisk Corp","weight":0.037599999999999995},{"rank":9,"ticker":"SNOW","codeRaw":"SNOW US EQUITY","name":"Snowflake Inc","weight":0.037200000000000004},{"rank":10,"ticker":"NVDA","codeRaw":"NVDA US EQUITY","name":"NVIDIA Corp","weight":0.0332}],"top10Weight":0.5276,"chartSeries":[{"rank":1,"label":"285A.T","points":[{"date":"2026-05-15","value":0.0197},{"date":"2026-05-21","value":0.0209},{"date":"2026-05-28","value":0.0621},{"date":"2026-06-04","value":0.06559999999999999},{"date":"2026-06-10","value":0.07339999999999999},{"date":"2026-06-16","value":0.0806},{"date":"2026-06-17","value":0.0852}]},{"rank":2,"label":"INTC","points":[{"date":"2026-04-01","value":0.024},{"date":"2026-04-14","value":0.0526},{"date":"2026-04-27","value":0.0555},{"date":"2026-05-12","value":0.07980000000000001},{"date":"2026-05-26","value":0.0796},{"date":"2026-06-09","value":0.0621},{"date":"2026-06-17","value":0.0722}]},{"rank":3,"label":"AMD","points":[{"date":"2026-04-01","value":0.0199},{"date":"2026-04-14","value":0.018799999999999997},{"date":"2026-04-27","value":0.018600000000000002},{"date":"2026-05-12","value":0.0375},{"date":"2026-05-26","value":0.0463},{"date":"2026-06-09","value":0.0644},{"date":"2026-06-17","value":0.0678}]},{"rank":4,"label":"STX","points":[{"date":"2026-04-01","value":0.0412},{"date":"2026-04-14","value":0.0434},{"date":"2026-04-27","value":0.0358},{"date":"2026-05-12","value":0.057},{"date":"2026-05-26","value":0.058600000000000006},{"date":"2026-06-09","value":0.056600000000000004},{"date":"2026-06-17","value":0.0621}]},{"rank":5,"label":"WDC","points":[{"date":"2026-04-01","value":0.0461},{"date":"2026-04-14","value":0.04769999999999999},{"date":"2026-04-27","value":0.0452},{"date":"2026-05-12","value":0.045899999999999996},{"date":"2026-05-26","value":0.0461},{"date":"2026-06-09","value":0.0454},{"date":"2026-06-17","value":0.052199999999999996}]}]},{"name":"KoAct 나스닥성장","fullName":"KoAct 미국나스닥성장기업액티브","code":"2ETFQ1","date":"2026-06-17","topName":"Space Exploration Technologies Corp","topTicker":"SPCX US Equity","topWeight":0.09630000000000001,"signalCount":0,"entryExitCount":0,"sourceStatus":"live","returnCoverage":1.0,"top10":[{"rank":1,"ticker":"","codeRaw":"SPCX US Equity","name":"Space Exploration Technologies Corp","weight":0.09630000000000001},{"rank":2,"ticker":"AMD","codeRaw":"AMD US Equity","name":"ADVANCED MICRO DEVICES","weight":0.0745},{"rank":3,"ticker":"ARM","codeRaw":"ARM US Equity","name":"ARM Holdings PLC","weight":0.07339999999999999},{"rank":4,"ticker":"SNDK","codeRaw":"SNDK US Equity","name":"Sandisk Corp/DE","weight":0.0594},{"rank":5,"ticker":"INTC","codeRaw":"INTC US Equity","name":"INTEL Corp","weight":0.0557},{"rank":6,"ticker":"NVDA","codeRaw":"NVDA US Equity","name":"NVIDIA Corp","weight":0.049100000000000005},{"rank":7,"ticker":"GOOGL","codeRaw":"GOOGL US Equity","name":"ALPHABET INC-CL A","weight":0.047},{"rank":8,"ticker":"BE","codeRaw":"BE US Equity","name":"BLOOM ENERGY CORPORATION","weight":0.042},{"rank":9,"ticker":"MU","codeRaw":"MU US Equity","name":"MICRON TECH","weight":0.0405},{"rank":10,"ticker":"AMZN","codeRaw":"AMZN US Equity","name":"Amazon.com Inc","weight":0.0371}],"top10Weight":0.575,"chartSeries":[{"rank":1,"label":"SPCX US Equity","points":[{"date":"2026-06-16","value":0.0858},{"date":"2026-06-17","value":0.09630000000000001}]},{"rank":2,"label":"AMD","points":[{"date":"2026-06-08","value":0.0711},{"date":"2026-06-10","value":0.0757},{"date":"2026-06-12","value":0.0781},{"date":"2026-06-16","value":0.0742},{"date":"2026-06-17","value":0.0745}]},{"rank":3,"label":"ARM","points":[{"date":"2026-06-08","value":0.0698},{"date":"2026-06-10","value":0.0699},{"date":"2026-06-12","value":0.0694},{"date":"2026-06-16","value":0.0722},{"date":"2026-06-17","value":0.07339999999999999}]},{"rank":4,"label":"SNDK","points":[{"date":"2026-06-08","value":0.0637},{"date":"2026-06-10","value":0.0501},{"date":"2026-06-12","value":0.056100000000000004},{"date":"2026-06-16","value":0.059500000000000004},{"date":"2026-06-17","value":0.0594}]},{"rank":5,"label":"INTC","points":[{"date":"2026-06-08","value":0.0537},{"date":"2026-06-10","value":0.0545},{"date":"2026-06-12","value":0.0591},{"date":"2026-06-16","value":0.0579},{"date":"2026-06-17","value":0.0557}]}]}],
     },
+    valuation: {
+      generatedAt: '2026-06-19T14:43:32Z',
+      status: '마지막 확인 스냅샷 표시 중',
+      tickerCount: 21,
+      sectors: ['기술', '금융', '헬스케어'],
+      methodologyCount: 0,
+      contractVersion: 'fallback',
+      rows: [
+        { ticker: 'AAPL', name: 'Apple Inc.', sectorLabel: '기술', themeTags: ['Consumer Tech', 'Services'], price: 298.01, dcfPerShare: 104.6, qualityStatus: '충분' },
+        { ticker: 'MSFT', name: 'Microsoft Corporation', sectorLabel: '기술', themeTags: ['Cloud', 'AI'], price: 379.4, dcfPerShare: 223.61, qualityStatus: '충분' },
+        { ticker: 'NVDA', name: 'NVIDIA Corp', sectorLabel: '기술', themeTags: ['AI', 'Semiconductors'], price: 210.69, dcfPerShare: 58.4, qualityStatus: '일부 누락' },
+      ],
+    },
   };
 
   const COLORS = ['#2457d6', '#0f766e', '#e11d48', '#f97316', '#7c3aed', '#0891b2'];
+  const PANEL_RECORDS = new Map();
+  let watchlistBound = false;
   const $ = (selector) => document.querySelector(selector);
 
   if (typeof document !== 'undefined') {
@@ -325,8 +380,18 @@
     return loadProjectPanel('etf');
   }
 
+  async function loadValuationPanel() {
+    return loadProjectPanel('valuation');
+  }
+
   async function loadDashboardPanels() {
-    return Promise.all(getPanelProjects().map((project) => loadProjectPanel(project)));
+    const records = (await Promise.all(getPanelProjects().map((project) => loadProjectPanel(project)))).filter(Boolean);
+    PANEL_RECORDS.clear();
+    records.forEach((record) => PANEL_RECORDS.set(record.project.id, record));
+    renderResearchBriefing(records);
+    renderDataHealth(records);
+    bindWatchlist(records);
+    return records;
   }
 
   async function loadProjectPanel(projectOrId) {
@@ -338,10 +403,37 @@
     const fetchResults = Object.fromEntries(entries);
     const dataSources = Object.fromEntries(entries.map(([sourceKey, result]) => [sourceKey, result.ok ? result.data : null]));
     const primaryResult = fetchResults[adapter.primarySourceKey] || { ok: false, error: 'Missing primary source.' };
-    const parseResult = primaryResult.ok ? parsePanelSafely(adapter, dataSources) : { ok: false, data: null, error: primaryResult.error };
+    const contractError = primaryResult.ok ? validateAdapterContract(adapter, dataSources) : null;
+    const parseResult = primaryResult.ok && !contractError ? parsePanelSafely(adapter, dataSources) : { ok: false, data: null, error: contractError || primaryResult.error };
     const hasUsableData = parseResult.ok && adapter.hasUsableData(parseResult.data);
     const loadState = resolveLoadState(primaryResult, hasUsableData, parseResult.error || adapter.emptyReason);
-    adapter.render(hasUsableData ? parseResult.data : adapter.fallback(), loadState.mode, loadState.error, project);
+    const summary = hasUsableData ? parseResult.data : adapter.fallback();
+    adapter.render(summary, loadState.mode, loadState.error, project);
+    return {
+      project,
+      adapterId: project.panelAdapter,
+      summary,
+      mode: loadState.mode,
+      error: loadState.error,
+      generatedAt: summary?.generatedAt || '',
+      payloadBytes: Object.values(fetchResults).reduce((sum, result) => sum + numberOr(result.bytes, 0), 0),
+      sourceCount: Object.keys(adapter.sourceUrls).length,
+    };
+  }
+
+  function validateAdapterContract(adapter, dataSources) {
+    for (const [sourceKey, contract] of Object.entries(adapter.contracts || {})) {
+      const payload = dataSources[sourceKey];
+      if (!isRecord(payload)) return `${sourceKey} contract payload is missing or invalid.`;
+      const version = payload[contract.versionField];
+      if (String(version) !== String(contract.expectedVersion)) {
+        return `${sourceKey} contract ${contract.versionField} expected ${contract.expectedVersion}, received ${version ?? 'missing'}.`;
+      }
+      for (const key of asArray(contract.requiredKeys)) {
+        if (!(key in payload)) return `${sourceKey} contract missing required key: ${key}.`;
+      }
+    }
+    return null;
   }
 
   function parsePanelSafely(adapter, dataSources) {
@@ -365,7 +457,8 @@
     try {
       const response = await fetch(url, { signal: controller.signal, cache: 'no-store' });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      return { ok: true, data: await response.json(), url };
+      const bytes = finiteOrNull(response.headers.get('content-length'));
+      return { ok: true, data: await response.json(), url, bytes };
     } catch (error) {
       return { ok: false, error: error instanceof Error ? error.message : String(error), url };
     } finally {
@@ -542,6 +635,42 @@
     };
   }
 
+  function parseValuation(payload) {
+    const rows = asRecords(payload?.tickers)
+      .map((row) => {
+        const price = finiteOrNull(row.price);
+        const dcfPerShare = finiteOrNull(row.dcfPerShare);
+        const dcfGap = price && dcfPerShare !== null ? (dcfPerShare / price) - 1 : null;
+        const themes = asArray(row.themeTags).map(String).filter(Boolean).slice(0, 3);
+        return {
+          ticker: stringOr(row.ticker, ''),
+          name: stringOr(row.name, ''),
+          sectorLabel: stringOr(row.sectorLabel, row.sector, '분류 없음'),
+          themeTags: themes,
+          price,
+          currency: stringOr(row.currency, 'USD'),
+          priceAsOf: stringOr(row.priceAsOf, ''),
+          dcfPerShare,
+          dcfGap,
+          qualityStatus: stringOr(row.qualityStatus, '확인 필요'),
+          companyFile: stringOr(row.companyFile, ''),
+        };
+      })
+      .filter((row) => row.ticker)
+      .sort((a, b) => numberOr(b.dcfGap, -999) - numberOr(a.dcfGap, -999));
+    const sectors = [...new Set(rows.map((row) => row.sectorLabel).filter(Boolean))];
+    return {
+      generatedAt: stringOr(payload?.generatedAt, ''),
+      status: stringOr(payload?.modelPolicy?.decisionOwner, '모델은 정답이 아니라 가정 정리 도구입니다. 최종 판단은 사용자가 수행합니다.'),
+      tickerCount: rows.length,
+      sectors,
+      methodologyCount: asArray(payload?.methodologyReferences).length,
+      contractVersion: stringOr(payload?.schemaVersion, ''),
+      rows: rows.slice(0, 5),
+      allRows: rows,
+    };
+  }
+
   function normalizeEtfSnapshot(snapshot) {
     if (!isRecord(snapshot)) return null;
     return {
@@ -656,6 +785,24 @@
       formatPercent(row.returnCoverage),
     ], 5);
     renderEtfDetailCards(panelSelector(project, 'details'), summary.rows);
+    setStatus(panelSelector(project, 'status'), buildStatusText(mode, summary.generatedAt, error, summary.status), mode);
+  }
+
+  function renderValuation(summary, mode, error, project) {
+    const calculableGapCount = asRecords(summary.allRows || summary.rows).filter((row) => finiteOrNull(row.dcfGap) !== null).length;
+    renderMetricCards(panelSelector(project, 'metrics'), [
+      ['분석 티커', `${formatInteger(summary.tickerCount || summary.rows.length)}개`],
+      ['섹터', `${asArray(summary.sectors).slice(0, 3).join(' · ') || '확인 필요'}`],
+      ['DCF 괴리 계산', `${formatInteger(calculableGapCount)}개`],
+      ['방법론 참조', `${formatInteger(summary.methodologyCount || 0)}개`],
+    ]);
+    renderRows(panelSelector(project, 'rows'), summary.rows, (row) => [
+      badge(row.ticker),
+      `${row.sectorLabel}${row.themeTags?.length ? ` · ${row.themeTags.join(', ')}` : ''}`,
+      `${formatNumber(row.price)} ${row.currency || 'USD'}`,
+      `${formatNumber(row.dcfPerShare)} · 괴리 ${formatPercent(row.dcfGap)}`,
+      `${row.qualityStatus} · 가격일 ${formatMaybeDate(row.priceAsOf)}`,
+    ], 5);
     setStatus(panelSelector(project, 'status'), buildStatusText(mode, summary.generatedAt, error, summary.status), mode);
   }
 
@@ -945,6 +1092,196 @@
     };
   }
 
+  function normalizeValuationFallback() {
+    return {
+      generatedAt: FALLBACK_SNAPSHOT.valuation.generatedAt,
+      status: FALLBACK_SNAPSHOT.valuation.status,
+      tickerCount: FALLBACK_SNAPSHOT.valuation.tickerCount,
+      sectors: FALLBACK_SNAPSHOT.valuation.sectors,
+      methodologyCount: FALLBACK_SNAPSHOT.valuation.methodologyCount || 0,
+      contractVersion: FALLBACK_SNAPSHOT.valuation.contractVersion || 'fallback',
+      rows: FALLBACK_SNAPSHOT.valuation.rows,
+      allRows: FALLBACK_SNAPSHOT.valuation.rows,
+    };
+  }
+
+  function renderResearchBriefing(records = []) {
+    const target = $('#research-briefing');
+    if (!target) return;
+    const items = records.map(briefingItemForRecord).filter(Boolean);
+    target.innerHTML = items.length ? items.map((item) => `
+      <article class="briefing-item ${item.tone || ''}">
+        <span>${escapeHtml(item.kicker)}</span>
+        <strong>${escapeHtml(item.title)}</strong>
+        <p>${escapeHtml(item.detail)}</p>
+      </article>
+    `).join('') : '<div class="skeleton-line">표시할 브리핑 데이터가 없습니다.</div>';
+  }
+
+  function briefingItemForRecord(record) {
+    const summary = record.summary || {};
+    if (record.project.id === 'momentum') {
+      return {
+        kicker: 'Momentum',
+        title: `${summary.factor || '-'} · ${formatMaybeDate(summary.dataAsOf)}`,
+        detail: `${summary.outputLabel || 'Research signal'} — 신호는 매매 지시가 아니라 팩터 점검 출발점입니다.`,
+      };
+    }
+    if (record.project.id === 'dram') {
+      const latest = latestSeriesPoint(summary.series);
+      return {
+        kicker: 'DRAM',
+        title: latest ? `${latest.name} ${formatNumber(latest.value)} USD` : '대표 가격 확인 필요',
+        detail: `관측치 ${formatInteger(summary.observationCount)}개 · 업황 민감 종목을 볼 때 가격 방향과 데이터 원천을 함께 확인합니다.`,
+      };
+    }
+    if (record.project.id === 'best') {
+      return {
+        kicker: 'Best Factor',
+        title: `${summary.factor || '-'} · 점수 ${formatNumber(summary.compositeScore)}`,
+        detail: `데이터 기준일 ${formatMaybeDate(summary.dataEndDate)} · 과거 검증 성과와 현재 적용 가능성은 분리해서 읽습니다.`,
+      };
+    }
+    if (record.project.id === 'etf') {
+      const latestDate = maxString(asRecords(summary.rows).map((row) => row.date));
+      const signalTotal = asRecords(summary.rows).reduce((sum, row) => sum + numberOr(row.signalCount, 0), 0);
+      return {
+        kicker: 'ETF',
+        title: `${summary.rows?.length || 0}개 ETF · ${signalTotal}개 신호`,
+        detail: `최근 기준일 ${formatMaybeDate(latestDate)} · 테마 ETF가 실제로 어떤 종목을 담는지 확인합니다.`,
+      };
+    }
+    if (record.project.id === 'valuation') {
+      return {
+        kicker: 'Valuation',
+        title: `${formatInteger(summary.tickerCount)}개 기업 · ${asArray(summary.sectors).slice(0, 2).join('/') || '다중 섹터'}`,
+        detail: 'DCF와 PER/PBR은 평균내지 않고, 가정의 현실성과 비교군 적합성을 사용자가 검토합니다.',
+      };
+    }
+    return null;
+  }
+
+  function renderDataHealth(records = []) {
+    const target = $('#data-health');
+    if (!target) return;
+    const rows = records.map((record) => `
+      <article class="health-item ${record.mode === 'live' ? 'ok' : 'warn'}">
+        <div>
+          <strong>${escapeHtml(record.project.shortName)}</strong>
+          <span>${escapeHtml(record.mode === 'live' ? 'live' : 'fallback')}</span>
+        </div>
+        <p>${escapeHtml(formatFreshness(record.generatedAt))}</p>
+        <small>${escapeHtml(`${formatBytes(record.payloadBytes)} · ${record.sourceCount}개 JSON${record.error ? ` · ${record.error}` : ''}`)}</small>
+      </article>
+    `).join('');
+    target.innerHTML = rows || '<div class="skeleton-line">데이터 상태를 표시할 수 없습니다.</div>';
+  }
+
+  function bindWatchlist(records = []) {
+    renderWatchlistResults(records, []);
+    if (watchlistBound) return;
+    const form = $('#watchlist-form');
+    const input = $('#watchlist-input');
+    if (!form || !input) return;
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      renderWatchlistResults([...PANEL_RECORDS.values()], parseWatchlistTokens(input.value));
+    });
+    input.addEventListener('input', () => {
+      renderWatchlistResults([...PANEL_RECORDS.values()], parseWatchlistTokens(input.value));
+    });
+    watchlistBound = true;
+  }
+
+  function parseWatchlistTokens(value) {
+    return String(value || '')
+      .split(/[,\s]+/u)
+      .map((item) => item.trim().toUpperCase())
+      .filter(Boolean)
+      .slice(0, 12);
+  }
+
+  function renderWatchlistResults(records = [], tokens = []) {
+    const target = $('#watchlist-results');
+    if (!target) return;
+    if (!tokens.length) {
+      target.innerHTML = '<p class="muted">예: <button type="button" data-watch-token="NVDA">NVDA</button> <button type="button" data-watch-token="AMD">AMD</button> <button type="button" data-watch-token="DRAM">DRAM</button> <button type="button" data-watch-token="AI">AI</button></p>';
+      target.querySelectorAll('[data-watch-token]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const input = $('#watchlist-input');
+          if (input) input.value = button.getAttribute('data-watch-token') || '';
+          renderWatchlistResults([...PANEL_RECORDS.values()], parseWatchlistTokens(input?.value));
+        });
+      });
+      return;
+    }
+    const matches = tokens.flatMap((token) => watchlistMatchesForToken(records, token));
+    if (!matches.length) {
+      target.innerHTML = `<p class="muted">${escapeHtml(tokens.join(', '))}와 직접 연결되는 공개 요약 신호가 없습니다. 원본 프로젝트에서 더 넓은 검색을 확인하세요.</p>`;
+      return;
+    }
+    target.innerHTML = matches.slice(0, 18).map((match) => `
+      <article class="watch-match">
+        <span>${escapeHtml(match.project)}</span>
+        <strong>${escapeHtml(match.label)}</strong>
+        <p>${escapeHtml(match.detail)}</p>
+      </article>
+    `).join('');
+  }
+
+  function watchlistMatchesForToken(records, token) {
+    const matches = [];
+    for (const record of records) {
+      const project = record.project.shortName;
+      if (record.project.id === 'valuation') {
+        asRecords(record.summary.allRows || record.summary.rows).forEach((row) => {
+          const haystack = [row.ticker, row.name, row.sectorLabel, ...asArray(row.themeTags)].join(' ').toUpperCase();
+          if (haystack.includes(token)) {
+            matches.push({
+              project,
+              label: `${row.ticker} · ${row.sectorLabel}`,
+              detail: `현재가 ${formatNumber(row.price)} ${row.currency || 'USD'}, DCF ${formatNumber(row.dcfPerShare)}, 품질 ${row.qualityStatus}`,
+            });
+          }
+        });
+      } else if (record.project.id === 'momentum') {
+        asRecords(record.summary.rows).forEach((row) => {
+          if (String(row.symbol || '').toUpperCase().includes(token)) {
+            matches.push({ project, label: `${row.symbol} · rank ${row.rank}`, detail: `모멘텀 신호 ${formatNumber(row.signal)}, 표시용 비중 ${formatPercent(row.displayWeight)}` });
+          }
+        });
+      } else if (record.project.id === 'best') {
+        asRecords(record.summary.rows).forEach((row) => {
+          if (String(row.ticker || '').toUpperCase().includes(token)) {
+            matches.push({ project, label: `${row.ticker} · rank ${row.rank}`, detail: `팩터 ${record.summary.factor}, 비중 ${formatPercent(row.weight)}, 점수 ${formatNumber(row.score)}` });
+          }
+        });
+      } else if (record.project.id === 'etf') {
+        asRecords(record.summary.rows).forEach((etf) => {
+          const etfText = [etf.name, etf.fullName, etf.code].join(' ').toUpperCase();
+          asRecords(etf.top10).forEach((holding) => {
+            const holdingText = [holding.ticker, holding.codeRaw, holding.name].join(' ').toUpperCase();
+            if (etfText.includes(token) || holdingText.includes(token)) {
+              matches.push({ project, label: `${etf.name} · ${holding.ticker || holding.codeRaw || holding.name}`, detail: `TOP10 보유 비중 ${formatPercent(holding.weight)} · 기준일 ${formatMaybeDate(etf.date)}` });
+            }
+          });
+        });
+      } else if (record.project.id === 'dram' && ['DRAM', 'D램', 'MEMORY', '반도체'].includes(token)) {
+        const latest = latestSeriesPoint(record.summary.series);
+        matches.push({ project, label: 'DRAM 가격', detail: latest ? `${latest.name} ${formatNumber(latest.value)} USD · 메모리 업황 확인용` : '대표 가격 확인 필요' });
+      }
+    }
+    return matches;
+  }
+
+  function formatBytes(value) {
+    const bytes = finiteOrNull(value);
+    if (!bytes || bytes <= 0) return '용량 확인 불가';
+    if (bytes >= 1_000_000) return `${(bytes / 1_000_000).toLocaleString('ko-KR', { maximumFractionDigits: 1 })} MB`;
+    if (bytes >= 1_000) return `${(bytes / 1_000).toLocaleString('ko-KR', { maximumFractionDigits: 0 })} KB`;
+    return `${bytes.toLocaleString('ko-KR')} B`;
+  }
+
   function coerceWeightFraction(weight, weightPercent) {
     const direct = finiteOrNull(weight);
     if (direct !== null) return direct;
@@ -1051,13 +1388,20 @@
       parseDram,
       parseBestFactor,
       parseEtfTracking,
+      parseValuation,
       buildEtfWeightSeries,
       renderEtfMiniChart,
       renderEtfDetailCards,
+      renderResearchBriefing,
+      renderDataHealth,
+      watchlistMatchesForToken,
+      parseWatchlistTokens,
       resolveLoadState,
       loadProjectPanel,
       loadEtfPanel,
+      loadValuationPanel,
       parsePanelSafely,
+      validateAdapterContract,
       renderProjectNavigation,
       renderDashboardPanels,
       PROJECTS,
