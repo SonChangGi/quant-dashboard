@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
 const source = readFileSync('assets/app.js', 'utf8');
+const summarySchema = JSON.parse(readFileSync('contracts/quant-research-summary.v1.schema.json', 'utf8'));
 const context = vm.createContext({ console, URL });
 vm.runInContext(source, context, { filename: 'assets/app.js' });
 const api = context.__QUANT_DASHBOARD_TESTS__;
@@ -9,6 +10,35 @@ const api = context.__QUANT_DASHBOARD_TESTS__;
 const checks = [];
 const assert = (condition, label) => checks.push({ ok: Boolean(condition), label });
 const fallbackFor = (parsed, hasUsableData, reason) => api.resolveLoadState({ ok: true, data: {} }, hasUsableData, reason);
+const typeMatches = (value, expectedType) => {
+  if (expectedType === 'object') return value !== null && typeof value === 'object' && !Array.isArray(value);
+  if (expectedType === 'array') return Array.isArray(value);
+  if (expectedType === 'string') return typeof value === 'string';
+  if (expectedType === 'number') return typeof value === 'number' && Number.isFinite(value);
+  return true;
+};
+const validateJsonSchema = (schema, value, path = '$') => {
+  const errors = [];
+  if (schema.type && !typeMatches(value, schema.type)) return [`${path}: expected ${schema.type}, got ${Array.isArray(value) ? 'array' : typeof value}`];
+  if (Object.hasOwn(schema, 'const') && value !== schema.const) errors.push(`${path}: expected const ${schema.const}`);
+  if (schema.enum && !schema.enum.includes(value)) errors.push(`${path}: expected enum member`);
+  if (typeof value === 'string' && value.length < (schema.minLength || 0)) errors.push(`${path}: shorter than minLength`);
+  if (typeof value === 'number' && Object.hasOwn(schema, 'exclusiveMinimum') && !(value > schema.exclusiveMinimum)) errors.push(`${path}: expected > ${schema.exclusiveMinimum}`);
+  if (Array.isArray(value)) {
+    if (value.length < (schema.minItems || 0)) errors.push(`${path}: fewer than minItems`);
+    if (schema.items) value.forEach((item, index) => errors.push(...validateJsonSchema(schema.items, item, `${path}[${index}]`)));
+  }
+  if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+    if (Object.keys(value).length < (schema.minProperties || 0)) errors.push(`${path}: fewer than minProperties`);
+    for (const key of schema.required || []) {
+      if (!Object.hasOwn(value, key)) errors.push(`${path}: missing ${key}`);
+    }
+    for (const [key, propertySchema] of Object.entries(schema.properties || {})) {
+      if (Object.hasOwn(value, key)) errors.push(...validateJsonSchema(propertySchema, value[key], `${path}.${key}`));
+    }
+  }
+  return errors;
+};
 
 assert(api, 'test API exposed without browser DOM');
 
@@ -119,27 +149,60 @@ const summaryFixture = {
   projectName: 'Valuation Fixture',
   generatedAt: '2026-06-19T00:00:00Z',
   dataAsOf: '2026-06-18',
+  timezone: 'Asia/Seoul',
+  detailUrl: 'https://sonchanggi.github.io/valuation/',
+  detailDataUrl: 'https://sonchanggi.github.io/valuation/data/index.json',
   status: { state: 'ok', label: 'fixture', cadence: 'manual', expectedFreshnessDays: 14 },
-  coverage: { entityCount: 1, sectors: ['기술'] },
+  coverage: { entityCount: 1, sectors: ['기술'], dcfAvailableCount: 1, missingDcfCount: 0, missingDcfTickers: [], dcfCoverageRatio: 1 },
+  highlights: [{ label: '티커', value: 1, description: 'fixture summary entity count', unit: '개' }],
   primaryEntities: [{
     symbol: 'NVDA',
     name: 'NVIDIA',
     label: 'NVDA · 기술',
+    sector: 'Technology',
     sectorLabel: '기술',
     themes: ['AI', 'Semiconductors'],
-    metrics: { price: 100, dcfPerShare: 120, qualityStatus: '충분', priceAsOf: '2026-06-18' },
+    metrics: { price: 100, dcfPerShare: 120, dcfStatus: 'available', qualityStatus: '충분', priceAsOf: '2026-06-18' },
+    signals: ['DCF와 PER/PBR은 서로 다른 질문에 답합니다.'],
     warnings: ['상대가치 비교군 확인 필요'],
   }],
   limitations: ['모형은 판단 주체가 아니라 계산 보조 도구입니다.'],
+  sources: [{ name: 'fixture', url: 'https://example.com' }],
   automation: { workflowUrl: 'https://github.com/SonChangGi/valuation/actions/workflows/data-refresh.yml' },
+  payload: { format: 'summary-first' },
 };
 assert(api.isResearchSummary(summaryFixture, 'valuation'), 'summary fixture satisfies common contract helper');
+assert(validateJsonSchema(summarySchema, summaryFixture).length === 0, 'summary fixture validates against shared JSON Schema');
+assert(validateJsonSchema(summarySchema, { ...summaryFixture, highlights: ['legacy string highlight'] }).some((error) => error.includes('$.highlights[0]') && error.includes('expected object')), 'shared JSON Schema rejects legacy string highlights');
+const projectMismatch = api.validateAdapterContract(api.PANEL_ADAPTERS.valuation, { summary: { ...summaryFixture, projectId: 'wrong-project' } });
+assert(/projectId expected valuation/.test(projectMismatch), 'contract projectId mismatch is rejected before parsing');
 
 assert(api.safeAutomationUrl('https://github.com/SonChangGi/valuation/actions/workflows/data-refresh.yml').startsWith('https://github.com/'), 'automation URL allowlist accepts GitHub HTTPS links');
 assert(api.safeAutomationUrl('javascript:alert(1)') === '', 'automation URL allowlist rejects javascript scheme');
 assert(api.safeAutomationUrl('https://evil.example/actions') === '', 'automation URL allowlist rejects unexpected hosts');
 const parsedSummaryValuation = api.parseValuation(summaryFixture);
 assert(parsedSummaryValuation.rows.length === 1 && parsedSummaryValuation.rows[0].ticker === 'NVDA', 'Valuation summary contract parses into panel rows');
+assert(parsedSummaryValuation.dcfAvailableCount === 1 && parsedSummaryValuation.missingDcfCount === 0, 'Valuation summary contract exposes DCF coverage counts');
+const missingDcfValuation = api.parseValuation({
+  ...summaryFixture,
+  status: { ...summaryFixture.status, state: 'degraded', label: '2개 기업 · DCF 1/2', degradedReasons: ['dcf_coverage_incomplete:1_missing'] },
+  coverage: { ...summaryFixture.coverage, entityCount: 2, dcfAvailableCount: 1, missingDcfCount: 1, missingDcfTickers: ['JPM'], dcfMethodReviewTickers: ['JPM'], dcfCoverageRatio: 0.5 },
+  primaryEntities: [
+    ...summaryFixture.primaryEntities,
+    {
+      symbol: 'JPM',
+      name: 'JPMorgan Chase & Co.',
+      label: 'JPM · 금융',
+      sector: 'Financials',
+      sectorLabel: '금융',
+      themes: ['Banking'],
+      metrics: { price: 100, dcfPerShare: null, dcfStatus: 'method_review', dcfMethodNote: '업종별 방법론 검토 필요', qualityStatus: '수동 확인 필요', priceAsOf: '2026-06-18' },
+      signals: ['DCF는 목표가가 아니라 가정 점검 도구입니다.'],
+      warnings: ['은행은 일반 FCFF DCF 전 업종별 방법론 검토가 필요합니다.'],
+    },
+  ],
+});
+assert(missingDcfValuation.status.includes('DCF 1/2') && missingDcfValuation.missingDcfTickers.includes('JPM'), 'Valuation degraded DCF coverage is preserved for dashboard display');
 const dossierMatches = api.watchlistMatchesForToken([
   { project: { id: 'valuation', shortName: 'Valuation' }, summary: parsedSummaryValuation },
 ], 'AI');

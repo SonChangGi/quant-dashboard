@@ -4,7 +4,7 @@
   const SAFE_AUTOMATION_HOSTS = new Set(['github.com', 'www.github.com', 'sonchanggi.github.io']);
 
   const ENTITY_METRIC_RENDERERS = {
-    valuation: (metrics) => `현재가 ${formatNumber(metrics.price)} · DCF ${formatNumber(metrics.dcfPerShare)} · 품질 ${metrics.qualityStatus || '확인 필요'}`,
+    valuation: (metrics) => `현재가 ${formatNumber(metrics.price)} · DCF ${metrics.dcfStatus && metrics.dcfStatus !== 'available' ? dcfStatusLabel(metrics.dcfStatus) : formatNumber(metrics.dcfPerShare)} · 품질 ${metrics.qualityStatus || '확인 필요'}`,
     etf: (metrics) => `${metrics.etf || 'ETF'} TOP10 비중 ${formatPercent(metrics.weight)} · 기준일 ${formatMaybeDate(metrics.date)}`,
     best: (metrics) => `팩터 ${metrics.factor || '-'} · 비중 ${formatPercent(metrics.weight)} · 점수 ${formatNumber(metrics.score)}`,
     momentum: (metrics) => `팩터 ${metrics.factor || '-'} · 신호 ${formatNumber(metrics.signal)} · 최종 비중 ${formatPercent(metrics.finalWeight)}`,
@@ -111,7 +111,36 @@
     },
   ];
 
-  const SUMMARY_CONTRACT = { versionField: 'schemaVersion', expectedVersion: 1, requiredKeys: ['contract', 'projectId', 'status', 'primaryEntities'] };
+  const SUMMARY_CONTRACT = {
+    versionField: 'schemaVersion',
+    expectedVersion: 1,
+    contractName: 'quant-research-summary',
+    requiredKeys: [
+      'schemaVersion',
+      'contract',
+      'projectId',
+      'projectName',
+      'generatedAt',
+      'dataAsOf',
+      'timezone',
+      'detailUrl',
+      'detailDataUrl',
+      'status',
+      'coverage',
+      'highlights',
+      'primaryEntities',
+      'limitations',
+      'sources',
+      'automation',
+      'payload',
+    ],
+    statusKeys: ['state', 'label', 'cadence', 'expectedFreshnessDays'],
+    allowedStatusStates: ['ok', 'degraded', 'stale'],
+    entityKeys: ['symbol', 'name', 'label', 'sector', 'sectorLabel', 'themes', 'metrics', 'signals', 'warnings'],
+    arrayKeys: ['highlights', 'primaryEntities', 'limitations', 'sources'],
+    objectKeys: ['status', 'coverage', 'automation', 'payload'],
+    entityArrayKeys: ['themes', 'signals', 'warnings'],
+  };
 
   const PANEL_ADAPTERS = {
     momentum: {
@@ -119,7 +148,7 @@
         summary: 'https://sonchanggi.github.io/momentum-factor-lab/data/summary.json',
       },
       primarySourceKey: 'summary',
-      contracts: { summary: SUMMARY_CONTRACT },
+      contracts: { summary: { ...SUMMARY_CONTRACT, expectedProjectId: 'momentum' } },
       parse: (sources) => parseMomentum(sources.summary),
       hasUsableData: (summary) => Boolean(summary?.rows?.length),
       fallback: normalizeMomentumFallback,
@@ -134,7 +163,7 @@
         dramStatus: 'https://sonchanggi.github.io/dram-price/data/status.json',
       },
       primarySourceKey: 'summary',
-      contracts: { summary: SUMMARY_CONTRACT },
+      contracts: { summary: { ...SUMMARY_CONTRACT, expectedProjectId: 'dram' } },
       parse: (sources) => parseDram(sources.dramPrices, sources.dramSeries, sources.dramStatus, sources.summary),
       hasUsableData: (summary) => Boolean(summary?.series?.length || summary?.entities?.length),
       fallback: normalizeDramFallback,
@@ -146,7 +175,7 @@
         summary: 'https://sonchanggi.github.io/best-factor/data/summary.json',
       },
       primarySourceKey: 'summary',
-      contracts: { summary: SUMMARY_CONTRACT },
+      contracts: { summary: { ...SUMMARY_CONTRACT, expectedProjectId: 'best' } },
       parse: (sources) => parseBestFactor(sources.summary),
       hasUsableData: (summary) => Boolean(summary?.rows?.length),
       fallback: normalizeBestFallback,
@@ -159,7 +188,7 @@
         etf: 'https://sonchanggi.github.io/etf-tracking/data/dashboard.json',
       },
       primarySourceKey: 'summary',
-      contracts: { summary: SUMMARY_CONTRACT },
+      contracts: { summary: { ...SUMMARY_CONTRACT, expectedProjectId: 'etf' } },
       parse: (sources) => parseEtfTracking(sources.etf, sources.summary),
       hasUsableData: (summary) => Boolean(summary?.rows?.length || summary?.entities?.length),
       fallback: normalizeEtfFallback,
@@ -171,7 +200,7 @@
         summary: 'https://sonchanggi.github.io/valuation/data/summary.json',
       },
       primarySourceKey: 'summary',
-      contracts: { summary: SUMMARY_CONTRACT },
+      contracts: { summary: { ...SUMMARY_CONTRACT, expectedProjectId: 'valuation' } },
       parse: (sources) => parseValuation(sources.summary),
       hasUsableData: (summary) => Boolean(summary?.rows?.length),
       fallback: normalizeValuationFallback,
@@ -434,19 +463,53 @@
   function validateAdapterContract(adapter, dataSources) {
     for (const [sourceKey, contract] of Object.entries(adapter.contracts || {})) {
       const payload = dataSources[sourceKey];
-      if (!isRecord(payload)) return `${sourceKey} contract payload is missing or invalid.`;
+      const prefix = `${sourceKey} contract`;
+      if (!isRecord(payload)) return `${prefix} payload is missing or invalid.`;
       const version = payload[contract.versionField];
       if (String(version) !== String(contract.expectedVersion)) {
-        return `${sourceKey} contract ${contract.versionField} expected ${contract.expectedVersion}, received ${version ?? 'missing'}.`;
+        return `${prefix} ${contract.versionField} expected ${contract.expectedVersion}, received ${version ?? 'missing'}.`;
       }
-      for (const key of asArray(contract.requiredKeys)) {
-        if (!(key in payload)) return `${sourceKey} contract missing required key: ${key}.`;
+      const missingTopLevel = missingKeys(payload, contract.requiredKeys);
+      if (missingTopLevel.length) return `${prefix} missing required key: ${missingTopLevel[0]}.`;
+      if (payload.contract !== contract.contractName) {
+        return `${prefix} expected ${contract.contractName}, received ${payload.contract ?? 'missing'}.`;
       }
-      if (payload.contract && payload.contract !== 'quant-research-summary') {
-        return `${sourceKey} contract expected quant-research-summary, received ${payload.contract}.`;
+      if (contract.expectedProjectId && payload.projectId !== contract.expectedProjectId) {
+        return `${prefix} projectId expected ${contract.expectedProjectId}, received ${payload.projectId ?? 'missing'}.`;
       }
+      for (const key of asArray(contract.arrayKeys)) {
+        if (!Array.isArray(payload[key]) || payload[key].length === 0) return `${prefix} ${key} must be a non-empty array.`;
+      }
+      for (const key of asArray(contract.objectKeys)) {
+        if (!isRecord(payload[key]) || Object.keys(payload[key]).length === 0) return `${prefix} ${key} must be a non-empty object.`;
+      }
+      const status = payload.status;
+      const missingStatus = missingKeys(status, contract.statusKeys);
+      if (missingStatus.length) return `${prefix} status missing required key: ${missingStatus[0]}.`;
+      if (!asArray(contract.allowedStatusStates).includes(status.state)) return `${prefix} status.state ${status.state ?? 'missing'} is not allowed.`;
+      if (!Number.isFinite(Number(status.expectedFreshnessDays)) || Number(status.expectedFreshnessDays) <= 0) {
+        return `${prefix} status.expectedFreshnessDays must be a positive number.`;
+      }
+      if (!nonEmptyString(status.label) || !nonEmptyString(status.cadence)) return `${prefix} status label/cadence must be non-empty strings.`;
+      const badEntity = asArray(payload.primaryEntities).find((entity) => {
+        if (!isRecord(entity)) return true;
+        if (missingKeys(entity, contract.entityKeys).length) return true;
+        if (!nonEmptyString(entity.symbol) || !nonEmptyString(entity.label)) return true;
+        if (!isRecord(entity.metrics)) return true;
+        return asArray(contract.entityArrayKeys).some((key) => !Array.isArray(entity[key]));
+      });
+      if (badEntity) return `${prefix} primaryEntities contains an invalid entity shape.`;
     }
     return null;
+  }
+
+  function missingKeys(record, keys) {
+    if (!isRecord(record)) return asArray(keys);
+    return asArray(keys).filter((key) => !(key in record));
+  }
+
+  function nonEmptyString(value) {
+    return typeof value === 'string' && value.trim().length > 0;
   }
 
   function parsePanelSafely(adapter, dataSources) {
@@ -822,6 +885,8 @@
             dcfPerShare,
             dcfGap,
             qualityStatus: stringOr(entity.metrics.qualityStatus, '확인 필요'),
+            dcfStatus: stringOr(entity.metrics.dcfStatus, dcfPerShare !== null ? 'available' : 'insufficient_cash_flow'),
+            dcfMethodNote: stringOr(entity.metrics.dcfMethodNote, ''),
             companyFile: stringOr(entity.detailPath, ''),
             warnings: entity.warnings,
           };
@@ -833,8 +898,14 @@
         : [...new Set(rows.map((row) => row.sectorLabel).filter(Boolean))];
       return {
         generatedAt: meta.generatedAt,
-        status: firstLimitation(meta),
+        status: stringOr(meta.statusLabel, firstLimitation(meta)),
         tickerCount: finiteOrNull(meta.coverage?.entityCount) || rows.length,
+        dcfAvailableCount: finiteOrNull(meta.coverage?.dcfAvailableCount) ?? calculableDcfCount(rows),
+        missingDcfCount: finiteOrNull(meta.coverage?.missingDcfCount) ?? 0,
+        missingDcfTickers: asArray(meta.coverage?.missingDcfTickers).map(String),
+        dcfMethodReviewTickers: asArray(meta.coverage?.dcfMethodReviewTickers).map(String),
+        dcfInsufficientCashFlowTickers: asArray(meta.coverage?.dcfInsufficientCashFlowTickers).map(String),
+        dcfCoverageRatio: finiteOrNull(meta.coverage?.dcfCoverageRatio),
         sectors,
         methodologyCount: finiteOrNull(highlightValue(meta, '방법론')) || 0,
         contractVersion: stringOr(payload.schemaVersion, ''),
@@ -861,6 +932,8 @@
           dcfPerShare,
           dcfGap,
           qualityStatus: stringOr(row.qualityStatus, '확인 필요'),
+          dcfStatus: dcfPerShare !== null ? 'available' : 'insufficient_cash_flow',
+          dcfMethodNote: '',
           companyFile: stringOr(row.companyFile, ''),
         };
       })
@@ -997,19 +1070,35 @@
     setStatus(panelSelector(project, 'status'), buildStatusText(mode, summary.generatedAt, error, summary.status), mode);
   }
 
+
+  function calculableDcfCount(rows) {
+    return asRecords(rows).filter((row) => finiteOrNull(row.dcfPerShare) !== null).length;
+  }
+
+  function dcfStatusLabel(status) {
+    const labels = {
+      available: 'DCF 가능',
+      method_review: '업종별 방법론 검토',
+      insufficient_cash_flow: 'FCF 이력 부족',
+    };
+    return labels[status] || 'DCF 확인 필요';
+  }
+
   function renderValuation(summary, mode, error, project) {
     const calculableGapCount = asRecords(summary.allRows || summary.rows).filter((row) => finiteOrNull(row.dcfGap) !== null).length;
+    const missingTickers = asArray(summary.missingDcfTickers).join(', ');
     renderMetricCards(panelSelector(project, 'metrics'), [
       ['분석 티커', `${formatInteger(summary.tickerCount || summary.rows.length)}개`],
       ['섹터', `${asArray(summary.sectors).slice(0, 3).join(' · ') || '확인 필요'}`],
-      ['DCF 괴리 계산', `${formatInteger(calculableGapCount)}개`],
+      ['DCF coverage', `${formatInteger(summary.dcfAvailableCount ?? calculableGapCount)}/${formatInteger(summary.tickerCount || summary.rows.length)}${summary.missingDcfCount ? ` · 누락 ${formatInteger(summary.missingDcfCount)}개` : ''}`],
+      ['DCF 누락', missingTickers || '없음'],
       ['방법론 참조', `${formatInteger(summary.methodologyCount || 0)}개`],
     ]);
     renderRows(panelSelector(project, 'rows'), summary.rows, (row) => [
       badge(row.ticker),
       `${row.sectorLabel}${row.themeTags?.length ? ` · ${row.themeTags.join(', ')}` : ''}`,
       `${formatNumber(row.price)} ${row.currency || 'USD'}`,
-      `${formatNumber(row.dcfPerShare)} · 괴리 ${formatPercent(row.dcfGap)}`,
+      row.dcfPerShare === null ? `${dcfStatusLabel(row.dcfStatus)} · ${row.dcfMethodNote || 'DCF 산출 불가'}` : `${formatNumber(row.dcfPerShare)} · 괴리 ${formatPercent(row.dcfGap)}`,
       `${row.qualityStatus} · 가격일 ${formatMaybeDate(row.priceAsOf)}`,
     ], 5);
     setStatus(panelSelector(project, 'status'), buildStatusText(mode, summary.generatedAt, error, summary.status), mode);
@@ -1369,7 +1458,7 @@
       return {
         kicker: 'Valuation',
         title: `${formatInteger(summary.tickerCount)}개 기업 · ${asArray(summary.sectors).slice(0, 2).join('/') || '다중 섹터'}`,
-        detail: firstLimitation(summary.meta || {}),
+        detail: `${summary.status || firstLimitation(summary.meta || {})}${summary.missingDcfCount ? ` · DCF 누락 ${asArray(summary.missingDcfTickers).join(', ')}` : ''}`,
       };
     }
     return null;
