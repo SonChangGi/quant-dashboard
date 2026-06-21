@@ -426,6 +426,7 @@
       mode: loadState.mode,
       error: loadState.error,
       generatedAt: summary?.generatedAt || '',
+      dataAsOf: summaryDataAsOf(summary),
       payloadBytes: Object.values(fetchResults).reduce((sum, result) => sum + numberOr(result.bytes, 0), 0),
       sourceCount: Object.keys(adapter.sourceUrls).length,
     };
@@ -939,7 +940,7 @@
       formatPercent(row.displayWeight),
       formatPercent(row.finalWeight),
     ], 5);
-    setStatus(panelSelector(project, 'status'), buildStatusText(mode, summary.generatedAt, error, summary.status), mode);
+    setStatus(panelSelector(project, 'status'), buildStatusText(mode, summary.generatedAt, error, summary.status, summaryDataAsOf(summary)), mode);
   }
 
   function renderDram(summary, mode, error, project) {
@@ -951,7 +952,7 @@
       `업데이트 ${formatFreshness(summary.generatedAt)}`,
     ]);
     renderDramChart(panelSelector(project, 'chart'), summary.series);
-    setStatus(panelSelector(project, 'status'), buildStatusText(mode, summary.generatedAt, error, summary.status), mode);
+    setStatus(panelSelector(project, 'status'), buildStatusText(mode, summary.generatedAt, error, summary.status, summaryDataAsOf(summary)), mode);
   }
 
   function renderBestFactor(summary, mode, error, project) {
@@ -968,7 +969,7 @@
       formatPercent(row.weight),
       formatMaybeDate(row.date),
     ], 5);
-    setStatus(panelSelector(project, 'status'), buildStatusText(mode, summary.generatedAt, error, summary.status), mode);
+    setStatus(panelSelector(project, 'status'), buildStatusText(mode, summary.generatedAt, error, summary.status, summaryDataAsOf(summary)), mode);
   }
 
 
@@ -994,7 +995,7 @@
       formatPercent(row.returnCoverage),
     ], 5);
     renderEtfDetailCards(panelSelector(project, 'details'), summary.rows);
-    setStatus(panelSelector(project, 'status'), buildStatusText(mode, summary.generatedAt, error, summary.status), mode);
+    setStatus(panelSelector(project, 'status'), buildStatusText(mode, summary.generatedAt, error, summary.status, summaryDataAsOf(summary)), mode);
   }
 
   function renderValuation(summary, mode, error, project) {
@@ -1012,7 +1013,7 @@
       `${formatNumber(row.dcfPerShare)} · 괴리 ${formatPercent(row.dcfGap)}`,
       `${row.qualityStatus} · 가격일 ${formatMaybeDate(row.priceAsOf)}`,
     ], 5);
-    setStatus(panelSelector(project, 'status'), buildStatusText(mode, summary.generatedAt, error, summary.status), mode);
+    setStatus(panelSelector(project, 'status'), buildStatusText(mode, summary.generatedAt, error, summary.status, summaryDataAsOf(summary)), mode);
   }
 
   function renderEtfDetailCards(selector, rows) {
@@ -1270,10 +1271,12 @@
     target.classList.toggle('error', mode === 'error');
   }
 
-  function buildStatusText(mode, generatedAt, error, sourceStatus) {
-    const freshness = formatFreshness(generatedAt);
-    if (mode === 'live') return `라이브 공개 JSON 기준 · 업데이트 ${freshness} · ${sourceStatus || '정상'}`;
-    return `공개 JSON을 읽지 못해 fallback 표시 중 · 업데이트 ${freshness} · 사유: ${error || sourceStatus || '스키마/네트워크 확인 필요'}`;
+  function buildStatusText(mode, generatedAt, error, sourceStatus, dataAsOf = '') {
+    const freshness = dataAsOf
+      ? `기준일 ${formatMaybeDate(dataAsOf)} · 업데이트 ${formatFreshness(generatedAt)}`
+      : `업데이트 ${formatFreshness(generatedAt)}`;
+    if (mode === 'live') return `라이브 공개 JSON 기준 · ${freshness} · ${sourceStatus || '정상'}`;
+    return `공개 JSON을 읽지 못해 fallback 표시 중 · ${freshness} · 사유: ${error || sourceStatus || '스키마/네트워크 확인 필요'}`;
   }
 
   function normalizeMomentumFallback() {
@@ -1384,7 +1387,7 @@
           <strong>${escapeHtml(record.project.shortName)}</strong>
           <span>${escapeHtml(healthLabel(record))}</span>
         </div>
-        <p>${escapeHtml(formatFreshness(record.generatedAt))}${record.summary?.meta?.dataAsOf ? ` · 기준일 ${escapeHtml(formatMaybeDate(record.summary.meta.dataAsOf))}` : ''}</p>
+        <p>${escapeHtml(recordFreshnessText(record))}</p>
         <small>${escapeHtml(`${formatBytes(record.payloadBytes)} · ${record.sourceCount}개 JSON · ${record.summary?.meta?.cadence || 'cadence 확인 필요'}${record.error ? ` · ${record.error}` : ''}`)}</small>
         ${safeAutomationUrl(record.summary?.meta?.automation?.workflowUrl) ? `<a class="health-link" href="${escapeAttribute(safeAutomationUrl(record.summary.meta.automation.workflowUrl))}" rel="noopener noreferrer">자동화/수동 실행</a>` : ''}
       </article>
@@ -1408,11 +1411,34 @@
   }
 
   function isRecordStale(record) {
-    const expectedDays = finiteOrNull(record.summary?.meta?.expectedFreshnessDays);
-    const generatedAt = Date.parse(record.generatedAt || '');
-    if (expectedDays === null || !Number.isFinite(generatedAt)) return false;
-    const days = (Date.now() - generatedAt) / (24 * 60 * 60 * 1000);
+    const expectedDays = finiteOrNull(record?.summary?.meta?.expectedFreshnessDays);
+    const freshnessDate = Date.parse(recordFreshnessDate(record));
+    if (expectedDays === null || !Number.isFinite(freshnessDate)) return false;
+    const days = (Date.now() - freshnessDate) / (24 * 60 * 60 * 1000);
     return days > expectedDays;
+  }
+
+  function recordFreshnessDate(record) {
+    const summary = isRecord(record?.summary) ? record.summary : {};
+    return stringOr(summaryDataAsOf(summary), record?.dataAsOf, record?.generatedAt, summary.generatedAt, '');
+  }
+
+  function summaryDataAsOf(summary) {
+    if (!isRecord(summary)) return '';
+    return stringOr(
+      summary.meta?.dataAsOf,
+      summary.dataAsOf,
+      summary.dataEndDate,
+      maxString(asRecords(summary.rows).map((row) => row.date)),
+      ''
+    );
+  }
+
+  function recordFreshnessText(record) {
+    const dataAsOf = summaryDataAsOf(record?.summary) || record?.dataAsOf || '';
+    const generatedAt = stringOr(record?.generatedAt, record?.summary?.generatedAt, '');
+    if (dataAsOf) return `기준일 ${formatMaybeDate(dataAsOf)} · 업데이트 ${formatFreshness(generatedAt)}`;
+    return `업데이트 ${formatFreshness(generatedAt)}`;
   }
 
   function safeAutomationUrl(value) {
@@ -1712,6 +1738,9 @@
       summaryEntities,
       entitySummaryLine,
       isRecordStale,
+      recordFreshnessDate,
+      recordFreshnessText,
+      summaryDataAsOf,
       safeAutomationUrl,
       renderProjectNavigation,
       renderDashboardPanels,

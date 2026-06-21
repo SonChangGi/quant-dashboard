@@ -199,6 +199,22 @@ assert(/etf-detail-card/.test(domTargets['#etf-details'].innerHTML), 'ETF detail
 assert(/AAA/.test(domTargets['#etf-details'].innerHTML) && /BBB/.test(domTargets['#etf-details'].innerHTML), 'ETF detail renderer includes TOP10 holdings');
 assert(/TOP10 비중 변화 미니 그래프/.test(domTargets['#etf-details'].innerHTML), 'ETF detail renderer includes mini chart markup');
 
+
+const staleByDataAsOfRecord = {
+  project: api.PROJECTS.find((project) => project.id === 'best'),
+  summary: {
+    generatedAt: new Date().toISOString(),
+    dataEndDate: '2000-01-01',
+    meta: { dataAsOf: '2000-01-01', expectedFreshnessDays: 7 },
+    rows: [],
+  },
+  mode: 'live',
+  generatedAt: new Date().toISOString(),
+};
+assert(api.recordFreshnessDate(staleByDataAsOfRecord) === '2000-01-01', 'data health freshness source prefers dataAsOf/dataEndDate over generatedAt');
+assert(api.isRecordStale(staleByDataAsOfRecord), 'data health marks a stale dataAsOf as stale even when generatedAt is fresh');
+assert(/기준일/.test(api.recordFreshnessText(staleByDataAsOfRecord)), 'data health text names the data 기준일 used for staleness');
+
 const records = [
   { project: api.PROJECTS.find((project) => project.id === 'valuation'), summary: validValuation, mode: 'live', generatedAt: validValuation.generatedAt, payloadBytes: 12000, sourceCount: 1 },
   { project: api.PROJECTS.find((project) => project.id === 'etf'), summary: validEtf, mode: 'live', generatedAt: validEtf.generatedAt, payloadBytes: 90000, sourceCount: 1 },

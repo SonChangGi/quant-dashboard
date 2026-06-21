@@ -32,13 +32,38 @@ for (const project of panelProjects) {
   assert(!contractError, `${project.id} contract is compatible: ${contractError || 'ok'}`);
   const summary = adapter.parse(dataSources);
   const usable = adapter.hasUsableData(summary);
-  const freshness = freshnessDays(summary?.generatedAt);
+  const record = {
+    project,
+    summary,
+    mode: 'live',
+    generatedAt: summary?.generatedAt || '',
+    dataAsOf: api.summaryDataAsOf(summary),
+    payloadBytes,
+    sourceCount: entries.length,
+  };
+  const generatedFreshness = freshnessDays(summary?.generatedAt);
+  const freshnessSource = api.recordFreshnessDate(record);
+  const freshness = freshnessDays(freshnessSource);
+  const expectedFreshnessDays = finiteNumber(summary?.meta?.expectedFreshnessDays);
+  const staleBySource = api.isRecordStale(record);
 
   assert(usable, `${project.id} live payload is usable`);
   assert(payloadBytes > 0, `${project.id} payload byte count is known`);
   assert(payloadBytes <= MAX_PAYLOAD_BYTES, `${project.id} payload is under ${MAX_PAYLOAD_BYTES.toLocaleString('en-US')} bytes`);
-  assert(freshness !== null, `${project.id} payload exposes a parseable generatedAt timestamp`);
-  assert(freshness <= MAX_STALENESS_DAYS, `${project.id} payload is fresh within ${MAX_STALENESS_DAYS} days`);
+  assert(generatedFreshness !== null, `${project.id} payload exposes a parseable generatedAt timestamp`);
+  if (expectedFreshnessDays !== null) {
+    assert(freshness !== null, `${project.id} payload exposes a parseable data freshness source`);
+    if ((summary?.meta?.dataAsOf || summary?.dataAsOf || summary?.dataEndDate) && freshnessSource === summary?.generatedAt) {
+      throw new Error(`${project.id} freshness source did not prefer dataAsOf/dataEndDate over generatedAt`);
+    }
+    if (freshness > expectedFreshnessDays) {
+      assert(staleBySource, `${project.id} dataAsOf staleness is detected by dashboard health logic`);
+    } else {
+      assert(!staleBySource, `${project.id} fresh dataAsOf is not mislabeled stale`);
+    }
+  } else {
+    assert(generatedFreshness <= MAX_STALENESS_DAYS, `${project.id} generatedAt is fresh within ${MAX_STALENESS_DAYS} days`);
+  }
   if (project.id === 'valuation') {
     assert((summary.tickerCount || 0) >= 10, 'valuation covers at least 10 tickers');
     assert((summary.sectors || []).length >= 3, 'valuation covers at least 3 sectors/themes');
@@ -47,6 +72,8 @@ for (const project of panelProjects) {
   results.push({
     project: project.id,
     generatedAt: summary?.generatedAt || 'n/a',
+    freshnessSource: freshnessSource || 'n/a',
+    staleBySource,
     payloadBytes,
     sources: entries.length,
     rows: rowCountFor(project.id, summary),
@@ -56,6 +83,8 @@ for (const project of panelProjects) {
 console.table(results.map((result) => ({
   project: result.project,
   generatedAt: result.generatedAt,
+  freshnessSource: result.freshnessSource,
+  staleBySource: result.staleBySource,
   sources: result.sources,
   rows: result.rows,
   payloadKB: Math.round(result.payloadBytes / 1024),
@@ -76,7 +105,6 @@ async function fetchJson(url) {
   }
 }
 
-
 function rowCountFor(projectId, summary) {
   if (projectId === 'dram') return summary?.series?.length || summary?.entities?.length || 0;
   if (projectId === 'valuation') return summary?.tickerCount || summary?.rows?.length || 0;
@@ -87,6 +115,11 @@ function freshnessDays(value) {
   const timestamp = Date.parse(value || '');
   if (!Number.isFinite(timestamp)) return null;
   return (Date.now() - timestamp) / (24 * 60 * 60 * 1000);
+}
+
+function finiteNumber(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
 }
 
 function assert(condition, message) {
