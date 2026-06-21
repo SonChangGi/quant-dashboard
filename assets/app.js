@@ -42,10 +42,10 @@
       panelAdapter: 'dram',
       panel: {
         eyebrow: 'DRAM Price',
-        title: '대표 D램 가격 그래프',
+        title: 'TrendForce 일별 D램 가격 그래프',
         contentType: 'chart',
         metricLoading: 'D램 가격 데이터를 불러오는 중...',
-        chartLabel: '대표 D램(DRAM) 가격 추이 그래프',
+        chartLabel: 'TrendForce 일별 저장 D램(DRAM) 가격 추이 그래프',
       },
     },
     {
@@ -157,10 +157,12 @@
       sourceUrls: {
         summary: 'https://sonchanggi.github.io/etf-tracking/data/summary.json',
         etf: 'https://sonchanggi.github.io/etf-tracking/data/dashboard.json',
+        etfHistoryManifest: 'https://sonchanggi.github.io/etf-tracking/data/history.json',
       },
       primarySourceKey: 'summary',
       contracts: { summary: SUMMARY_CONTRACT },
-      parse: (sources) => parseEtfTracking(sources.etf, sources.summary),
+      enrichSources: enrichEtfTrackingSources,
+      parse: (sources) => parseEtfTracking(sources.etf, sources.summary, sources.etfHistories, sources.etfHistoryStatus),
       hasUsableData: (summary) => Boolean(summary?.rows?.length || summary?.entities?.length),
       fallback: normalizeEtfFallback,
       render: renderEtfTracking,
@@ -251,6 +253,8 @@
 
   const COLORS = ['#2457d6', '#0f766e', '#e11d48', '#f97316', '#7c3aed', '#0891b2'];
   const PANEL_RECORDS = new Map();
+  const ETF_HISTORY_WINDOW_DAYS = 31;
+  const ETF_HISTORY_TAIL_BYTES = 2_400_000;
   let watchlistBound = false;
   const $ = (selector) => document.querySelector(selector);
 
@@ -410,8 +414,11 @@
     if (!project || !adapter) return;
 
     const entries = await Promise.all(Object.entries(adapter.sourceUrls).map(async ([sourceKey, url]) => [sourceKey, await getJsonBestEffort(url)]));
-    const fetchResults = Object.fromEntries(entries);
-    const dataSources = Object.fromEntries(entries.map(([sourceKey, result]) => [sourceKey, result.ok ? result.data : null]));
+    let fetchResults = Object.fromEntries(entries);
+    let dataSources = Object.fromEntries(entries.map(([sourceKey, result]) => [sourceKey, result.ok ? result.data : null]));
+    const enrichment = await enrichPanelSources(adapter, dataSources, getJsonBestEffort);
+    dataSources = enrichment.dataSources;
+    fetchResults = { ...fetchResults, ...enrichment.fetchResults };
     const primaryResult = fetchResults[adapter.primarySourceKey] || { ok: false, error: 'Missing primary source.' };
     const contractError = primaryResult.ok ? validateAdapterContract(adapter, dataSources) : null;
     const parseResult = primaryResult.ok && !contractError ? parsePanelSafely(adapter, dataSources) : { ok: false, data: null, error: contractError || primaryResult.error };
@@ -428,7 +435,7 @@
       generatedAt: summary?.generatedAt || '',
       dataAsOf: summaryDataAsOf(summary),
       payloadBytes: Object.values(fetchResults).reduce((sum, result) => sum + numberOr(result.bytes, 0), 0),
-      sourceCount: Object.keys(adapter.sourceUrls).length,
+      sourceCount: Object.keys(fetchResults).length,
     };
   }
 
@@ -459,6 +466,19 @@
     }
   }
 
+  async function enrichPanelSources(adapter, dataSources, fetchJson) {
+    if (typeof adapter.enrichSources !== 'function') return { dataSources, fetchResults: {} };
+    try {
+      const enriched = await adapter.enrichSources(dataSources, fetchJson);
+      return {
+        dataSources: isRecord(enriched?.dataSources) ? enriched.dataSources : dataSources,
+        fetchResults: isRecord(enriched?.fetchResults) ? enriched.fetchResults : {},
+      };
+    } catch {
+      return { dataSources, fetchResults: {} };
+    }
+  }
+
   function resolveLoadState(fetchResult, hasUsableData, schemaReason) {
     if (fetchResult?.ok && hasUsableData) return { mode: 'live', error: null };
     if (fetchResult?.ok) return { mode: 'fallback', error: schemaReason || 'Payload schema did not contain usable data.' };
@@ -473,7 +493,7 @@
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const text = await response.text();
       const headerBytes = finiteOrNull(response.headers.get('content-length'));
-      const bytes = headerBytes ?? (typeof TextEncoder === 'undefined' ? text.length : new TextEncoder().encode(text).length);
+      const bytes = headerBytes ?? textByteLength(text);
       return { ok: true, data: JSON.parse(text), url, bytes };
     } catch (error) {
       return { ok: false, error: error instanceof Error ? error.message : String(error), url };
@@ -540,7 +560,7 @@
   function parseMomentum(payload) {
     if (isResearchSummary(payload, 'momentum')) {
       const meta = summaryMeta(payload);
-      const rows = summaryEntities(payload)
+      const baseRows = summaryEntities(payload)
         .sort((a, b) => numberOr(a.metrics.rank, 9999) - numberOr(b.metrics.rank, 9999))
         .map((entity, index) => ({
           rank: numberOr(entity.metrics.rank, index + 1),
@@ -551,12 +571,15 @@
           themes: entity.themes,
           warnings: entity.warnings,
         }));
+      const rows = deriveMomentumDisplayWeights(baseRows);
+      const weightSource = momentumWeightSource(rows);
       return {
         factor: stringOr(highlightValue(meta, 'factor'), meta.coverage?.selectedFactor, FALLBACK_SNAPSHOT.momentum.factor),
         generatedAt: meta.generatedAt,
         dataAsOf: meta.dataAsOf,
         outputLabel: stringOr(highlightValue(meta, 'output'), meta.statusLabel, 'Research signal'),
-        status: stringOr(meta.statusLabel, '공통 summary contract 표시 중'),
+        status: appendMomentumWeightStatus(stringOr(meta.statusLabel, '공통 summary contract 표시 중'), weightSource),
+        weightSource,
         rows: rows.slice(0, 5),
         entities: summaryEntities(payload),
         meta,
@@ -568,17 +591,58 @@
     const summary = isRecord(run.summary) ? run.summary : {};
     const factor = stringOr(summary.selected_factor, latestFactorLeader(run)?.best_factor, FALLBACK_SNAPSHOT.momentum.factor);
     const latestRows = momentumRowsFromLatestOutput(run);
-    const rows = latestRows.length ? latestRows : momentumRowsFromHoldings(run, factor);
+    const rows = deriveMomentumDisplayWeights(latestRows.length ? latestRows : momentumRowsFromHoldings(run, factor));
+    const weightSource = momentumWeightSource(rows);
 
     return {
       factor,
       generatedAt: stringOr(run.generated_at_utc, payload?.generated_at_utc, ''),
       dataAsOf: stringOr(summary.data_as_of, ''),
       outputLabel: stringOr(summary.recommendation_output_label, summary.recommendation_status, 'Research signal'),
-      status: stringOr(summary.recommendation_output_label, '라이브 공개 JSON 표시 중'),
+      status: appendMomentumWeightStatus(stringOr(summary.recommendation_output_label, '라이브 공개 JSON 표시 중'), weightSource),
+      weightSource,
       rows: rows.slice(0, 5),
       meta: {},
     };
+  }
+
+  function deriveMomentumDisplayWeights(rows) {
+    const records = asRecords(rows);
+    const displayNeedsFallback = !records.some((row) => numberOr(row.displayWeight, 0) > 0);
+    const finalNeedsFallback = !records.some((row) => numberOr(row.finalWeight, 0) > 0);
+    if (!displayNeedsFallback && !finalNeedsFallback) return records;
+
+    const signalWeights = momentumSignalWeights(records);
+    return records.map((row, index) => {
+      const signalWeight = signalWeights[index];
+      const displayWeight = displayNeedsFallback && signalWeight !== null ? signalWeight : finiteOrNull(row.displayWeight);
+      const finalWeight = finalNeedsFallback && signalWeight !== null ? signalWeight : finiteOrNull(row.finalWeight);
+      return {
+        ...row,
+        displayWeight,
+        finalWeight,
+        weightSource: (displayNeedsFallback || finalNeedsFallback) && signalWeight !== null ? 'signal_normalized' : 'source',
+      };
+    });
+  }
+
+  function momentumSignalWeights(rows) {
+    const positives = asRecords(rows).map((row) => Math.max(numberOr(row.signal, 0), 0));
+    const total = positives.reduce((sum, value) => sum + value, 0);
+    if (total > 0) return positives.map((value) => value / total);
+    const count = positives.length;
+    return count ? positives.map(() => 1 / count) : [];
+  }
+
+  function momentumWeightSource(rows) {
+    return asRecords(rows).some((row) => row.weightSource === 'signal_normalized')
+      ? '리서치 신호 정규화 비중'
+      : '원천 제공 비중';
+  }
+
+  function appendMomentumWeightStatus(status, weightSource) {
+    if (weightSource !== '리서치 신호 정규화 비중') return status;
+    return `${status} · 표시/최종 비중은 양수 신호 합계 기준 dashboard 정규화`;
   }
 
   function momentumRowsFromLatestOutput(run) {
@@ -619,45 +683,86 @@
     const meta = isResearchSummary(summaryPayload, 'dram') ? summaryMeta(summaryPayload) : {};
     const entities = summaryEntities(summaryPayload);
     const observations = asRecords(pricesPayload?.observations);
-    const representativeNames = new Set(
-      asRecords(seriesPayload?.series)
-        .filter((item) => item?.representative)
-        .map((item) => item.product_name)
-        .filter(Boolean)
-    );
+    const manifestSeries = asRecords(seriesPayload?.series);
+    const trendforceDailyKeys = new Set(manifestSeries.filter(isTrendforceDailySeries).map(dramObservationKey).filter(Boolean));
+    const trendforceDailySeries = buildDramSeries(observations, manifestSeries, (observation) => isTrendforceDailyObservation(observation, trendforceDailyKeys));
+    const fallbackSeries = trendforceDailySeries.length ? trendforceDailySeries : buildDramSeries(observations, manifestSeries, () => true);
+    const selected = fallbackSeries.filter((item) => item.points.length >= 2).slice(0, 6);
+    const series = selected.length ? selected : fallbackSeries.slice(0, 6);
+    const trendforceDailyMode = trendforceDailySeries.length > 0;
+
+    return {
+      generatedAt: stringOr(pricesPayload?.generated_at, statusPayload?.generated_at, ''),
+      observationCount: series.reduce((sum, item) => sum + item.points.length, 0) || observations.length || finiteOrNull(statusPayload?.observation_count),
+      status: trendforceDailyMode
+        ? appendDramSourceStatus(stringOr(meta.statusLabel, '라이브 공개 JSON 표시 중'), 'TrendForce daily saved prices')
+        : stringOr(meta.statusLabel, '라이브 공개 JSON 표시 중'),
+      series,
+      entities,
+      meta,
+    };
+  }
+
+  function buildDramSeries(observations, manifestSeries, predicate) {
+    const manifestByKey = new Map(asRecords(manifestSeries).map((item) => [dramObservationKey(item), item]).filter(([key]) => key));
     const groups = new Map();
-    for (const observation of observations) {
-      const name = stringOr(observation.product_name, observation.product_id, 'Unknown DRAM');
+    for (const observation of asRecords(observations)) {
+      if (!predicate(observation)) continue;
+      const key = dramObservationKey(observation) || stringOr(observation.product_name, observation.product_id, 'Unknown DRAM');
+      const manifest = manifestByKey.get(key) || {};
+      const name = stringOr(observation.product_name, manifest.product_name, observation.product_id, 'Unknown DRAM');
       const value = dramMetricValue(observation.values || {});
       const date = stringOr(observation.effective_date, observation.date, '');
       if (!isValidChartPoint(date, value)) continue;
-      if (!groups.has(name)) groups.set(name, { name, representative: representativeNames.has(name), points: [] });
-      groups.get(name).points.push([date, value]);
+      if (!groups.has(key)) {
+        groups.set(key, {
+          key,
+          name,
+          source: stringOr(observation.source, manifest.source, ''),
+          cadence: stringOr(observation.cadence, asArray(manifest.cadences)[0], ''),
+          representative: Boolean(manifest.representative),
+          points: [],
+        });
+      }
+      groups.get(key).points.push([date, value]);
     }
 
-    const allSeries = [...groups.values()]
+    return [...groups.values()]
       .map((item) => ({
         ...item,
+        name: item.source === 'trendforce' && item.cadence === 'daily' ? `${item.name} · TrendForce daily` : item.name,
         points: item.points
           .sort((a, b) => a[0].localeCompare(b[0]))
           .filter((point, index, arr) => index === 0 || point[0] !== arr[index - 1][0]),
       }))
       .filter((item) => item.points.length > 0)
       .sort((a, b) => {
+        const aTrend = a.source === 'trendforce' && a.cadence === 'daily';
+        const bTrend = b.source === 'trendforce' && b.cadence === 'daily';
+        if (aTrend !== bTrend) return aTrend ? -1 : 1;
         if (a.representative !== b.representative) return a.representative ? -1 : 1;
-        return b.points.length - a.points.length;
+        return b.points.length - a.points.length || a.name.localeCompare(b.name);
       });
+  }
 
-    const chartSeries = allSeries.filter((item) => item.points.length >= 2).slice(0, 4);
-    const selected = chartSeries.length ? chartSeries : allSeries.slice(0, 4);
-    return {
-      generatedAt: stringOr(pricesPayload?.generated_at, statusPayload?.generated_at, ''),
-      observationCount: observations.length || finiteOrNull(statusPayload?.observation_count),
-      status: stringOr(meta.statusLabel, '라이브 공개 JSON 표시 중'),
-      series: selected,
-      entities,
-      meta,
-    };
+  function dramObservationKey(item) {
+    return stringOr(item?.product_id, item?.product_name, '').toLowerCase();
+  }
+
+  function isTrendforceDailySeries(item) {
+    return String(item?.source || '').toLowerCase() === 'trendforce'
+      && asArray(item?.cadences).map((value) => String(value).toLowerCase()).includes('daily');
+  }
+
+  function isTrendforceDailyObservation(observation, trendforceDailyKeys = new Set()) {
+    const source = String(observation?.source || '').toLowerCase();
+    const cadence = String(observation?.cadence || '').toLowerCase();
+    const key = dramObservationKey(observation);
+    return source === 'trendforce' && (cadence === 'daily' || trendforceDailyKeys.has(key));
+  }
+
+  function appendDramSourceStatus(status, sourceLabel) {
+    return `${status} · ${sourceLabel}`;
   }
 
   function dramMetricValue(values) {
@@ -722,12 +827,14 @@
   }
 
 
-  function parseEtfTracking(payload, summaryPayload) {
+  function parseEtfTracking(payload, summaryPayload, historySources = {}, historyLoadStatus = {}) {
     const meta = isResearchSummary(summaryPayload, 'etf') ? summaryMeta(summaryPayload) : {};
     const entities = summaryEntities(summaryPayload);
     const rows = asRecords(payload?.etfs).map((etf) => {
-      const history = asRecords(etf.history).map(normalizeEtfSnapshot).filter((snapshot) => snapshot.date).sort((a, b) => a.date.localeCompare(b.date));
-      const latest = normalizeEtfSnapshot(etf.latest) || history.at(-1) || {};
+      const historyPayload = etfHistoryFor(etf, historySources);
+      const rawHistory = asRecords(historyPayload?.history).length ? historyPayload.history : etf.history;
+      const history = asRecords(rawHistory).map(normalizeEtfSnapshot).filter((snapshot) => snapshot.date).sort((a, b) => a.date.localeCompare(b.date));
+      const latest = normalizeEtfSnapshot(etf.latest) || normalizeEtfSnapshot(historyPayload?.latest) || history.at(-1) || {};
       const top10 = latest.top10.slice(0, 10);
       const top = top10[0] || {};
       const metrics = isRecord(etf.metrics) ? etf.metrics : {};
@@ -735,7 +842,7 @@
       const signalCount = numberOr(metrics.signalCount, latestSignals.length);
       const entryExitCount = numberOr(metrics.entryExitSignalCount, latestSignals.filter((signal) => ['top10_entry', 'top10_exit'].includes(signal.type)).length);
       const top10Weight = top10.reduce((sum, holding) => sum + (finiteOrNull(holding.weight) || 0), 0);
-      const chartHistory = history.length ? history : (latest.date ? [latest] : []);
+      const chartHistory = history.length ? recentEtfHistory(history, latest.date, ETF_HISTORY_WINDOW_DAYS) : (latest.date ? [latest] : []);
       return {
         id: stringOr(etf.id, etf.code, etf.shortName, etf.name, ''),
         name: stringOr(etf.shortName, etf.name, 'ETF'),
@@ -758,11 +865,210 @@
 
     return {
       generatedAt: stringOr(payload?.generatedAt, meta.generatedAt, ''),
-      status: stringOr(payload?.disclaimer, '라이브 공개 JSON 표시 중'),
+      status: appendEtfHistoryStatus(stringOr(payload?.disclaimer, '라이브 공개 JSON 표시 중'), historyLoadStatus),
+      historyWindowDays: ETF_HISTORY_WINDOW_DAYS,
       rows: rows.length ? rows : etfRowsFromSummaryEntities(entities, meta),
       entities,
       meta,
     };
+  }
+
+  async function enrichEtfTrackingSources(dataSources, fetchJson) {
+    const manifestEtfs = asRecords(dataSources?.etfHistoryManifest?.etfs);
+    if (!manifestEtfs.length) return { dataSources, fetchResults: {} };
+    const fetchEntries = await Promise.all(manifestEtfs.map(async (item) => {
+      const url = resolveEtfHistoryUrl(item.historyUrl);
+      const key = stringOr(item.id, item.code, item.shortName, item.name, url);
+      if (!url || !key) return [key, { ok: false, error: 'Invalid ETF history URL.', url }];
+      return [key, await getEtfHistoryBestEffort(url, item, fetchJson)];
+    }));
+    const histories = {};
+    const extraFetchResults = {};
+    for (const [key, result] of fetchEntries) {
+      extraFetchResults[`etfHistory:${key}`] = result;
+      if (result?.ok) histories[key] = compactEtfHistoryPayload(result.data, ETF_HISTORY_WINDOW_DAYS);
+    }
+    const requested = fetchEntries.length;
+    const loaded = Object.keys(histories).length;
+    return {
+      dataSources: {
+        ...dataSources,
+        etfHistories: histories,
+        etfHistoryStatus: { requested, loaded, failed: Math.max(requested - loaded, 0) },
+      },
+      fetchResults: extraFetchResults,
+    };
+  }
+
+  async function getEtfHistoryBestEffort(url, manifestItem, fetchJson) {
+    const ranged = await getEtfHistoryTailBestEffort(url, manifestItem);
+    if (ranged.ok) return ranged;
+    return fetchJson(url, 20000);
+  }
+
+  async function getEtfHistoryTailBestEffort(url, manifestItem, timeoutMs = 12000) {
+    if (typeof fetch !== 'function') return { ok: false, error: 'Fetch API unavailable for ranged ETF history.', url };
+    const controller = new AbortController();
+    const timerApi = typeof window !== 'undefined' && window.setTimeout ? window : globalThis;
+    const timeout = timerApi.setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(url, {
+        signal: controller.signal,
+        cache: 'no-store',
+        headers: { Range: `bytes=-${ETF_HISTORY_TAIL_BYTES}` },
+      });
+      if (!response.ok && response.status !== 206) throw new Error(`HTTP ${response.status}`);
+      const text = await response.text();
+      const compact = compactEtfHistoryTailText(text, manifestItem, ETF_HISTORY_WINDOW_DAYS);
+      if (!compact || !asRecords(compact.history).length) throw new Error('ETF history tail did not contain recent snapshots.');
+      return {
+        ok: true,
+        data: compact,
+        url,
+        bytes: textByteLength(text),
+        partial: response.status === 206,
+      };
+    } catch (error) {
+      return { ok: false, error: error instanceof Error ? error.message : String(error), url };
+    } finally {
+      timerApi.clearTimeout(timeout);
+    }
+  }
+
+  function resolveEtfHistoryUrl(historyUrl) {
+    if (!historyUrl) return '';
+    try {
+      const url = new URL(String(historyUrl), 'https://sonchanggi.github.io/etf-tracking/');
+      const validHost = url.protocol === 'https:' && url.hostname === 'sonchanggi.github.io';
+      const validPath = /^\/etf-tracking\/data\/history\/[a-z0-9-]+\.json$/i.test(url.pathname);
+      return validHost && validPath ? url.href : '';
+    } catch {
+      return '';
+    }
+  }
+
+  function compactEtfHistoryPayload(payload, windowDays = 31) {
+    const history = dedupeEtfSnapshots(asRecords(payload?.history).map(normalizeEtfSnapshot).filter((snapshot) => snapshot.date));
+    const latest = normalizeEtfSnapshot(payload?.latest) || history.at(-1) || null;
+    const endDate = stringOr(latest?.date, payload?.availableEndDate, history.at(-1)?.date, '');
+    return {
+      id: stringOr(payload?.id, ''),
+      shortName: stringOr(payload?.shortName, payload?.name, ''),
+      code: stringOr(payload?.code, ''),
+      name: stringOr(payload?.name, ''),
+      latest,
+      history: recentEtfHistory(history, endDate, windowDays),
+      historyCount: numberOr(payload?.historyCount, history.length),
+      availableStartDate: stringOr(payload?.availableStartDate, history[0]?.date, ''),
+      availableEndDate: stringOr(payload?.availableEndDate, history.at(-1)?.date, ''),
+    };
+  }
+
+  function compactEtfHistoryTailText(text, manifestItem = {}, windowDays = 31) {
+    try {
+      return compactEtfHistoryPayload(JSON.parse(text), windowDays);
+    } catch {
+      // Ranged ETF history responses intentionally start mid-file; extract complete
+      // snapshot objects rather than downloading multi-megabyte replay files.
+    }
+    const rawSnapshots = extractEtfSnapshotObjects(text);
+    if (!rawSnapshots.length) return null;
+    const history = dedupeEtfSnapshots(rawSnapshots.map(normalizeEtfSnapshot).filter((snapshot) => snapshot?.date));
+    const latest = history.at(-1) || null;
+    const endDate = stringOr(latest?.date, manifestItem?.availableEndDate, history.at(-1)?.date, '');
+    return {
+      id: stringOr(manifestItem?.id, ''),
+      shortName: stringOr(manifestItem?.shortName, manifestItem?.name, ''),
+      code: stringOr(manifestItem?.code, ''),
+      name: stringOr(manifestItem?.name, ''),
+      latest,
+      history: recentEtfHistory(history, endDate, windowDays),
+      historyCount: numberOr(manifestItem?.historyCount, history.length),
+      availableStartDate: stringOr(manifestItem?.availableStartDate, history[0]?.date, ''),
+      availableEndDate: stringOr(manifestItem?.availableEndDate, history.at(-1)?.date, ''),
+    };
+  }
+
+  function extractEtfSnapshotObjects(text) {
+    const snapshots = [];
+    const matcher = /\{"date":"\d{4}-\d{2}-\d{2}"/g;
+    let match;
+    while ((match = matcher.exec(text))) {
+      const lookahead = text.slice(match.index, match.index + 700);
+      if (!/"holdings":\[/.test(lookahead)) continue;
+      const objectText = extractBalancedJsonObject(text, match.index);
+      if (!objectText) continue;
+      try {
+        const snapshot = JSON.parse(objectText);
+        if (asRecords(snapshot.holdings).length || asRecords(snapshot.top10).length) snapshots.push(snapshot);
+      } catch {
+        // Ignore partial or nested objects from the ranged boundary.
+      }
+    }
+    return snapshots;
+  }
+
+  function extractBalancedJsonObject(text, startIndex) {
+    let depth = 0;
+    let inString = false;
+    let escaped = false;
+    for (let index = startIndex; index < text.length; index += 1) {
+      const char = text[index];
+      if (inString) {
+        if (escaped) {
+          escaped = false;
+        } else if (char === '\\') {
+          escaped = true;
+        } else if (char === '"') {
+          inString = false;
+        }
+        continue;
+      }
+      if (char === '"') {
+        inString = true;
+      } else if (char === '{') {
+        depth += 1;
+      } else if (char === '}') {
+        depth -= 1;
+        if (depth === 0) return text.slice(startIndex, index + 1);
+      }
+    }
+    return '';
+  }
+
+  function dedupeEtfSnapshots(history) {
+    const byDate = new Map();
+    for (const snapshot of asRecords(history)) {
+      if (snapshot.date) byDate.set(snapshot.date, snapshot);
+    }
+    return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
+  }
+
+  function etfHistoryFor(etf, historySources = {}) {
+    const keys = [etf?.id, etf?.code, etf?.shortName, etf?.name].map((value) => stringOr(value, ''));
+    return keys.map((key) => historySources[key]).find(isRecord) || null;
+  }
+
+  function appendEtfHistoryStatus(status, historyLoadStatus = {}) {
+    const requested = numberOr(historyLoadStatus?.requested, 0);
+    if (!requested) return status;
+    const loaded = numberOr(historyLoadStatus?.loaded, 0);
+    if (loaded >= requested) return `${status} · 최근 1개월 history ${loaded}/${requested}개 로드`;
+    if (loaded > 0) return `${status} · 최근 1개월 history 일부 로드(${loaded}/${requested})`;
+    return `${status} · 최근 1개월 history 로드 실패`;
+  }
+
+  function recentEtfHistory(history, endDate = '', windowDays = 31) {
+    const rows = asRecords(history).filter((snapshot) => snapshot.date).sort((a, b) => a.date.localeCompare(b.date));
+    if (!rows.length) return [];
+    const end = Date.parse(endDate || rows.at(-1)?.date || '');
+    if (!Number.isFinite(end)) return rows.slice(-31);
+    const cutoff = end - (Math.max(windowDays, 1) - 1) * 24 * 60 * 60 * 1000;
+    const recent = rows.filter((snapshot) => {
+      const time = Date.parse(snapshot.date);
+      return Number.isFinite(time) && time >= cutoff && time <= end;
+    });
+    return recent.length ? recent : rows.slice(-31);
   }
 
   function etfRowsFromSummaryEntities(entities, meta = {}) {
@@ -1037,8 +1343,8 @@
     target.innerHTML = `
       <div class="etf-detail-heading">
         <div>
-          <strong>ETF별 최신 TOP10과 비중 변화</strong>
-          <span>미니 그래프는 현재 TOP10 종목의 저장된 비중 히스토리를 표시합니다.</span>
+          <strong>ETF별 최신 TOP10과 최근 1개월 비중 변화</strong>
+          <span>표는 최신 기준일, 미니 그래프는 현재 TOP10 종목의 최근 31일 저장 비중 히스토리를 표시합니다.</span>
         </div>
       </div>
       <div class="etf-detail-grid">${cards || '<div class="skeleton-line">ETF 상세 요약을 표시할 데이터가 없습니다.</div>'}</div>
@@ -1236,7 +1542,7 @@
         <line x1="${margin.left}" x2="${margin.left}" y1="${margin.top}" y2="${height - margin.bottom}" stroke="#aab7cf"/>
         <text x="${margin.left}" y="${height - 18}" fill="#667085" font-size="12">${escapeHtml(xLabels[0])}</text>
         <text x="${width - margin.right}" y="${height - 18}" text-anchor="end" fill="#667085" font-size="12">${escapeHtml(xLabels[1])}</text>
-        <text x="${margin.left}" y="18" fill="#344054" font-size="13" font-weight="700">USD 기준 가격 추이</text>
+        <text x="${margin.left}" y="18" fill="#344054" font-size="13" font-weight="700">TrendForce daily · USD 기준 가격 추이</text>
         ${paths}
       </svg>
       <div class="chart-legend">${legend}</div>
@@ -1613,6 +1919,11 @@
     return `${bytes.toLocaleString('ko-KR')} B`;
   }
 
+  function textByteLength(text) {
+    const value = String(text || '');
+    return typeof TextEncoder === 'undefined' ? value.length : new TextEncoder().encode(value).length;
+  }
+
   function coerceWeightFraction(weight, weightPercent) {
     const direct = finiteOrNull(weight);
     if (direct !== null) return direct;
@@ -1720,6 +2031,16 @@
       parseBestFactor,
       parseEtfTracking,
       parseValuation,
+      deriveMomentumDisplayWeights,
+      momentumSignalWeights,
+      buildDramSeries,
+      isTrendforceDailyObservation,
+      compactEtfHistoryPayload,
+      compactEtfHistoryTailText,
+      extractEtfSnapshotObjects,
+      appendEtfHistoryStatus,
+      recentEtfHistory,
+      resolveEtfHistoryUrl,
       buildEtfWeightSeries,
       renderEtfMiniChart,
       renderEtfDetailCards,

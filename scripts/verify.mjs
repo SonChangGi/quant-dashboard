@@ -37,6 +37,7 @@ const dataUrls = [
   'https://sonchanggi.github.io/best-factor/data/summary.json',
   'https://sonchanggi.github.io/etf-tracking/data/summary.json',
   'https://sonchanggi.github.io/etf-tracking/data/dashboard.json',
+  'https://sonchanggi.github.io/etf-tracking/data/history.json',
   'https://sonchanggi.github.io/valuation/data/summary.json',
 ];
 for (const url of dataUrls) {
@@ -56,6 +57,7 @@ assert(contains(files.html, 'id="watchlist-input"'), 'watchlist input exists');
 assert(contains(files.html, 'id="data-health"'), 'data health mount exists');
 assert(contains(files.app, 'FALLBACK_SNAPSHOT'), 'fallback snapshot exists');
 assert(contains(files.app, 'getJsonBestEffort'), 'best-effort fetch helper exists');
+assert(contains(files.app, 'textByteLength'), 'payload byte counter helper exists');
 assert(contains(files.app, 'resolveLoadState'), 'schema/empty-data load state resolver exists');
 assert(contains(files.app, 'parsePanelSafely'), 'parser exception fallback guard exists');
 assert(contains(files.app, 'validateAdapterContract'), 'versioned public JSON contract validator exists');
@@ -63,14 +65,22 @@ assert(contains(files.app, 'expectedVersion') && contains(files.app, 'schemaVers
 assert(contains(files.app, 'asRecords'), 'external arrays are filtered to records');
 assert(contains(files.app, 'parseMomentum'), 'momentum parser exists');
 assert(contains(files.app, 'latest_output_rows'), 'momentum latest output optional field is handled');
+assert(contains(files.app, 'deriveMomentumDisplayWeights'), 'momentum research-only weights are normalized for display');
+assert(contains(files.app, '리서치 신호 정규화 비중'), 'momentum normalized weight source is explicit');
 assert(contains(files.app, 'parseDram'), 'DRAM parser exists');
 assert(contains(files.app, 'renderDramChart'), 'DRAM SVG chart renderer exists');
+assert(contains(files.app, 'TrendForce daily'), 'DRAM chart prioritizes saved TrendForce daily prices');
 assert(contains(files.app, 'D램 가격'), 'Korean D램 price label exists');
 assert(contains(files.app, 'isValidChartPoint'), 'DRAM chart validates date/value points');
 assert(contains(files.app, 'parseBestFactor'), 'best factor parser exists');
 assert(contains(files.app, 'parseEtfTracking'), 'ETF Tracking parser exists');
 assert(contains(files.app, 'parseValuation'), 'Valuation parser exists');
 assert(contains(files.app, 'ETF별 TOP10 비중'), 'ETF Tracking detail panel label exists');
+assert(contains(files.app, '최근 1개월 비중 변화'), 'ETF Tracking chart copy names the one-month history window');
+assert(contains(files.app, 'enrichEtfTrackingSources'), 'ETF Tracking adapter loads per-ETF history sources');
+assert(contains(files.app, 'compactEtfHistoryPayload'), 'ETF Tracking history is compacted to recent window');
+assert(contains(files.app, 'Range') && contains(files.app, 'compactEtfHistoryTailText'), 'ETF Tracking history uses ranged tail reads before full-file fallback');
+assert(contains(files.app, 'appendEtfHistoryStatus'), 'ETF Tracking status reports per-ETF history load coverage');
 assert(contains(files.app, 'renderEtfDetailCards'), 'ETF Tracking TOP10 detail renderer exists');
 assert(contains(files.app, 'renderEtfMiniChart'), 'ETF Tracking mini chart renderer exists');
 assert(contains(files.css, '.etf-detail-grid'), 'ETF Tracking detail grid CSS exists');

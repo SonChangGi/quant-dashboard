@@ -41,8 +41,37 @@ assert(/Valuation payload/.test(valuationState.error), 'Valuation fallback keeps
 const validMomentum = api.parseMomentum({ runs: [{ summary: { selected_factor: 'mom_valid', data_as_of: '2026-06-10' }, latest_output_rows: [{ rank: 1, symbol: 'AAA', score: 2, proposed_weight: 0.2, weight: 0.1 }] }], latest_run_index: 0 });
 assert(validMomentum.rows.length === 1 && validMomentum.factor === 'mom_valid', 'recorded valid Momentum fixture produces top row');
 
+const researchOnlyMomentum = api.parseMomentum({
+  schemaVersion: 1,
+  contract: 'quant-research-summary',
+  projectId: 'momentum',
+  generatedAt: '2026-06-18T00:00:00Z',
+  dataAsOf: '2026-06-18',
+  status: { label: 'Research signals (not tradable)' },
+  highlights: [{ label: 'Selected factor', value: 'mom_9_1' }],
+  primaryEntities: [
+    { symbol: 'AAA', metrics: { rank: 1, signal: 3, displayWeight: 0, finalWeight: 0 } },
+    { symbol: 'BBB', metrics: { rank: 2, signal: 1, displayWeight: 0, finalWeight: 0 } },
+  ],
+});
+const researchWeightTotal = researchOnlyMomentum.rows.reduce((sum, row) => sum + row.finalWeight, 0);
+assert(researchOnlyMomentum.rows[0].displayWeight === 0.75 && researchOnlyMomentum.rows[0].finalWeight === 0.75, 'Momentum research-only zero weights are replaced with signal-normalized dashboard weights');
+assert(Math.abs(researchWeightTotal - 1) < 1e-9 && /정규화/.test(researchOnlyMomentum.status), 'Momentum normalized weights sum to one and keep source status explicit');
+
 const validDram = api.parseDram({ observations: [{ product_name: 'DDR5 Fixture', date: '2026-06-10', values: { average: 42 } }] }, { series: [{ product_name: 'DDR5 Fixture', representative: true }] }, { generated_at: '2026-06-10T00:00:00Z' });
 assert(validDram.series.length === 1 && validDram.series[0].points.length === 1, 'recorded valid DRAM fixture produces chart series');
+
+const trendforceDram = api.parseDram({
+  generated_at: '2026-06-18T00:00:00Z',
+  observations: [
+    { source: 'memorymarket', cadence: 'weekly', product_id: 'mm-ddr4', product_name: 'MemoryMarket Weekly', date: '2026-06-10', values: { average: 30 } },
+    { source: 'memorymarket', cadence: 'weekly', product_id: 'mm-ddr4', product_name: 'MemoryMarket Weekly', date: '2026-06-17', values: { average: 31 } },
+    { source: 'trendforce', cadence: 'daily', product_id: 'tf-ddr5', product_name: 'DDR5 Daily', date: '2026-06-17', values: { session_average: 44 } },
+    { source: 'trendforce', cadence: 'daily', product_id: 'tf-ddr5', product_name: 'DDR5 Daily', date: '2026-06-18', values: { session_average: 45 } },
+  ],
+}, { series: [{ source: 'trendforce', cadences: ['daily'], product_id: 'tf-ddr5', product_name: 'DDR5 Daily', representative: true }] }, { generated_at: '2026-06-18T00:00:00Z' });
+assert(trendforceDram.series.length === 1 && /TrendForce daily/.test(trendforceDram.series[0].name), 'DRAM parser prioritizes saved TrendForce daily price series over weekly proxies');
+assert(trendforceDram.series[0].points.length === 2 && trendforceDram.observationCount === 2, 'DRAM chart uses daily TrendForce observations and counts selected points');
 
 const validBest = api.parseBestFactor({ summary: { best_factor: 'quality', data_end_date: '2026-06-10' }, latest_holdings: [{ factor: 'quality', ticker: 'BBB', score: 1, weight: 0.3, rebalance_date: '2026-06-01' }] });
 assert(validBest.rows.length === 1 && validBest.factor === 'quality', 'recorded valid Best Factor fixture produces holding row');
@@ -71,6 +100,42 @@ const validEtf = api.parseEtfTracking({
 assert(validEtf.rows.length === 1 && validEtf.rows[0].topWeight === 0.065, 'recorded valid ETF Tracking fixture produces ETF row');
 assert(validEtf.rows[0].top10.length === 2 && validEtf.rows[0].top10Weight === 0.11, 'recorded valid ETF Tracking fixture preserves top10 list and total weight');
 assert(validEtf.rows[0].chartSeries.length === 2 && validEtf.rows[0].chartSeries[0].points.length === 2, 'recorded valid ETF Tracking fixture builds mini chart series');
+
+const etfHistoryPayload = api.compactEtfHistoryPayload({
+  id: 'etf-fixture',
+  latest: { date: '2026-06-30', top10: [{ rank: 1, ticker: 'AAA', weight: 0.1 }] },
+  history: Array.from({ length: 47 }, (_, index) => {
+    const date = new Date(Date.UTC(2026, 4, 15 + index)).toISOString().slice(0, 10);
+    return { date, holdings: [{ rank: 1, ticker: 'AAA', weight: 0.01 + index / 1000 }] };
+  }),
+}, 31);
+assert(etfHistoryPayload.history.every((row) => row.date >= '2026-05-31'), 'ETF compact history keeps only the recent one-month window');
+
+const etfTailPayload = api.compactEtfHistoryTailText([
+  '{"message":"partial ranged payload starts inside an older object"}',
+  '{"date":"2026-05-30","sourceStatus":"live","queryDate":"2026-05-30","holdings":[{"rank":1,"ticker":"AAA","weight":0.11}]}',
+  ',{"date":"2026-06-17","sourceStatus":"live","queryDate":"2026-06-17","holdings":[{"rank":1,"ticker":"AAA","weight":0.12}]}',
+  ',{"date":"2026-06-30","sourceStatus":"live","queryDate":"2026-06-30","holdings":[{"rank":1,"ticker":"AAA","weight":0.13}]}]}',
+].join(''), { id: 'tail-fixture', shortName: 'Tail ETF', historyCount: 3, availableEndDate: '2026-06-30' }, 31);
+assert(etfTailPayload.history.length === 2 && etfTailPayload.history[0].date === '2026-06-17', 'ETF ranged history tail parser extracts complete recent one-month snapshots');
+
+const validEtfWithExternalHistory = api.parseEtfTracking({
+  generatedAt: '2026-06-30T00:00:00Z',
+  etfs: [{
+    id: 'etf-fixture',
+    shortName: 'ETF Fixture',
+    code: '0000',
+    latest: {
+      date: '2026-06-30',
+      sourceStatus: 'live',
+      top10: [{ rank: 1, ticker: 'AAA', name: 'Alpha', weight: 0.21 }],
+    },
+  }],
+}, null, { 'etf-fixture': etfHistoryPayload }, { requested: 1, loaded: 1, failed: 0 });
+assert(validEtfWithExternalHistory.rows[0].chartSeries[0].points.length === etfHistoryPayload.history.length, 'ETF parser uses external per-ETF month history for mini charts');
+assert(validEtfWithExternalHistory.status.includes('최근 1개월 history 1/1개 로드'), 'ETF parser status reports per-ETF month-history load coverage');
+assert(api.resolveEtfHistoryUrl('data/history/etf-fixture.json') === 'https://sonchanggi.github.io/etf-tracking/data/history/etf-fixture.json', 'ETF history URL resolver allows same-site per-ETF history JSON');
+assert(api.resolveEtfHistoryUrl('https://evil.example/history.json') === '', 'ETF history URL resolver rejects off-site history URLs');
 
 const validValuation = api.parseValuation({
   generatedAt: '2026-06-19T00:00:00Z',
