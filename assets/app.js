@@ -162,6 +162,7 @@
       primarySourceKey: 'summary',
       contracts: { summary: SUMMARY_CONTRACT },
       enrichSources: enrichEtfTrackingSources,
+      enrichmentFailure: etfHistoryEnrichmentFailure,
       parse: (sources) => parseEtfTracking(sources.etf, sources.summary, sources.etfHistories, sources.etfHistoryStatus),
       hasUsableData: (summary) => Boolean(summary?.rows?.length || summary?.entities?.length),
       fallback: normalizeEtfFallback,
@@ -474,8 +475,11 @@
         dataSources: isRecord(enriched?.dataSources) ? enriched.dataSources : dataSources,
         fetchResults: isRecord(enriched?.fetchResults) ? enriched.fetchResults : {},
       };
-    } catch {
-      return { dataSources, fetchResults: {} };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return adapter.enrichmentFailure
+        ? adapter.enrichmentFailure(dataSources, message)
+        : { dataSources, fetchResults: { enrichment: { ok: false, error: message } } };
     }
   }
 
@@ -900,6 +904,22 @@
     };
   }
 
+
+  function etfHistoryEnrichmentFailure(dataSources, errorMessage) {
+    const manifestEtfs = asRecords(dataSources?.etfHistoryManifest?.etfs);
+    const requested = manifestEtfs.length;
+    return {
+      dataSources: {
+        ...dataSources,
+        etfHistories: {},
+        etfHistoryStatus: { requested, loaded: 0, failed: requested || 1, error: stringOr(errorMessage, 'ETF history enrichment failed.') },
+      },
+      fetchResults: {
+        etfHistoryEnrichment: { ok: false, error: stringOr(errorMessage, 'ETF history enrichment failed.') },
+      },
+    };
+  }
+
   async function getEtfHistoryBestEffort(url, manifestItem, fetchJson) {
     const ranged = await getEtfHistoryTailBestEffort(url, manifestItem);
     if (ranged.ok) return ranged;
@@ -1055,7 +1075,8 @@
     const loaded = numberOr(historyLoadStatus?.loaded, 0);
     if (loaded >= requested) return `${status} · 최근 1개월 history ${loaded}/${requested}개 로드`;
     if (loaded > 0) return `${status} · 최근 1개월 history 일부 로드(${loaded}/${requested})`;
-    return `${status} · 최근 1개월 history 로드 실패`;
+    const error = stringOr(historyLoadStatus?.error, '상세 원인 없음');
+    return `${status} · 최근 1개월 history 로드 실패(${requested}개 요청 · ${error})`;
   }
 
   function recentEtfHistory(history, endDate = '', windowDays = 31) {
@@ -1687,6 +1708,17 @@
   function renderDataHealth(records = []) {
     const target = $('#data-health');
     if (!target) return;
+    const portfolio = portfolioFreshnessSummary(records);
+    const portfolioRow = portfolio ? `
+      <article class="health-item ${portfolio.mixed ? 'warn' : 'ok'}">
+        <div>
+          <strong>Portfolio snapshot</strong>
+          <span>${portfolio.mixed ? 'mixed freshness' : 'aligned'}</span>
+        </div>
+        <p>${escapeHtml(portfolio.label)}</p>
+        <small>${escapeHtml('허브는 각 프로젝트의 public JSON을 독립적으로 읽습니다. 이 행은 서로 다른 기준일이 섞였는지 보여줍니다.')}</small>
+      </article>
+    ` : '';
     const rows = records.map((record) => `
       <article class="health-item ${healthTone(record)}">
         <div>
@@ -1698,7 +1730,24 @@
         ${safeAutomationUrl(record.summary?.meta?.automation?.workflowUrl) ? `<a class="health-link" href="${escapeAttribute(safeAutomationUrl(record.summary.meta.automation.workflowUrl))}" rel="noopener noreferrer">자동화/수동 실행</a>` : ''}
       </article>
     `).join('');
-    target.innerHTML = rows || '<div class="skeleton-line">데이터 상태를 표시할 수 없습니다.</div>';
+    target.innerHTML = portfolioRow || rows ? `${portfolioRow}${rows}` : '<div class="skeleton-line">데이터 상태를 표시할 수 없습니다.</div>';
+  }
+
+
+  function portfolioFreshnessSummary(records = []) {
+    const dated = records.map((record) => ({
+      name: record?.project?.shortName || record?.project?.id || 'Project',
+      date: recordFreshnessDate(record),
+    })).filter((item) => item.date);
+    if (!dated.length) return null;
+    const dates = dated.map((item) => item.date).sort();
+    const oldest = dates[0];
+    const newest = dates.at(-1);
+    const mixed = oldest !== newest;
+    const label = mixed
+      ? `혼합 기준일: ${formatMaybeDate(oldest)} ~ ${formatMaybeDate(newest)} · ${dated.map((item) => `${item.name} ${formatMaybeDate(item.date)}`).join(' / ')}`
+      : `모든 패널 기준일 ${formatMaybeDate(newest)}로 정렬`;
+    return { oldest, newest, mixed, label, records: dated };
   }
 
   function healthTone(record) {
@@ -2039,6 +2088,8 @@
       compactEtfHistoryTailText,
       extractEtfSnapshotObjects,
       appendEtfHistoryStatus,
+      etfHistoryEnrichmentFailure,
+      enrichPanelSources,
       recentEtfHistory,
       resolveEtfHistoryUrl,
       buildEtfWeightSeries,
@@ -2061,6 +2112,7 @@
       isRecordStale,
       recordFreshnessDate,
       recordFreshnessText,
+      portfolioFreshnessSummary,
       summaryDataAsOf,
       safeAutomationUrl,
       renderProjectNavigation,

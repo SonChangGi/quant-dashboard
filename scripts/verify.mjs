@@ -81,6 +81,7 @@ assert(contains(files.app, 'enrichEtfTrackingSources'), 'ETF Tracking adapter lo
 assert(contains(files.app, 'compactEtfHistoryPayload'), 'ETF Tracking history is compacted to recent window');
 assert(contains(files.app, 'Range') && contains(files.app, 'compactEtfHistoryTailText'), 'ETF Tracking history uses ranged tail reads before full-file fallback');
 assert(contains(files.app, 'appendEtfHistoryStatus'), 'ETF Tracking status reports per-ETF history load coverage');
+assert(contains(files.app, 'etfHistoryEnrichmentFailure'), 'ETF Tracking history enrichment failures stay visible');
 assert(contains(files.app, 'renderEtfDetailCards'), 'ETF Tracking TOP10 detail renderer exists');
 assert(contains(files.app, 'renderEtfMiniChart'), 'ETF Tracking mini chart renderer exists');
 assert(contains(files.css, '.etf-detail-grid'), 'ETF Tracking detail grid CSS exists');
@@ -89,6 +90,7 @@ assert(contains(files.app, 'latest_holdings'), 'best factor holdings optional fi
 assert(contains(files.app, 'formatFreshness'), 'freshness formatter exists');
 assert(contains(files.app, 'renderResearchBriefing'), 'research briefing renderer exists');
 assert(contains(files.app, 'renderDataHealth'), 'data health renderer exists');
+assert(contains(files.app, 'portfolioFreshnessSummary'), 'data health exposes cross-project freshness coherence');
 assert(contains(files.app, 'watchlistMatchesForToken'), 'watchlist matcher exists');
 assert(contains(files.app, 'health-link'), 'data health links automation/manual update workflows');
 assert(contains(files.app, 'entitySummaryLine'), 'watchlist dossier uses entity-level summary lines');

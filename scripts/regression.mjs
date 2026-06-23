@@ -134,6 +134,12 @@ const validEtfWithExternalHistory = api.parseEtfTracking({
 }, null, { 'etf-fixture': etfHistoryPayload }, { requested: 1, loaded: 1, failed: 0 });
 assert(validEtfWithExternalHistory.rows[0].chartSeries[0].points.length === etfHistoryPayload.history.length, 'ETF parser uses external per-ETF month history for mini charts');
 assert(validEtfWithExternalHistory.status.includes('최근 1개월 history 1/1개 로드'), 'ETF parser status reports per-ETF month-history load coverage');
+const failedEtfHistoryStatus = api.appendEtfHistoryStatus('ETF fixture status', { requested: 2, loaded: 0, failed: 2, error: 'fixture boom' });
+assert(failedEtfHistoryStatus.includes('history 로드 실패') && failedEtfHistoryStatus.includes('fixture boom'), 'ETF history failure status preserves error evidence');
+const enrichmentFailure = api.etfHistoryEnrichmentFailure({ etfHistoryManifest: { etfs: [{ id: 'one' }, { id: 'two' }] } }, 'fixture boom');
+assert(enrichmentFailure.dataSources.etfHistoryStatus.requested === 2 && enrichmentFailure.dataSources.etfHistoryStatus.failed === 2, 'ETF history enrichment exceptions become visible status counts');
+const genericEnrichmentFailure = await api.enrichPanelSources({ enrichSources: async () => { throw new Error('generic boom'); } }, {}, async () => ({}));
+assert(genericEnrichmentFailure.fetchResults.enrichment.error.includes('generic boom'), 'generic enrichment exceptions preserve fetch evidence');
 assert(api.resolveEtfHistoryUrl('data/history/etf-fixture.json') === 'https://sonchanggi.github.io/etf-tracking/data/history/etf-fixture.json', 'ETF history URL resolver allows same-site per-ETF history JSON');
 assert(api.resolveEtfHistoryUrl('https://evil.example/history.json') === '', 'ETF history URL resolver rejects off-site history URLs');
 
@@ -288,6 +294,12 @@ api.renderResearchBriefing(records);
 api.renderDataHealth(records);
 assert(/Valuation/.test(domTargets['#research-briefing'].innerHTML), 'research briefing renders valuation item');
 assert(/live/.test(domTargets['#data-health'].innerHTML), 'data health renders live state');
+assert(/Portfolio snapshot/.test(domTargets['#data-health'].innerHTML), 'data health renders portfolio freshness snapshot');
+const mixedFreshness = api.portfolioFreshnessSummary([
+  { project: { shortName: 'A' }, summary: { dataAsOf: '2026-06-22' }, generatedAt: '2026-06-23T00:00:00Z' },
+  { project: { shortName: 'B' }, summary: { dataAsOf: '2026-06-23' }, generatedAt: '2026-06-23T00:00:00Z' },
+]);
+assert(mixedFreshness.mixed && mixedFreshness.label.includes('혼합 기준일'), 'portfolio freshness snapshot flags mixed project dates');
 assert(api.watchlistMatchesForToken(records, 'AAA').length >= 2, 'watchlist matcher connects valuation and ETF ticker exposure');
 assert(api.parseWatchlistTokens('NVDA, AMD DRAM').join('|') === 'NVDA|AMD|DRAM', 'watchlist token parser handles commas and spaces');
 
