@@ -1548,3 +1548,46 @@ td:not(:first-child),
 .etf-detail-card,
 .etf-mini-chart { box-shadow: inset 4px 0 0 rgba(125, 211, 252, 0.58); }
 .project-card .project-icon { background: rgba(125, 211, 252, 0.14) !important; color: #bae6fd !important; }
+
+/* Visual Ralph follow-up: ETF TOP10 list contrast and below-chart readability, 2026-06-25. */
+.etf-top10-list li {
+  background:
+    linear-gradient(135deg, rgba(15, 23, 42, 0.94), rgba(30, 41, 59, 0.76)),
+    rgba(8, 10, 15, 0.88) !important;
+  border: 1px solid rgba(226, 232, 240, 0.14) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.055), 0 12px 30px rgba(0,0,0,0.24) !important;
+}
+.etf-top10-list li:nth-child(3n+1) {
+  background: linear-gradient(135deg, rgba(14,116,144,0.20), rgba(15,23,42,0.86)) !important;
+}
+.etf-top10-list li:nth-child(3n+2) {
+  background: linear-gradient(135deg, rgba(139,92,246,0.18), rgba(15,23,42,0.86)) !important;
+}
+.etf-top10-list li:nth-child(3n) {
+  background: linear-gradient(135deg, rgba(20,184,166,0.17), rgba(15,23,42,0.86)) !important;
+}
+.etf-rank {
+  color: #e0f2fe !important;
+  background: rgba(125,211,252,0.17) !important;
+  border: 1px solid rgba(125,211,252,0.36) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.10) !important;
+}
+.etf-top10-list strong,
+.etf-detail-card h4,
+.etf-detail-card h5 { color: #f8fafc !important; }
+.etf-top10-list em { color: #bae6fd !important; }
+.etf-top10-list small,
+.etf-mini-legend,
+.etf-detail-meta { color: #bac7d7 !important; }
+.etf-top10-empty,
+.etf-mini-empty {
+  color: #dce6f3 !important;
+  background: linear-gradient(135deg, rgba(125,211,252,0.10), rgba(15,23,42,0.80)) !important;
+  border: 1px dashed rgba(125,211,252,0.28) !important;
+  border-radius: 12px;
+}
+.etf-mini-chart text,
+.etf-mini-chart .axis-label,
+.etf-mini-chart .tick text { fill: #d8e2ee !important; }
+.etf-mini-chart .grid,
+.etf-mini-chart .axis { stroke: rgba(203,213,225,0.30) !important; }
