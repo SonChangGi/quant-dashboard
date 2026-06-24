@@ -253,7 +253,7 @@
     },
   };
 
-  const COLORS = ['#2457d6', '#0f766e', '#e11d48', '#f97316', '#7c3aed', '#0891b2'];
+  const COLORS = ['#7dd3fc', '#86efac', '#fb7185', '#fbbf24', '#c4b5fd', '#67e8f9'];
   const PANEL_RECORDS = new Map();
   const ETF_HISTORY_WINDOW_DAYS = 31;
   const ETF_HISTORY_TAIL_BYTES = 2_400_000;
@@ -1486,7 +1486,7 @@
     const y = (value) => margin.top + (1 - ((value - yMin) / Math.max(yMax - yMin, 0.000001))) * innerHeight;
     const grid = yTicks.map((tick) => {
       const yy = y(tick);
-      return `<g><line x1="${margin.left}" x2="${width - margin.right}" y1="${yy.toFixed(1)}" y2="${yy.toFixed(1)}" stroke="#d9e2f1"/><text x="${margin.left - 10}" y="${(yy + 4).toFixed(1)}" text-anchor="end" fill="#475467" font-size="12" font-weight="700">${escapeHtml(formatPercent(tick))}</text></g>`;
+      return `<g><line x1="${margin.left}" x2="${width - margin.right}" y1="${yy.toFixed(1)}" y2="${yy.toFixed(1)}" stroke="#d9e2f1"/><text x="${margin.left - 10}" y="${(yy + 4).toFixed(1)}" text-anchor="end" fill="#aab3c2" font-size="12" font-weight="700">${escapeHtml(formatPercent(tick))}</text></g>`;
     }).join('');
     const paths = chartSeries.map((item, index) => {
       const color = COLORS[index % COLORS.length];
@@ -1506,11 +1506,11 @@
       <div class="etf-mini-chart">
         <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeAttribute(row.name)} TOP10 비중 변화 미니 그래프">
           <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"/>
-          <text x="${margin.left}" y="18" fill="#344054" font-size="13" font-weight="800">최근 1개월 비중(%)</text>
+          <text x="${margin.left}" y="18" fill="#d8dee8" font-size="13" font-weight="800">최근 1개월 비중(%)</text>
           ${grid}
-          <line x1="${margin.left}" x2="${width - margin.right}" y1="${height - margin.bottom}" y2="${height - margin.bottom}" stroke="#aab7cf"/>
-          <text x="${margin.left}" y="${height - 12}" fill="#667085" font-size="11">${escapeHtml(formatMaybeDate(firstDate))}</text>
-          <text x="${width - margin.right}" y="${height - 12}" text-anchor="end" fill="#667085" font-size="11">${escapeHtml(formatMaybeDate(lastDate))}</text>
+          <line x1="${margin.left}" x2="${width - margin.right}" y1="${height - margin.bottom}" y2="${height - margin.bottom}" stroke="#3b4556"/>
+          <text x="${margin.left}" y="${height - 12}" fill="#9aa4b2" font-size="11">${escapeHtml(formatMaybeDate(firstDate))}</text>
+          <text x="${width - margin.right}" y="${height - 12}" text-anchor="end" fill="#9aa4b2" font-size="11">${escapeHtml(formatMaybeDate(lastDate))}</text>
           ${paths}
         </svg>
         <div class="chart-legend etf-mini-legend">${legend}</div>
@@ -1606,7 +1606,7 @@
 
     const grid = yTicks.map((tick) => {
       const yy = y(tick);
-      return `<g><line x1="${margin.left}" x2="${width - margin.right}" y1="${yy}" y2="${yy}" stroke="#d9e2f1"/><text x="${margin.left - 12}" y="${yy + 4}" text-anchor="end" fill="#667085" font-size="12">${formatInteger(tick)}</text></g>`;
+      return `<g><line x1="${margin.left}" x2="${width - margin.right}" y1="${yy}" y2="${yy}" stroke="#d9e2f1"/><text x="${margin.left - 12}" y="${yy + 4}" text-anchor="end" fill="#9aa4b2" font-size="12">${formatInteger(tick)}</text></g>`;
     }).join('');
 
     const paths = chartSeries.map((item, index) => {
@@ -1625,11 +1625,11 @@
       <svg viewBox="0 0 ${width} ${height}" aria-hidden="true">
         <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"/>
         ${grid}
-        <line x1="${margin.left}" x2="${width - margin.right}" y1="${height - margin.bottom}" y2="${height - margin.bottom}" stroke="#aab7cf"/>
-        <line x1="${margin.left}" x2="${margin.left}" y1="${margin.top}" y2="${height - margin.bottom}" stroke="#aab7cf"/>
-        <text x="${margin.left}" y="${height - 18}" fill="#667085" font-size="12">${escapeHtml(xLabels[0])}</text>
-        <text x="${width - margin.right}" y="${height - 18}" text-anchor="end" fill="#667085" font-size="12">${escapeHtml(xLabels[1])}</text>
-        <text x="${margin.left}" y="18" fill="#344054" font-size="13" font-weight="700">TrendForce daily · USD 기준 가격 추이</text>
+        <line x1="${margin.left}" x2="${width - margin.right}" y1="${height - margin.bottom}" y2="${height - margin.bottom}" stroke="#3b4556"/>
+        <line x1="${margin.left}" x2="${margin.left}" y1="${margin.top}" y2="${height - margin.bottom}" stroke="#3b4556"/>
+        <text x="${margin.left}" y="${height - 18}" fill="#9aa4b2" font-size="12">${escapeHtml(xLabels[0])}</text>
+        <text x="${width - margin.right}" y="${height - 18}" text-anchor="end" fill="#9aa4b2" font-size="12">${escapeHtml(xLabels[1])}</text>
+        <text x="${margin.left}" y="18" fill="#d8dee8" font-size="13" font-weight="700">TrendForce daily · USD 기준 가격 추이</text>
         ${paths}
       </svg>
       <div class="chart-legend">${legend}</div>
