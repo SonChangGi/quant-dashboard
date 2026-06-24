@@ -141,6 +141,32 @@
 - Reduced motion and sensory considerations:
   - Keep hover/transition effects subtle and disable nonessential motion under `prefers-reduced-motion`.
 
+## Readability remediation audit — 2026-06-24
+- Shared findings across all six pages:
+  - Dense tables need consistent tabular numerals, darker sticky/clear headers, stronger row separation, and visible horizontal-scroll affordance on mobile.
+  - Residual light cards from the former light theme reduce contrast on dark pages; all info/status/source/method cards must use dark or tinted surfaces with readable secondary text.
+  - Charts need brighter axes, gridlines, legends, and series labels; labels should never stack into unreadable piles.
+  - The dark system should not look like pure black only: use restrained cyan, teal, violet, amber, and rose surface accents for hierarchy and semantics.
+- `quant-dashboard`:
+  - Baseline is mostly coherent, but summary/detail tables and mini chart cards need stronger numeric alignment, row contrast, and accent variety.
+  - Project cards, briefing items, health items, and ETF mini detail cards should use subtle alternating surface tints while preserving the hub's data/status hierarchy.
+- `momentum-factor-lab`:
+  - Forward Rank-IC notice/diagnostic strips and selected/best bar rows can fall back to light surfaces with pale labels.
+  - Trend bars and line charts need darker containers, stronger label contrast, and mobile overflow protection.
+  - The generated `docs` CSS and the `momentum_factor_lab/dashboard.py` source template must stay synchronized.
+- `best-factor`:
+  - Factor-scope/taxonomy cards, mini items, empty states, and performance cards are the lowest-contrast surfaces.
+  - Factor pills, ranking cards, and performance tables need dark tinted cards, readable muted text, and tabular numeric alignment.
+- `etf-tracking`:
+  - The holdings-weight chart end labels are crowded, and the chart summary/source cards below the graph are too low-contrast.
+  - End labels should be shortened, vertically staggered with label pills, and backed by readable summary cards/legend text.
+- `dram-price`:
+  - DRAM chart Y-axis labels can render dirty decimals such as `252.92`/`4.4543`; axis tick generation should use clean, rounded ticks without changing the underlying price series.
+  - Chart/table/source support panels need stronger axis/grid/text contrast and readable tinted surfaces.
+- `valuation`:
+  - Decision cockpit, method comparison, assumptions, diagnostic, workflow, and methodology cards still contain light-surface remnants that wash out in dark mode.
+  - Mobile hero/nav must remain overflow-safe, and the final print stylesheet must stay light/white for report output.
+
 ## Responsive behavior
 - Supported breakpoints/devices:
   - Mobile narrow widths, tablet, desktop research monitor.
