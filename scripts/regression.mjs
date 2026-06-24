@@ -41,6 +41,64 @@ assert(/Valuation payload/.test(valuationState.error), 'Valuation fallback keeps
 const validMomentum = api.parseMomentum({ runs: [{ summary: { selected_factor: 'mom_valid', data_as_of: '2026-06-10' }, latest_output_rows: [{ rank: 1, symbol: 'AAA', score: 2, proposed_weight: 0.2, weight: 0.1 }] }], latest_run_index: 0 });
 assert(validMomentum.rows.length === 1 && validMomentum.factor === 'mom_valid', 'recorded valid Momentum fixture produces top row');
 
+const selectedVsBestMomentumSummary = {
+  schemaVersion: 1,
+  contract: 'quant-research-summary',
+  projectId: 'momentum',
+  generatedAt: '2026-06-18T00:00:00Z',
+  dataAsOf: '2026-06-18',
+  status: { state: 'ok', label: 'Research signals (not tradable)' },
+  highlights: [{ label: 'Selected factor', value: 'selected_mom' }],
+  primaryEntities: [{ symbol: 'SEL', metrics: { rank: 1, signal: 9, displayWeight: 0, finalWeight: 0 } }],
+  limitations: ['fixture limitation'],
+};
+const selectedVsBestMomentum = api.parseMomentum(selectedVsBestMomentumSummary, {
+  generated_at_utc: '2026-06-18T00:05:00Z',
+  latest_run_index: 0,
+  runs: [{
+    generated_at_utc: '2026-06-18T00:05:00Z',
+    summary: { selected_factor: 'selected_mom', data_as_of: '2026-06-18', recommendation_output_label: 'Research signals (not tradable)' },
+    factor_leaders: [{ date: '2026-06-18', window: '1Y', window_label: '최근 1년', best_factor: 'best_mom', selected_factor: 'selected_mom' }],
+    latest_output_rows: [{ rank: 1, symbol: 'SEL', score: 9, proposed_weight: 0.9, weight: 0.9 }],
+    holdings: [
+      { date: '2026-06-18', window: '1Y', factor: 'best_mom', rank: 1, symbol: 'BST', score: 4, default_weight: 0.4, weight: 0.4 },
+      { date: '2026-06-18', window: '6M', factor: 'best_mom', rank: 1, symbol: 'DUP', score: 3, default_weight: 0.3, weight: 0.3 },
+      { date: '2026-06-18', window: '1Y', factor: 'selected_mom', rank: 1, symbol: 'SEL', score: 9, default_weight: 0.9, weight: 0.9 },
+    ],
+  }],
+});
+assert(selectedVsBestMomentum.factor === 'best_mom' && selectedVsBestMomentum.rows[0].symbol === 'BST', 'Momentum summary uses best factor dashboard holdings instead of selected-factor rows');
+assert(!selectedVsBestMomentum.rows.some((row) => row.symbol === 'SEL' || row.symbol === 'DUP') && /best momentum factor/.test(selectedVsBestMomentum.status), 'Momentum best-factor rows respect the leader window and keep status evidence');
+const missingBestDetailMomentum = api.parseMomentum(selectedVsBestMomentumSummary, null);
+assert(missingBestDetailMomentum.bestFactorUnavailable && missingBestDetailMomentum.rows.length === 0, 'Momentum missing dashboard detail becomes explicit unavailable state instead of selected-factor rows');
+assert(!/selected_mom/.test(`${missingBestDetailMomentum.factor} ${missingBestDetailMomentum.status}`) && /best factor로 표시하지 않음/.test(missingBestDetailMomentum.status), 'Momentum missing dashboard detail does not label selected factor as best');
+const weakBestDetailMomentum = api.parseMomentum(selectedVsBestMomentumSummary, {
+  runs: [{ summary: { selected_factor: 'selected_mom', data_as_of: '2026-06-18' }, latest_output_rows: [] }],
+  latest_run_index: 0,
+});
+assert(weakBestDetailMomentum.bestFactorUnavailable && weakBestDetailMomentum.rows.length === 0, 'Momentum weak dashboard detail does not mask usable summary as best-factor output');
+assert(!/selected_mom/.test(`${weakBestDetailMomentum.factor} ${weakBestDetailMomentum.status}`), 'Momentum weak dashboard detail does not label selected factor as best');
+const leaderWithoutHoldingsMomentum = api.parseMomentum(selectedVsBestMomentumSummary, {
+  runs: [{
+    summary: { selected_factor: 'selected_mom', data_as_of: '2026-06-18' },
+    factor_leaders: [{ date: '2026-06-18', window: '1Y', best_factor: 'best_mom', selected_factor: 'selected_mom' }],
+    latest_output_rows: [{ rank: 1, symbol: 'SEL', score: 9, proposed_weight: 0.9, weight: 0.9 }],
+    holdings: [],
+  }],
+  latest_run_index: 0,
+});
+assert(leaderWithoutHoldingsMomentum.bestFactorUnavailable && leaderWithoutHoldingsMomentum.factor === 'best_mom', 'Momentum best leader without matching holdings becomes unavailable instead of rendering selected latest rows');
+assert(!leaderWithoutHoldingsMomentum.rows.some((row) => row.symbol === 'SEL'), 'Momentum best leader without holdings never displays selected-factor latest output rows');
+const noLeaderLatestRowsMomentum = api.parseMomentum(selectedVsBestMomentumSummary, {
+  runs: [{
+    summary: { selected_factor: 'selected_mom', data_as_of: '2026-06-18' },
+    latest_output_rows: [{ rank: 1, symbol: 'SEL', score: 9, proposed_weight: 0.9, weight: 0.9 }],
+  }],
+  latest_run_index: 0,
+});
+assert(noLeaderLatestRowsMomentum.bestFactorUnavailable && noLeaderLatestRowsMomentum.factor === 'best factor 확인 필요', 'Momentum dashboard without best leader never treats selected latest rows as best-factor output');
+assert(!noLeaderLatestRowsMomentum.rows.some((row) => row.symbol === 'SEL') && !/selected_mom/.test(`${noLeaderLatestRowsMomentum.factor} ${noLeaderLatestRowsMomentum.status}`), 'Momentum dashboard without best leader does not display or label selected-factor data');
+
 const researchOnlyMomentum = api.parseMomentum({
   schemaVersion: 1,
   contract: 'quant-research-summary',
@@ -72,6 +130,8 @@ const trendforceDram = api.parseDram({
 }, { series: [{ source: 'trendforce', cadences: ['daily'], product_id: 'tf-ddr5', product_name: 'DDR5 Daily', representative: true }] }, { generated_at: '2026-06-18T00:00:00Z' });
 assert(trendforceDram.series.length === 1 && /TrendForce daily/.test(trendforceDram.series[0].name), 'DRAM parser prioritizes saved TrendForce daily price series over weekly proxies');
 assert(trendforceDram.series[0].points.length === 2 && trendforceDram.observationCount === 2, 'DRAM chart uses daily TrendForce observations and counts selected points');
+const dramAxisTicks = api.buildDramAxisTicks(4.4543, 5.1234, 5);
+assert(dramAxisTicks.length >= 3 && dramAxisTicks.every((tick) => Number.isInteger(tick)), 'DRAM chart y-axis ticks are clean integers for fractional prices');
 
 const validBest = api.parseBestFactor({ summary: { best_factor: 'quality', data_end_date: '2026-06-10' }, latest_holdings: [{ factor: 'quality', ticker: 'BBB', score: 1, weight: 0.3, rebalance_date: '2026-06-01' }] });
 assert(validBest.rows.length === 1 && validBest.factor === 'quality', 'recorded valid Best Factor fixture produces holding row');
@@ -100,6 +160,13 @@ const validEtf = api.parseEtfTracking({
 assert(validEtf.rows.length === 1 && validEtf.rows[0].topWeight === 0.065, 'recorded valid ETF Tracking fixture produces ETF row');
 assert(validEtf.rows[0].top10.length === 2 && validEtf.rows[0].top10Weight === 0.11, 'recorded valid ETF Tracking fixture preserves top10 list and total weight');
 assert(validEtf.rows[0].chartSeries.length === 2 && validEtf.rows[0].chartSeries[0].points.length === 2, 'recorded valid ETF Tracking fixture builds mini chart series');
+const etfAxisTicks = api.buildEtfPercentAxisTicks(0.044543, 0.0461, 5);
+assert(etfAxisTicks.length >= 4 && etfAxisTicks.at(-1) - etfAxisTicks[0] >= 0.04, 'ETF mini chart y-axis expands narrow weight ranges for readability');
+assert(etfAxisTicks.every((tick) => Math.abs((tick * 100) - Math.round(tick * 100)) < 1e-9), 'ETF mini chart y-axis uses whole-percent tick labels');
+const etfMiniMarkup = api.renderEtfMiniChart(validEtf.rows[0]);
+const etfGridYPositions = [...etfMiniMarkup.matchAll(/<line x1="58" x2="658" y1="([0-9.]+)" y2="\1" stroke="#d9e2f1"/g)].map((match) => Number(match[1]));
+assert((etfMiniMarkup.match(/stroke="#d9e2f1"/g) || []).length >= 4 && /최근 1개월 비중\(%\)/.test(etfMiniMarkup), 'ETF mini chart renders a taller multi-tick percent axis');
+assert(Math.max(...etfGridYPositions) - Math.min(...etfGridYPositions) > 120, 'ETF mini chart percent axis uses the expanded vertical plotting area');
 
 const etfHistoryPayload = api.compactEtfHistoryPayload({
   id: 'etf-fixture',
@@ -287,12 +354,14 @@ assert(api.isRecordStale(staleByDataAsOfRecord), 'data health marks a stale data
 assert(/기준일/.test(api.recordFreshnessText(staleByDataAsOfRecord)), 'data health text names the data 기준일 used for staleness');
 
 const records = [
+  { project: api.PROJECTS.find((project) => project.id === 'momentum'), summary: selectedVsBestMomentum, mode: 'live', generatedAt: selectedVsBestMomentum.generatedAt, payloadBytes: 13000, sourceCount: 2 },
   { project: api.PROJECTS.find((project) => project.id === 'valuation'), summary: validValuation, mode: 'live', generatedAt: validValuation.generatedAt, payloadBytes: 12000, sourceCount: 1 },
   { project: api.PROJECTS.find((project) => project.id === 'etf'), summary: validEtf, mode: 'live', generatedAt: validEtf.generatedAt, payloadBytes: 90000, sourceCount: 1 },
 ];
 api.renderResearchBriefing(records);
 api.renderDataHealth(records);
 assert(/Valuation/.test(domTargets['#research-briefing'].innerHTML), 'research briefing renders valuation item');
+assert(/best_mom/.test(domTargets['#research-briefing'].innerHTML) && !/selected_mom/.test(domTargets['#research-briefing'].innerHTML), 'research briefing renders Momentum from best factor rather than selected factor');
 assert(/live/.test(domTargets['#data-health'].innerHTML), 'data health renders live state');
 assert(/Portfolio snapshot/.test(domTargets['#data-health'].innerHTML), 'data health renders portfolio freshness snapshot');
 const mixedFreshness = api.portfolioFreshnessSummary([

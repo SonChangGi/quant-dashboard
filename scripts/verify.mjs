@@ -30,6 +30,7 @@ for (const url of projectUrls) {
 
 const dataUrls = [
   'https://sonchanggi.github.io/momentum-factor-lab/data/summary.json',
+  'https://sonchanggi.github.io/momentum-factor-lab/data/dashboard.json',
   'https://sonchanggi.github.io/dram-price/data/summary.json',
   'https://sonchanggi.github.io/dram-price/data/prices.json',
   'https://sonchanggi.github.io/dram-price/data/series.json',
@@ -65,10 +66,12 @@ assert(contains(files.app, 'expectedVersion') && contains(files.app, 'schemaVers
 assert(contains(files.app, 'asRecords'), 'external arrays are filtered to records');
 assert(contains(files.app, 'parseMomentum'), 'momentum parser exists');
 assert(contains(files.app, 'latest_output_rows'), 'momentum latest output optional field is handled');
+assert(contains(files.app, 'momentumDashboard') && contains(files.app, 'best momentum factor 기준'), 'momentum adapter loads dashboard detail for best-factor rows');
 assert(contains(files.app, 'deriveMomentumDisplayWeights'), 'momentum research-only weights are normalized for display');
 assert(contains(files.app, '리서치 신호 정규화 비중'), 'momentum normalized weight source is explicit');
 assert(contains(files.app, 'parseDram'), 'DRAM parser exists');
 assert(contains(files.app, 'renderDramChart'), 'DRAM SVG chart renderer exists');
+assert(contains(files.app, 'buildDramAxisTicks'), 'DRAM chart uses clean integer y-axis ticks');
 assert(contains(files.app, 'TrendForce daily'), 'DRAM chart prioritizes saved TrendForce daily prices');
 assert(contains(files.app, 'D램 가격'), 'Korean D램 price label exists');
 assert(contains(files.app, 'isValidChartPoint'), 'DRAM chart validates date/value points');
@@ -84,6 +87,7 @@ assert(contains(files.app, 'appendEtfHistoryStatus'), 'ETF Tracking status repor
 assert(contains(files.app, 'etfHistoryEnrichmentFailure'), 'ETF Tracking history enrichment failures stay visible');
 assert(contains(files.app, 'renderEtfDetailCards'), 'ETF Tracking TOP10 detail renderer exists');
 assert(contains(files.app, 'renderEtfMiniChart'), 'ETF Tracking mini chart renderer exists');
+assert(contains(files.app, 'buildEtfPercentAxisTicks') && contains(files.app, '최근 1개월 비중(%)'), 'ETF mini chart exposes a readable percent y-axis');
 assert(contains(files.css, '.etf-detail-grid'), 'ETF Tracking detail grid CSS exists');
 assert(contains(files.css, '.etf-top10-list'), 'ETF Tracking TOP10 list CSS exists');
 assert(contains(files.app, 'latest_holdings'), 'best factor holdings optional field is handled');

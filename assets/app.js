@@ -117,11 +117,12 @@
     momentum: {
       sourceUrls: {
         summary: 'https://sonchanggi.github.io/momentum-factor-lab/data/summary.json',
+        momentumDashboard: 'https://sonchanggi.github.io/momentum-factor-lab/data/dashboard.json',
       },
       primarySourceKey: 'summary',
       contracts: { summary: SUMMARY_CONTRACT },
-      parse: (sources) => parseMomentum(sources.summary),
-      hasUsableData: (summary) => Boolean(summary?.rows?.length),
+      parse: (sources) => parseMomentum(sources.summary, sources.momentumDashboard),
+      hasUsableData: (summary) => Boolean(summary?.rows?.length || summary?.bestFactorUnavailable),
       fallback: normalizeMomentumFallback,
       render: renderMomentum,
       emptyReason: 'Momentum summary did not contain usable top rows.',
@@ -561,10 +562,16 @@
     return asArray(meta.limitations).find(Boolean) || '원본 프로젝트의 방법론과 한계를 함께 확인하세요.';
   }
 
-  function parseMomentum(payload) {
-    if (isResearchSummary(payload, 'momentum')) {
-      const meta = summaryMeta(payload);
-      const baseRows = summaryEntities(payload)
+  function parseMomentum(payload, detailPayload = null) {
+    const summaryPayload = isResearchSummary(payload, 'momentum') ? payload : null;
+    const detailExpected = arguments.length >= 2;
+    const detailSummary = parseMomentumDashboard(detailPayload || (summaryPayload ? null : payload), summaryPayload);
+    if (detailSummary?.rows?.length) return detailSummary;
+
+    if (summaryPayload) {
+      if (detailExpected) return momentumBestFactorUnavailable(summaryPayload, detailSummary);
+      const meta = summaryMeta(summaryPayload);
+      const baseRows = summaryEntities(summaryPayload)
         .sort((a, b) => numberOr(a.metrics.rank, 9999) - numberOr(b.metrics.rank, 9999))
         .map((entity, index) => ({
           rank: numberOr(entity.metrics.rank, index + 1),
@@ -578,35 +585,89 @@
       const rows = deriveMomentumDisplayWeights(baseRows);
       const weightSource = momentumWeightSource(rows);
       return {
-        factor: stringOr(highlightValue(meta, 'factor'), meta.coverage?.selectedFactor, FALLBACK_SNAPSHOT.momentum.factor),
+        factor: stringOr(highlightValue(meta, 'best factor'), highlightValue(meta, 'factor'), meta.coverage?.bestFactor, meta.coverage?.selectedFactor, FALLBACK_SNAPSHOT.momentum.factor),
         generatedAt: meta.generatedAt,
         dataAsOf: meta.dataAsOf,
         outputLabel: stringOr(highlightValue(meta, 'output'), meta.statusLabel, 'Research signal'),
         status: appendMomentumWeightStatus(stringOr(meta.statusLabel, '공통 summary contract 표시 중'), weightSource),
         weightSource,
         rows: rows.slice(0, 5),
-        entities: summaryEntities(payload),
+        entities: summaryEntities(summaryPayload),
         meta,
       };
     }
-    const runs = Array.isArray(payload?.runs) ? payload.runs : [];
-    const latestIndex = Number.isInteger(payload?.latest_run_index) ? payload.latest_run_index : runs.length - 1;
+
+    return detailSummary || parseMomentumDashboard(payload) || {
+      factor: FALLBACK_SNAPSHOT.momentum.factor,
+      generatedAt: '',
+      dataAsOf: '',
+      outputLabel: 'Research signal',
+      status: 'Momentum payload did not contain usable run data.',
+      weightSource: '원천 제공 비중',
+      rows: [],
+      meta: {},
+    };
+  }
+
+  function momentumBestFactorUnavailable(summaryPayload, detailSummary = null) {
+    const meta = summaryMeta(summaryPayload);
+    const detailBestFactor = detailSummary?.meta?.bestFactor && detailSummary.meta.bestFactor !== detailSummary.meta.selectedFactor
+      ? detailSummary.meta.bestFactor
+      : '';
+    const factor = stringOr(detailBestFactor, meta.coverage?.bestFactor, 'best factor 확인 필요');
+    const status = detailSummary
+      ? 'Momentum dashboard.json에서 best factor 보유 종목을 확인하지 못해 selected factor summary를 표시하지 않음'
+      : 'Momentum dashboard.json 미수신으로 selected factor summary를 best factor로 표시하지 않음';
+    return {
+      factor,
+      generatedAt: stringOr(detailSummary?.generatedAt, meta.generatedAt),
+      dataAsOf: stringOr(detailSummary?.dataAsOf, meta.dataAsOf),
+      outputLabel: 'Best factor detail unavailable',
+      status,
+      weightSource: 'best factor 상세 데이터 미수신',
+      rows: [],
+      entities: [],
+      bestFactorUnavailable: true,
+      meta: {
+        ...meta,
+        statusState: 'warning',
+        bestFactorUnavailable: true,
+        degradedReasons: [...asArray(meta.degradedReasons), 'momentum best-factor dashboard detail unavailable'],
+      },
+    };
+  }
+
+  function parseMomentumDashboard(payload, summaryPayload = null) {
+    if (!isRecord(payload)) return null;
+    const runs = Array.isArray(payload.runs) ? payload.runs : [];
+    if (!runs.length && !isRecord(payload.summary) && !Array.isArray(payload.holdings)) return null;
+
+    const latestIndex = Number.isInteger(payload.latest_run_index) ? payload.latest_run_index : runs.length - 1;
     const run = runs[latestIndex] || runs.at(-1) || payload || {};
     const summary = isRecord(run.summary) ? run.summary : {};
-    const factor = stringOr(summary.selected_factor, latestFactorLeader(run)?.best_factor, FALLBACK_SNAPSHOT.momentum.factor);
+    const leader = latestFactorLeader(run);
+    const bestFactor = stringOr(leader?.best_factor, summary.best_factor);
+    const selectedFactor = stringOr(summary.selected_factor, leader?.selected_factor);
+    const factor = stringOr(bestFactor, summaryPayload ? '' : selectedFactor, FALLBACK_SNAPSHOT.momentum.factor);
+    const requiresBestHoldings = Boolean(summaryPayload && (!bestFactor || (selectedFactor && bestFactor !== selectedFactor)));
+    const bestFactorRows = bestFactor ? momentumRowsFromHoldings(run, bestFactor, leader?.window) : [];
     const latestRows = momentumRowsFromLatestOutput(run);
-    const rows = deriveMomentumDisplayWeights(latestRows.length ? latestRows : momentumRowsFromHoldings(run, factor));
+    const sourceRows = bestFactorRows.length ? bestFactorRows : (requiresBestHoldings ? [] : latestRows);
+    const rows = deriveMomentumDisplayWeights(sourceRows);
     const weightSource = momentumWeightSource(rows);
+    const meta = summaryPayload ? summaryMeta(summaryPayload) : {};
+    const bestFactorStatus = factor && selectedFactor && factor !== selectedFactor ? ` · best momentum factor 기준(${factor})` : '';
 
     return {
       factor,
-      generatedAt: stringOr(run.generated_at_utc, payload?.generated_at_utc, ''),
-      dataAsOf: stringOr(summary.data_as_of, ''),
-      outputLabel: stringOr(summary.recommendation_output_label, summary.recommendation_status, 'Research signal'),
-      status: appendMomentumWeightStatus(stringOr(summary.recommendation_output_label, '라이브 공개 JSON 표시 중'), weightSource),
+      generatedAt: stringOr(run.generated_at_utc, payload.generated_at_utc, meta.generatedAt, ''),
+      dataAsOf: stringOr(summary.data_as_of, leader?.date, meta.dataAsOf, ''),
+      outputLabel: stringOr(summary.recommendation_output_label, summary.recommendation_status, meta.statusLabel, 'Research signal'),
+      status: appendMomentumWeightStatus(`${stringOr(summary.recommendation_output_label, meta.statusLabel, '라이브 공개 JSON 표시 중')}${bestFactorStatus}`, weightSource),
       weightSource,
       rows: rows.slice(0, 5),
-      meta: {},
+      entities: summaryEntities(summaryPayload),
+      meta: { ...meta, bestFactor, selectedFactor, factorLeader: leader || null },
     };
   }
 
@@ -662,8 +723,12 @@
       }));
   }
 
-  function momentumRowsFromHoldings(run, factor) {
-    const holdings = asRecords(run.holdings).filter((row) => !factor || row.factor === factor);
+  function momentumRowsFromHoldings(run, factor, preferredWindow = '') {
+    const factorHoldings = asRecords(run.holdings).filter((row) => !factor || row.factor === factor);
+    const windowHoldings = preferredWindow
+      ? factorHoldings.filter((row) => !row.window || row.window === preferredWindow)
+      : factorHoldings;
+    const holdings = windowHoldings.length ? windowHoldings : factorHoldings;
     const latestDate = maxString(holdings.map((row) => row.date || row.weight_date));
     return holdings
       .filter((row) => !latestDate || row.date === latestDate || row.weight_date === latestDate)
@@ -673,12 +738,12 @@
         symbol: stringOr(row.symbol, row.ticker, '-'),
         signal: finiteOrNull(row.score),
         displayWeight: finiteOrNull(row.default_weight ?? row.weight),
-        finalWeight: finiteOrNull(row.weight),
+        finalWeight: finiteOrNull(row.weight ?? row.default_weight),
       }));
   }
 
   function latestFactorLeader(run) {
-    const leaders = asArray(run.factor_leaders);
+    const leaders = asRecords(run.factor_leaders);
     const latestDate = maxString(leaders.map((row) => row.date));
     return leaders.find((row) => row.date === latestDate) || leaders.at(-1) || null;
   }
@@ -1255,7 +1320,7 @@
 
   function renderMomentum(summary, mode, error, project) {
     renderMetricCards(panelSelector(project, 'metrics'), [
-      ['선택/베스트 팩터', summary.factor],
+      ['베스트 모멘텀 팩터', summary.factor],
       ['데이터 기준일', formatMaybeDate(summary.dataAsOf)],
       ['추천/신호 상태', summary.outputLabel],
       ['업데이트', formatFreshness(summary.generatedAt)],
@@ -1409,30 +1474,29 @@
     const maxDate = Math.max(...dates);
     const minValue = Math.min(...values);
     const maxValue = Math.max(...values);
-    const yPad = Math.max((maxValue - minValue) * 0.18, 0.004);
-    const yMin = Math.max(0, minValue - yPad);
-    const yMax = Math.max(maxValue + yPad, yMin + 0.01);
-    const width = 640;
-    const height = 190;
-    const margin = { top: 18, right: 16, bottom: 34, left: 42 };
+    const yTicks = buildEtfPercentAxisTicks(minValue, maxValue, 5);
+    const yMin = yTicks[0] ?? Math.max(0, minValue);
+    const yMax = yTicks.at(-1) ?? Math.max(maxValue, yMin + 0.01);
+    const width = 680;
+    const height = 240;
+    const margin = { top: 34, right: 22, bottom: 38, left: 58 };
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
     const x = (date) => margin.left + ((Date.parse(date) - minDate) / Math.max(maxDate - minDate, 1)) * innerWidth;
-    const y = (value) => margin.top + (1 - ((value - yMin) / Math.max(yMax - yMin, 1))) * innerHeight;
-    const gridValues = [yMin, yMax];
-    const grid = gridValues.map((tick) => {
+    const y = (value) => margin.top + (1 - ((value - yMin) / Math.max(yMax - yMin, 0.000001))) * innerHeight;
+    const grid = yTicks.map((tick) => {
       const yy = y(tick);
-      return `<g><line x1="${margin.left}" x2="${width - margin.right}" y1="${yy.toFixed(1)}" y2="${yy.toFixed(1)}" stroke="#d9e2f1"/><text x="${margin.left - 8}" y="${(yy + 4).toFixed(1)}" text-anchor="end" fill="#667085" font-size="11">${escapeHtml(formatPercent(tick))}</text></g>`;
+      return `<g><line x1="${margin.left}" x2="${width - margin.right}" y1="${yy.toFixed(1)}" y2="${yy.toFixed(1)}" stroke="#d9e2f1"/><text x="${margin.left - 10}" y="${(yy + 4).toFixed(1)}" text-anchor="end" fill="#475467" font-size="12" font-weight="700">${escapeHtml(formatPercent(tick))}</text></g>`;
     }).join('');
     const paths = chartSeries.map((item, index) => {
       const color = COLORS[index % COLORS.length];
       const segments = splitChartPointSegments(item.points);
       const segmentPaths = segments.map((segment) => {
         const pathData = segment.map((point, pointIndex) => `${pointIndex ? 'L' : 'M'} ${x(point.date).toFixed(1)} ${y(point.value).toFixed(1)}`).join(' ');
-        return `<path d="${pathData}" fill="none" stroke="${color}" stroke-width="${item.rank <= 3 ? 2.6 : 1.8}" stroke-linecap="round" stroke-linejoin="round"/>`;
+        return `<path d="${pathData}" fill="none" stroke="${color}" stroke-width="${item.rank <= 3 ? 3.4 : 2.4}" stroke-linecap="round" stroke-linejoin="round"/>`;
       }).join('');
       const last = item.points.filter((point) => Number.isFinite(point.value)).at(-1);
-      const lastPoint = last ? `<circle cx="${x(last.date).toFixed(1)}" cy="${y(last.value).toFixed(1)}" r="${item.rank <= 3 ? 3.4 : 2.6}" fill="${color}"><title>${escapeHtml(item.label)} ${formatPercent(last.value)}</title></circle>` : '';
+      const lastPoint = last ? `<circle cx="${x(last.date).toFixed(1)}" cy="${y(last.value).toFixed(1)}" r="${item.rank <= 3 ? 4.2 : 3.3}" fill="${color}"><title>${escapeHtml(item.label)} ${formatPercent(last.value)}</title></circle>` : '';
       return `${segmentPaths}${lastPoint}`;
     }).join('');
     const legend = chartSeries.slice(0, 5).map((item, index) => `<span><i class="legend-key" style="background:${COLORS[index % COLORS.length]}"></i>${escapeHtml(item.label)}</span>`).join('');
@@ -1442,6 +1506,7 @@
       <div class="etf-mini-chart">
         <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeAttribute(row.name)} TOP10 비중 변화 미니 그래프">
           <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"/>
+          <text x="${margin.left}" y="18" fill="#344054" font-size="13" font-weight="800">최근 1개월 비중(%)</text>
           ${grid}
           <line x1="${margin.left}" x2="${width - margin.right}" y1="${height - margin.bottom}" y2="${height - margin.bottom}" stroke="#aab7cf"/>
           <text x="${margin.left}" y="${height - 12}" fill="#667085" font-size="11">${escapeHtml(formatMaybeDate(firstDate))}</text>
@@ -1525,7 +1590,9 @@
     const maxDate = Math.max(...dates);
     const minValue = Math.min(...values);
     const maxValue = Math.max(...values);
-    const yPad = Math.max((maxValue - minValue) * 0.1, 1);
+    const yTicks = buildDramAxisTicks(minValue, maxValue, 5);
+    const yMin = yTicks[0] ?? Math.floor(minValue);
+    const yMax = yTicks.at(-1) ?? Math.ceil(maxValue);
 
     const width = 920;
     const height = 360;
@@ -1533,14 +1600,13 @@
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
     const x = (date) => margin.left + ((Date.parse(date) - minDate) / Math.max(maxDate - minDate, 1)) * innerWidth;
-    const y = (value) => margin.top + (1 - ((value - (minValue - yPad)) / Math.max((maxValue + yPad) - (minValue - yPad), 1))) * innerHeight;
+    const y = (value) => margin.top + (1 - ((value - yMin) / Math.max(yMax - yMin, 1))) * innerHeight;
 
-    const yTicks = buildTicks(minValue - yPad, maxValue + yPad, 5);
     const xLabels = [minDate, maxDate].map((time) => formatMaybeDate(new Date(time).toISOString().slice(0, 10)));
 
     const grid = yTicks.map((tick) => {
       const yy = y(tick);
-      return `<g><line x1="${margin.left}" x2="${width - margin.right}" y1="${yy}" y2="${yy}" stroke="#d9e2f1"/><text x="${margin.left - 12}" y="${yy + 4}" text-anchor="end" fill="#667085" font-size="12">${formatNumber(tick)}</text></g>`;
+      return `<g><line x1="${margin.left}" x2="${width - margin.right}" y1="${yy}" y2="${yy}" stroke="#d9e2f1"/><text x="${margin.left - 12}" y="${yy + 4}" text-anchor="end" fill="#667085" font-size="12">${formatInteger(tick)}</text></g>`;
     }).join('');
 
     const paths = chartSeries.map((item, index) => {
@@ -1663,7 +1729,7 @@
       const limit = firstLimitation(summary.meta || {});
       return {
         kicker: 'Momentum',
-        title: `${summary.factor || '-'} · ${formatMaybeDate(summary.dataAsOf)}`,
+        title: `베스트 ${summary.factor || '-'} · ${formatMaybeDate(summary.dataAsOf)}`,
         detail: `${summary.outputLabel || 'Research signal'} — ${limit}`,
         tone: summary.meta?.statusState === 'ok' ? '' : 'warning',
       };
@@ -2026,10 +2092,55 @@
     return Math.round(num).toLocaleString('ko-KR');
   }
 
-  function buildTicks(min, max, count) {
+  function buildDramAxisTicks(min, max, count = 5) {
     if (!Number.isFinite(min) || !Number.isFinite(max) || count < 2) return [];
-    const step = (max - min) / (count - 1 || 1);
-    return Array.from({ length: count }, (_, index) => min + step * index);
+    const low = Math.floor(Math.min(min, max));
+    const high = Math.ceil(Math.max(min, max));
+    const pad = Math.max(1, Math.ceil((high - low) * 0.08));
+    const domainMin = Math.max(0, low - pad);
+    const domainMax = Math.max(high + pad, domainMin + 1);
+    return buildNiceTicks(domainMin, domainMax, count, 1);
+  }
+
+  function buildEtfPercentAxisTicks(min, max, count = 5) {
+    if (!Number.isFinite(min) || !Number.isFinite(max) || count < 2) return [];
+    const low = Math.max(0, Math.min(min, max));
+    const high = Math.max(low, Math.max(min, max));
+    const observedSpan = high - low;
+    const paddedSpan = Math.max(observedSpan * 1.36, 0.04);
+    const midpoint = (low + high) / 2;
+    let domainMin = Math.max(0, midpoint - paddedSpan / 2);
+    let domainMax = domainMin + paddedSpan;
+    if (domainMax < high) {
+      domainMax = high;
+      domainMin = Math.max(0, domainMax - paddedSpan);
+    }
+    return buildNiceTicks(domainMin, domainMax, count, 0.01);
+  }
+
+  function buildNiceTicks(min, max, count, minimumStep) {
+    const span = Math.max(max - min, minimumStep);
+    const step = niceStep(span / Math.max(count - 1, 1), minimumStep);
+    const start = Math.max(0, Math.floor(min / step) * step);
+    const end = Math.ceil(max / step) * step;
+    const ticks = [];
+    for (let tick = start; tick <= end + step / 2; tick += step) {
+      ticks.push(roundTick(tick));
+      if (ticks.length > count + 4) break;
+    }
+    return ticks.length >= 2 ? ticks : [roundTick(start), roundTick(start + step)];
+  }
+
+  function niceStep(rawStep, minimumStep) {
+    if (!Number.isFinite(rawStep) || rawStep <= 0) return minimumStep;
+    const magnitude = 10 ** Math.floor(Math.log10(rawStep));
+    const residual = rawStep / magnitude;
+    const niceResidual = residual <= 1 ? 1 : residual <= 2 ? 2 : residual <= 5 ? 5 : 10;
+    return Math.max(minimumStep, niceResidual * magnitude);
+  }
+
+  function roundTick(value) {
+    return Number(value.toFixed(10));
   }
 
   function asArray(value) {
@@ -2121,6 +2232,8 @@
       PANEL_ADAPTERS,
       normalizeChartSeries,
       isValidChartPoint,
+      buildDramAxisTicks,
+      buildEtfPercentAxisTicks,
     };
   }
 })();
