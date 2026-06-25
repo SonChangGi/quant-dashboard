@@ -93,7 +93,7 @@
       id: 'port',
       shortName: 'Port',
       title: '포트폴리오 비중 Cockpit',
-      description: 'ETF·주식 KRW/USD 금액을 입력해 최종 비중, ETF 기초 노출, 레버리지 포함/제외, 상관관계를 확인합니다.',
+      description: 'ETF·주식 보유 주수와 종가 통화(USD/KRW)를 입력해 최종 비중, ETF 기초 노출, 레버리지 포함/제외, 상관관계를 확인합니다.',
       url: 'https://sonchanggi.github.io/port/',
       accent: 'PT',
     },
