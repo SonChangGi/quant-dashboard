@@ -23,6 +23,7 @@ const projectUrls = [
   'https://sonchanggi.github.io/best-factor/',
   'https://sonchanggi.github.io/etf-tracking/',
   'https://sonchanggi.github.io/valuation/',
+  'https://sonchanggi.github.io/port/',
 ];
 for (const url of projectUrls) {
   assert(contains(files.html, url) || contains(files.app, url), `project URL present: ${url}`);
@@ -46,6 +47,7 @@ for (const url of dataUrls) {
 }
 
 assert(contains(files.app, 'const PROJECTS = ['), 'project registry exists');
+assert(contains(files.app, "id: 'port'"), 'port project registry entry exists');
 assert(contains(files.app, 'PANEL_ADAPTERS'), 'panel adapter manifest exists');
 assert(contains(files.app, 'quant-research-summary'), 'common summary contract is validated');
 assert(contains(files.app, 'summaryEntities'), 'common summary entities feed dossier search');

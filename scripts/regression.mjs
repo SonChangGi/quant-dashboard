@@ -327,8 +327,8 @@ context.document = {
 };
 api.renderProjectNavigation();
 api.renderDashboardPanels();
-assert(domTargets['#top-nav'].children.length === 5, 'manifest renderer creates top navigation links');
-assert(domTargets['#hero-actions'].children.length === 5, 'manifest renderer creates hero action links');
+assert(domTargets['#top-nav'].children.length === 6, 'manifest renderer creates top navigation links including Port');
+assert(domTargets['#hero-actions'].children.length === 6, 'manifest renderer creates hero action links including Port');
 assert(domTargets['#summary-grid'].children.length === 5, 'manifest renderer creates five dashboard panel shells');
 assert(domTargets['#summary-grid'].children.every((child) => /원본 열기/.test(child.innerHTML)), 'dashboard panel shells preserve original page links');
 assert(domTargets['#summary-grid'].children.some((child) => /panel-detail/.test(child.innerHTML)), 'ETF panel shell includes detail mount for TOP10 cards');
