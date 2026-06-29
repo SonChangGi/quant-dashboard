@@ -38,6 +38,11 @@ const valuationState = fallbackFor(malformedValuation, malformedValuation.rows.l
 assert(valuationState.mode === 'fallback', 'HTTP 200 malformed Valuation payload resolves to fallback mode');
 assert(/Valuation payload/.test(valuationState.error), 'Valuation fallback keeps explicit schema reason');
 
+const malformedSox = api.parseSox({ schemaVersion: 1, contract: 'quant-research-summary', projectId: 'sox', status: 'ok', primaryEntities: [null, { metrics: { score: 0.2 } }] });
+const soxState = fallbackFor(malformedSox, malformedSox.rows.length > 0, 'SOX summary did not contain usable constituents.');
+assert(soxState.mode === 'fallback', 'HTTP 200 malformed SOX summary resolves to fallback mode');
+assert(/SOX summary/.test(soxState.error), 'SOX fallback keeps explicit schema reason');
+
 const validMomentum = api.parseMomentum({ runs: [{ summary: { selected_factor: 'mom_valid', data_as_of: '2026-06-10' }, latest_output_rows: [{ rank: 1, symbol: 'AAA', score: 2, proposed_weight: 0.2, weight: 0.1 }] }], latest_run_index: 0 });
 assert(validMomentum.rows.length === 1 && validMomentum.factor === 'mom_valid', 'recorded valid Momentum fixture produces top row');
 
@@ -222,7 +227,23 @@ const validValuation = api.parseValuation({
 assert(validValuation.rows.length === 2 && validValuation.rows[0].ticker === 'AAA', 'recorded valid Valuation fixture produces DCF gap sorted rows');
 assert(validValuation.tickerCount === 2 && validValuation.sectors.includes('기술'), 'recorded valid Valuation fixture preserves coverage metadata');
 
-assert(Object.keys(api.PANEL_ADAPTERS).length === 5, 'panel adapter manifest has five current adapters');
+const validSox = api.parseSox({
+  schemaVersion: 1,
+  contract: 'quant-research-summary',
+  projectId: 'sox',
+  projectName: 'SOX Fixture',
+  generatedAt: '2026-06-29T00:00:00Z',
+  dataAsOf: '2026-06-26',
+  status: 'ok',
+  primaryEntities: [
+    { id: 'BBB', label: 'BBB', name: 'Beta Semi', metrics: { score: 0.5, weight: 0.2, priceMomentum: 0.4, earningsMomentum: 0.6 }, status: '중립/혼재' },
+    { id: 'AAA', label: 'AAA', name: 'Alpha Semi', metrics: { score: 0.9, weight: 0.1, priceMomentum: 0.8, earningsMomentum: 1.0 }, status: '가격·실적 동반 강세' },
+  ],
+});
+assert(validSox.rows.length === 2 && validSox.rows[0].ticker === 'AAA', 'recorded valid SOX fixture sorts summary rows by combined score');
+assert(validSox.topWeight.ticker === 'BBB' && validSox.entities.some((entity) => entity.symbol === 'AAA'), 'SOX parser preserves top proxy weight and dossier entities');
+
+assert(Object.keys(api.PANEL_ADAPTERS).length === 6, 'panel adapter manifest has six current adapters');
 
 
 const nullEntryMomentum = api.parseMomentum({ runs: [{ summary: { selected_factor: 'null_drift' }, latest_output_rows: [null, 'bad'], holdings: [null] }], latest_run_index: 0 });
@@ -243,6 +264,9 @@ assert(nullEtfState.mode === 'fallback', 'ETF Tracking null/non-object entries r
 
 const nullEntryValuation = api.parseValuation({ tickers: [null, 'bad', { ticker: 'CCC', themeTags: [null, 'Cloud'], price: 'bad' }] });
 assert(nullEntryValuation.rows.length === 1 && nullEntryValuation.rows[0].ticker === 'CCC', 'Valuation null/non-object entries resolve without throwing');
+
+const nullEntrySox = api.parseSox({ schemaVersion: 1, contract: 'quant-research-summary', projectId: 'sox', status: 'ok', primaryEntities: [null, 'bad', { id: 'DDD', metrics: { score: 0.1 } }] });
+assert(nullEntrySox.rows.length === 1 && nullEntrySox.rows[0].ticker === 'DDD', 'SOX null/non-object entries resolve without throwing');
 
 const throwingAdapter = { parse: () => { throw new Error('fixture boom'); } };
 const safeParse = api.parsePanelSafely(throwingAdapter, {});
@@ -327,11 +351,12 @@ context.document = {
 };
 api.renderProjectNavigation();
 api.renderDashboardPanels();
-assert(domTargets['#top-nav'].children.length === 6, 'manifest renderer creates top navigation links including Port');
-assert(domTargets['#hero-actions'].children.length === 6, 'manifest renderer creates hero action links including Port');
-assert(domTargets['#summary-grid'].children.length === 5, 'manifest renderer creates five dashboard panel shells');
+assert(domTargets['#top-nav'].children.length === 7, 'manifest renderer creates top navigation links including SOX and Port');
+assert(domTargets['#hero-actions'].children.length === 7, 'manifest renderer creates hero action links including SOX and Port');
+assert(domTargets['#summary-grid'].children.length === 6, 'manifest renderer creates six dashboard panel shells including SOX');
 assert(domTargets['#summary-grid'].children.every((child) => /원본 열기/.test(child.innerHTML)), 'dashboard panel shells preserve original page links');
 assert(domTargets['#summary-grid'].children.some((child) => /panel-detail/.test(child.innerHTML)), 'ETF panel shell includes detail mount for TOP10 cards');
+assert(domTargets['#summary-grid'].children.some((child) => /SOX 구성종목/.test(child.innerHTML)), 'SOX panel shell appears in the central summary grid');
 api.renderEtfDetailCards('#etf-details', validEtf.rows);
 assert(/etf-detail-card/.test(domTargets['#etf-details'].innerHTML), 'ETF detail renderer creates per-ETF card markup');
 assert(/AAA/.test(domTargets['#etf-details'].innerHTML) && /BBB/.test(domTargets['#etf-details'].innerHTML), 'ETF detail renderer includes TOP10 holdings');
@@ -355,12 +380,14 @@ assert(/기준일/.test(api.recordFreshnessText(staleByDataAsOfRecord)), 'data h
 
 const records = [
   { project: api.PROJECTS.find((project) => project.id === 'momentum'), summary: selectedVsBestMomentum, mode: 'live', generatedAt: selectedVsBestMomentum.generatedAt, payloadBytes: 13000, sourceCount: 2 },
+  { project: api.PROJECTS.find((project) => project.id === 'sox'), summary: validSox, mode: 'live', generatedAt: validSox.generatedAt, payloadBytes: 6000, sourceCount: 1 },
   { project: api.PROJECTS.find((project) => project.id === 'valuation'), summary: validValuation, mode: 'live', generatedAt: validValuation.generatedAt, payloadBytes: 12000, sourceCount: 1 },
   { project: api.PROJECTS.find((project) => project.id === 'etf'), summary: validEtf, mode: 'live', generatedAt: validEtf.generatedAt, payloadBytes: 90000, sourceCount: 1 },
 ];
 api.renderResearchBriefing(records);
 api.renderDataHealth(records);
 assert(/Valuation/.test(domTargets['#research-briefing'].innerHTML), 'research briefing renders valuation item');
+assert(/SOX/.test(domTargets['#research-briefing'].innerHTML) && /AAA/.test(domTargets['#research-briefing'].innerHTML), 'research briefing renders SOX central summary item');
 assert(/best_mom/.test(domTargets['#research-briefing'].innerHTML) && !/selected_mom/.test(domTargets['#research-briefing'].innerHTML), 'research briefing renders Momentum from best factor rather than selected factor');
 assert(/live/.test(domTargets['#data-health'].innerHTML), 'data health renders live state');
 assert(/Portfolio snapshot/.test(domTargets['#data-health'].innerHTML), 'data health renders portfolio freshness snapshot');
@@ -369,7 +396,7 @@ const mixedFreshness = api.portfolioFreshnessSummary([
   { project: { shortName: 'B' }, summary: { dataAsOf: '2026-06-23' }, generatedAt: '2026-06-23T00:00:00Z' },
 ]);
 assert(mixedFreshness.mixed && mixedFreshness.label.includes('혼합 기준일'), 'portfolio freshness snapshot flags mixed project dates');
-assert(api.watchlistMatchesForToken(records, 'AAA').length >= 2, 'watchlist matcher connects valuation and ETF ticker exposure');
+assert(api.watchlistMatchesForToken(records, 'AAA').length >= 3, 'watchlist matcher connects valuation, ETF, and SOX ticker exposure');
 assert(api.parseWatchlistTokens('NVDA, AMD DRAM').join('|') === 'NVDA|AMD|DRAM', 'watchlist token parser handles commas and spaces');
 
 const failed = checks.filter((check) => !check.ok);

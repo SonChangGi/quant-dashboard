@@ -22,6 +22,7 @@ const projectUrls = [
   'https://sonchanggi.github.io/dram-price/',
   'https://sonchanggi.github.io/best-factor/',
   'https://sonchanggi.github.io/etf-tracking/',
+  'https://sonchanggi.github.io/sox/',
   'https://sonchanggi.github.io/valuation/',
   'https://sonchanggi.github.io/port/',
 ];
@@ -40,6 +41,7 @@ const dataUrls = [
   'https://sonchanggi.github.io/etf-tracking/data/summary.json',
   'https://sonchanggi.github.io/etf-tracking/data/dashboard.json',
   'https://sonchanggi.github.io/etf-tracking/data/history.json',
+  'https://sonchanggi.github.io/sox/data/summary.json',
   'https://sonchanggi.github.io/valuation/data/summary.json',
 ];
 for (const url of dataUrls) {
@@ -79,6 +81,9 @@ assert(contains(files.app, 'D램 가격'), 'Korean D램 price label exists');
 assert(contains(files.app, 'isValidChartPoint'), 'DRAM chart validates date/value points');
 assert(contains(files.app, 'parseBestFactor'), 'best factor parser exists');
 assert(contains(files.app, 'parseEtfTracking'), 'ETF Tracking parser exists');
+assert(contains(files.app, 'parseSox'), 'SOX summary parser exists');
+assert(contains(files.app, 'renderSox'), 'SOX dashboard panel renderer exists');
+assert(contains(files.app, 'SOX 구성종목 · Momentum Top 5'), 'SOX central summary panel copy exists');
 assert(contains(files.app, 'parseValuation'), 'Valuation parser exists');
 assert(contains(files.app, 'ETF별 TOP10 비중'), 'ETF Tracking detail panel label exists');
 assert(contains(files.app, '최근 1개월 비중 변화'), 'ETF Tracking chart copy names the one-month history window');
@@ -112,7 +117,7 @@ assert(contains(readFileSync('scripts/static-smoke.mjs', 'utf8'), 'static server
 assert(contains(files.packageJson, '"test:live"'), 'package exposes optional live contract smoke');
 assert(contains(files.liveSmoke, 'MAX_PAYLOAD_BYTES') && contains(files.liveSmoke, 'MAX_STALENESS_DAYS'), 'live contract smoke checks payload size and freshness');
 assert(contains(files.liveSmoke, 'validateAdapterContract'), 'live contract smoke rejects incompatible contract versions');
-assert(!contains(files.app, '../momentum-factor-lab') && !contains(files.app, '../dram-price') && !contains(files.app, '../best-factor') && !contains(files.app, '../etf-tracking') && !contains(files.app, '../valuation'), 'no sibling local source paths referenced');
+assert(!contains(files.app, '../momentum-factor-lab') && !contains(files.app, '../dram-price') && !contains(files.app, '../best-factor') && !contains(files.app, '../etf-tracking') && !contains(files.app, '../sox') && !contains(files.app, '../valuation'), 'no sibling local source paths referenced');
 
 const failed = checks.filter((check) => !check.ok);
 for (const check of checks) {

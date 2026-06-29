@@ -3,7 +3,7 @@ import vm from 'node:vm';
 
 const MAX_PAYLOAD_BYTES = 8_000_000;
 const MAX_STALENESS_DAYS = 21;
-const REQUIRED_PROJECT_COUNT = 5;
+const REQUIRED_PROJECT_COUNT = 6;
 
 const sandbox = { console };
 sandbox.globalThis = sandbox;
@@ -118,6 +118,7 @@ function freshnessDays(value) {
 }
 
 function finiteNumber(value) {
+  if (value === null || value === undefined || value === '') return null;
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
 }

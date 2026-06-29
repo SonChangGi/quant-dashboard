@@ -9,6 +9,7 @@
     best: (metrics) => `팩터 ${metrics.factor || '-'} · 비중 ${formatPercent(metrics.weight)} · 점수 ${formatNumber(metrics.score)}`,
     momentum: (metrics) => `팩터 ${metrics.factor || '-'} · 신호 ${formatNumber(metrics.signal)} · 최종 비중 ${formatPercent(metrics.finalWeight)}`,
     dram: (metrics) => `${metrics.kind || '가격'} · ${formatMaybeDate(metrics.date)} · ${metrics.source || 'source N/A'}`,
+    sox: (metrics) => `SOX proxy ${formatPercent(metrics.weight)} · 가격 ${formatNumber(metrics.priceMomentum)} · 실적 ${formatNumber(metrics.earningsMomentum)}`,
   };
 
   const PROJECTS = [
@@ -86,6 +87,26 @@
           caption: 'ETF별 TOP10 합계와 특별 신호 요약',
           columns: ['ETF', '기준일', 'TOP10 합계', '신호', '종가 커버리지'],
           loadingText: 'ETF 데이터를 불러오는 중...',
+        },
+      },
+    },
+    {
+      id: 'sox',
+      shortName: 'SOX',
+      title: 'SOX 반도체 지수 Cockpit',
+      description: '필라델피아 반도체 지수 구성종목의 프록시 비중, 가격 모멘텀, 실적 모멘텀을 함께 비교합니다.',
+      url: 'https://sonchanggi.github.io/sox/',
+      accent: 'SX',
+      panelAdapter: 'sox',
+      panel: {
+        eyebrow: 'SOX Semiconductor',
+        title: 'SOX 구성종목 · Momentum Top 5',
+        contentType: 'table',
+        metricLoading: 'SOX 데이터를 불러오는 중...',
+        table: {
+          caption: 'SOX proxy weight와 가격·실적 모멘텀 상위 종목',
+          columns: ['순위', '종목', '종합', 'Proxy Wt', '가격/실적', '상태'],
+          loadingText: 'SOX 요약 데이터를 불러오는 중...',
         },
       },
     },
@@ -178,6 +199,18 @@
       render: renderEtfTracking,
       emptyReason: 'ETF Tracking summary/details did not contain usable ETF rows.',
     },
+    sox: {
+      sourceUrls: {
+        summary: 'https://sonchanggi.github.io/sox/data/summary.json',
+      },
+      primarySourceKey: 'summary',
+      contracts: { summary: SUMMARY_CONTRACT },
+      parse: (sources) => parseSox(sources.summary),
+      hasUsableData: (summary) => Boolean(summary?.rows?.length),
+      fallback: normalizeSoxFallback,
+      render: renderSox,
+      emptyReason: 'SOX summary did not contain usable constituents.',
+    },
     valuation: {
       sourceUrls: {
         summary: 'https://sonchanggi.github.io/valuation/data/summary.json',
@@ -245,6 +278,26 @@
       generatedAt: '2026-06-17T07:04:33Z',
       status: '마지막 확인 스냅샷 표시 중',
       rows: [{"name":"TIME 나스닥100","fullName":"TIME 미국나스닥100액티브","code":"426030","date":"2026-06-17","topName":"Micron Technology Inc","topTicker":"MU","topWeight":0.0673,"signalCount":2,"entryExitCount":2,"sourceStatus":"live","returnCoverage":0.9762047590481904,"top10":[{"rank":1,"ticker":"MU","codeRaw":"MU US EQUITY","name":"Micron Technology Inc","weight":0.0673},{"rank":2,"ticker":"SNDK","codeRaw":"SNDK US EQUITY","name":"Sandisk Corp","weight":0.0666},{"rank":3,"ticker":"INTC","codeRaw":"INTC US EQUITY","name":"Intel Corp","weight":0.0554},{"rank":4,"ticker":"ARM","codeRaw":"ARM US EQUITY","name":"ARM Holdings PLC","weight":0.053200000000000004},{"rank":5,"ticker":"NVDA","codeRaw":"NVDA US EQUITY","name":"NVIDIA Corp","weight":0.0467},{"rank":6,"ticker":"MRVL","codeRaw":"MRVL US EQUITY","name":"Marvell Technology Inc","weight":0.04019999999999999},{"rank":7,"ticker":"AMD","codeRaw":"AMD US EQUITY","name":"Advanced Micro Devices Inc","weight":0.0346},{"rank":8,"ticker":"DELL","codeRaw":"DELL US EQUITY","name":"Dell Technologies Inc","weight":0.0315},{"rank":9,"ticker":"CRDO","codeRaw":"CRDO US EQUITY","name":"Credo Technology Group Holding Ltd","weight":0.0302},{"rank":10,"ticker":"","codeRaw":"SPCX US EQUITY","name":"Space Exploration Technologies Corp","weight":0.0302}],"top10Weight":0.45589999999999997,"chartSeries":[{"rank":1,"label":"MU","points":[{"date":"2026-04-01","value":0.026600000000000002},{"date":"2026-04-14","value":0.0276},{"date":"2026-04-27","value":0.026099999999999998},{"date":"2026-05-12","value":0.0507},{"date":"2026-05-26","value":0.0475},{"date":"2026-06-09","value":0.0501},{"date":"2026-06-17","value":0.0673}]},{"rank":2,"label":"SNDK","points":[{"date":"2026-04-01","value":0.06860000000000001},{"date":"2026-04-14","value":0.0816},{"date":"2026-04-27","value":0.0567},{"date":"2026-05-12","value":0.0862},{"date":"2026-05-26","value":0.0512},{"date":"2026-06-09","value":0.0375},{"date":"2026-06-17","value":0.0666}]},{"rank":3,"label":"INTC","points":[{"date":"2026-04-01","value":0.020099999999999996},{"date":"2026-04-14","value":0.028300000000000002},{"date":"2026-04-27","value":0.044199999999999996},{"date":"2026-05-12","value":0.07400000000000001},{"date":"2026-05-26","value":0.0594},{"date":"2026-06-09","value":0.0416},{"date":"2026-06-17","value":0.0554}]},{"rank":4,"label":"ARM","points":[{"date":"2026-04-01","value":0.0385},{"date":"2026-04-14","value":0.0333},{"date":"2026-04-27","value":0.050499999999999996},{"date":"2026-05-12","value":0.0437},{"date":"2026-05-26","value":0.044199999999999996},{"date":"2026-06-09","value":0.0528},{"date":"2026-06-17","value":0.053200000000000004}]},{"rank":5,"label":"NVDA","points":[{"date":"2026-04-01","value":0.051100000000000007},{"date":"2026-04-14","value":0.04650000000000001},{"date":"2026-04-27","value":0.0676},{"date":"2026-05-12","value":0.0554},{"date":"2026-05-26","value":0.0851},{"date":"2026-06-09","value":0.0742},{"date":"2026-06-17","value":0.0467}]}]},{"name":"TIME 글로벌AI","fullName":"TIME 글로벌AI인공지능액티브","code":"456600","date":"2026-06-17","topName":"Kioxia Holdings Corp","topTicker":"285A.T","topWeight":0.0852,"signalCount":2,"entryExitCount":2,"sourceStatus":"live","returnCoverage":0.9604039596040396,"top10":[{"rank":1,"ticker":"285A.T","codeRaw":"285A JP EQUITY","name":"Kioxia Holdings Corp","weight":0.0852},{"rank":2,"ticker":"INTC","codeRaw":"INTC US EQUITY","name":"Intel Corp","weight":0.0722},{"rank":3,"ticker":"AMD","codeRaw":"AMD US EQUITY","name":"Advanced Micro Devices Inc","weight":0.0678},{"rank":4,"ticker":"STX","codeRaw":"STX US EQUITY","name":"Seagate Technology Holdings PLC","weight":0.0621},{"rank":5,"ticker":"WDC","codeRaw":"WDC US EQUITY","name":"Western Digital Corp","weight":0.052199999999999996},{"rank":6,"ticker":"ARM","codeRaw":"ARM US EQUITY","name":"ARM Holdings PLC","weight":0.0412},{"rank":7,"ticker":"","codeRaw":"NQU6 INDEX","name":"NASDAQ 100 E-MINI INDEX SEPT 2026","weight":0.038900000000000004},{"rank":8,"ticker":"SNDK","codeRaw":"SNDK US EQUITY","name":"Sandisk Corp","weight":0.037599999999999995},{"rank":9,"ticker":"SNOW","codeRaw":"SNOW US EQUITY","name":"Snowflake Inc","weight":0.037200000000000004},{"rank":10,"ticker":"NVDA","codeRaw":"NVDA US EQUITY","name":"NVIDIA Corp","weight":0.0332}],"top10Weight":0.5276,"chartSeries":[{"rank":1,"label":"285A.T","points":[{"date":"2026-05-15","value":0.0197},{"date":"2026-05-21","value":0.0209},{"date":"2026-05-28","value":0.0621},{"date":"2026-06-04","value":0.06559999999999999},{"date":"2026-06-10","value":0.07339999999999999},{"date":"2026-06-16","value":0.0806},{"date":"2026-06-17","value":0.0852}]},{"rank":2,"label":"INTC","points":[{"date":"2026-04-01","value":0.024},{"date":"2026-04-14","value":0.0526},{"date":"2026-04-27","value":0.0555},{"date":"2026-05-12","value":0.07980000000000001},{"date":"2026-05-26","value":0.0796},{"date":"2026-06-09","value":0.0621},{"date":"2026-06-17","value":0.0722}]},{"rank":3,"label":"AMD","points":[{"date":"2026-04-01","value":0.0199},{"date":"2026-04-14","value":0.018799999999999997},{"date":"2026-04-27","value":0.018600000000000002},{"date":"2026-05-12","value":0.0375},{"date":"2026-05-26","value":0.0463},{"date":"2026-06-09","value":0.0644},{"date":"2026-06-17","value":0.0678}]},{"rank":4,"label":"STX","points":[{"date":"2026-04-01","value":0.0412},{"date":"2026-04-14","value":0.0434},{"date":"2026-04-27","value":0.0358},{"date":"2026-05-12","value":0.057},{"date":"2026-05-26","value":0.058600000000000006},{"date":"2026-06-09","value":0.056600000000000004},{"date":"2026-06-17","value":0.0621}]},{"rank":5,"label":"WDC","points":[{"date":"2026-04-01","value":0.0461},{"date":"2026-04-14","value":0.04769999999999999},{"date":"2026-04-27","value":0.0452},{"date":"2026-05-12","value":0.045899999999999996},{"date":"2026-05-26","value":0.0461},{"date":"2026-06-09","value":0.0454},{"date":"2026-06-17","value":0.052199999999999996}]}]},{"name":"KoAct 나스닥성장","fullName":"KoAct 미국나스닥성장기업액티브","code":"2ETFQ1","date":"2026-06-17","topName":"Space Exploration Technologies Corp","topTicker":"SPCX US Equity","topWeight":0.09630000000000001,"signalCount":0,"entryExitCount":0,"sourceStatus":"live","returnCoverage":1.0,"top10":[{"rank":1,"ticker":"","codeRaw":"SPCX US Equity","name":"Space Exploration Technologies Corp","weight":0.09630000000000001},{"rank":2,"ticker":"AMD","codeRaw":"AMD US Equity","name":"ADVANCED MICRO DEVICES","weight":0.0745},{"rank":3,"ticker":"ARM","codeRaw":"ARM US Equity","name":"ARM Holdings PLC","weight":0.07339999999999999},{"rank":4,"ticker":"SNDK","codeRaw":"SNDK US Equity","name":"Sandisk Corp/DE","weight":0.0594},{"rank":5,"ticker":"INTC","codeRaw":"INTC US Equity","name":"INTEL Corp","weight":0.0557},{"rank":6,"ticker":"NVDA","codeRaw":"NVDA US Equity","name":"NVIDIA Corp","weight":0.049100000000000005},{"rank":7,"ticker":"GOOGL","codeRaw":"GOOGL US Equity","name":"ALPHABET INC-CL A","weight":0.047},{"rank":8,"ticker":"BE","codeRaw":"BE US Equity","name":"BLOOM ENERGY CORPORATION","weight":0.042},{"rank":9,"ticker":"MU","codeRaw":"MU US Equity","name":"MICRON TECH","weight":0.0405},{"rank":10,"ticker":"AMZN","codeRaw":"AMZN US Equity","name":"Amazon.com Inc","weight":0.0371}],"top10Weight":0.575,"chartSeries":[{"rank":1,"label":"SPCX US Equity","points":[{"date":"2026-06-16","value":0.0858},{"date":"2026-06-17","value":0.09630000000000001}]},{"rank":2,"label":"AMD","points":[{"date":"2026-06-08","value":0.0711},{"date":"2026-06-10","value":0.0757},{"date":"2026-06-12","value":0.0781},{"date":"2026-06-16","value":0.0742},{"date":"2026-06-17","value":0.0745}]},{"rank":3,"label":"ARM","points":[{"date":"2026-06-08","value":0.0698},{"date":"2026-06-10","value":0.0699},{"date":"2026-06-12","value":0.0694},{"date":"2026-06-16","value":0.0722},{"date":"2026-06-17","value":0.07339999999999999}]},{"rank":4,"label":"SNDK","points":[{"date":"2026-06-08","value":0.0637},{"date":"2026-06-10","value":0.0501},{"date":"2026-06-12","value":0.056100000000000004},{"date":"2026-06-16","value":0.059500000000000004},{"date":"2026-06-17","value":0.0594}]},{"rank":5,"label":"INTC","points":[{"date":"2026-06-08","value":0.0537},{"date":"2026-06-10","value":0.0545},{"date":"2026-06-12","value":0.0591},{"date":"2026-06-16","value":0.0579},{"date":"2026-06-17","value":0.0557}]}]}],
+    },
+    sox: {
+      generatedAt: '2026-06-29T01:02:43Z',
+      dataAsOf: '2026-06-26',
+      status: '마지막 SOX 공개 summary 스냅샷 표시 중',
+      rows: [
+        { rank: 1, ticker: 'MU', name: 'Micron Technology', score: 0.9848, weight: 0.0858, priceMomentum: 0.9766, earningsMomentum: 0.9948, status: '가격·실적 동반 강세' },
+        { rank: 2, ticker: 'ALAB', name: 'Astera Labs', score: 0.8286, weight: 0.0045, priceMomentum: 0.8717, earningsMomentum: 0.7759, status: '가격·실적 동반 강세' },
+        { rank: 3, ticker: 'TER', name: 'Teradyne', score: 0.7722, weight: 0.0046, priceMomentum: 0.7255, earningsMomentum: 0.8293, status: '가격·실적 동반 강세' },
+        { rank: 4, ticker: 'AMD', name: 'Advanced Micro Devices', score: 0.7447, weight: 0.0570, priceMomentum: 0.8207, earningsMomentum: 0.6517, status: '중립/혼재' },
+        { rank: 5, ticker: 'CRDO', name: 'Credo Technology', score: 0.7339, weight: 0.0030, priceMomentum: 0.5910, earningsMomentum: 0.9086, status: '중립/혼재' },
+      ],
+      entities: [],
+      meta: {
+        statusState: 'fallback',
+        statusLabel: 'SOX fallback snapshot',
+        cadence: 'manual',
+        expectedFreshnessDays: 14,
+        limitations: ['SOX 공식 무료 비중이 없을 때는 시가총액 정규화 proxy weight를 사용합니다.'],
+      },
     },
     valuation: {
       generatedAt: '2026-06-19T14:43:32Z',
@@ -547,6 +600,7 @@
 
   function summaryEntities(payload) {
     return asRecords(payload?.primaryEntities).map((entity) => ({
+      id: stringOr(entity.id, entity.entityKey, entity.symbol, entity.label, ''),
       symbol: stringOr(entity.symbol, ''),
       name: stringOr(entity.name, entity.symbol, ''),
       label: stringOr(entity.label, entity.symbol, entity.name, ''),
@@ -556,6 +610,7 @@
       metrics: isRecord(entity.metrics) ? entity.metrics : {},
       signals: asArray(entity.signals).map(String).filter(Boolean),
       warnings: asArray(entity.warnings).map(String).filter(Boolean),
+      status: stringOr(entity.status, ''),
       detailPath: stringOr(entity.detailPath, ''),
     }));
   }
@@ -1281,6 +1336,57 @@
     };
   }
 
+  function parseSox(payload) {
+    if (isResearchSummary(payload, 'sox')) {
+      const meta = summaryMeta(payload);
+      const rows = summaryEntities(payload)
+        .map((entity, index) => ({
+          rank: numberOr(entity.metrics.rank, index + 1),
+          ticker: stringOr(entity.symbol, entity.id, entity.label, entity.name, ''),
+          name: stringOr(entity.name, entity.label, ''),
+          score: finiteOrNull(entity.metrics.score),
+          weight: finiteOrNull(entity.metrics.weight ?? entity.metrics.proxyWeight),
+          priceMomentum: finiteOrNull(entity.metrics.priceMomentum),
+          earningsMomentum: finiteOrNull(entity.metrics.earningsMomentum),
+          status: stringOr(entity.status, entity.signals?.[0], meta.statusLabel, '확인 필요'),
+          warnings: entity.warnings,
+        }))
+        .filter((row) => row.ticker)
+        .sort((a, b) => numberOr(b.score, -999) - numberOr(a.score, -999));
+      return {
+        generatedAt: meta.generatedAt,
+        dataAsOf: meta.dataAsOf,
+        status: stringOr(meta.statusLabel, payload.status, 'SOX public summary'),
+        rows: rows.slice(0, 5),
+        allRows: rows,
+        constituentCount: finiteOrNull(meta.coverage?.entityCount) || rows.length,
+        topWeight: rows.reduce((best, row) => numberOr(row.weight, -1) > numberOr(best?.weight, -1) ? row : best, null),
+        entities: summaryEntities(payload).map((entity) => ({
+          ...entity,
+          symbol: stringOr(entity.symbol, entity.id, entity.label),
+          signals: entity.signals.length ? entity.signals : [stringOr(entity.status, 'SOX constituent')],
+        })),
+        meta: {
+          ...meta,
+          statusState: stringOr(meta.statusState, payload.status, 'ok'),
+          cadence: stringOr(meta.cadence, 'manual'),
+          limitations: meta.limitations.length ? meta.limitations : ['SOX 공식 무료 비중이 없을 때는 시가총액 정규화 proxy weight를 사용합니다.'],
+        },
+      };
+    }
+    return {
+      generatedAt: stringOr(payload?.generatedAt, ''),
+      dataAsOf: stringOr(payload?.dataAsOf, ''),
+      status: 'SOX payload did not match the quant-research-summary contract.',
+      rows: [],
+      allRows: [],
+      constituentCount: 0,
+      topWeight: null,
+      entities: [],
+      meta: {},
+    };
+  }
+
   function normalizeEtfSnapshot(snapshot) {
     if (!isRecord(snapshot)) return null;
     return {
@@ -1413,6 +1519,26 @@
       `${formatNumber(row.dcfPerShare)} · 괴리 ${formatPercent(row.dcfGap)}`,
       `${row.qualityStatus} · 가격일 ${formatMaybeDate(row.priceAsOf)}`,
     ], 5);
+    setStatus(panelSelector(project, 'status'), buildStatusText(mode, summary.generatedAt, error, summary.status, summaryDataAsOf(summary)), mode);
+  }
+
+  function renderSox(summary, mode, error, project) {
+    const topScore = asRecords(summary.rows)[0];
+    const topWeight = summary.topWeight || asRecords(summary.rows).reduce((best, row) => numberOr(row.weight, -1) > numberOr(best?.weight, -1) ? row : best, null);
+    renderMetricCards(panelSelector(project, 'metrics'), [
+      ['구성종목', `${formatInteger(summary.constituentCount || summary.allRows?.length || summary.rows?.length)}개`],
+      ['기준일', formatMaybeDate(summary.dataAsOf)],
+      ['종합 1위', topScore ? `${topScore.ticker} · ${formatNumber(topScore.score)}` : '확인 필요'],
+      ['최대 proxy weight', topWeight ? `${topWeight.ticker} · ${formatPercent(topWeight.weight)}` : '확인 필요'],
+    ]);
+    renderRows(panelSelector(project, 'rows'), asRecords(summary.rows), (row) => [
+      row.rank,
+      badge(row.ticker),
+      formatNumber(row.score),
+      formatPercent(row.weight),
+      `${formatNumber(row.priceMomentum)} / ${formatNumber(row.earningsMomentum)}`,
+      row.status,
+    ], 6);
     setStatus(panelSelector(project, 'status'), buildStatusText(mode, summary.generatedAt, error, summary.status, summaryDataAsOf(summary)), mode);
   }
 
@@ -1705,6 +1831,18 @@
     };
   }
 
+  function normalizeSoxFallback() {
+    return {
+      ...FALLBACK_SNAPSHOT.sox,
+      rows: FALLBACK_SNAPSHOT.sox.rows,
+      allRows: FALLBACK_SNAPSHOT.sox.rows,
+      constituentCount: FALLBACK_SNAPSHOT.sox.rows.length,
+      topWeight: FALLBACK_SNAPSHOT.sox.rows.reduce((best, row) => numberOr(row.weight, -1) > numberOr(best?.weight, -1) ? row : best, null),
+      entities: FALLBACK_SNAPSHOT.sox.entities,
+      meta: FALLBACK_SNAPSHOT.sox.meta,
+    };
+  }
+
   function normalizeValuationFallback() {
     return {
       generatedAt: FALLBACK_SNAPSHOT.valuation.generatedAt,
@@ -1767,6 +1905,16 @@
         kicker: 'ETF',
         title: `${summary.rows?.length || 0}개 ETF · ${signalTotal}개 신호`,
         detail: `최근 기준일 ${formatMaybeDate(latestDate)} · ${firstLimitation(summary.meta || {})}`,
+      };
+    }
+    if (record.project.id === 'sox') {
+      const topScore = asRecords(summary.rows)[0];
+      const topWeight = summary.topWeight || asRecords(summary.rows).reduce((best, row) => numberOr(row.weight, -1) > numberOr(best?.weight, -1) ? row : best, null);
+      return {
+        kicker: 'SOX',
+        title: topScore ? `${topScore.ticker} 종합 ${formatNumber(topScore.score)} · ${formatMaybeDate(summary.dataAsOf)}` : 'SOX 요약 확인 필요',
+        detail: `${topWeight ? `최대 proxy ${topWeight.ticker} ${formatPercent(topWeight.weight)} · ` : ''}${firstLimitation(summary.meta || {})}`,
+        tone: summary.meta?.statusState === 'ok' ? '' : 'warning',
       };
     }
     if (record.project.id === 'valuation') {
@@ -1988,6 +2136,13 @@
             matches.push({ project, matchKey: matchIdentity(record.project.id, row.ticker), label: `${row.ticker} · rank ${row.rank}`, detail: `팩터 ${record.summary.factor}, 비중 ${formatPercent(row.weight)}, 점수 ${formatNumber(row.score)}`, limit: firstLimitation(meta) });
           }
         });
+      } else if (record.project.id === 'sox') {
+        asRecords(record.summary.rows).forEach((row) => {
+          const haystack = [row.ticker, row.name, row.status].join(' ').toUpperCase();
+          if (haystack.includes(token)) {
+            matches.push({ project, matchKey: matchIdentity(record.project.id, row.ticker), label: `${row.ticker} · rank ${row.rank}`, detail: `Proxy ${formatPercent(row.weight)} · 가격 ${formatNumber(row.priceMomentum)} / 실적 ${formatNumber(row.earningsMomentum)}`, limit: firstLimitation(meta), tone: meta.statusState === 'ok' ? '' : 'warning' });
+          }
+        });
       } else if (record.project.id === 'etf') {
         asRecords(record.summary.rows).forEach((etf) => {
           const etfText = [etf.name, etf.fullName, etf.code].join(' ').toUpperCase();
@@ -2164,6 +2319,7 @@
   }
 
   function finiteOrNull(value) {
+    if (value === null || value === undefined || value === '') return null;
     const num = Number(value);
     return Number.isFinite(num) ? num : null;
   }
@@ -2199,6 +2355,8 @@
       parseBestFactor,
       parseEtfTracking,
       parseValuation,
+      parseSox,
+      renderSox,
       deriveMomentumDisplayWeights,
       momentumSignalWeights,
       buildDramSeries,
