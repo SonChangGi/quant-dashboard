@@ -221,3 +221,22 @@
 - Visual reference approval: user approved the dark neutral luxury Visual Ralph reference on 2026-06-24.
 - Connected surfaces: quant-dashboard plus momentum-factor-lab, best-factor, etf-tracking, dram-price, and valuation share the same dark neutral design language.
 - Delivery scope: design-only implementation. Analysis methodology, calculation logic, generated results, JSON contracts, data automation, and research disclaimers are protected boundaries.
+
+## Readability remediation audit — 2026-06-29
+- Protected boundary: this pass is UI-only. Static HTML/CSS and browser-rendered explanatory JS may change; calculation code, generated result/data JSON, analysis methodology, automation schedules, and existing disclaimer intent remain unchanged.
+- Connected surfaces now treated as one Pages family for readability: `quant-dashboard`, `momentum-factor-lab`, `dram-price`, `best-factor`, `etf-tracking`, `sox`, `port`, and `valuation`.
+- Shared page structure decisions:
+  - Every site gets fixed “↑ 위 / ↓ 아래” jump controls with real `#top` and `#page-bottom` anchors.
+  - Operational notices, manual-update panels, data-contract warnings, and caveats belong near the bottom when they are not required to interpret the first result view.
+  - Primary result/analysis cards must appear before warnings where safe, while all warnings remain present and readable.
+- `momentum-factor-lab` decisions:
+  - “원자료” means the stored original/backtest output, not KRW. Avoid the one-character “원” label; use `원자료(저장값)` plus a glossary note.
+  - Selected-factor method cards should show exact factor formulas from the factor spec catalog, observation/skip windows, weighting scenario assumptions, and the distinction between original output and browser scenario proxy.
+  - Daily investment-weight rows should be pivoted by symbol columns so saved/current scenario weights can be compared horizontally without a source column.
+- `best-factor` decisions:
+  - Factor family cards should expose expandable formula/method examples derived from the existing factor catalog metadata.
+  - Ranking cards should surface the selected factor's formula and plain-language scoring method inline, without changing ranking metrics or portfolio outputs.
+- Source/provenance decisions:
+  - Source labels that already have URLs in deployed JSON/status payloads should be clickable hyperlinks.
+  - Do not add browser-side live crawling or provider calls; links are provenance/navigation only.
+- Visual verification expectation: compare before/after screenshots at desktop and mobile widths, then run local syntax/regression gates. Public Pages readback is required only after explicit deployment/push approval because pushing multiple sibling repos is an external-production action.
