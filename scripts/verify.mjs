@@ -23,6 +23,7 @@ const projectUrls = [
   'https://sonchanggi.github.io/best-factor/',
   'https://sonchanggi.github.io/etf-tracking/',
   'https://sonchanggi.github.io/sox/',
+  'https://sonchanggi.github.io/quant-dashboard/risk-score/',
   'https://sonchanggi.github.io/valuation/',
   'https://sonchanggi.github.io/port/',
 ];
@@ -42,6 +43,7 @@ const dataUrls = [
   'https://sonchanggi.github.io/etf-tracking/data/dashboard.json',
   'https://sonchanggi.github.io/etf-tracking/data/history.json',
   'https://sonchanggi.github.io/sox/data/summary.json',
+  'https://sonchanggi.github.io/quant-dashboard/risk-score/data/risk-score/risk_score_summary.json',
   'https://sonchanggi.github.io/valuation/data/summary.json',
 ];
 for (const url of dataUrls) {
@@ -84,6 +86,11 @@ assert(contains(files.app, 'parseEtfTracking'), 'ETF Tracking parser exists');
 assert(contains(files.app, 'parseSox'), 'SOX summary parser exists');
 assert(contains(files.app, 'renderSox'), 'SOX dashboard panel renderer exists');
 assert(contains(files.app, 'SOX 구성종목 · Momentum Top 5'), 'SOX central summary panel copy exists');
+assert(contains(files.app, 'parseRiskScore'), 'Risk Score summary parser exists');
+assert(contains(files.app, 'renderRiskScore'), 'Risk Score dashboard panel renderer exists');
+assert(contains(files.app, "riskScore: {\n      sourceUrls") && contains(files.app, "parse: (sources) => parseRiskScore(sources.summary)") && contains(files.app, "fallback: normalizeRiskScoreFallback"), 'Risk Score adapter keeps source/parse/fallback contract');
+assert(contains(files.app, 'SOX Top Risk · OH/RF/Confirmation'), 'Risk Score central summary panel copy exists');
+assert(contains(files.app, "id: 'risk-score'"), 'Risk Score project registry entry exists');
 assert(contains(files.app, 'parseValuation'), 'Valuation parser exists');
 assert(contains(files.app, 'ETF별 TOP10 비중'), 'ETF Tracking detail panel label exists');
 assert(contains(files.app, '최근 1개월 비중 변화'), 'ETF Tracking chart copy names the one-month history window');
@@ -115,9 +122,13 @@ assert(contains(readFileSync('scripts/regression.mjs', 'utf8'), 'malformed momen
 assert(contains(readFileSync('scripts/regression.mjs', 'utf8'), 'null/non-object entries resolve to fallback'), 'null-entry payload regression exists');
 assert(contains(readFileSync('scripts/static-smoke.mjs', 'utf8'), 'static server smoke'), 'static server smoke exists');
 assert(contains(files.packageJson, '"test:live"'), 'package exposes optional live contract smoke');
+assert(contains(files.packageJson, '"test:publish"') && contains(files.packageJson, 'npm run test:live'), 'package exposes publish gate with live contract smoke');
 assert(contains(files.liveSmoke, 'MAX_PAYLOAD_BYTES') && contains(files.liveSmoke, 'MAX_STALENESS_DAYS'), 'live contract smoke checks payload size and freshness');
 assert(contains(files.liveSmoke, 'validateAdapterContract'), 'live contract smoke rejects incompatible contract versions');
-assert(!contains(files.app, '../momentum-factor-lab') && !contains(files.app, '../dram-price') && !contains(files.app, '../best-factor') && !contains(files.app, '../etf-tracking') && !contains(files.app, '../sox') && !contains(files.app, '../valuation'), 'no sibling local source paths referenced');
+assert(!contains(files.app, '../momentum-factor-lab') && !contains(files.app, '../dram-price') && !contains(files.app, '../best-factor') && !contains(files.app, '../etf-tracking') && !contains(files.app, '../sox') && !contains(files.app, '../valuation') && !contains(files.app, '../risk-score'), 'no sibling local source paths referenced');
+assert(statSync('risk-score/index.html').isFile(), 'Risk Score deploy subtree index exists');
+assert(statSync('risk-score/assets/app.js').isFile(), 'Risk Score deploy subtree app asset exists');
+assert(statSync('risk-score/data/risk-score/risk_score_summary.json').isFile(), 'Risk Score deploy subtree summary JSON exists');
 
 const failed = checks.filter((check) => !check.ok);
 for (const check of checks) {

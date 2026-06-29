@@ -27,14 +27,16 @@ const server = createServer(async (request, response) => {
 await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
 const { port } = server.address();
 try {
-  const [html, app, css] = await Promise.all([
+  const [html, app, css, riskHtml] = await Promise.all([
     fetch(`http://127.0.0.1:${port}/`).then((response) => response.text()),
     fetch(`http://127.0.0.1:${port}/assets/app.js`).then((response) => response.text()),
     fetch(`http://127.0.0.1:${port}/assets/styles.css`).then((response) => response.text()),
+    fetch(`http://127.0.0.1:${port}/risk-score/index.html`).then((response) => response.text()),
   ]);
   if (!html.includes('투자 리서치 허브')) throw new Error('index hero missing');
   if (!app.includes('parseEtfTracking')) throw new Error('ETF Tracking parser missing');
   if (!app.includes('parseSox') || !app.includes('SOX 구성종목 · Momentum Top 5')) throw new Error('SOX parser/panel missing');
+  if (!app.includes('parseRiskScore') || !app.includes('SOX Top Risk · OH/RF/Confirmation')) throw new Error('Risk Score parser/panel missing');
   if (!app.includes('parseValuation')) throw new Error('Valuation parser missing');
   if (!app.includes('renderEtfDetailCards') || !app.includes('renderEtfMiniChart')) throw new Error('ETF Tracking detail card/chart renderer missing');
   if (!app.includes('momentumDashboard') || !app.includes('buildDramAxisTicks') || !app.includes('buildEtfPercentAxisTicks')) throw new Error('dashboard readability improvements missing');
@@ -48,6 +50,7 @@ try {
   if (!css.includes('.panel')) throw new Error('panel CSS missing');
   if (!css.includes('.etf-detail-grid') || !css.includes('.etf-top10-list')) throw new Error('ETF detail CSS missing');
   if (!css.includes('.health-link')) throw new Error('automation health link CSS missing');
+  if (!riskHtml.includes('SOX Top Risk Score') || !riskHtml.includes('Back to Quant Dashboard')) throw new Error('Risk Score deploy subtree missing page/back link');
   console.log('PASS static server smoke served index.html, assets/app.js, and assets/styles.css');
 } finally {
   await new Promise((resolve) => server.close(resolve));

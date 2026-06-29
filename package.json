@@ -5,6 +5,7 @@
   "description": "Unified static GitHub Pages dashboard for quant research projects.",
   "scripts": {
     "test": "node --check assets/app.js && node --check scripts/verify.mjs && node --check scripts/regression.mjs && node --check scripts/static-smoke.mjs && node scripts/verify.mjs && node scripts/regression.mjs && node scripts/static-smoke.mjs",
-    "test:live": "node --check scripts/live-contract-smoke.mjs && node scripts/live-contract-smoke.mjs"
+    "test:live": "node --check scripts/live-contract-smoke.mjs && node scripts/live-contract-smoke.mjs",
+    "test:publish": "npm test && npm run test:live"
   }
 }

@@ -243,8 +243,43 @@ const validSox = api.parseSox({
 assert(validSox.rows.length === 2 && validSox.rows[0].ticker === 'AAA', 'recorded valid SOX fixture sorts summary rows by combined score');
 assert(validSox.topWeight.ticker === 'BBB' && validSox.entities.some((entity) => entity.symbol === 'AAA'), 'SOX parser preserves top proxy weight and dossier entities');
 
-assert(Object.keys(api.PANEL_ADAPTERS).length === 6, 'panel adapter manifest has six current adapters');
+const validRiskScore = api.parseRiskScore({
+  schemaVersion: 1,
+  contract: 'quant-research-summary',
+  projectId: 'risk-score',
+  generatedAt: '2026-06-30T00:00:00Z',
+  dataAsOf: '2026-06-26',
+  status: 'Confirmed Red',
+  coverage: { entityCount: 1 },
+  primaryEntities: [{ id: 'sox-top-risk', symbol: 'NASDAQSOX', metrics: { latestClose: 13203.57, oneDayReturn: -0.01, ohScore: 0, rfScore: 5, topRiskScore: 5, confirmedTopRisk: true, vixClose: 17.2 } }],
+  limitations: ['fixture limitation'],
+  automation: { cadence: 'daily-after-market-close' },
+  riskScore: { current: { date: '2026-06-26', close: 13203.57, oneDayReturn: -0.01, vixClose: 17.2, ohScore: 0, rfScore: 5, topRiskScore: 5, confirmation: true, regime: 'Rebound Failure', actionLabel: 'Confirmed Red', actionLevel: 'confirmed-red', actionText: 'fixture action' } },
+});
+assert(validRiskScore.current.topRiskScore === 5 && validRiskScore.current.confirmedTopRisk, 'recorded valid Risk Score fixture produces current top-risk row');
+assert(validRiskScore.rows.some((row) => row.label === 'RF Score' && /5/.test(row.value)), 'Risk Score parser exposes OH/RF summary rows');
 
+assert(Object.keys(api.PANEL_ADAPTERS).length === 7, 'panel adapter manifest has seven current adapters including Risk Score');
+const riskScoreAdapter = api.PANEL_ADAPTERS.riskScore;
+assert(Boolean(riskScoreAdapter?.sourceUrls?.summary?.includes('/quant-dashboard/risk-score/data/risk-score/risk_score_summary.json')), 'Risk Score adapter exposes public summary source URL');
+assert(typeof riskScoreAdapter?.parse === 'function', 'Risk Score adapter exposes parser function');
+assert(typeof riskScoreAdapter?.render === 'function', 'Risk Score adapter exposes renderer function');
+assert(typeof riskScoreAdapter?.fallback === 'function', 'Risk Score adapter exposes fallback function');
+assert(typeof riskScoreAdapter?.hasUsableData === 'function' && riskScoreAdapter.hasUsableData(validRiskScore), 'Risk Score adapter has usable-data predicate for parsed summary');
+assert(riskScoreAdapter.fallback().current.topRiskScore === 5, 'Risk Score adapter fallback returns current score snapshot');
+const incompleteRiskScore = api.parseRiskScore({
+  schemaVersion: 1,
+  contract: 'quant-research-summary',
+  projectId: 'risk-score',
+  generatedAt: '2026-06-30T00:00:00Z',
+  dataAsOf: '2026-06-26',
+  status: 'schema drift',
+  primaryEntities: [{ id: 'sox-top-risk', symbol: 'NASDAQSOX', metrics: {} }],
+  riskScore: { current: { date: '2026-06-26' } },
+});
+assert(!riskScoreAdapter.hasUsableData(incompleteRiskScore), 'Risk Score adapter rejects incomplete score metrics as unusable data');
+const incompleteRiskState = fallbackFor(incompleteRiskScore, riskScoreAdapter.hasUsableData(incompleteRiskScore), 'Risk Score summary did not contain usable current score metrics.');
+assert(incompleteRiskState.mode === 'fallback' && /Risk Score summary/.test(incompleteRiskState.error), 'Risk Score incomplete payload resolves to explicit fallback mode');
 
 const nullEntryMomentum = api.parseMomentum({ runs: [{ summary: { selected_factor: 'null_drift' }, latest_output_rows: [null, 'bad'], holdings: [null] }], latest_run_index: 0 });
 const nullMomentumState = fallbackFor(nullEntryMomentum, nullEntryMomentum.rows.length > 0, 'Momentum payload did not contain usable top rows.');
@@ -351,9 +386,9 @@ context.document = {
 };
 api.renderProjectNavigation();
 api.renderDashboardPanels();
-assert(domTargets['#top-nav'].children.length === 7, 'manifest renderer creates top navigation links including SOX and Port');
-assert(domTargets['#hero-actions'].children.length === 7, 'manifest renderer creates hero action links including SOX and Port');
-assert(domTargets['#summary-grid'].children.length === 6, 'manifest renderer creates six dashboard panel shells including SOX');
+assert(domTargets['#top-nav'].children.length === 8, 'manifest renderer creates top navigation links including SOX, Risk Score, and Port');
+assert(domTargets['#hero-actions'].children.length === 8, 'manifest renderer creates hero action links including SOX, Risk Score, and Port');
+assert(domTargets['#summary-grid'].children.length === 7, 'manifest renderer creates seven dashboard panel shells including SOX and Risk Score');
 assert(domTargets['#summary-grid'].children.every((child) => /원본 열기/.test(child.innerHTML)), 'dashboard panel shells preserve original page links');
 assert(domTargets['#summary-grid'].children.some((child) => /panel-detail/.test(child.innerHTML)), 'ETF panel shell includes detail mount for TOP10 cards');
 assert(domTargets['#summary-grid'].children.some((child) => /SOX 구성종목/.test(child.innerHTML)), 'SOX panel shell appears in the central summary grid');

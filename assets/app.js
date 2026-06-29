@@ -10,6 +10,7 @@
     momentum: (metrics) => `팩터 ${metrics.factor || '-'} · 신호 ${formatNumber(metrics.signal)} · 최종 비중 ${formatPercent(metrics.finalWeight)}`,
     dram: (metrics) => `${metrics.kind || '가격'} · ${formatMaybeDate(metrics.date)} · ${metrics.source || 'source N/A'}`,
     sox: (metrics) => `SOX proxy ${formatPercent(metrics.weight)} · 가격 ${formatNumber(metrics.priceMomentum)} · 실적 ${formatNumber(metrics.earningsMomentum)}`,
+    riskScore: (metrics) => `Top ${formatNumber(metrics.topRiskScore)}/5 · OH ${formatNumber(metrics.ohScore)}/5 · RF ${formatNumber(metrics.rfScore)}/5`,
   };
 
   const PROJECTS = [
@@ -107,6 +108,26 @@
           caption: 'SOX proxy weight와 가격·실적 모멘텀 상위 종목',
           columns: ['순위', '종목', '종합', 'Proxy Wt', '가격/실적', '상태'],
           loadingText: 'SOX 요약 데이터를 불러오는 중...',
+        },
+      },
+    },
+    {
+      id: 'risk-score',
+      shortName: 'Risk Score',
+      title: 'SOX Top Risk Score',
+      description: 'SOX 단기 고점 위험을 과열형 OH Score와 반등 실패형 RF Score, confirmation, 5D backtest로 분리 추적합니다.',
+      url: 'https://sonchanggi.github.io/quant-dashboard/risk-score/',
+      accent: 'RS',
+      panelAdapter: 'riskScore',
+      panel: {
+        eyebrow: 'SOX Top Risk',
+        title: 'SOX Top Risk · OH/RF/Confirmation',
+        contentType: 'table',
+        metricLoading: 'Risk Score 데이터를 불러오는 중...',
+        table: {
+          caption: 'SOX top-risk overlay latest score and backtest context',
+          columns: ['구분', '현재값', '상태', '해석', '기준일'],
+          loadingText: 'Risk Score 요약 데이터를 불러오는 중...',
         },
       },
     },
@@ -211,6 +232,18 @@
       render: renderSox,
       emptyReason: 'SOX summary did not contain usable constituents.',
     },
+    riskScore: {
+      sourceUrls: {
+        summary: 'https://sonchanggi.github.io/quant-dashboard/risk-score/data/risk-score/risk_score_summary.json',
+      },
+      primarySourceKey: 'summary',
+      contracts: { summary: SUMMARY_CONTRACT },
+      parse: (sources) => parseRiskScore(sources.summary),
+      hasUsableData: (summary) => [summary?.current?.topRiskScore, summary?.current?.ohScore, summary?.current?.rfScore].every((value) => finiteOrNull(value) !== null),
+      fallback: normalizeRiskScoreFallback,
+      render: renderRiskScore,
+      emptyReason: 'Risk Score summary did not contain usable current score metrics.',
+    },
     valuation: {
       sourceUrls: {
         summary: 'https://sonchanggi.github.io/valuation/data/summary.json',
@@ -297,6 +330,28 @@
         cadence: 'manual',
         expectedFreshnessDays: 14,
         limitations: ['SOX 공식 무료 비중이 없을 때는 시가총액 정규화 proxy weight를 사용합니다.'],
+      },
+    },
+    riskScore: {
+      generatedAt: '2026-06-30T00:00:00Z',
+      dataAsOf: '2026-06-26',
+      status: '마지막 Risk Score 스냅샷 표시 중',
+      current: {
+        date: '2026-06-26', close: 13203.57, oneDayReturn: null, vixClose: null,
+        ohScore: 0, rfScore: 5, topRiskScore: 5, confirmedTopRisk: true,
+        regime: 'Rebound Failure', actionLabel: 'Confirmed Red', actionLevel: 'confirmed-red',
+        actionText: '가격/변동성 기반 confirmation이 켜진 red overlay 상태입니다.',
+      },
+      rows: [
+        { label: 'Top Risk Score', value: '5/5', status: 'Confirmed Red', interpretation: 'OH/RF 중 높은 점수', date: '2026-06-26' },
+        { label: 'OH Score', value: '0/5', status: 'Normal', interpretation: '과열형 setup 비활성', date: '2026-06-26' },
+        { label: 'RF Score', value: '5/5', status: 'Red Zone', interpretation: '반등 실패형 lower-high warning', date: '2026-06-26' },
+        { label: 'Confirmation', value: 'ON', status: 'Confirmed', interpretation: '가격/VIX confirmation', date: '2026-06-26' },
+      ],
+      entities: [{ id: 'sox-top-risk', symbol: 'NASDAQSOX', label: 'SOX Top Risk Score', metrics: { topRiskScore: 5, ohScore: 0, rfScore: 5, confirmedTopRisk: true }, signals: ['Confirmed Red'] }],
+      meta: {
+        statusState: 'fallback', statusLabel: 'Risk Score fallback snapshot', cadence: 'daily-after-market-close', expectedFreshnessDays: 7,
+        limitations: ['뉴스 기반 모델이 아니며 가격/변동성 기반 risk overlay입니다.'],
       },
     },
     valuation: {
@@ -1387,6 +1442,62 @@
     };
   }
 
+  function parseRiskScore(payload) {
+    if (isResearchSummary(payload, 'risk-score')) {
+      const meta = summaryMeta(payload);
+      const entity = summaryEntities(payload)[0] || {};
+      const metrics = isRecord(entity.metrics) ? entity.metrics : {};
+      const risk = isRecord(payload.riskScore) ? payload.riskScore : {};
+      const current = {
+        date: stringOr(risk.current?.date, payload.dataAsOf, meta.dataAsOf),
+        close: finiteOrNull(risk.current?.close ?? metrics.latestClose),
+        oneDayReturn: finiteOrNull(risk.current?.oneDayReturn ?? metrics.oneDayReturn),
+        vixClose: finiteOrNull(risk.current?.vixClose ?? metrics.vixClose),
+        ohScore: finiteOrNull(risk.current?.ohScore ?? metrics.ohScore),
+        rfScore: finiteOrNull(risk.current?.rfScore ?? metrics.rfScore),
+        topRiskScore: finiteOrNull(risk.current?.topRiskScore ?? metrics.topRiskScore),
+        confirmedTopRisk: Boolean(risk.current?.confirmation ?? metrics.confirmedTopRisk),
+        regime: stringOr(risk.current?.regime, metrics.regime, '확인 필요'),
+        actionLabel: stringOr(risk.current?.actionLabel, payload.status, entity.status, '확인 필요'),
+        actionLevel: stringOr(risk.current?.actionLevel, metrics.actionLevel, ''),
+        actionText: stringOr(risk.current?.actionText, firstLimitation(meta), ''),
+      };
+      const rows = [
+        { label: 'Top Risk Score', value: `${formatNumber(current.topRiskScore)}/5`, status: current.actionLabel, interpretation: 'max(OH Score, RF Score)', date: current.date },
+        { label: 'OH Score', value: `${formatNumber(current.ohScore)}/5`, status: scoreStatus(current.ohScore), interpretation: '과열형 top model', date: current.date },
+        { label: 'RF Score', value: `${formatNumber(current.rfScore)}/5`, status: scoreStatus(current.rfScore), interpretation: '반등 실패형 top model', date: current.date },
+        { label: 'Confirmation', value: current.confirmedTopRisk ? 'ON' : 'OFF', status: current.confirmedTopRisk ? 'Confirmed' : 'Leading/Inactive', interpretation: '가격/VIX confirmation filter', date: current.date },
+        { label: 'SOX close', value: formatNumber(current.close), status: `1D ${formatPercent(current.oneDayReturn)}`, interpretation: `VIX ${formatNumber(current.vixClose)}`, date: current.date },
+      ];
+      return {
+        generatedAt: meta.generatedAt,
+        dataAsOf: meta.dataAsOf,
+        status: current.actionLabel,
+        current,
+        rows,
+        entities: summaryEntities(payload),
+        meta: {
+          ...meta,
+          statusState: stringOr(meta.statusState, 'ok'),
+          statusLabel: current.actionLabel,
+          cadence: stringOr(meta.cadence, payload.automation?.cadence, 'daily-after-market-close'),
+          limitations: meta.limitations.length ? meta.limitations : ['뉴스 기반 모델이 아니며 가격/변동성 기반 risk overlay입니다.'],
+          automation: isRecord(payload.automation) ? payload.automation : meta.automation,
+        },
+      };
+    }
+    return normalizeRiskScoreFallback();
+  }
+
+  function scoreStatus(score) {
+    const value = finiteOrNull(score);
+    if (value === null) return '확인 필요';
+    if (value >= 5) return 'Red Zone';
+    if (value >= 4) return 'High Risk';
+    if (value >= 3) return 'Watch';
+    return 'Normal';
+  }
+
   function normalizeEtfSnapshot(snapshot) {
     if (!isRecord(snapshot)) return null;
     return {
@@ -1539,6 +1650,24 @@
       `${formatNumber(row.priceMomentum)} / ${formatNumber(row.earningsMomentum)}`,
       row.status,
     ], 6);
+    setStatus(panelSelector(project, 'status'), buildStatusText(mode, summary.generatedAt, error, summary.status, summaryDataAsOf(summary)), mode);
+  }
+
+  function renderRiskScore(summary, mode, error, project) {
+    const current = summary.current || {};
+    renderMetricCards(panelSelector(project, 'metrics'), [
+      ['Top Risk', `${formatNumber(current.topRiskScore)}/5`],
+      ['OH / RF', `${formatNumber(current.ohScore)}/5 · ${formatNumber(current.rfScore)}/5`],
+      ['Confirmation', current.confirmedTopRisk ? 'ON' : 'OFF'],
+      ['기준일', formatMaybeDate(current.date || summary.dataAsOf)],
+    ]);
+    renderRows(panelSelector(project, 'rows'), asRecords(summary.rows), (row) => [
+      row.label,
+      row.value,
+      row.status,
+      row.interpretation,
+      formatMaybeDate(row.date),
+    ], 5);
     setStatus(panelSelector(project, 'status'), buildStatusText(mode, summary.generatedAt, error, summary.status, summaryDataAsOf(summary)), mode);
   }
 
@@ -1843,6 +1972,16 @@
     };
   }
 
+  function normalizeRiskScoreFallback() {
+    return {
+      ...FALLBACK_SNAPSHOT.riskScore,
+      current: { ...FALLBACK_SNAPSHOT.riskScore.current },
+      rows: FALLBACK_SNAPSHOT.riskScore.rows,
+      entities: FALLBACK_SNAPSHOT.riskScore.entities,
+      meta: FALLBACK_SNAPSHOT.riskScore.meta,
+    };
+  }
+
   function normalizeValuationFallback() {
     return {
       generatedAt: FALLBACK_SNAPSHOT.valuation.generatedAt,
@@ -1915,6 +2054,15 @@
         title: topScore ? `${topScore.ticker} 종합 ${formatNumber(topScore.score)} · ${formatMaybeDate(summary.dataAsOf)}` : 'SOX 요약 확인 필요',
         detail: `${topWeight ? `최대 proxy ${topWeight.ticker} ${formatPercent(topWeight.weight)} · ` : ''}${firstLimitation(summary.meta || {})}`,
         tone: summary.meta?.statusState === 'ok' ? '' : 'warning',
+      };
+    }
+    if (record.project.id === 'risk-score') {
+      const current = summary.current || {};
+      return {
+        kicker: 'Risk Score',
+        title: `Top ${formatNumber(current.topRiskScore)}/5 · ${current.actionLabel || '확인 필요'}`,
+        detail: `OH ${formatNumber(current.ohScore)}/5 · RF ${formatNumber(current.rfScore)}/5 · confirmation ${current.confirmedTopRisk ? 'ON' : 'OFF'} · ${firstLimitation(summary.meta || {})}`,
+        tone: current.confirmedTopRisk || current.topRiskScore >= 4 ? 'warning' : '',
       };
     }
     if (record.project.id === 'valuation') {
@@ -2357,6 +2505,8 @@
       parseValuation,
       parseSox,
       renderSox,
+      parseRiskScore,
+      renderRiskScore,
       deriveMomentumDisplayWeights,
       momentumSignalWeights,
       buildDramSeries,
