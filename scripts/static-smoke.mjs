@@ -50,7 +50,7 @@ try {
   if (!css.includes('.panel')) throw new Error('panel CSS missing');
   if (!css.includes('.etf-detail-grid') || !css.includes('.etf-top10-list')) throw new Error('ETF detail CSS missing');
   if (!css.includes('.health-link')) throw new Error('automation health link CSS missing');
-  if (!riskHtml.includes('SOX Top Risk Score') || !riskHtml.includes('Back to Quant Dashboard')) throw new Error('Risk Score deploy subtree missing page/back link');
+  if ((!riskHtml.includes('SOX & Asset Top Risk Score') && !riskHtml.includes('SOX Top Risk Score')) || !riskHtml.includes('Back to Quant Dashboard')) throw new Error('Risk Score deploy subtree missing page/back link');
   console.log('PASS static server smoke served index.html, assets/app.js, and assets/styles.css');
 } finally {
   await new Promise((resolve) => server.close(resolve));
