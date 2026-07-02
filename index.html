@@ -6,9 +6,9 @@
   <meta name="description" content="모멘텀 팩터, D램(DRAM) 가격, 베스트 팩터, ETF Tracking, SOX 반도체 지수, 포트폴리오 비중, 기업 가치평가 프로젝트를 한 화면에서 확인하는 통합 퀀트 리서치 허브" />
   <title>Quant Research Hub</title>
   <link rel="stylesheet" href="assets/styles.css" />
-  <link rel="stylesheet" href="assets/common-ui.css?v=20260701-ralph-table-v5d" />
+  <link rel="stylesheet" href="assets/common-ui.css?v=20260702-light-system-v6" />
   <script src="assets/app.js" defer></script>
-  <script src="assets/common-ui.js?v=20260701-fullpage-v4" defer></script>
+  <script src="assets/common-ui.js?v=20260702-light-system-v6" defer></script>
 </head>
 <body id="top">
   <header class="hero" aria-labelledby="page-title">
@@ -18,8 +18,8 @@
         <p class="eyebrow">Quant Research Hub</p>
         <h1 id="page-title">투자 리서치 허브</h1>
         <p class="hero-copy">
-          팩터·DRAM·ETF·SOX·포트폴리오·가치평가를 한 화면에서 먼저 정리합니다.
-          필요한 프로젝트로 바로 이동해 근거, 데이터 상태, 한계를 확인합니다.
+          팩터, DRAM, ETF, SOX, 포트폴리오, 가치평가를 한 화면에서 먼저 정리합니다.
+          핵심 신호와 데이터 상태를 확인한 뒤 필요한 원본 프로젝트로 이동합니다.
         </p>
         <div class="hero-actions" id="hero-actions" aria-label="주요 프로젝트 바로가기"></div>
       </div>
@@ -27,7 +27,7 @@
         <strong>데이터 정책</strong>
         <p>
           공개 GitHub Pages JSON과 정적 자산만 읽습니다.
-          허브는 요약과 상태를 연결하고, 판단 근거는 각 원본 프로젝트에서 확인합니다.
+          판단 근거와 한계는 각 원본 프로젝트에서 확인합니다.
         </p>
       </aside>
     </div>
@@ -39,8 +39,7 @@
         <p class="eyebrow">Research Cockpit</p>
         <h2 id="cockpit-title">오늘 먼저 볼 것</h2>
         <p>
-          최신 공개 데이터에서 질문, 데이터 상태, 관심 티커 노출을 먼저 정리합니다.
-          숫자는 결론이 아니라 다음 확인을 위한 체크리스트입니다.
+          오늘 확인할 질문, 데이터 상태, 관심 티커 노출을 먼저 정리합니다.
         </p>
       </div>
       <div class="cockpit-grid">
@@ -70,7 +69,7 @@
             </div>
           </form>
           <div id="watchlist-results" class="watchlist-results" aria-live="polite">
-            관심 티커를 입력하면 가치평가, 팩터, ETF 보유종목, SOX 구성종목, 포트폴리오 노출, DRAM 테마와 각 방법론의 한계를 함께 보여줍니다.
+            관심 티커를 입력하면 연결된 프로젝트의 노출과 확인할 한계를 함께 보여줍니다.
           </div>
         </article>
         <article class="panel health-panel" aria-labelledby="health-title">
@@ -91,7 +90,7 @@
       <div class="section-heading">
         <p class="eyebrow">Projects</p>
         <h2 id="projects-title">프로젝트 바로가기</h2>
-        <p>각 카드의 버튼을 누르면 원본 프로젝트 페이지로 이동해 전체 방법론, 데이터 한계, 상세 시각화를 확인할 수 있습니다.</p>
+        <p>원본 프로젝트에서 전체 방법론, 데이터 한계, 상세 시각화를 확인합니다.</p>
       </div>
       <div class="project-grid" id="project-grid"></div>
     </section>
@@ -101,7 +100,7 @@
         <p class="eyebrow">Live Summary</p>
         <h2 id="dashboard-title">중앙 요약 패널</h2>
         <p>
-          공개 정적 JSON에서 읽을 수 있는 핵심 결과만 요약합니다. 실패 시 스냅샷 또는 준비중 상태로 대체됩니다.
+          공개 정적 JSON에서 읽을 수 있는 핵심 결과만 요약합니다.
         </p>
       </div>
 

@@ -6,9 +6,9 @@
   <meta name="description" content="SOX Index와 반도체 개별 종목/ETF 단기 고점 위험을 OH/RF score, sector context, relative strength, backtest로 확인하는 quant risk overlay dashboard" />
   <title>SOX & Asset Top Risk Score</title>
   <link rel="stylesheet" href="assets/styles.css" />
-  <link rel="stylesheet" href="assets/common-ui.css?v=20260701-ralph-table-v5d" />
+  <link rel="stylesheet" href="assets/common-ui.css?v=20260702-light-system-v6" />
   <script src="assets/app.js" defer></script>
-  <script src="assets/common-ui.js?v=20260701-fullpage-v4" defer></script>
+  <script src="assets/common-ui.js?v=20260702-light-system-v6" defer></script>
 </head>
 <body id="top">
   <header class="hero" aria-labelledby="page-title">
@@ -27,8 +27,8 @@
         <p class="eyebrow">Quant-based short-term top-risk overlay</p>
         <h1 id="page-title">SOX & Asset Top Risk Score</h1>
         <p class="hero-copy">
-          뉴스가 아니라 SOX sector context와 자산별 가격·추세·변동성·relative strength로 단기 고점 위험을 분리해 봅니다.
-          날짜를 선택하면 그 시점까지의 데이터만 사용하는 as-of risk view로 전환합니다.
+          SOX와 주요 반도체 자산의 단기 고점 위험을 가격·추세·변동성·상대강도로 나눠 봅니다.
+          날짜를 선택하면 해당 시점 기준의 as-of risk view로 전환합니다.
         </p>
         <div class="hero-actions">
           <a href="#summary" class="primary-button">선택 날짜 리스크 보기</a>
@@ -49,7 +49,7 @@
         <div>
           <p class="eyebrow">Asset Selector</p>
           <h2 id="selector-title">SOX, 개별 종목, ETF 선택</h2>
-          <p>기본값은 SOX입니다. 개별 종목/ETF는 SOX를 sector context/analysis reference로 사용하되, ETF의 official benchmark와는 분리해서 표시합니다. 한국 종목은 USDKRW 환산 또는 KOSPI fallback 상태를 표시합니다.</p>
+          <p>자산과 기준일을 고르면 요약, 신호, 차트, 백테스트가 같은 기준일로 전환됩니다. ETF의 공식 벤치마크와 분석 참조는 분리해 표시합니다.</p>
         </div>
         <div class="asset-picker" aria-label="분석 대상 및 날짜 선택">
           <label for="asset-select">분석 대상</label>
@@ -67,15 +67,27 @@
       </div>
       <div class="notice compact-notice">
         <strong id="selected-asset-name">SOX</strong>
-        <span>SOX는 기존 fixed-threshold canonical model, 개별 종목/ETF는 volatility-adjusted momentum·relative strength model을 사용합니다. 선택 날짜가 휴장일·미채점일이면 직전 scored trading day로 해석합니다.</span>
+        <span>SOX는 canonical model, 개별 종목/ETF는 volatility-adjusted momentum·relative strength model입니다. 휴장일은 직전 scored trading day로 해석합니다.</span>
       </div>
+    </section>
+
+    <section class="section" id="summary" aria-labelledby="summary-title">
+      <div class="section-heading split-heading">
+        <div>
+          <p class="eyebrow">As-of Risk</p>
+          <h2 id="summary-title">선택 날짜 기준 고점 리스크</h2>
+          <p>핵심 판단, 점수, 데이터 품질을 먼저 보여줍니다. 선택 날짜 요약은 미래 데이터를 신호 계산에 사용하지 않습니다.</p>
+        </div>
+        <div id="current-action" class="action-card">데이터 로딩 중</div>
+      </div>
+      <div id="summary-cards" class="metric-grid" aria-live="polite"></div>
     </section>
 
     <section class="section" id="matrix" aria-labelledby="matrix-title">
       <div class="section-heading">
         <p class="eyebrow">Asset Risk Matrix</p>
         <h2 id="matrix-title">Universe 전체 리스크 현황</h2>
-        <p>행을 클릭하면 해당 자산으로 요약, factor, chart, backtest가 전환됩니다.</p>
+        <p>행을 선택하면 해당 자산의 요약, factor, chart, backtest가 전환됩니다.</p>
       </div>
       <div class="table-wrap">
         <table>
@@ -86,18 +98,6 @@
           <tbody id="asset-matrix-body"><tr><td colspan="13">Loading...</td></tr></tbody>
         </table>
       </div>
-    </section>
-
-    <section class="section" id="summary" aria-labelledby="summary-title">
-      <div class="section-heading split-heading">
-        <div>
-          <p class="eyebrow">As-of Risk</p>
-          <h2 id="summary-title">선택 날짜 기준 고점 리스크</h2>
-          <p>Top Risk Score는 <code>max(OH Score, RF Score)</code>인 0~5 regime ladder입니다. SOX는 canonical sector model, 자산은 volatility-adjusted/relative-strength model이며 OH/RF, SOXQ proxy, context freshness를 항상 분리해서 표시합니다. 선택 날짜 요약은 미래 데이터를 신호 계산에 사용하지 않습니다.</p>
-        </div>
-        <div id="current-action" class="action-card">데이터 로딩 중</div>
-      </div>
-      <div id="summary-cards" class="metric-grid" aria-live="polite"></div>
     </section>
 
     <section class="section" id="factors" aria-labelledby="factors-title">
@@ -121,7 +121,7 @@
       <div class="section-heading">
         <p class="eyebrow">Charts</p>
         <h2 id="charts-title">가격·점수·상대강도·VIX/VXN 타임라인</h2>
-        <p>마커는 OH≥4, RF≥4, red zone, confirmed/actionable signal과 선택 기준일을 표시합니다. 차트는 선택 기준일까지의 as-of history만 보여줍니다.</p>
+        <p>마커는 주요 위험 신호와 선택 기준일입니다. 차트는 선택 기준일까지의 as-of history만 보여줍니다.</p>
       </div>
       <div class="chart-grid">
         <article class="panel"><div class="panel-header compact"><div><p class="eyebrow">Selected Price</p><h3>Close + MA20/MA50</h3></div></div><div id="price-chart" class="chart-card"></div></article>
@@ -136,7 +136,7 @@
         <div>
           <p class="eyebrow">Backtest</p>
           <h2 id="backtest-title">5D downside / strict top 성과</h2>
-          <p>주 판단은 5거래일 cooldown으로 de-clustered한 event-level 기준입니다. Daily signal 기준은 보조로 제공합니다. 선택 날짜 outcome 카드는 해당 날짜 이후 5거래일 데이터가 있을 때만 backtest 결과를 표시합니다.</p>
+          <p>주 판단은 5거래일 cooldown event-level 기준입니다. Daily signal 기준은 보조로 제공합니다.</p>
         </div>
         <div class="control-row" aria-label="Backtest controls">
           <label for="period-select">기간</label>
@@ -180,15 +180,15 @@
         <p>이 모델은 뉴스 기반 모델이 아니며 가격/변동성 기반 risk overlay입니다. Backtest 성과는 과거 분포 설명이지 투자 조언이 아닙니다.</p>
       </div>
       <div id="methodology-grid" class="method-grid">
-        <article><h3>Core data</h3><p>SOX close: FRED NASDAQSOX. VIX close: FRED VIXCLS. VXN은 optional context입니다. Browser는 generated JSON만 읽습니다.</p></article>
-        <article><h3>OH Score</h3><p>SOX는 기존 z20/RSI/ROC/gap/High20 model을 유지합니다. 자산 OH는 z20, RSI5, ROC20Z, High20 proximity, RelZ20을 합산합니다.</p></article>
-        <article><h3>RF Score</h3><p>자산 RF는 prior damage, volatility-adjusted rebound, MA resistance, weak momentum, relative weakness를 합산합니다.</p></article>
-        <article><h3>Confirmation</h3><p>자산 confirmed risk는 최근 setup 이후 MA5 하회, 변동성 조정 큰 하락일, 또는 relative strength 이탈로 확인합니다. actionable signal은 여기에 SOX/VIX context를 더하되, FRED SOX가 stale이면 SOXQ same-day proxy를 effective context로 사용합니다.</p></article>
-        <article><h3>Benchmark semantics</h3><p>officialBenchmark는 ETF 발행사/지수 문서상 기준이고, analysisBenchmark는 이 대시보드가 relative strength와 섹터 해석에 쓰는 참조입니다. SOX가 모든 ETF의 공식 추종지수라는 의미가 아닙니다.</p></article>
-        <article><h3>Economic validation</h3><p>개별 자산은 primary rule의 event-level volatility-adjusted downside lift를 별도 진단합니다. full-period와 YTD를 나눠 raw top-risk, confirmed/actionable, SOXQ proxy-context rule을 확인하고, lift가 base rate를 이기지 못하면 confidence와 warning을 낮춥니다.</p></article>
-        <article><h3>Analysis date</h3><p>사용자가 선택한 기준일이 거래일이 아니거나 score가 계산되지 않은 날이면, 해당 자산의 직전 scored trading day로 해석합니다. 요약·factor·차트는 기준일까지의 데이터만 사용하고, forward 5D outcome은 backtest 설명용으로만 표시합니다.</p></article>
-        <article><h3>Overfitting guard</h3><p>Threshold는 round number로 고정합니다. Sensitivity table은 보고용이며 default를 자동 변경하지 않습니다.</p></article>
-        <article><h3>Korea / history caveats</h3><p>한국 종목은 USDKRW로 USD 환산 후 SOX 대비 RS를 계산하고, FX가 없으면 KOSPI local fallback을 warning으로 표시합니다. SNDK/DRAM은 short-history confidence flag를 표시합니다.</p></article>
+        <details><summary>Core data</summary><p>SOX close: FRED NASDAQSOX. VIX close: FRED VIXCLS. VXN은 optional context입니다. Browser는 generated JSON만 읽습니다.</p></details>
+        <details><summary>OH Score</summary><p>SOX는 기존 z20/RSI/ROC/gap/High20 model을 유지합니다. 자산 OH는 z20, RSI5, ROC20Z, High20 proximity, RelZ20을 합산합니다.</p></details>
+        <details><summary>RF Score</summary><p>자산 RF는 prior damage, volatility-adjusted rebound, MA resistance, weak momentum, relative weakness를 합산합니다.</p></details>
+        <details><summary>Confirmation</summary><p>자산 confirmed risk는 MA5 하회, 변동성 조정 큰 하락일, 또는 relative strength 이탈로 확인합니다. SOX가 stale이면 SOXQ same-day proxy를 context로 사용합니다.</p></details>
+        <details><summary>Benchmark semantics</summary><p>officialBenchmark는 ETF 발행사/지수 문서상 기준이고, analysisBenchmark는 relative strength와 섹터 해석에 쓰는 참조입니다.</p></details>
+        <details><summary>Economic validation</summary><p>개별 자산은 event-level volatility-adjusted downside lift를 별도 진단합니다. lift가 base rate를 이기지 못하면 confidence와 warning을 낮춥니다.</p></details>
+        <details><summary>Analysis date</summary><p>거래일이 아니거나 score가 없는 날은 직전 scored trading day로 해석합니다. forward 5D outcome은 backtest 설명용으로만 표시합니다.</p></details>
+        <details><summary>Overfitting guard</summary><p>Threshold는 round number로 고정합니다. Sensitivity table은 보고용이며 default를 자동 변경하지 않습니다.</p></details>
+        <details><summary>Korea / history caveats</summary><p>한국 종목은 USDKRW로 USD 환산 후 SOX 대비 RS를 계산하고, FX가 없으면 KOSPI local fallback을 warning으로 표시합니다.</p></details>
       </div>
       <div id="source-notes" class="source-list"></div>
     </section>
