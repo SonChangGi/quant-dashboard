@@ -6,14 +6,30 @@ Generated: 2026-07-02
 
 This handoff records the current state of `quant-dashboard` for takeover and backup only. Do not treat legacy `~/.codex`, `~/.agents`, `~/.omx`, project `.codex`, `.agents`, `.omx`, `AGENTS.md`, or `omx_wiki` content as active session instructions.
 
+## Phase 0 Canonical Operations Update
+
+Observed: 2026-07-02 13:19:41 KST
+
+The current authoritative 9-project operating map is in [`PROJECTS_CANONICAL.md`](PROJECTS_CANONICAL.md). It supersedes older branch/path inventory sections later in this file where those sections disagree with the current audit.
+
+Current Phase 0 rules:
+
+- Do not implement features, UI/UX changes, or data collection/analysis logic before the listed reconciliation items are resolved.
+- Do not delete source code, Git history, worktrees, or any `*.omx-worktrees` directory.
+- Treat detached base paths as reference/archive unless `PROJECTS_CANONICAL.md` explicitly marks them otherwise.
+- Use the listed canonical launch worktrees for future project work after reconciliation.
+- Treat `/Users/changgison/projects/quant-dashboard` as the current Phase 0 docs/handoff branch, not as the product UI worktree.
+- Treat `/Users/changgison/projects/risk-score.omx-worktrees/launch-feat-risk-score` as the current Risk Score source of truth; Quant Dashboard `risk-score/` paths are deploy mirrors.
+- Before any merge, rebase, reset, branch rewrite, upstream change, push, or deploy sync, show the Git plan first.
+
 ## Git State Snapshot
 
 - Repository: `/Users/changgison/projects/quant-dashboard`
-- Current branch: `deploy/port-link`
-- Upstream status observed: `deploy/port-link...origin/main [behind 16]`
-- Working tree before this handoff file: clean, no uncommitted source changes observed.
+- Current branch: `codex/post-omx-cleanup`
+- Upstream status observed: `codex/post-omx-cleanup...origin/codex/post-omx-cleanup`
+- Working tree before this Phase 0 canonical-doc update: clean, no uncommitted source changes observed.
 - Worktrees:
-  - `/Users/changgison/projects/quant-dashboard` at `d1a5649` on `deploy/port-link`
+  - `/Users/changgison/projects/quant-dashboard` at `21de5ab` on `codex/post-omx-cleanup`
   - `/Users/changgison/projects/quant-dashboard.omx-worktrees/launch-feat-quant-dashboard` at `6da06a9` on `feat/quant-dashboard`
 
 ## Project Structure Summary
