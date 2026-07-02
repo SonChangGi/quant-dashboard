@@ -8,19 +8,33 @@ This handoff records the current state of `quant-dashboard` for takeover and bac
 
 ## Phase 0 Canonical Operations Update
 
-Observed: 2026-07-02 13:19:41 KST
+Observed: 2026-07-02 14:33:30 KST
 
 The current authoritative 9-project operating map is in [`PROJECTS_CANONICAL.md`](PROJECTS_CANONICAL.md). It supersedes older branch/path inventory sections later in this file where those sections disagree with the current audit.
 
+This cleanup ran `git fetch origin --no-tags` in the nine canonical worktrees,
+fast-forwarded only branches that were strict ancestors of `origin/main`, and
+set `port` and `risk-score` upstreams to `origin/main`. It did not implement
+features, switch branches, rebase, reset, push, delete branches, delete
+worktrees, run `git clean`, run the Risk Score sync script, or remove
+`*.omx-worktrees`.
+
+Current implementation split:
+
+- Ready from canonical paths: all nine projects.
+- All nine canonical worktrees are clean, non-detached, track `origin/main`,
+  and have `HEAD == origin/main`.
+- Risk Score still requires deploy-mirror verification before any sync command.
+
 Current Phase 0 rules:
 
-- Do not implement features, UI/UX changes, or data collection/analysis logic before the listed reconciliation items are resolved.
+- Do not implement features, UI/UX changes, or data collection/analysis logic from stale base paths.
 - Do not delete source code, Git history, worktrees, or any `*.omx-worktrees` directory.
 - Treat detached base paths as reference/archive unless `PROJECTS_CANONICAL.md` explicitly marks them otherwise.
-- Use the listed canonical launch worktrees for future project work after reconciliation.
+- Use the listed canonical launch worktrees for future project work.
 - Treat `/Users/changgison/projects/quant-dashboard` as the current Phase 0 docs/handoff branch, not as the product UI worktree.
 - Treat `/Users/changgison/projects/risk-score.omx-worktrees/launch-feat-risk-score` as the current Risk Score source of truth; Quant Dashboard `risk-score/` paths are deploy mirrors.
-- Before any merge, rebase, reset, branch rewrite, upstream change, push, or deploy sync, show the Git plan first.
+- Before any rebase, reset, branch rewrite, push, deploy sync, branch deletion, or worktree deletion, show the Git plan first.
 
 ## Git State Snapshot
 
@@ -29,7 +43,7 @@ Current Phase 0 rules:
 - Upstream status observed: `codex/post-omx-cleanup...origin/codex/post-omx-cleanup`
 - Working tree before this Phase 0 canonical-doc update: clean, no uncommitted source changes observed.
 - Worktrees:
-  - `/Users/changgison/projects/quant-dashboard` at `21de5ab` on `codex/post-omx-cleanup`
+  - `/Users/changgison/projects/quant-dashboard` at `c3bc54a` on `codex/post-omx-cleanup`
   - `/Users/changgison/projects/quant-dashboard.omx-worktrees/launch-feat-quant-dashboard` at `6da06a9` on `feat/quant-dashboard`
 
 ## Project Structure Summary
@@ -148,8 +162,10 @@ Notes:
 
 ## Remaining Risks
 
-- Current branch is behind `origin/main` by 16 commits; merging/rebasing should be planned separately.
-- A second worktree exists for `feat/quant-dashboard`; cleanup should avoid touching it until ownership and status are confirmed.
+- Product `quant-dashboard` work is aligned at `/Users/changgison/projects/quant-dashboard.omx-worktrees/launch-feat-quant-dashboard`; the base path is the docs/handoff branch only.
+- All nine canonical worktrees now track `origin/main` and have `HEAD == origin/main`.
+- `origin/feat/port` remains as a stale remote feature ref, but canonical `feat/port` now tracks `origin/main`.
+- Risk Score canonical source matches `origin/main`; the base `/Users/changgison/projects/risk-score` path remains stale reference/archive.
 - Public JSON contracts may drift independently of this static hub.
 - Fallback snapshots can become stale and should remain visibly labeled as fallback.
 - Legacy home settings may include hooks, skills, memories, and `.omx` state that affect future Codex/OMX behavior if reused.
@@ -246,6 +262,10 @@ Final cleanup date: 2026-07-02
 
 This repository remains the main handoff point for the 9-project quant dashboard group. The final cleanup goal is to preserve project source, git history, branches, and worktrees while moving legacy OMX/oh-my-codex and mixed Codex home state into quarantine so a fresh Codex CLI/App login can be used.
 
+For current Git operations, use the canonical paths in
+[`PROJECTS_CANONICAL.md`](PROJECTS_CANONICAL.md). The inventory below is older
+cleanup context and must not be used to override the current canonical map.
+
 ### 9 Project Inventory
 
 | Project name | Local path | URL / route | Role |
@@ -257,14 +277,14 @@ This repository remains the main handoff point for the 9-project quant dashboard
 | etf-tracking | `/Users/changgison/projects/etf-tracking` | `https://sonchanggi.github.io/etf-tracking/` | Separate ETF tracking repo and Pages project |
 | port | `/Users/changgison/projects/port` | `https://sonchanggi.github.io/port/` | Separate portfolio cockpit repo and Pages project |
 | valuation | `/Users/changgison/projects/valuation` | `https://sonchanggi.github.io/valuation/` | Separate valuation repo and Pages project |
-| risk-score | `/Users/changgison/projects/risk-score` | `https://sonchanggi.github.io/quant-dashboard/risk-score/` | Separate source repo synced into quant-dashboard Pages route |
+| risk-score | `/Users/changgison/projects/risk-score.omx-worktrees/launch-feat-risk-score` | `https://sonchanggi.github.io/quant-dashboard/risk-score/` | Separate source repo synced into quant-dashboard Pages route; base `/Users/changgison/projects/risk-score` is stale reference/archive |
 | sox | `/Users/changgison/projects/sox` | `https://sonchanggi.github.io/sox/` candidate | Separate local repo; public page role still needs confirmation |
 
 ### Data, Analysis, And Deployment Flow
 
 - `quant-dashboard` reads public static JSON from linked Pages projects and renders a route-less static hub.
 - Momentum, DRAM, Best Factor, ETF Tracking, and Valuation expose small summary/detail JSON files consumed by the hub.
-- `risk-score` is source-owned by `/Users/changgison/projects/risk-score` and documents a sync step into the quant-dashboard Pages subtree route `/quant-dashboard/risk-score/`.
+- `risk-score` is source-owned by `/Users/changgison/projects/risk-score.omx-worktrees/launch-feat-risk-score` and documents a sync step into the quant-dashboard Pages subtree route `/quant-dashboard/risk-score/`.
 - `port` is linked as a standalone Pages tool and is not currently parsed by the central summary adapter.
 - `sox` exists locally but needs manual confirmation before treating it as an active public route.
 - Deployments should preserve static GitHub Pages behavior and project-local workflows. Do not point one project at another project's deployment target unless its README explicitly documents that sync.
@@ -289,7 +309,7 @@ This repository remains the main handoff point for the 9-project quant dashboard
 Quant dashboard:
 
 ```bash
-cd /Users/changgison/projects/quant-dashboard
+cd /Users/changgison/projects/quant-dashboard.omx-worktrees/launch-feat-quant-dashboard
 python3 -m http.server 8080
 npm test
 npm run test:live
@@ -298,19 +318,22 @@ npm run test:live
 Risk score:
 
 ```bash
-cd /Users/changgison/projects/risk-score
-PYTHONDONTWRITEBYTECODE=1 python3 -B scripts/update_risk_score_data.py
-npm test
-python3 scripts/sync_to_quant_dashboard.py
+cd /Users/changgison/projects/risk-score.omx-worktrees/launch-feat-risk-score
 PYTHONDONTWRITEBYTECODE=1 python3 -B scripts/verify_quant_dashboard_sync.py
+PYTHONDONTWRITEBYTECODE=1 python3 -B scripts/verify_quant_dashboard_sync.py --target /Users/changgison/projects/quant-dashboard/risk-score
 ```
+
+Risk Score data update and deploy sync commands mutate files and must be
+planned separately before use.
 
 Other projects should use their local README, `package.json`, `pyproject.toml`, and workflow docs as source of truth.
 
 ### Remaining Risks
 
-- `quant-dashboard` is behind `origin/main` and `CODEX_HANDOFF.md` is intentionally uncommitted unless the user decides to commit it.
-- Several project main folders are detached HEAD checkouts; verify intended branch before making future edits there.
+- `PROJECTS_CANONICAL.md` is the current source for path, branch, upstream, and remote-mismatch decisions.
+- Several project base folders are detached HEAD or stale `main` checkouts; do not make future implementation edits there.
+- All nine canonical worktrees are aligned with `origin/main`; implementation should start from canonical paths only.
+- `risk-score` base path fails deploy-mirror verification; use the launch worktree as source of truth.
 - 9 `*.omx-worktrees` paths remain preserved and need manual ownership review before any future cleanup.
 - `momentum-factor-lab` had the only repo-local `.omx` candidate observed in the 9 project roots.
 - Home-level Codex state is quarantined during final cleanup; future CLI use requires `codex login`.
@@ -349,6 +372,6 @@ Fresh Codex CLI/App restart:
 ```bash
 unset CODEX_HOME
 codex login
-cd /Users/changgison/projects/quant-dashboard
+cd /Users/changgison/projects/quant-dashboard.omx-worktrees/launch-feat-quant-dashboard
 codex
 ```
