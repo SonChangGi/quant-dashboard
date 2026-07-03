@@ -389,8 +389,7 @@
     const heroActions = $('#hero-actions');
     const projectGrid = $('#project-grid');
 
-    const commonNavOwned = topNav && typeof topNav.hasAttribute === 'function' && topNav.hasAttribute('data-common-nav');
-    if (topNav && !commonNavOwned) {
+    if (topNav) {
       topNav.replaceChildren(...PROJECTS.map((project) => createProjectLink(project, project.shortName)));
     }
 
