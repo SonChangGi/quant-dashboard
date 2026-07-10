@@ -36,7 +36,7 @@
     },
     {
       id: 'dram',
-      shortName: 'D램',
+      shortName: 'DRAM',
       title: 'D램(DRAM) 가격 랩',
       description: 'D램(DRAM) 현물가, 고정가, 주간 현물 프록시를 모니터링하는 가격 대시보드입니다.',
       url: 'https://sonchanggi.github.io/dram-price/',
@@ -72,7 +72,7 @@
     },
     {
       id: 'etf',
-      shortName: 'ETF Tracking',
+      shortName: 'ETF',
       title: 'ETF TOP10 Tracking',
       description: '한국 상장 액티브 ETF 3종의 TOP10 편입 종목, 비중 변화, 편입·편출 신호를 추적합니다.',
       url: 'https://sonchanggi.github.io/etf-tracking/',
