@@ -2,6 +2,7 @@
   'use strict';
 
   const DATA_BASE = 'data/risk-score/';
+  const THEME_STORAGE_KEY = 'risk-score-theme';
   const FILES = {
     summary: `${DATA_BASE}risk_score_summary.json`,
     daily: `${DATA_BASE}risk_score_daily.json`,
@@ -34,9 +35,53 @@
   const $$ = (selector) => Array.from(document.querySelectorAll(selector));
 
   document.addEventListener('DOMContentLoaded', () => {
+    bindThemeToggle();
     bindControls();
     loadData();
   });
+
+  function storedTheme() {
+    try {
+      return window.localStorage?.getItem(THEME_STORAGE_KEY);
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function saveTheme(theme) {
+    try {
+      window.localStorage?.setItem(THEME_STORAGE_KEY, theme);
+    } catch (error) {
+      // Theme persistence is optional.
+    }
+  }
+
+  function currentTheme() {
+    return document.documentElement?.dataset?.theme === 'dark' ? 'dark' : 'light';
+  }
+
+  function applyTheme(theme) {
+    const normalized = theme === 'dark' ? 'dark' : 'light';
+    document.documentElement.dataset.theme = normalized;
+    const button = $('#theme-toggle');
+    if (!button) return;
+    const isDark = normalized === 'dark';
+    button.setAttribute('aria-pressed', String(isDark));
+    button.setAttribute('aria-label', isDark ? '라이트 모드로 전환' : '다크 모드로 전환');
+    const label = button.querySelector('.theme-toggle-text');
+    if (label) label.textContent = isDark ? '라이트 모드' : '다크 모드';
+  }
+
+  function bindThemeToggle() {
+    applyTheme(storedTheme() || currentTheme());
+    const button = $('#theme-toggle');
+    if (!button) return;
+    button.addEventListener('click', () => {
+      const nextTheme = currentTheme() === 'dark' ? 'light' : 'dark';
+      applyTheme(nextTheme);
+      saveTheme(nextTheme);
+    });
+  }
 
   function bindControls() {
     $$('.toggle').forEach((button) => {
@@ -304,29 +349,29 @@
     const scored = rows.filter((row) => finite(row.close)).slice(-520);
     const symbol = state.selectedSymbol;
     renderLineChart('#price-chart', scored, [
-      { key: 'close', label: `${symbol} Close`, color: '#7dd3fc' },
-      { key: 'ma20', label: 'MA20', color: '#c4b5fd' },
-      { key: 'ma50', label: 'MA50', color: '#86efac' },
+      { key: 'close', label: `${symbol} Close`, color: 'var(--chart-blue)' },
+      { key: 'ma20', label: 'MA20', color: 'var(--chart-violet)' },
+      { key: 'ma50', label: 'MA50', color: 'var(--chart-green)' },
     ], markerRows(scored, 'price'), { valueFormatter: formatPrice, yLabel: symbol });
     renderLineChart('#score-chart', scored, [
-      { key: 'oh_score', label: 'OH', color: '#fbbf24' },
-      { key: 'rf_score', label: 'RF', color: '#fb7185' },
-      { key: 'top_risk_score', label: 'Top', color: '#f4f4f5' },
-      { key: 'sector_proxy_top_risk_score', label: 'SOXQ proxy', color: '#38bdf8' },
+      { key: 'oh_score', label: 'OH', color: 'var(--chart-amber)' },
+      { key: 'rf_score', label: 'RF', color: 'var(--chart-red)' },
+      { key: 'top_risk_score', label: 'Top', color: 'var(--chart-ink)' },
+      { key: 'sector_proxy_top_risk_score', label: 'SOXQ proxy', color: 'var(--chart-cyan)' },
     ], markerRows(scored, 'score'), { minY: 0, maxY: 5, valueFormatter: (v) => `${v}/5`, yLabel: 'Score' });
     renderLineChart('#relative-chart', scored, [
-      { key: 'relative_strength', label: 'Relative strength', color: '#7dd3fc' },
-      { key: 'rs_ma20', label: 'RS MA20', color: '#c4b5fd' },
-      { key: 'rel_z20', label: 'RelZ20', color: '#fbbf24', axisHint: 'z' },
+      { key: 'relative_strength', label: 'Relative strength', color: 'var(--chart-blue)' },
+      { key: 'rs_ma20', label: 'RS MA20', color: 'var(--chart-violet)' },
+      { key: 'rel_z20', label: 'RelZ20', color: 'var(--chart-amber)', axisHint: 'z' },
     ], relativeMarkerRows(scored), { valueFormatter: formatNumber, yLabel: 'RS' });
     const volSeries = [
-      { key: 'vix_close', label: 'VIX', color: '#fb7185' },
-      { key: 'vix_ma5', label: 'VIX MA5', color: '#fbbf24' },
-      { key: 'vix_ma20', label: 'VIX MA20', color: '#7dd3fc' },
+      { key: 'vix_close', label: 'VIX', color: 'var(--chart-red)' },
+      { key: 'vix_ma5', label: 'VIX MA5', color: 'var(--chart-amber)' },
+      { key: 'vix_ma20', label: 'VIX MA20', color: 'var(--chart-blue)' },
     ];
     if (scored.some((row) => finite(row.vxn_close))) {
-      volSeries.push({ key: 'vxn_close', label: 'VXN', color: '#c4b5fd' });
-      volSeries.push({ key: 'vxn_ma5', label: 'VXN MA5', color: '#86efac' });
+      volSeries.push({ key: 'vxn_close', label: 'VXN', color: 'var(--chart-violet)' });
+      volSeries.push({ key: 'vxn_ma5', label: 'VXN MA5', color: 'var(--chart-green)' });
     }
     renderLineChart('#vix-chart', scored, volSeries, volMarkerRows(scored), { valueFormatter: formatNumber, yLabel: 'Vol' });
   }
@@ -368,8 +413,8 @@
     const target = $(selector);
     if (!target) return;
     const width = 920;
-    const height = 330;
-    const margin = { top: 24, right: 28, bottom: 40, left: 66 };
+    const height = 360;
+    const margin = { top: 24, right: 28, bottom: 64, left: 66 };
     const availableSeries = series.filter((item) => rows.some((row) => finite(row[item.key])));
     const allValues = availableSeries.flatMap((item) => rows.map((row) => finite(row[item.key]) ? Number(row[item.key]) : null).filter((value) => value !== null));
     if (!rows.length || !allValues.length) {
@@ -398,16 +443,69 @@
       const markerClass = marker.tone === 'selected-date' ? 'selected-date' : classForLevel(marker.tone);
       return `<circle cx="${x(index).toFixed(1)}" cy="${y(value).toFixed(1)}" r="${marker.tone === 'selected-date' ? '6.2' : '4.8'}" class="marker ${markerClass}"><title>${escapeHtml(`${marker.row.date}: ${marker.label}`)}</title></circle>`;
     }).join('');
-    const legend = availableSeries.map((item, index) => `<g transform="translate(${margin.left + (index % 4) * 170},${height - 14 - Math.floor(index / 4) * 18})"><line x1="0" x2="22" y1="0" y2="0" stroke="${item.color}" stroke-width="3"/><text x="30" y="4">${escapeHtml(item.label)}</text></g>`).join('');
+    const legend = availableSeries.map((item, index) => `<g transform="translate(${margin.left + (index % 4) * 170},${height - 16 - Math.floor(index / 4) * 18})"><line x1="0" x2="22" y1="0" y2="0" stroke="${item.color}" stroke-width="3"/><text x="30" y="4">${escapeHtml(item.label)}</text></g>`).join('');
     const firstDate = rows[0]?.date || '';
     const lastDate = rows[rows.length - 1]?.date || '';
+    const xTickCount = rows.length > 240 ? 6 : rows.length > 80 ? 5 : rows.length > 24 ? 4 : Math.min(rows.length, 3);
+    const xTickIndexes = Array.from({ length: xTickCount }, (_, index) => Math.round((index / Math.max(xTickCount - 1, 1)) * (rows.length - 1)));
+    const xTicks = [...new Set(xTickIndexes)].map((index) => `<g><line class="axis" x1="${x(index).toFixed(1)}" x2="${x(index).toFixed(1)}" y1="${height - margin.bottom}" y2="${height - margin.bottom + 5}"/><text class="axis-label" x="${x(index).toFixed(1)}" y="${height - margin.bottom + 20}" text-anchor="middle">${escapeHtml(String(rows[index]?.date || '').slice(5))}</text></g>`).join('');
     target.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(options.yLabel || 'chart')} chart from ${escapeHtml(firstDate)} to ${escapeHtml(lastDate)}">
       <g class="grid">${grid}</g>
       <line class="axis" x1="${margin.left}" x2="${width - margin.right}" y1="${height - margin.bottom}" y2="${height - margin.bottom}"/>
-      <text class="axis-label" x="${margin.left}" y="${height - 16}">${escapeHtml(firstDate)}</text>
-      <text class="axis-label" x="${width - margin.right}" y="${height - 16}" text-anchor="end">${escapeHtml(lastDate)}</text>
-      ${lines}${markerSvg}<g class="legend">${legend}</g>
-    </svg>`;
+      ${xTicks}${lines}${markerSvg}
+      <line class="chart-crosshair" x1="0" x2="0" y1="${margin.top}" y2="${height - margin.bottom}"/>
+      <g class="chart-hover-dots"></g>
+      <rect class="chart-hit-area" x="${margin.left}" y="${margin.top}" width="${width - margin.left - margin.right}" height="${height - margin.top - margin.bottom}" tabindex="0" aria-label="차트 일별 값 탐색"/>
+      <g class="legend">${legend}</g>
+    </svg><div class="chart-tooltip" role="status" aria-live="polite"></div>`;
+    bindChartInspection(target, rows, availableSeries, { width, height, margin, x, y, valueFormatter: options.valueFormatter || formatNumber });
+  }
+
+  function bindChartInspection(target, rows, series, chart) {
+    const svg = target.querySelector('svg');
+    const hitArea = target.querySelector('.chart-hit-area');
+    const crosshair = target.querySelector('.chart-crosshair');
+    const dots = target.querySelector('.chart-hover-dots');
+    const tooltip = target.querySelector('.chart-tooltip');
+    if (!svg || !hitArea || !crosshair || !dots || !tooltip) return;
+    let activeIndex = rows.length - 1;
+
+    const showIndex = (index) => {
+      activeIndex = Math.max(0, Math.min(rows.length - 1, index));
+      const row = rows[activeIndex];
+      const xPosition = chart.x(activeIndex);
+      crosshair.setAttribute('x1', xPosition.toFixed(1));
+      crosshair.setAttribute('x2', xPosition.toFixed(1));
+      dots.innerHTML = series.map((item) => finite(row[item.key])
+        ? `<circle cx="${xPosition.toFixed(1)}" cy="${chart.y(row[item.key]).toFixed(1)}" r="4.8" fill="${item.color}"/>`
+        : '').join('');
+      tooltip.innerHTML = `<strong>${escapeHtml(formatDate(row.date))}</strong>${series.map((item) => finite(row[item.key])
+        ? `<div class="chart-tooltip-row"><i class="chart-tooltip-swatch" style="--swatch:${escapeAttribute(item.color)}"></i><span>${escapeHtml(item.label)}</span><b>${escapeHtml(chart.valueFormatter(Number(row[item.key])))}</b></div>`
+        : '').join('')}`;
+      const renderedX = xPosition * (svg.getBoundingClientRect().width / chart.width);
+      const viewportX = renderedX - target.scrollLeft;
+      tooltip.style.left = `${renderedX}px`;
+      tooltip.style.transform = viewportX > target.clientWidth - 240 ? 'translateX(-100%)' : viewportX < 230 ? 'translateX(0)' : 'translateX(-50%)';
+      target.classList.add('is-inspecting');
+    };
+
+    const indexFromPointer = (event) => {
+      const bounds = hitArea.getBoundingClientRect();
+      if (!bounds.width) return activeIndex;
+      const ratio = Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width));
+      return Math.round(ratio * (rows.length - 1));
+    };
+
+    hitArea.addEventListener('pointerenter', (event) => showIndex(indexFromPointer(event)));
+    hitArea.addEventListener('pointermove', (event) => showIndex(indexFromPointer(event)));
+    hitArea.addEventListener('pointerleave', () => target.classList.remove('is-inspecting'));
+    hitArea.addEventListener('focus', () => showIndex(activeIndex));
+    hitArea.addEventListener('blur', () => target.classList.remove('is-inspecting'));
+    hitArea.addEventListener('keydown', (event) => {
+      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+      event.preventDefault();
+      showIndex(activeIndex + (event.key === 'ArrowRight' ? 1 : -1));
+    });
   }
 
   function setupBacktestPeriods() {
