@@ -7,13 +7,14 @@ const files = {
   readme: readFileSync('README.md', 'utf8'),
   packageJson: readFileSync('package.json', 'utf8'),
   liveSmoke: readFileSync('scripts/live-contract-smoke.mjs', 'utf8'),
+  riskSyncWorkflow: readFileSync('.github/workflows/sync-risk-score.yml', 'utf8'),
 };
 
 const checks = [];
 const assert = (condition, label) => checks.push({ label, ok: Boolean(condition) });
 const contains = (file, needle) => file.includes(needle);
 
-for (const path of ['index.html', 'assets/styles.css', 'assets/app.js', 'scripts/verify.mjs', 'scripts/regression.mjs', 'scripts/static-smoke.mjs', 'scripts/live-contract-smoke.mjs', 'package.json']) {
+for (const path of ['index.html', 'assets/styles.css', 'assets/app.js', 'scripts/verify.mjs', 'scripts/regression.mjs', 'scripts/static-smoke.mjs', 'scripts/live-contract-smoke.mjs', '.github/workflows/sync-risk-score.yml', 'package.json']) {
   assert(statSync(path).isFile(), `${path} exists`);
 }
 
@@ -129,6 +130,18 @@ assert(!contains(files.app, '../momentum-factor-lab') && !contains(files.app, '.
 assert(statSync('risk-score/index.html').isFile(), 'Risk Score deploy subtree index exists');
 assert(statSync('risk-score/assets/app.js').isFile(), 'Risk Score deploy subtree app asset exists');
 assert(statSync('risk-score/data/risk-score/risk_score_summary.json').isFile(), 'Risk Score deploy subtree summary JSON exists');
+assert(contains(files.riskSyncWorkflow, 'repository: SonChangGi/risk-score') && contains(files.riskSyncWorkflow, 'path: .source/risk-score'), 'Risk Score mirror workflow checks out the canonical source explicitly');
+assert(contains(files.riskSyncWorkflow, 'scripts/verify_data_freshness.py') && contains(files.riskSyncWorkflow, 'scripts/verify_quant_dashboard_sync.py'), 'Risk Score mirror workflow gates publication on source freshness and exact mirror verification');
+assert(contains(files.riskSyncWorkflow, 'python3 .source/risk-score/scripts/sync_to_quant_dashboard.py') && contains(files.riskSyncWorkflow, 'npm test'), 'Risk Score mirror workflow builds through the source-owned script and verifies Quant Dashboard');
+assert(contains(files.riskSyncWorkflow, 'verify-source:') && contains(files.riskSyncWorkflow, 'publish-mirror:') && contains(files.riskSyncWorkflow, 'needs: verify-source'), 'Risk Score mirror validation and publication use separate dependent jobs');
+assert(contains(files.riskSyncWorkflow, 'permissions:\n  contents: read') && contains(files.riskSyncWorkflow, 'permissions:\n      contents: write'), 'Risk Score source validation is read-only and only publication receives write permission');
+assert(contains(files.riskSyncWorkflow, 'actions/upload-artifact@') && contains(files.riskSyncWorkflow, 'actions/download-artifact@') && contains(files.riskSyncWorkflow, 'SHA256SUMS'), 'Risk Score mirror crosses the permission boundary as a checksummed artifact');
+const actionPins = [...files.riskSyncWorkflow.matchAll(/^\s*uses:\s+([^@\s]+)@([^\s#]+)/gm)];
+assert(actionPins.length > 0 && actionPins.every(([, , ref]) => /^[0-9a-f]{40}$/.test(ref)), 'all third-party workflow actions are pinned to full commit SHAs');
+const publishJob = files.riskSyncWorkflow.split(/^  publish-mirror:\s*$/m)[1] || '';
+assert(!contains(publishJob, '.source/risk-score/scripts/') && !contains(publishJob, 'repository: SonChangGi/risk-score'), 'write-enabled publication job does not execute or check out remote Risk Score source code');
+assert(contains(files.riskSyncWorkflow, 'contents: write') && !contains(files.riskSyncWorkflow, 'QUANT_DASHBOARD_TOKEN'), 'Risk Score mirror publication uses the deploy repository token without a cross-repository secret');
+assert(contains(files.riskSyncWorkflow, 'quant-dashboard-risk-score-sync') && contains(files.riskSyncWorkflow, 'cancel-in-progress: false'), 'Risk Score mirror workflow serializes scheduled retries');
 
 const failed = checks.filter((check) => !check.ok);
 for (const check of checks) {

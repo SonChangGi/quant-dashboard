@@ -24,6 +24,8 @@
 - `https://sonchanggi.github.io/sox/data/summary.json`
 - `https://sonchanggi.github.io/valuation/data/summary.json`
 
+Risk Score는 예외적으로 이 저장소의 `risk-score/` 정적 subtree에서 서비스합니다. `.github/workflows/sync-risk-score.yml`의 읽기 전용 job이 `SonChangGi/risk-score`의 canonical `main`을 테스트하고 원본 freshness와 exact mirror 검증을 통과한 산출물을 checksum과 함께 전달합니다. 별도 쓰기 job은 원격 원본 스크립트를 실행하지 않고 이 검증 산출물만 복사·재검증한 뒤 subtree를 커밋합니다. 공개 저장소가 자신의 `GITHUB_TOKEN`으로 배포를 소유하므로 원본 저장소에 cross-repository PAT를 둘 필요가 없습니다.
+
 `summary.json`의 공통 필드는 `schemaVersion`, `contract`, `projectId`, `generatedAt`, `dataAsOf`, `status`, `coverage`, `primaryEntities`, `limitations`, `automation`입니다. 대형 원본 payload는 원본 프로젝트에 남겨두고 중앙 허브는 ticker/theme dossier와 health 상태에 필요한 작은 요약부터 사용합니다.
 
 공개 JSON 구조가 바뀌거나 네트워크가 실패하면 대시보드는 마지막 확인 스냅샷 또는 오류 상태를 보여주고, 원본 페이지 링크는 계속 유지합니다. 중앙 허브의 숫자는 투자 결론이 아니라 원본 프로젝트의 방법론, 가격 기준일, 데이터 품질, 한계를 확인하기 위한 출발점입니다.
@@ -53,6 +55,7 @@ npm run test:live  # 공개 GitHub Pages JSON 계약을 네트워크로 확인�
 - freshness/status 표시 hook 존재
 - Research Cockpit, 티커·테마 Dossier, Data Health/automation hook 존재
 - 선택형 live contract smoke로 공개 JSON row 수, schema/contract version, 최신성, payload 크기 확인
+- Risk Score pull-sync workflow의 canonical source, freshness gate, mirror verifier, 전체 SHA action pin, read-only 검증/write-only 발행 권한 분리 확인
 - 투자 조언이 아니라는 disclaimer 존재
 - sibling 프로젝트 로컬 경로를 참조하지 않음
 
