@@ -517,13 +517,18 @@
   }
 
   async function loadDashboardPanels() {
-    const records = (await Promise.all(getPanelProjects().map((project) => loadProjectPanel(project)))).filter(Boolean);
+    const projects = getPanelProjects();
     PANEL_RECORDS.clear();
-    records.forEach((record) => PANEL_RECORDS.set(record.project.id, record));
-    renderResearchBriefing(records);
-    renderDataHealth(records);
-    bindWatchlist(records);
-    return records;
+    await Promise.all(projects.map(async (project) => {
+      const record = await loadProjectPanel(project);
+      if (!record) return;
+      PANEL_RECORDS.set(record.project.id, record);
+      const availableRecords = projects.map((item) => PANEL_RECORDS.get(item.id)).filter(Boolean);
+      renderResearchBriefing(availableRecords);
+      renderDataHealth(availableRecords);
+      bindWatchlist(availableRecords);
+    }));
+    return projects.map((project) => PANEL_RECORDS.get(project.id)).filter(Boolean);
   }
 
   async function loadProjectPanel(projectOrId) {
@@ -1693,7 +1698,7 @@
       <div class="etf-detail-heading">
         <div>
           <strong>ETF별 최신 TOP10과 최근 1개월 비중 변화</strong>
-          <span>표는 최신 기준일, 미니 그래프는 현재 TOP10 종목의 최근 31일 저장 비중 히스토리를 표시합니다.</span>
+          <span>표는 최신 기준일, 그래프는 현재 TOP10 종목의 최근 31일 저장 비중 히스토리를 표시합니다.</span>
         </div>
       </div>
       <div class="etf-detail-grid">${cards || '<div class="skeleton-line">ETF 상세 요약을 표시할 데이터가 없습니다.</div>'}</div>
@@ -1740,42 +1745,66 @@
     const yTicks = buildEtfPercentAxisTicks(minValue, maxValue, 5);
     const yMin = yTicks[0] ?? Math.max(0, minValue);
     const yMax = yTicks.at(-1) ?? Math.max(maxValue, yMin + 0.01);
-    const width = 680;
-    const height = 240;
-    const margin = { top: 34, right: 22, bottom: 38, left: 58 };
+    const width = 1120;
+    const height = 520;
+    const margin = { top: 52, right: 32, bottom: 68, left: 76 };
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
     const x = (date) => margin.left + ((Date.parse(date) - minDate) / Math.max(maxDate - minDate, 1)) * innerWidth;
     const y = (value) => margin.top + (1 - ((value - yMin) / Math.max(yMax - yMin, 0.000001))) * innerHeight;
     const grid = yTicks.map((tick) => {
       const yy = y(tick);
-      return `<g><line x1="${margin.left}" x2="${width - margin.right}" y1="${yy.toFixed(1)}" y2="${yy.toFixed(1)}" stroke="#d9e2f1"/><text x="${margin.left - 10}" y="${(yy + 4).toFixed(1)}" text-anchor="end" fill="#aab3c2" font-size="12" font-weight="700">${escapeHtml(formatPercent(tick))}</text></g>`;
+      return `<g><line x1="${margin.left}" x2="${width - margin.right}" y1="${yy.toFixed(1)}" y2="${yy.toFixed(1)}" stroke="#d9e2f1"/><text x="${margin.left - 12}" y="${(yy + 5).toFixed(1)}" text-anchor="end" fill="#aab3c2" font-size="14" font-weight="700">${escapeHtml(formatPercent(tick))}</text></g>`;
     }).join('');
     const paths = chartSeries.map((item, index) => {
       const color = COLORS[index % COLORS.length];
       const segments = splitChartPointSegments(item.points);
       const segmentPaths = segments.map((segment) => {
         const pathData = segment.map((point, pointIndex) => `${pointIndex ? 'L' : 'M'} ${x(point.date).toFixed(1)} ${y(point.value).toFixed(1)}`).join(' ');
-        return `<path d="${pathData}" fill="none" stroke="${color}" stroke-width="${item.rank <= 3 ? 3.4 : 2.4}" stroke-linecap="round" stroke-linejoin="round"/>`;
+        return `<path class="etf-mini-line" d="${pathData}" fill="none" stroke="${color}" stroke-width="${item.rank <= 3 ? 3.8 : 2.8}" stroke-linecap="round" stroke-linejoin="round"/>`;
       }).join('');
-      const last = item.points.filter((point) => Number.isFinite(point.value)).at(-1);
-      const lastPoint = last ? `<circle cx="${x(last.date).toFixed(1)}" cy="${y(last.value).toFixed(1)}" r="${item.rank <= 3 ? 4.2 : 3.3}" fill="${color}"><title>${escapeHtml(item.label)} ${formatPercent(last.value)}</title></circle>` : '';
-      return `${segmentPaths}${lastPoint}`;
+      const pointMarks = item.points.filter((point) => Number.isFinite(point.value)).map((point) => {
+        const pointX = x(point.date);
+        const pointY = y(point.value);
+        const valueText = formatPercent(point.value);
+        const labelWidth = Math.max(50, valueText.length * 8 + 16);
+        const labelX = pointX > width - margin.right - 70 ? -labelWidth - 9 : 9;
+        const labelY = pointY < margin.top + 36 ? 9 : -33;
+        return `
+          <g class="etf-data-point" transform="translate(${pointX.toFixed(1)} ${pointY.toFixed(1)})" tabindex="0" role="img" aria-label="${escapeAttribute(`${item.label} ${formatMaybeDate(point.date)} ${valueText}`)}">
+            <circle class="etf-point-hit" r="10" fill="transparent"/>
+            <circle class="etf-mini-point" r="${item.rank <= 3 ? 4.7 : 4}" fill="${color}"/>
+            <g class="etf-point-label" transform="translate(${labelX} ${labelY})" aria-hidden="true">
+              <rect width="${labelWidth}" height="24" rx="5"/>
+              <text x="${labelWidth / 2}" y="16" text-anchor="middle">${escapeHtml(valueText)}</text>
+            </g>
+          </g>
+        `;
+      }).join('');
+      return `<g class="etf-mini-series series-color-${index % COLORS.length}" aria-label="${escapeAttribute(item.label)}">${segmentPaths}${pointMarks}</g>`;
     }).join('');
-    const legend = chartSeries.slice(0, 5).map((item, index) => `<span><i class="legend-key" style="background:${COLORS[index % COLORS.length]}"></i>${escapeHtml(item.label)}</span>`).join('');
-    const firstDate = new Date(minDate).toISOString().slice(0, 10);
-    const lastDate = new Date(maxDate).toISOString().slice(0, 10);
+    const legend = chartSeries.map((item, index) => `<span><i class="legend-key" style="background:${COLORS[index % COLORS.length]}"></i>${escapeHtml(item.label)}</span>`).join('');
+    const uniqueDates = [...new Set(points.map((point) => point.date))].sort((a, b) => Date.parse(a) - Date.parse(b));
+    const xTickCount = Math.min(6, uniqueDates.length);
+    const xTickDates = xTickCount <= 1
+      ? uniqueDates
+      : [...new Set(Array.from({ length: xTickCount }, (_, index) => uniqueDates[Math.round((index * (uniqueDates.length - 1)) / (xTickCount - 1))]))];
+    const xTicks = xTickDates.map((date, index) => {
+      const anchor = index === 0 ? 'start' : index === xTickDates.length - 1 ? 'end' : 'middle';
+      return `<text x="${x(date).toFixed(1)}" y="${height - 22}" text-anchor="${anchor}" fill="#9aa4b2" font-size="14" font-weight="650">${escapeHtml(formatMaybeDate(date))}</text>`;
+    }).join('');
     return `
       <div class="etf-mini-chart">
-        <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeAttribute(row.name)} TOP10 비중 변화 미니 그래프">
-          <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"/>
-          <text x="${margin.left}" y="18" fill="#d8dee8" font-size="13" font-weight="800">최근 1개월 비중(%)</text>
-          ${grid}
-          <line x1="${margin.left}" x2="${width - margin.right}" y1="${height - margin.bottom}" y2="${height - margin.bottom}" stroke="#3b4556"/>
-          <text x="${margin.left}" y="${height - 12}" fill="#9aa4b2" font-size="11">${escapeHtml(formatMaybeDate(firstDate))}</text>
-          <text x="${width - margin.right}" y="${height - 12}" text-anchor="end" fill="#9aa4b2" font-size="11">${escapeHtml(formatMaybeDate(lastDate))}</text>
-          ${paths}
-        </svg>
+        <div class="etf-mini-plot">
+          <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeAttribute(row.name)} TOP10 비중 변화 미니 그래프">
+            <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"/>
+            <text x="${margin.left}" y="30" fill="#d8dee8" font-size="16" font-weight="800">최근 1개월 비중(%)</text>
+            ${grid}
+            <line x1="${margin.left}" x2="${width - margin.right}" y1="${height - margin.bottom}" y2="${height - margin.bottom}" stroke="#3b4556"/>
+            ${xTicks}
+            ${paths}
+          </svg>
+        </div>
         <div class="chart-legend etf-mini-legend">${legend}</div>
       </div>
     `;
@@ -1841,11 +1870,24 @@
     const target = $(selector);
     if (!target) return;
     const chartSeries = normalizeChartSeries(series);
+    target.classList.add('dram-chart-collection');
     if (!chartSeries.length) {
       target.innerHTML = '<div class="skeleton-line">표시할 D램 가격 그래프 데이터가 없습니다.</div>';
       return;
     }
 
+    const sourceBuckets = new Map();
+    chartSeries.forEach((item) => {
+      const source = stringOr(item.source, 'unknown');
+      if (!sourceBuckets.has(source)) sourceBuckets.set(source, []);
+      sourceBuckets.get(source).push(item);
+    });
+    target.innerHTML = `<div class="dram-source-grid">${[...sourceBuckets.entries()]
+      .map(([source, sourceSeries]) => renderDramSourceChart(source, sourceSeries))
+      .join('')}</div>`;
+  }
+
+  function renderDramSourceChart(source, chartSeries) {
     const points = chartSeries.flatMap((item) => item.points.map(([date, value]) => ({ date, value: Number(value) })));
     const dates = points.map((point) => Date.parse(point.date)).filter(Number.isFinite);
     const values = points.map((point) => point.value).filter(Number.isFinite);
@@ -1858,45 +1900,76 @@
     const yMax = yTicks.at(-1) ?? Math.ceil(maxValue);
 
     const width = 920;
-    const height = 360;
-    const margin = { top: 28, right: 34, bottom: 54, left: 72 };
+    const height = 390;
+    const margin = { top: 28, right: 34, bottom: 62, left: 72 };
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
     const x = (date) => margin.left + ((Date.parse(date) - minDate) / Math.max(maxDate - minDate, 1)) * innerWidth;
     const y = (value) => margin.top + (1 - ((value - yMin) / Math.max(yMax - yMin, 1))) * innerHeight;
-
-    const xLabels = [minDate, maxDate].map((time) => formatMaybeDate(new Date(time).toISOString().slice(0, 10)));
 
     const grid = yTicks.map((tick) => {
       const yy = y(tick);
       return `<g><line x1="${margin.left}" x2="${width - margin.right}" y1="${yy}" y2="${yy}" stroke="#d9e2f1"/><text x="${margin.left - 12}" y="${yy + 4}" text-anchor="end" fill="#9aa4b2" font-size="12">${formatInteger(tick)}</text></g>`;
     }).join('');
 
+    const allDates = [...new Set(points.map((point) => point.date))].sort();
+    const tickCount = Math.min(allDates.length, Math.max(2, Math.floor(innerWidth / 150) + 1));
+    const tickIndexes = [...new Set(Array.from({ length: tickCount }, (_, index) => Math.round((index / Math.max(tickCount - 1, 1)) * (allDates.length - 1))))];
+    const xTicks = tickIndexes.map((dateIndex) => {
+      const date = allDates[dateIndex];
+      const anchor = dateIndex === 0 ? 'start' : dateIndex === allDates.length - 1 ? 'end' : 'middle';
+      return `<text x="${x(date).toFixed(1)}" y="${height - 22}" text-anchor="${anchor}" fill="#9aa4b2" font-size="12">${escapeHtml(date)}</text>`;
+    }).join('');
+
     const paths = chartSeries.map((item, index) => {
       const color = COLORS[index % COLORS.length];
       const validPoints = item.points.filter(([, value]) => Number.isFinite(Number(value)));
       const pathData = validPoints.map(([date, value], pointIndex) => `${pointIndex === 0 ? 'M' : 'L'} ${x(date).toFixed(1)} ${y(Number(value)).toFixed(1)}`).join(' ');
-      const circles = validPoints.map(([date, value]) => `<circle cx="${x(date).toFixed(1)}" cy="${y(Number(value)).toFixed(1)}" r="3.5" fill="${color}"/>`).join('');
-      return `<path d="${pathData}" fill="none" stroke="${color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>${circles}`;
+      const circles = validPoints.map(([date, value], pointIndex) => `<circle class="dram-data-point${pointIndex === validPoints.length - 1 ? ' endpoint' : ''}" cx="${x(date).toFixed(1)}" cy="${y(Number(value)).toFixed(1)}" r="${pointIndex === validPoints.length - 1 ? '4.2' : '3.3'}" fill="${color}"><title>${escapeHtml(`${item.name} · ${date} · ${formatNumber(value)}`)}</title></circle>`).join('');
+      const labels = validPoints.map(([date, value], pointIndex) => {
+        const label = formatNumber(value);
+        const labelWidth = Math.min(96, Math.max(48, label.length * 7.2 + 18));
+        const pointX = x(date);
+        const pointY = y(Number(value));
+        let labelX = pointX + 12;
+        if (labelX + labelWidth > width - margin.right) labelX = pointX - labelWidth - 12;
+        labelX = Math.max(8, Math.min(labelX, width - margin.right - labelWidth));
+        const lane = (pointIndex % 3) - 1;
+        const labelY = Math.max(margin.top + 18, Math.min(pointY - 14 + lane * 18, height - margin.bottom - 8));
+        return `<g class="dram-value-label" transform="translate(${labelX.toFixed(1)} ${labelY.toFixed(1)})"><rect x="0" y="-16" width="${labelWidth.toFixed(1)}" height="21" rx="6"/><text x="8" y="-5" dominant-baseline="middle">${escapeHtml(label)}</text></g>`;
+      }).join('');
+      return `<g class="dram-series" tabindex="0" focusable="true" role="img" aria-label="${escapeAttribute(`${item.name} 일별 가격 추이`)}" style="--series-color:${color}"><path class="dram-series-hit" d="${pathData}" fill="none" stroke="transparent"/><path class="dram-series-line" d="${pathData}" fill="none" stroke="${color}"/>${circles}<g class="dram-value-layer">${labels}</g></g>`;
     }).join('');
 
     const legend = chartSeries.map((item, index) => `
       <span><i class="legend-key" style="background:${COLORS[index % COLORS.length]}"></i>${escapeHtml(item.name)}</span>
     `).join('');
 
-    target.innerHTML = `
-      <svg viewBox="0 0 ${width} ${height}" aria-hidden="true">
-        <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"/>
-        ${grid}
-        <line x1="${margin.left}" x2="${width - margin.right}" y1="${height - margin.bottom}" y2="${height - margin.bottom}" stroke="#3b4556"/>
-        <line x1="${margin.left}" x2="${margin.left}" y1="${margin.top}" y2="${height - margin.bottom}" stroke="#3b4556"/>
-        <text x="${margin.left}" y="${height - 18}" fill="#9aa4b2" font-size="12">${escapeHtml(xLabels[0])}</text>
-        <text x="${width - margin.right}" y="${height - 18}" text-anchor="end" fill="#9aa4b2" font-size="12">${escapeHtml(xLabels[1])}</text>
-        <text x="${margin.left}" y="18" fill="#d8dee8" font-size="13" font-weight="700">TrendForce daily · USD 기준 가격 추이</text>
-        ${paths}
-      </svg>
-      <div class="chart-legend">${legend}</div>
-    `;
+    const sourceName = dramSourceLabel(source);
+    const firstDate = allDates[0] || '';
+    const lastDate = allDates.at(-1) || '';
+    return `<article class="dram-source-card">
+      <div class="dram-source-heading">
+        <div><p class="eyebrow">Data source</p><h4>${escapeHtml(sourceName)}</h4><p>${formatInteger(points.length)}개 관측치 · ${escapeHtml(firstDate)} ~ ${escapeHtml(lastDate)}</p></div>
+        <span>${formatInteger(chartSeries.length)} series</span>
+      </div>
+      <div class="dram-chart-frame">
+        <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeAttribute(`${sourceName} D램 일별 가격 추이`)}">
+          <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"/>
+          <text x="${margin.left}" y="18" fill="#d8dee8" font-size="13" font-weight="700">일별 가격 · USD</text>
+          ${grid}
+          <line x1="${margin.left}" x2="${width - margin.right}" y1="${height - margin.bottom}" y2="${height - margin.bottom}" stroke="#3b4556"/>
+          <line x1="${margin.left}" x2="${margin.left}" y1="${margin.top}" y2="${height - margin.bottom}" stroke="#3b4556"/>
+          ${xTicks}${paths}
+        </svg>
+      </div>
+      <div class="chart-legend dram-legend">${legend}</div>
+    </article>`;
+  }
+
+  function dramSourceLabel(source) {
+    const labels = { trendforce: 'TrendForce', memorymarket: 'MemoryMarket', dramexchange: 'DRAMeXchange' };
+    return labels[String(source || '').toLowerCase()] || (source === 'unknown' ? 'Source not specified' : source);
   }
 
   function latestSeriesPoint(series) {

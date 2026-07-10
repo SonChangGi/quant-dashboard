@@ -169,9 +169,11 @@ const etfAxisTicks = api.buildEtfPercentAxisTicks(0.044543, 0.0461, 5);
 assert(etfAxisTicks.length >= 4 && etfAxisTicks.at(-1) - etfAxisTicks[0] >= 0.04, 'ETF mini chart y-axis expands narrow weight ranges for readability');
 assert(etfAxisTicks.every((tick) => Math.abs((tick * 100) - Math.round(tick * 100)) < 1e-9), 'ETF mini chart y-axis uses whole-percent tick labels');
 const etfMiniMarkup = api.renderEtfMiniChart(validEtf.rows[0]);
-const etfGridYPositions = [...etfMiniMarkup.matchAll(/<line x1="58" x2="658" y1="([0-9.]+)" y2="\1" stroke="#d9e2f1"/g)].map((match) => Number(match[1]));
+const etfGridYPositions = [...etfMiniMarkup.matchAll(/<line x1="76" x2="1088" y1="([0-9.]+)" y2="\1" stroke="#d9e2f1"/g)].map((match) => Number(match[1]));
 assert((etfMiniMarkup.match(/stroke="#d9e2f1"/g) || []).length >= 4 && /최근 1개월 비중\(%\)/.test(etfMiniMarkup), 'ETF mini chart renders a taller multi-tick percent axis');
-assert(Math.max(...etfGridYPositions) - Math.min(...etfGridYPositions) > 120, 'ETF mini chart percent axis uses the expanded vertical plotting area');
+assert(Math.max(...etfGridYPositions) - Math.min(...etfGridYPositions) > 240, 'ETF mini chart percent axis uses the expanded vertical plotting area');
+assert((etfMiniMarkup.match(/class="etf-data-point"/g) || []).length === 4, 'ETF mini chart renders every recorded daily point');
+assert((etfMiniMarkup.match(/class="legend-key"/g) || []).length === 2, 'ETF mini chart legend includes every TOP10 series');
 
 const etfHistoryPayload = api.compactEtfHistoryPayload({
   id: 'etf-fixture',
