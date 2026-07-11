@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "contract": "risk-score-data-status",
   "projectId": "risk-score",
-  "generatedAt": "2026-07-10T23:56:29Z",
+  "generatedAt": "2026-07-11T04:16:02Z",
   "status": "warning",
   "requiredUniverseCount": 15,
   "availableAssetCount": 15,
@@ -50,19 +50,19 @@
       "sox": {
         "status": "ok",
         "source": "FRED NASDAQSOX plus committed JSON history cache",
-        "rowCount": 5376,
+        "rowCount": 5377,
         "historyCacheUsed": true,
-        "freshFetchStartDate": "2025-12-02",
+        "freshFetchStartDate": "2025-12-03",
         "freshFetchRowCount": 157,
-        "latestDate": "2026-07-09"
+        "latestDate": "2026-07-10"
       },
       "vix": {
         "status": "ok",
         "source": "FRED VIXCLS plus committed JSON history cache",
         "rowCount": 5376,
         "historyCacheUsed": true,
-        "freshFetchStartDate": "2025-12-02",
-        "freshFetchRowCount": 157,
+        "freshFetchStartDate": "2025-12-03",
+        "freshFetchRowCount": 156,
         "latestDate": "2026-07-09"
       },
       "vxn": {
@@ -70,15 +70,15 @@
         "source": "FRED VXNCLS plus committed JSON history cache",
         "rowCount": 567,
         "historyCacheUsed": true,
-        "freshFetchStartDate": "2025-12-02",
-        "freshFetchRowCount": 157,
+        "freshFetchStartDate": "2025-12-03",
+        "freshFetchRowCount": 156,
         "latestDate": "2026-07-09"
       },
       "kospi": {
         "status": "ok",
         "source": "yahoo_chart",
         "providerSymbol": "^KS11",
-        "rowCount": 5552
+        "rowCount": 5553
       },
       "usdkrw": {
         "status": "ok",
@@ -101,11 +101,11 @@
       "SOX": {
         "status": "ok",
         "source": "FRED NASDAQSOX plus committed JSON history cache",
-        "rowCount": 5369,
+        "rowCount": 5370,
         "historyCacheUsed": true,
-        "freshFetchStartDate": "2025-12-02",
+        "freshFetchStartDate": "2025-12-03",
         "freshFetchRowCount": 157,
-        "latestDate": "2026-07-09"
+        "latestDate": "2026-07-10"
       },
       "MU": {
         "status": "ok",

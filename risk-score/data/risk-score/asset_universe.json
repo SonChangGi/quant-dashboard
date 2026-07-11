@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "contract": "asset-universe",
   "projectId": "risk-score",
-  "generatedAt": "2026-07-10T23:56:29Z",
+  "generatedAt": "2026-07-11T04:16:02Z",
   "context": {
     "sox": {
       "seriesId": "NASDAQSOX",
