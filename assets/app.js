@@ -2,12 +2,154 @@
   'use strict';
 
   const SAFE_AUTOMATION_HOSTS = new Set(['github.com', 'www.github.com', 'sonchanggi.github.io']);
+  const MOMENTUM_RESULT_IDENTITY_VERSION = 'momentum-result-identity-v1';
+  const MOMENTUM_CANONICAL_JSON_VERSION = 'rfc8785-jcs-v1';
+  const LOWERCASE_SHA256 = /^[0-9a-f]{64}$/;
+  const MOMENTUM_WEIGHTING_POLICIES = [
+    'equal_weight',
+    'capped_linear_rank',
+    'capped_vol_adjusted_rank',
+    'score_liquidity_rank',
+  ];
+  const MOMENTUM_LIVE_SNAPSHOT_HASH_FIELDS = [
+    'prices',
+    'volumes',
+    'dollarVolumes',
+    'rawCloses',
+    'requestedSymbols',
+    'returnedSymbols',
+    'universeRecords',
+    'priceSources',
+    'dataSources',
+  ];
+  const MOMENTUM_CANONICAL_GRID = {
+    factorCount: 64,
+    independentFactorCount: 61,
+    aliasFactorCount: 3,
+    policyCount: 4,
+    independentPairCount: 244,
+    aliasPairCount: 12,
+    totalPairCount: 256,
+  };
+  const MOMENTUM_ABSOLUTE_GUARDRAIL_RULES = [
+    {
+      id: 'minimum_sharpe',
+      metric: 'sharpe',
+      operator: '>=',
+      researchInput: 'selectionMinSharpe',
+      config: 'selection_min_sharpe',
+      unit: 'ratio',
+    },
+    {
+      id: 'maximum_drawdown_magnitude',
+      metric: 'max_drawdown',
+      operator: '>=',
+      researchInput: 'selectionMaxDrawdown',
+      config: 'selection_max_drawdown',
+      thresholdMultiplier: -1,
+      unit: 'fraction',
+    },
+    {
+      id: 'maximum_annualized_cost_drag',
+      metric: 'annualized_cost_drag',
+      operator: '<=',
+      researchInput: 'selectionMaxAnnualizedCostDrag',
+      config: 'selection_max_annualized_cost_drag',
+      unit: 'fraction_per_year',
+    },
+    {
+      id: 'minimum_historical_target_effective_names',
+      metric: 'min_target_effective_names',
+      flag: 'guardrail_historical_effective_names',
+      researchInput: 'selectionMinEffectiveNames',
+      config: 'selection_min_effective_names',
+      operator: '>=',
+      unit: 'names',
+    },
+    {
+      id: 'minimum_current_target_effective_names',
+      metric: 'current_target_effective_names',
+      flag: 'guardrail_current_effective_names',
+      researchInput: 'selectionMinEffectiveNames',
+      config: 'selection_min_effective_names',
+      operator: '>=',
+      unit: 'names',
+    },
+    {
+      id: 'maximum_historical_target_hhi',
+      metric: 'max_target_hhi',
+      flag: 'guardrail_historical_target_hhi',
+      researchInput: 'selectionMaxTargetHhi',
+      config: 'selection_max_target_hhi',
+      operator: '<=',
+      unit: 'fraction',
+    },
+    {
+      id: 'maximum_current_target_hhi',
+      metric: 'current_target_hhi',
+      flag: 'guardrail_current_target_hhi',
+      researchInput: 'selectionMaxTargetHhi',
+      config: 'selection_max_target_hhi',
+      operator: '<=',
+      unit: 'fraction',
+    },
+    {
+      id: 'maximum_historical_target_weight',
+      metric: 'max_target_weight',
+      flag: 'guardrail_historical_target_weight',
+      researchInput: 'selectionMaxTargetWeight',
+      config: 'selection_max_target_weight',
+      operator: '<=',
+      unit: 'fraction',
+    },
+    {
+      id: 'maximum_current_target_weight',
+      metric: 'current_target_max_weight',
+      flag: 'guardrail_current_target_weight',
+      researchInput: 'selectionMaxTargetWeight',
+      config: 'selection_max_target_weight',
+      operator: '<=',
+      unit: 'fraction',
+    },
+    {
+      id: 'maximum_security_day_contribution',
+      metric: 'max_abs_security_day_contribution',
+      operator: '<=',
+      researchInput: 'selectionMaxAbsSecurityDayContribution',
+      config: 'selection_max_abs_security_day_contribution',
+      unit: 'portfolio_return_fraction',
+    },
+    {
+      id: 'maximum_security_absolute_contribution_share',
+      metric: 'max_security_absolute_contribution_share',
+      operator: '<=',
+      researchInput: 'selectionMaxSecurityAbsoluteContributionShare',
+      config: 'selection_max_security_absolute_contribution_share',
+      unit: 'fraction',
+    },
+    {
+      id: 'maximum_leave_one_security_cagr_delta',
+      metric: 'max_abs_leave_one_security_cagr_delta',
+      operator: '<=',
+      researchInput: 'selectionMaxLeaveOneSecurityCagrDelta',
+      config: 'selection_max_leave_one_security_cagr_delta',
+      unit: 'cagr_fraction',
+    },
+  ];
+  const MOMENTUM_CONCENTRATION_GUARDRAILS = MOMENTUM_ABSOLUTE_GUARDRAIL_RULES
+    .filter((rule) => Boolean(rule.flag));
+  const MOMENTUM_REQUIRED_GUARDRAIL_CONTRACTS = {
+    completeExecutionCoverage: true,
+    completePolicyInputs: true,
+    contributionDiagnosticsComplete: true,
+    currentTargetAvailable: true,
+  };
 
   const ENTITY_METRIC_RENDERERS = {
     valuation: (metrics) => `현재가 ${formatNumber(metrics.price)} · DCF ${formatNumber(metrics.dcfPerShare)} · 품질 ${metrics.qualityStatus || '확인 필요'}`,
     etf: (metrics) => `${metrics.etf || 'ETF'} TOP10 비중 ${formatPercent(metrics.weight)} · 기준일 ${formatMaybeDate(metrics.date)}`,
     best: (metrics) => `팩터 ${metrics.factor || '-'} · 비중 ${formatPercent(metrics.weight)} · 점수 ${formatNumber(metrics.score)}`,
-    momentum: (metrics) => `팩터 ${metrics.factor || '-'} · 신호 ${formatNumber(metrics.signal)} · 최종 비중 ${formatPercent(metrics.finalWeight)}`,
+    momentum: (metrics) => `${metrics.dataModeLabel || '연구 데이터'} · 팩터 ${metrics.factor || '-'} · 정책 ${metrics.weightingPolicyId || '-'} · 현금 ${formatPercent(metrics.cashWeight)} · 신호 ${formatNumber(metrics.signal)} · 모델 비중 ${formatPercent(metrics.modelWeight)}`,
     dram: (metrics) => `${metrics.kind || '가격'} · ${formatMaybeDate(metrics.date)} · ${metrics.source || 'source N/A'}`,
     sox: (metrics) => `SOX proxy ${formatPercent(metrics.weight)} · 가격 ${formatNumber(metrics.priceMomentum)} · 실적 ${formatNumber(metrics.earningsMomentum)}`,
     riskScore: (metrics) => `Top ${formatNumber(metrics.topRiskScore)}/5 · OH ${formatNumber(metrics.ohScore)}/5 · RF ${formatNumber(metrics.rfScore)}/5`,
@@ -18,18 +160,18 @@
       id: 'momentum',
       shortName: 'Momentum',
       title: '모멘텀 팩터 랩',
-      description: '기간별 최고 모멘텀 팩터와 상위 종목 신호를 비교하는 데일리 대시보드입니다.',
+      description: '선택된 모멘텀 팩터의 종합 점수와 현재 모델 포트폴리오를 보여주는 데일리 대시보드입니다.',
       url: 'https://sonchanggi.github.io/momentum-factor-lab/',
       accent: 'MF',
       panelAdapter: 'momentum',
       panel: {
         eyebrow: 'Momentum Factor',
-        title: '베스트 모멘텀 팩터 · Top 5',
+        title: '선택 모멘텀 팩터 · Model Top 5',
         contentType: 'table',
         metricLoading: '모멘텀 데이터를 불러오는 중...',
         table: {
-          caption: '모멘텀 팩터 상위 5개 종목과 표시용 비중',
-          columns: ['순위', '종목', '신호', '표시용 비중', '최종 비중'],
+          caption: '선택된 모멘텀 팩터의 현재 모델 포트폴리오 상위 종목',
+          columns: ['순위', '종목', '신호', '모델 비중'],
           loadingText: '데이터를 불러오는 중...',
         },
       },
@@ -162,6 +304,11 @@
   ];
 
   const SUMMARY_CONTRACT = { versionField: 'schemaVersion', expectedVersion: 1, requiredKeys: ['contract', 'projectId', 'status', 'primaryEntities'] };
+  const MOMENTUM_SUMMARY_CONTRACT = {
+    versionField: 'schemaVersion',
+    expectedVersion: 4,
+    requiredKeys: ['resultIdentity', 'selectedFactor', 'selectedWeightingPolicy', 'selectedReason', 'gridAccounting', 'currentResearchTarget', 'compositeScore', 'weights', 'cashWeight', 'maxWeight', 'dataAsOf', 'dataMode', 'sourceLabel', 'evidenceStatus', 'researchOnly', 'notInvestmentRecommendation'],
+  };
 
   const PANEL_ADAPTERS = {
     momentum: {
@@ -170,9 +317,14 @@
         momentumDashboard: 'https://sonchanggi.github.io/momentum-factor-lab/data/dashboard.json',
       },
       primarySourceKey: 'summary',
-      contracts: { summary: SUMMARY_CONTRACT },
+      contracts: { summary: MOMENTUM_SUMMARY_CONTRACT },
       parse: (sources) => parseMomentum(sources.summary, sources.momentumDashboard),
-      hasUsableData: (summary) => Boolean(summary?.rows?.length || summary?.bestFactorUnavailable),
+      hasUsableData: (summary) => Boolean(
+        summary
+          && summary.unavailable !== true
+          && Array.isArray(summary.rows)
+          && finiteOrNull(summary.cashWeight) !== null,
+      ),
       fallback: normalizeMomentumFallback,
       render: renderMomentum,
       emptyReason: 'Momentum summary did not contain usable top rows.',
@@ -259,20 +411,6 @@
   };
 
   const FALLBACK_SNAPSHOT = {
-    momentum: {
-      generatedAt: '2026-06-10T05:23:40+00:00',
-      dataAsOf: '2026-06-09',
-      factor: 'mom_9_1',
-      outputLabel: 'Research signals (not tradable)',
-      status: '마지막 확인 스냅샷 표시 중',
-      rows: [
-        { rank: 1, symbol: 'VSCO', signal: 1.2158671697, displayWeight: 0.1, finalWeight: 0 },
-        { rank: 2, symbol: 'ADEA', signal: 1.1635723083, displayWeight: 0.1, finalWeight: 0 },
-        { rank: 3, symbol: 'GALDY', signal: 0.3169318663, displayWeight: 0.1, finalWeight: 0 },
-        { rank: 4, symbol: 'IAC', signal: 0.2593969017, displayWeight: 0.1, finalWeight: 0 },
-        { rank: 5, symbol: 'SHEL', signal: 0.2107772093, displayWeight: 0.1, finalWeight: 0 },
-      ],
-    },
     dram: {
       generatedAt: '2026-06-10T14:09:17Z',
       status: '마지막 확인 스냅샷 표시 중',
@@ -686,189 +824,921 @@
   }
 
   function parseMomentum(payload, detailPayload = null) {
-    const summaryPayload = isResearchSummary(payload, 'momentum') ? payload : null;
-    const detailExpected = arguments.length >= 2;
-    const detailSummary = parseMomentumDashboard(detailPayload || (summaryPayload ? null : payload), summaryPayload);
-    if (detailSummary?.rows?.length) return detailSummary;
-
-    if (summaryPayload) {
-      if (detailExpected) return momentumBestFactorUnavailable(summaryPayload, detailSummary);
-      const meta = summaryMeta(summaryPayload);
-      const baseRows = summaryEntities(summaryPayload)
-        .sort((a, b) => numberOr(a.metrics.rank, 9999) - numberOr(b.metrics.rank, 9999))
-        .map((entity, index) => ({
-          rank: numberOr(entity.metrics.rank, index + 1),
-          symbol: stringOr(entity.symbol, entity.name, '-'),
-          signal: finiteOrNull(entity.metrics.signal ?? entity.metrics.score),
-          displayWeight: finiteOrNull(entity.metrics.displayWeight),
-          finalWeight: finiteOrNull(entity.metrics.finalWeight),
-          themes: entity.themes,
-          warnings: entity.warnings,
-        }));
-      const rows = deriveMomentumDisplayWeights(baseRows);
-      const weightSource = momentumWeightSource(rows);
-      return {
-        factor: stringOr(highlightValue(meta, 'best factor'), highlightValue(meta, 'factor'), meta.coverage?.bestFactor, meta.coverage?.selectedFactor, FALLBACK_SNAPSHOT.momentum.factor),
-        generatedAt: meta.generatedAt,
-        dataAsOf: meta.dataAsOf,
-        outputLabel: stringOr(highlightValue(meta, 'output'), meta.statusLabel, 'Research signal'),
-        status: appendMomentumWeightStatus(stringOr(meta.statusLabel, '공통 summary contract 표시 중'), weightSource),
-        weightSource,
-        rows: rows.slice(0, 5),
-        entities: summaryEntities(summaryPayload),
-        meta,
-      };
+    const summaryPayload = isMomentumSummaryV4(payload) ? payload : null;
+    const detailWasProvided = detailPayload !== null && detailPayload !== undefined;
+    const dashboardPayload = isMomentumDashboardV4(detailPayload)
+      ? detailPayload
+      : (!summaryPayload && isMomentumDashboardV4(payload) ? payload : null);
+    if (detailWasProvided && !dashboardPayload) {
+      return momentumUnavailable(
+        'Momentum dashboard resultIdentity/resultKey 또는 schemaVersion 4 계약이 유효하지 않아 보유 종목을 표시하지 않습니다.',
+        'invalid_momentum_dashboard_contract',
+      );
     }
-
-    return detailSummary || parseMomentumDashboard(payload) || {
-      factor: FALLBACK_SNAPSHOT.momentum.factor,
-      generatedAt: '',
-      dataAsOf: '',
-      outputLabel: 'Research signal',
-      status: 'Momentum payload did not contain usable run data.',
-      weightSource: '원천 제공 비중',
-      rows: [],
-      meta: {},
-    };
+    const parsed = parseMomentumV4(summaryPayload, dashboardPayload);
+    return parsed || momentumUnavailable(
+      'Momentum schemaVersion 4 summary/dashboard 계약을 확인할 수 없어 보유 종목을 표시하지 않습니다.',
+      'unsupported_or_incomplete_momentum_contract',
+    );
   }
 
-  function momentumBestFactorUnavailable(summaryPayload, detailSummary = null) {
-    const meta = summaryMeta(summaryPayload);
-    const detailBestFactor = detailSummary?.meta?.bestFactor && detailSummary.meta.bestFactor !== detailSummary.meta.selectedFactor
-      ? detailSummary.meta.bestFactor
-      : '';
-    const factor = stringOr(detailBestFactor, meta.coverage?.bestFactor, 'best factor 확인 필요');
-    const status = detailSummary
-      ? 'Momentum dashboard.json에서 best factor 보유 종목을 확인하지 못해 selected factor summary를 표시하지 않음'
-      : 'Momentum dashboard.json 미수신으로 selected factor summary를 best factor로 표시하지 않음';
+  function momentumUnavailable(status, reason) {
     return {
-      factor,
-      generatedAt: stringOr(detailSummary?.generatedAt, meta.generatedAt),
-      dataAsOf: stringOr(detailSummary?.dataAsOf, meta.dataAsOf),
-      outputLabel: 'Best factor detail unavailable',
+      unavailable: true,
+      factor: '-',
+      selectedWeightingPolicy: '-',
+      compositeScore: null,
+      generatedAt: '',
+      dataAsOf: '',
+      dataMode: 'unsupported',
+      dataModeLabel: '사용 불가',
+      sourceLabel: '',
+      evidenceStatus: '',
+      outputLabel: '모델 포트폴리오',
       status,
-      weightSource: 'best factor 상세 데이터 미수신',
+      weightSource: '사용 가능한 Momentum 모델 비중 없음',
       rows: [],
       entities: [],
-      bestFactorUnavailable: true,
       meta: {
-        ...meta,
-        statusState: 'warning',
-        bestFactorUnavailable: true,
-        degradedReasons: [...asArray(meta.degradedReasons), 'momentum best-factor dashboard detail unavailable'],
+        schemaVersion: 4,
+        statusState: 'unavailable',
+        unavailable: true,
+        holdingCount: 0,
+        degradedReasons: [reason],
       },
     };
   }
 
-  function parseMomentumDashboard(payload, summaryPayload = null) {
-    if (!isRecord(payload)) return null;
-    const runs = Array.isArray(payload.runs) ? payload.runs : [];
-    if (!runs.length && !isRecord(payload.summary) && !Array.isArray(payload.holdings)) return null;
-
-    const latestIndex = Number.isInteger(payload.latest_run_index) ? payload.latest_run_index : runs.length - 1;
-    const run = runs[latestIndex] || runs.at(-1) || payload || {};
-    const summary = isRecord(run.summary) ? run.summary : {};
-    const leader = latestFactorLeader(run);
-    const bestFactor = stringOr(leader?.best_factor, summary.best_factor);
-    const selectedFactor = stringOr(summary.selected_factor, leader?.selected_factor);
-    const factor = stringOr(bestFactor, summaryPayload ? '' : selectedFactor, FALLBACK_SNAPSHOT.momentum.factor);
-    const requiresBestHoldings = Boolean(summaryPayload && (!bestFactor || (selectedFactor && bestFactor !== selectedFactor)));
-    const bestFactorRows = bestFactor ? momentumRowsFromHoldings(run, bestFactor, leader?.window) : [];
-    const latestRows = momentumRowsFromLatestOutput(run);
-    const sourceRows = bestFactorRows.length ? bestFactorRows : (requiresBestHoldings ? [] : latestRows);
-    const rows = deriveMomentumDisplayWeights(sourceRows);
-    const weightSource = momentumWeightSource(rows);
-    const meta = summaryPayload ? summaryMeta(summaryPayload) : {};
-    const bestFactorStatus = factor && selectedFactor && factor !== selectedFactor ? ` · best momentum factor 기준(${factor})` : '';
-
-    return {
-      factor,
-      generatedAt: stringOr(run.generated_at_utc, payload.generated_at_utc, meta.generatedAt, ''),
-      dataAsOf: stringOr(summary.data_as_of, leader?.date, meta.dataAsOf, ''),
-      outputLabel: stringOr(summary.recommendation_output_label, summary.recommendation_status, meta.statusLabel, 'Research signal'),
-      status: appendMomentumWeightStatus(`${stringOr(summary.recommendation_output_label, meta.statusLabel, '라이브 공개 JSON 표시 중')}${bestFactorStatus}`, weightSource),
-      weightSource,
-      rows: rows.slice(0, 5),
-      entities: summaryEntities(summaryPayload),
-      meta: { ...meta, bestFactor, selectedFactor, factorLeader: leader || null },
-    };
+  function isMomentumSummaryV4(payload) {
+    return isRecord(payload)
+      && Number(payload.schemaVersion) === 4
+      && Boolean(validMomentumResultIdentity(payload))
+      && Boolean(stringOr(payload.selectedFactor, ''))
+      && Boolean(stringOr(payload.selectedWeightingPolicy, ''))
+      && Boolean(stringOr(payload.selectedReason, ''))
+      && finiteOrNull(payload.compositeScore) !== null
+      && payload.researchOnly === true
+      && payload.notInvestmentRecommendation === true
+      && typeof payload.dataMode === 'string'
+      && typeof payload.sourceLabel === 'string'
+      && typeof payload.evidenceStatus === 'string'
+      && validMomentumGridAccounting(payload.gridAccounting)
+      && Array.isArray(payload.weights);
   }
 
-  function deriveMomentumDisplayWeights(rows) {
-    const records = asRecords(rows);
-    const displayNeedsFallback = !records.some((row) => numberOr(row.displayWeight, 0) > 0);
-    const finalNeedsFallback = !records.some((row) => numberOr(row.finalWeight, 0) > 0);
-    if (!displayNeedsFallback && !finalNeedsFallback) return records;
+  function isMomentumDashboardV4(payload) {
+    return isRecord(payload)
+      && Number(payload.schemaVersion) === 4
+      && Boolean(validMomentumResultIdentity(payload))
+      && Boolean(stringOr(payload.selectedFactor, ''))
+      && Boolean(stringOr(payload.selectedWeightingPolicy, ''))
+      && Boolean(stringOr(payload.selectedReason, ''))
+      && payload.researchScope?.researchOnly === true
+      && payload.researchScope?.notInvestmentRecommendation === true
+      && isRecord(payload.data)
+      && isRecord(payload.researchScope)
+      && isRecord(payload.currentResearchTarget)
+      && Array.isArray(payload.factorPolicyRanking)
+      && validMomentumMarketSnapshotParity(payload)
+      && validMomentumLiveProvenance(payload)
+      && validMomentumFactorGrid(payload)
+      && validMomentumAbsoluteGuardrailProfile(payload)
+      && validMomentumConcentrationRows(payload)
+      && validMomentumSelectedConcentrationContract(payload);
+  }
 
-    const signalWeights = momentumSignalWeights(records);
-    return records.map((row, index) => {
-      const signalWeight = signalWeights[index];
-      const displayWeight = displayNeedsFallback && signalWeight !== null ? signalWeight : finiteOrNull(row.displayWeight);
-      const finalWeight = finalNeedsFallback && signalWeight !== null ? signalWeight : finiteOrNull(row.finalWeight);
-      return {
-        ...row,
-        displayWeight,
-        finalWeight,
-        weightSource: (displayNeedsFallback || finalNeedsFallback) && signalWeight !== null ? 'signal_normalized' : 'source',
-      };
+  function momentumFiniteNumber(value) {
+    return typeof value === 'number' && Number.isFinite(value);
+  }
+
+  function momentumCloseNumber(left, right) {
+    if (!momentumFiniteNumber(left) || !momentumFiniteNumber(right)) return false;
+    const scale = Math.max(1, Math.abs(left), Math.abs(right));
+    return Math.abs(left - right) <= 1e-9 * scale;
+  }
+
+  function validMomentumGridAccounting(accounting) {
+    if (!isRecord(accounting)) return false;
+    const integerFields = {
+      independentFactorCount: MOMENTUM_CANONICAL_GRID.independentFactorCount,
+      policyCount: MOMENTUM_CANONICAL_GRID.policyCount,
+      expectedIndependentPairCount: MOMENTUM_CANONICAL_GRID.independentPairCount,
+      evaluatedIndependentPairCount: MOMENTUM_CANONICAL_GRID.independentPairCount,
+      missingIndependentPairCount: 0,
+      diagnosticAliasFactorCount: MOMENTUM_CANONICAL_GRID.aliasFactorCount,
+      diagnosticAliasPairCount: MOMENTUM_CANONICAL_GRID.aliasPairCount,
+    };
+    if (Object.entries(integerFields).some(([field, expected]) => accounting[field] !== expected)) {
+      return false;
+    }
+    const available = accounting.availableIndependentPairCount;
+    const excluded = accounting.excludedIndependentPairCount;
+    const common = accounting.commonComparableFactorCount;
+    return Number.isInteger(available)
+      && Number.isInteger(excluded)
+      && available >= 0
+      && excluded >= 0
+      && available + excluded === MOMENTUM_CANONICAL_GRID.independentPairCount
+      && Number.isInteger(common)
+      && common >= 0
+      && common <= MOMENTUM_CANONICAL_GRID.independentFactorCount;
+  }
+
+  function validMomentumMarketSnapshotParity(payload) {
+    const data = payload.data;
+    const marketSnapshot = payload.resultIdentity?.keyParts?.marketSnapshot;
+    if (!isRecord(data) || !isRecord(marketSnapshot)) return false;
+    const expected = {
+      sourceMode: data.mode,
+      sourceLabel: data.sourceLabel,
+      provider: data.provider,
+      priceBasis: data.priceBasis,
+      volumeBasis: data.volumeBasis,
+      rawCloseProxySymbolCount: data.rawCloseProxySymbolCount,
+      requestedThrough: data.requestedThrough,
+      dataAsOf: data.asOf,
+      inputSha256: data.inputSha256,
+      requestedCandidateCount: data.requestedCandidateCount,
+      providerReturnedCandidateCount: data.providerReturnedCandidateCount,
+      analyzedSecurityCount: data.analyzedSecurityCount,
+    };
+    if (
+      !stringOr(expected.sourceMode, '').trim()
+      || !stringOr(expected.sourceLabel, '').trim()
+      || !stringOr(expected.priceBasis, '').trim()
+      || !stringOr(expected.volumeBasis, '').trim()
+      || !stringOr(expected.requestedThrough, '').trim()
+      || !stringOr(expected.dataAsOf, '').trim()
+      || !isRecord(expected.inputSha256)
+      || !Number.isInteger(expected.rawCloseProxySymbolCount)
+      || expected.rawCloseProxySymbolCount < 0
+      || !Number.isInteger(expected.requestedCandidateCount)
+      || !Number.isInteger(expected.providerReturnedCandidateCount)
+      || !Number.isInteger(expected.analyzedSecurityCount)
+    ) return false;
+    return Object.entries(expected).every(([field, value]) => {
+      if (isRecord(value)) {
+        return JSON.stringify(canonicalMomentumIdentityValue(marketSnapshot[field]))
+          === JSON.stringify(canonicalMomentumIdentityValue(value));
+      }
+      return marketSnapshot[field] === value;
     });
   }
 
-  function momentumSignalWeights(rows) {
-    const positives = asRecords(rows).map((row) => Math.max(numberOr(row.signal, 0), 0));
-    const total = positives.reduce((sum, value) => sum + value, 0);
-    if (total > 0) return positives.map((value) => value / total);
-    const count = positives.length;
-    return count ? positives.map(() => 1 / count) : [];
+  function validMomentumLiveProvenance(payload) {
+    if (payload?.data?.mode !== 'live_market') return true;
+    const priceSources = payload.priceSources;
+    const sourceHealth = payload.sourceHealth;
+    const hashes = payload.data?.inputSha256;
+    const analyzedSecurityCount = payload.data?.analyzedSecurityCount;
+    const analyzedSymbols = payload.data?.analyzedSymbols;
+    const hashFields = Object.keys(isRecord(hashes) ? hashes : {}).sort();
+    const expectedHashFields = MOMENTUM_LIVE_SNAPSHOT_HASH_FIELDS.slice().sort();
+    if (
+      !Array.isArray(priceSources)
+      || priceSources.length === 0
+      || !Array.isArray(sourceHealth)
+      || sourceHealth.length === 0
+      || !isRecord(hashes)
+      || JSON.stringify(hashFields) !== JSON.stringify(expectedHashFields)
+      || expectedHashFields.some((field) => (
+        !LOWERCASE_SHA256.test(stringOr(hashes[field], '').trim())
+      ))
+      || !Number.isInteger(analyzedSecurityCount)
+      || analyzedSecurityCount < 1
+      || !Array.isArray(analyzedSymbols)
+      || analyzedSymbols.length !== analyzedSecurityCount
+      || analyzedSymbols.some((symbol) => (
+        typeof symbol !== 'string' || !symbol.trim()
+      ))
+    ) return false;
+
+    const analyzedSymbolKeys = analyzedSymbols.map((symbol) => symbol.trim().toUpperCase());
+    if (new Set(analyzedSymbolKeys).size !== analyzedSymbolKeys.length) return false;
+    const priceSourceSymbols = new Set();
+    for (const row of priceSources) {
+      if (!isRecord(row)) return false;
+      const symbol = stringOr(row.symbol, '').trim().toUpperCase();
+      const source = stringOr(row.price_source, '').trim();
+      if (!symbol || !source || priceSourceSymbols.has(symbol)) return false;
+      priceSourceSymbols.add(symbol);
+    }
+    if (
+      analyzedSymbolKeys.some((symbol) => !priceSourceSymbols.has(symbol))
+      || hashes.priceSources !== momentumCanonicalRecordsSha256(priceSources)
+      || hashes.dataSources !== momentumCanonicalRecordsSha256(sourceHealth)
+    ) return false;
+    const candidateSymbolsSha256 = momentumSha256Hex(
+      momentumCanonicalKeyPartsJson(analyzedSymbols),
+    );
+    if (
+      !LOWERCASE_SHA256.test(
+        stringOr(payload.resultIdentity?.keyParts?.marketSnapshot?.candidateSymbolsSha256, '').trim(),
+      )
+      || payload.resultIdentity.keyParts.marketSnapshot.candidateSymbolsSha256
+        !== candidateSymbolsSha256
+    ) return false;
+    return sourceHealth.every((row) => (
+      isRecord(row)
+      && Boolean(stringOr(row.source, '').trim())
+      && Boolean(stringOr(row.status, '').trim())
+    ));
   }
 
-  function momentumWeightSource(rows) {
-    return asRecords(rows).some((row) => row.weightSource === 'signal_normalized')
-      ? '리서치 신호 정규화 비중'
-      : '원천 제공 비중';
+  function validMomentumFactorGrid(payload) {
+    const definitions = payload.factorDefinitions;
+    const ranking = payload.factorPolicyRanking;
+    if (
+      !Array.isArray(definitions)
+      || definitions.length !== MOMENTUM_CANONICAL_GRID.factorCount
+      || !Array.isArray(ranking)
+      || ranking.length !== MOMENTUM_CANONICAL_GRID.totalPairCount
+      || !validMomentumGridAccounting(payload.gridAccounting)
+    ) return false;
+
+    const independent = new Set();
+    const aliases = new Map();
+    const factors = new Set();
+    for (const definition of definitions) {
+      if (!isRecord(definition)) return false;
+      const factor = stringOr(definition.factor, '').trim();
+      const aliasOf = stringOr(definition.compatibility_alias_of, '').trim();
+      if (!factor || factors.has(factor)) return false;
+      factors.add(factor);
+      if (aliasOf) {
+        if (definition.selection_eligible !== false) return false;
+        aliases.set(factor, aliasOf);
+      } else if (definition.selection_eligible === true) {
+        independent.add(factor);
+      } else {
+        return false;
+      }
+    }
+    if (
+      independent.size !== MOMENTUM_CANONICAL_GRID.independentFactorCount
+      || aliases.size !== MOMENTUM_CANONICAL_GRID.aliasFactorCount
+      || [...aliases.values()].some((factor) => !independent.has(factor))
+    ) return false;
+
+    const policyIds = new Set(MOMENTUM_WEIGHTING_POLICIES);
+    const pairs = new Set();
+    let independentPairCount = 0;
+    let aliasPairCount = 0;
+    for (const row of ranking) {
+      if (!isRecord(row)) return false;
+      const factor = stringOr(row.factor, '').trim();
+      const policyId = stringOr(row.policy_id, '').trim();
+      const pair = `${factor}\u0000${policyId}`;
+      if (!factors.has(factor) || !policyIds.has(policyId) || pairs.has(pair)) return false;
+      pairs.add(pair);
+      if (aliases.has(factor)) {
+        if (row.comparison_status !== 'duplicate_alias') return false;
+        aliasPairCount += 1;
+      } else {
+        independentPairCount += 1;
+      }
+    }
+    if (
+      independentPairCount !== MOMENTUM_CANONICAL_GRID.independentPairCount
+      || aliasPairCount !== MOMENTUM_CANONICAL_GRID.aliasPairCount
+    ) return false;
+    for (const factor of factors) {
+      for (const policyId of MOMENTUM_WEIGHTING_POLICIES) {
+        if (!pairs.has(`${factor}\u0000${policyId}`)) return false;
+      }
+    }
+
+    const meta = payload.meta;
+    return isRecord(meta)
+      && meta.factorCount === MOMENTUM_CANONICAL_GRID.factorCount
+      && meta.independentFactorCount === MOMENTUM_CANONICAL_GRID.independentFactorCount
+      && meta.aliasFactorCount === MOMENTUM_CANONICAL_GRID.aliasFactorCount
+      && meta.policyCount === MOMENTUM_CANONICAL_GRID.policyCount
+      && meta.policyFactorRunCount === MOMENTUM_CANONICAL_GRID.totalPairCount;
   }
 
-  function appendMomentumWeightStatus(status, weightSource) {
-    if (weightSource !== '리서치 신호 정규화 비중') return status;
-    return `${status} · 표시/최종 비중은 양수 신호 합계 기준 dashboard 정규화`;
+  function momentumConcentration(allocation) {
+    const weights = allocation.rows.map((row) => row.modelWeight);
+    const investedWeight = weights.reduce((sum, weight) => sum + weight, 0);
+    const normalized = investedWeight > 0
+      ? weights.map((weight) => weight / investedWeight)
+      : [];
+    const riskySleeveHhi = normalized.reduce((sum, weight) => sum + weight * weight, 0);
+    const ordered = weights.slice().sort((left, right) => right - left);
+    return {
+      investedWeight,
+      cashWeight: allocation.cashWeight,
+      riskySleeveHhi,
+      effectiveNames: riskySleeveHhi > 0 ? 1 / riskySleeveHhi : 0,
+      top1Weight: ordered.slice(0, 1).reduce((sum, weight) => sum + weight, 0),
+      top5Weight: ordered.slice(0, 5).reduce((sum, weight) => sum + weight, 0),
+      maxWeight: ordered[0] || 0,
+    };
   }
 
-  function momentumRowsFromLatestOutput(run) {
-    return asRecords(run.latest_output_rows)
+  function expectedMomentumAbsoluteGuardrailProfile(payload) {
+    const inputs = payload.researchInputs;
+    const config = payload.config;
+    if (
+      !isRecord(inputs)
+      || inputs.version !== 'research-inputs-v1'
+      || !isRecord(config)
+      || config.absolute_guardrail_version !== 'absolute-factor-policy-v1'
+    ) return null;
+
+    const rules = [];
+    for (const spec of MOMENTUM_ABSOLUTE_GUARDRAIL_RULES) {
+      const inputThreshold = inputs[spec.researchInput];
+      const configThreshold = config[spec.config];
+      if (
+        !momentumFiniteNumber(inputThreshold)
+        || !momentumFiniteNumber(configThreshold)
+        || !momentumCloseNumber(inputThreshold, configThreshold)
+      ) return null;
+      rules.push({
+        id: spec.id,
+        metric: spec.metric,
+        operator: spec.operator,
+        threshold: inputThreshold * (spec.thresholdMultiplier || 1),
+        unit: spec.unit,
+      });
+    }
+
+    const extremeEventAction = stringOr(inputs.selectionExtremeEventAction, '').trim();
+    const extremeEventPenaltyPoints = inputs.selectionExtremeEventPenaltyPoints;
+    if (
+      !['warn', 'penalize', 'exclude'].includes(extremeEventAction)
+      || !momentumFiniteNumber(extremeEventPenaltyPoints)
+      || config.selection_extreme_event_action !== extremeEventAction
+      || !momentumCloseNumber(
+        config.selection_extreme_event_penalty_points,
+        extremeEventPenaltyPoints,
+      )
+    ) return null;
+
+    return {
+      id: 'absolute-factor-policy-v1',
+      version: 1,
+      policyNeutral: true,
+      rules,
+      requiredContracts: MOMENTUM_REQUIRED_GUARDRAIL_CONTRACTS,
+      extremeEventAction,
+      extremeEventPenaltyPoints,
+    };
+  }
+
+  function validMomentumAbsoluteGuardrailProfile(payload) {
+    const expected = expectedMomentumAbsoluteGuardrailProfile(payload);
+    const actual = payload.selectionDecision?.guardrailProfile;
+    return Boolean(expected)
+      && isRecord(actual)
+      && momentumCanonicalKeyPartsJson(actual) === momentumCanonicalKeyPartsJson(expected);
+  }
+
+  function validMomentumConcentrationRows(payload) {
+    const inputs = payload.researchInputs;
+    if (!isRecord(inputs) || !Array.isArray(payload.factorPolicyRanking)) return false;
+    const metricDomains = {
+      min_target_effective_names: (value) => value >= 0,
+      current_target_effective_names: (value) => value >= 0,
+      max_target_hhi: (value) => value >= 0 && value <= 1,
+      current_target_hhi: (value) => value >= 0 && value <= 1,
+      max_target_weight: (value) => value >= 0 && value <= 1,
+      current_target_max_weight: (value) => value >= 0 && value <= 1,
+    };
+    return payload.factorPolicyRanking.every((row) => (
+      isRecord(row)
+      && Object.entries(metricDomains).every(([field, validDomain]) => (
+        momentumFiniteNumber(row[field]) && validDomain(row[field])
+      ))
+      && MOMENTUM_CONCENTRATION_GUARDRAILS.every((rule) => {
+        const value = row[rule.metric];
+        const threshold = inputs[rule.researchInput];
+        if (!momentumFiniteNumber(threshold)) return false;
+        const expected = rule.operator === '>=' ? value >= threshold : value <= threshold;
+        return row[rule.flag] === expected;
+      })
+    ));
+  }
+
+  function validMomentumSelectedConcentrationContract(payload) {
+    const selectedRows = asRecords(payload.factorPolicyRanking).filter((row) => row.selected === true);
+    if (selectedRows.length !== 1 || !isRecord(payload.config)) return false;
+    const selected = selectedRows[0];
+    if (
+      selected.factor !== payload.selectedFactor
+      || selected.policy_id !== payload.selectedWeightingPolicy
+      || selected.comparison_status !== 'available'
+      || selected.selection_status !== 'eligible'
+      || selected.selection_eligible !== true
+      || selected.standard_guardrail_pass !== true
+      || selected.contribution_guardrail_pass !== true
+      || selected.absolute_guardrail_pass !== true
+      || !momentumFiniteNumber(selected.selection_score)
+      || MOMENTUM_CONCENTRATION_GUARDRAILS.some((rule) => selected[rule.flag] !== true)
+    ) return false;
+
+    const target = payload.currentResearchTarget;
+    const allocation = validateMomentumAllocation(
+      target?.weights,
+      target?.cashWeight,
+      payload.config.max_weight,
+    );
+    if (!allocation || !isRecord(target?.concentration)) return false;
+    const expectedConcentration = momentumConcentration(allocation);
+    if (Object.entries(expectedConcentration).some(([field, expected]) => (
+      !momentumCloseNumber(target.concentration[field], expected)
+    ))) return false;
+
+    const currentMetrics = {
+      current_target_effective_names: target.concentration.effectiveNames,
+      current_target_hhi: target.concentration.riskySleeveHhi,
+      current_target_max_weight: target.concentration.maxWeight,
+    };
+    if (Object.entries(currentMetrics).some(([field, expected]) => (
+      !momentumCloseNumber(selected[field], expected)
+    ))) return false;
+
+    return true;
+  }
+
+  function normalizeMomentumDataMode(value) {
+    const mode = stringOr(value, '').trim().toLowerCase();
+    return ['live_market', 'demo', 'local_file'].includes(mode) ? mode : '';
+  }
+
+  function momentumDataModeLabel(mode) {
+    if (mode === 'live_market') return '실제 시장 데이터';
+    if (mode === 'demo') return '합성 데모';
+    if (mode === 'local_file') return '로컬 연구 데이터';
+    return '데이터 모드 확인 필요';
+  }
+
+  function momentumEvidenceLabel(status) {
+    if (status === 'same_sample_descriptive_actual_market') return '실제 시장 동일 표본 설명 순위';
+    if (status === 'same_sample_descriptive') return '동일 표본 설명 순위';
+    return status ? `근거 상태 ${status}` : '근거 상태 확인 필요';
+  }
+
+  function appendMomentumContractConflict(reasons, field, summaryValue, dashboardValue) {
+    if (summaryValue && dashboardValue && summaryValue !== dashboardValue) {
+      reasons.push(`${field}_mismatch:${summaryValue}!=${dashboardValue}`);
+    }
+  }
+
+  function matchingMomentumContractValue(values) {
+    const normalized = values.map((value) => stringOr(value, '').trim());
+    if (!normalized.length || normalized.some((value) => !value)) return '';
+    return new Set(normalized).size === 1 ? normalized[0] : '';
+  }
+
+  function canonicalMomentumIdentityValue(value) {
+    if (Array.isArray(value)) return value.map(canonicalMomentumIdentityValue);
+    if (!isRecord(value)) return value;
+    return Object.keys(value).sort().reduce((result, key) => {
+      result[key] = canonicalMomentumIdentityValue(value[key]);
+      return result;
+    }, {});
+  }
+
+  function momentumUtf8Bytes(value) {
+    const bytes = [];
+    for (let index = 0; index < value.length; index += 1) {
+      let codePoint = value.charCodeAt(index);
+      if (codePoint >= 0xd800 && codePoint <= 0xdbff && index + 1 < value.length) {
+        const low = value.charCodeAt(index + 1);
+        if (low >= 0xdc00 && low <= 0xdfff) {
+          codePoint = 0x10000 + ((codePoint - 0xd800) << 10) + (low - 0xdc00);
+          index += 1;
+        }
+      }
+      if (codePoint < 0x80) {
+        bytes.push(codePoint);
+      } else if (codePoint < 0x800) {
+        bytes.push(0xc0 | (codePoint >>> 6), 0x80 | (codePoint & 0x3f));
+      } else if (codePoint < 0x10000) {
+        bytes.push(
+          0xe0 | (codePoint >>> 12),
+          0x80 | ((codePoint >>> 6) & 0x3f),
+          0x80 | (codePoint & 0x3f),
+        );
+      } else {
+        bytes.push(
+          0xf0 | (codePoint >>> 18),
+          0x80 | ((codePoint >>> 12) & 0x3f),
+          0x80 | ((codePoint >>> 6) & 0x3f),
+          0x80 | (codePoint & 0x3f),
+        );
+      }
+    }
+    return bytes;
+  }
+
+  function momentumSha256Hex(value) {
+    const constants = [
+      0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+      0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+      0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+      0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+      0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+      0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+      0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+      0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2,
+    ];
+    const bytes = momentumUtf8Bytes(String(value));
+    const bitLength = bytes.length * 8;
+    bytes.push(0x80);
+    while (bytes.length % 64 !== 56) bytes.push(0);
+    const high = Math.floor(bitLength / 0x100000000);
+    const low = bitLength >>> 0;
+    for (let shift = 24; shift >= 0; shift -= 8) bytes.push((high >>> shift) & 0xff);
+    for (let shift = 24; shift >= 0; shift -= 8) bytes.push((low >>> shift) & 0xff);
+
+    const hash = [
+      0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
+      0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19,
+    ];
+    const words = new Uint32Array(64);
+    const rotateRight = (word, bits) => (word >>> bits) | (word << (32 - bits));
+    for (let offset = 0; offset < bytes.length; offset += 64) {
+      for (let index = 0; index < 16; index += 1) {
+        const position = offset + index * 4;
+        words[index] = (
+          (bytes[position] << 24)
+          | (bytes[position + 1] << 16)
+          | (bytes[position + 2] << 8)
+          | bytes[position + 3]
+        ) >>> 0;
+      }
+      for (let index = 16; index < 64; index += 1) {
+        const left = words[index - 15];
+        const right = words[index - 2];
+        const sigma0 = rotateRight(left, 7) ^ rotateRight(left, 18) ^ (left >>> 3);
+        const sigma1 = rotateRight(right, 17) ^ rotateRight(right, 19) ^ (right >>> 10);
+        words[index] = (words[index - 16] + sigma0 + words[index - 7] + sigma1) >>> 0;
+      }
+
+      let [a, b, c, d, e, f, g, h] = hash;
+      for (let index = 0; index < 64; index += 1) {
+        const sum1 = rotateRight(e, 6) ^ rotateRight(e, 11) ^ rotateRight(e, 25);
+        const choice = (e & f) ^ (~e & g);
+        const temporary1 = (h + sum1 + choice + constants[index] + words[index]) >>> 0;
+        const sum0 = rotateRight(a, 2) ^ rotateRight(a, 13) ^ rotateRight(a, 22);
+        const majority = (a & b) ^ (a & c) ^ (b & c);
+        const temporary2 = (sum0 + majority) >>> 0;
+        h = g;
+        g = f;
+        f = e;
+        e = (d + temporary1) >>> 0;
+        d = c;
+        c = b;
+        b = a;
+        a = (temporary1 + temporary2) >>> 0;
+      }
+      hash[0] = (hash[0] + a) >>> 0;
+      hash[1] = (hash[1] + b) >>> 0;
+      hash[2] = (hash[2] + c) >>> 0;
+      hash[3] = (hash[3] + d) >>> 0;
+      hash[4] = (hash[4] + e) >>> 0;
+      hash[5] = (hash[5] + f) >>> 0;
+      hash[6] = (hash[6] + g) >>> 0;
+      hash[7] = (hash[7] + h) >>> 0;
+    }
+    return hash.map((word) => word.toString(16).padStart(8, '0')).join('');
+  }
+
+  function momentumCanonicalKeyPartsJson(keyParts) {
+    return JSON.stringify(canonicalMomentumIdentityValue(keyParts));
+  }
+
+  function momentumCanonicalRecordsSha256(records) {
+    if (!Array.isArray(records) || records.some((record) => !isRecord(record))) return '';
+    return momentumSha256Hex(momentumCanonicalKeyPartsJson(records));
+  }
+
+  function momentumResultKeyForKeyParts(keyParts) {
+    return momentumSha256Hex(momentumCanonicalKeyPartsJson(keyParts));
+  }
+
+  function validMomentumResultIdentity(payload) {
+    const identity = payload?.resultIdentity;
+    let canonicalKeyParts = null;
+    try {
+      canonicalKeyParts = JSON.parse(identity?.canonicalKeyPartsJson || '');
+    } catch (_error) {
+      return null;
+    }
+    if (
+      !isRecord(identity)
+      || identity.identityVersion !== MOMENTUM_RESULT_IDENTITY_VERSION
+      || !LOWERCASE_SHA256.test(stringOr(identity.resultKey, '').trim())
+      || !isRecord(identity.keyParts)
+      || identity.keyParts.identityVersion !== MOMENTUM_RESULT_IDENTITY_VERSION
+      || identity.keyParts.canonicalJsonVersion !== MOMENTUM_CANONICAL_JSON_VERSION
+      || !isRecord(canonicalKeyParts)
+      || JSON.stringify(canonicalMomentumIdentityValue(canonicalKeyParts))
+        !== JSON.stringify(canonicalMomentumIdentityValue(identity.keyParts))
+      || momentumCanonicalKeyPartsJson(identity.keyParts) !== identity.canonicalKeyPartsJson
+      || momentumSha256Hex(identity.canonicalKeyPartsJson) !== identity.resultKey
+    ) return null;
+    if (
+      Object.prototype.hasOwnProperty.call(payload, 'resultKey')
+      && stringOr(payload.resultKey, '').trim() !== stringOr(identity.resultKey, '').trim()
+    ) return null;
+    return identity;
+  }
+
+  function matchingMomentumResultIdentity(summaryPayload, dashboardPayload) {
+    const identities = [summaryPayload, dashboardPayload]
+      .filter(Boolean)
+      .map(validMomentumResultIdentity);
+    if (!identities.length || identities.some((identity) => !identity)) return null;
+    const first = JSON.stringify(canonicalMomentumIdentityValue(identities[0]));
+    if (identities.some((identity) => JSON.stringify(canonicalMomentumIdentityValue(identity)) !== first)) {
+      return null;
+    }
+    return identities[0];
+  }
+
+  function parseMomentumV4(summaryPayload, dashboardPayload) {
+    if (!summaryPayload && !dashboardPayload) return null;
+    if (normalizeMomentumDataMode(summaryPayload?.dataMode) === 'live_market' && !dashboardPayload) {
+      return null;
+    }
+    const resultIdentity = matchingMomentumResultIdentity(summaryPayload, dashboardPayload);
+    if (!resultIdentity) return null;
+    const summaryTarget = isRecord(summaryPayload?.currentResearchTarget)
+      ? summaryPayload.currentResearchTarget
+      : null;
+    const dashboardTarget = isRecord(dashboardPayload?.currentResearchTarget)
+      ? dashboardPayload.currentResearchTarget
+      : null;
+    if (
+      summaryTarget
+      && dashboardTarget
+      && JSON.stringify(canonicalMomentumIdentityValue(summaryTarget))
+        !== JSON.stringify(canonicalMomentumIdentityValue(dashboardTarget))
+    ) return null;
+    const currentTarget = dashboardTarget || summaryTarget;
+    const factorSources = [];
+    const policySources = [];
+    const asOfSources = [];
+    if (summaryPayload) {
+      factorSources.push(summaryPayload.selectedFactor);
+      policySources.push(summaryPayload.selectedWeightingPolicy);
+      asOfSources.push(summaryPayload.dataAsOf);
+    }
+    if (dashboardPayload) {
+      factorSources.push(dashboardPayload.selectedFactor, currentTarget?.factor);
+      policySources.push(dashboardPayload.selectedWeightingPolicy, currentTarget?.weightingPolicyId);
+      asOfSources.push(
+        dashboardPayload.data?.asOf,
+        currentTarget?.asOf,
+        currentTarget?.signalDate,
+      );
+    }
+    const factor = matchingMomentumContractValue(factorSources);
+    const selectedWeightingPolicy = matchingMomentumContractValue(policySources);
+    const dataAsOf = matchingMomentumContractValue(asOfSources);
+    if (!factor || !selectedWeightingPolicy || !dataAsOf) return null;
+
+    const summaryAllocation = summaryPayload
+      ? validateMomentumAllocation(
+        summaryPayload.weights,
+        summaryPayload.cashWeight,
+        summaryPayload.maxWeight,
+      )
+      : null;
+    const dashboardAllocation = dashboardPayload
+      ? validateMomentumAllocation(
+        currentTarget?.weights,
+        currentTarget?.cashWeight,
+        dashboardPayload.config?.max_weight,
+      )
+      : null;
+    if ((summaryPayload && !summaryAllocation) || (dashboardPayload && !dashboardAllocation)) return null;
+    if (
+      summaryAllocation
+      && dashboardAllocation
+      && !matchingMomentumAllocations(summaryAllocation, dashboardAllocation)
+    ) return null;
+    const allocation = dashboardAllocation || summaryAllocation;
+    const rows = allocation?.rows || [];
+
+    const summaryModeRaw = summaryPayload ? stringOr(summaryPayload.dataMode, '') : '';
+    const dashboardModeRaw = dashboardPayload ? stringOr(dashboardPayload.data?.mode, '') : '';
+    const summaryMode = normalizeMomentumDataMode(summaryModeRaw);
+    const dashboardMode = normalizeMomentumDataMode(dashboardModeRaw);
+    const degradedReasons = [];
+    if ((summaryPayload && !summaryMode) || (dashboardPayload && !dashboardMode)) return null;
+    appendMomentumContractConflict(degradedReasons, 'data_mode', summaryMode, dashboardMode);
+    const dataMode = stringOr(summaryMode, dashboardMode);
+    if (!dataMode) return null;
+
+    const summarySourceLabel = summaryPayload ? stringOr(summaryPayload.sourceLabel, '') : '';
+    const dashboardSourceLabel = dashboardPayload ? stringOr(dashboardPayload.data?.sourceLabel, '') : '';
+    if (summaryPayload && !summarySourceLabel) degradedReasons.push('summary_source_label_missing');
+    if (dashboardPayload && !dashboardSourceLabel) degradedReasons.push('dashboard_source_label_missing');
+    appendMomentumContractConflict(degradedReasons, 'source_label', summarySourceLabel, dashboardSourceLabel);
+    const sourceLabel = stringOr(summarySourceLabel, dashboardSourceLabel);
+    if (!sourceLabel) return null;
+
+    const summaryEvidenceStatus = summaryPayload ? stringOr(summaryPayload.evidenceStatus, '') : '';
+    const dashboardEvidenceStatus = dashboardPayload ? stringOr(dashboardPayload.researchScope?.evidenceStatus, '') : '';
+    if (summaryPayload && !summaryEvidenceStatus) degradedReasons.push('summary_evidence_status_missing');
+    if (dashboardPayload && !dashboardEvidenceStatus) degradedReasons.push('dashboard_evidence_status_missing');
+    appendMomentumContractConflict(degradedReasons, 'evidence_status', summaryEvidenceStatus, dashboardEvidenceStatus);
+    const evidenceStatus = stringOr(summaryEvidenceStatus, dashboardEvidenceStatus);
+    if (!evidenceStatus) return null;
+    if (!['same_sample_descriptive', 'same_sample_descriptive_actual_market'].includes(evidenceStatus)) {
+      degradedReasons.push(`evidence_status_unrecognized:${evidenceStatus}`);
+    }
+
+    const summaryPolicyReason = summaryPayload ? stringOr(summaryPayload.selectedReason, '') : '';
+    const dashboardPolicyReason = dashboardPayload ? stringOr(dashboardPayload.selectedReason, '') : '';
+    if ((summaryPayload && !summaryPolicyReason) || (dashboardPayload && !dashboardPolicyReason)) return null;
+    appendMomentumContractConflict(
+      degradedReasons,
+      'weighting_policy_reason',
+      summaryPolicyReason,
+      dashboardPolicyReason,
+    );
+    const weightingPolicyReason = stringOr(summaryPolicyReason, dashboardPolicyReason);
+
+    const ranking = asRecords(dashboardPayload?.factorPolicyRanking).find((row) => (
+      row.factor === factor && row.policy_id === selectedWeightingPolicy
+    )) || {};
+    const compositeScore = finiteOrNull(summaryPayload?.compositeScore ?? ranking.composite_score);
+    if (compositeScore === null) return null;
+    const generatedAt = stringOr(summaryPayload?.generatedAt, dashboardPayload?.generatedAtUtc, '');
+    const cashWeight = allocation.cashWeight;
+    const maxWeight = allocation.maxWeight;
+    const requestedCandidateCount = finiteOrNull(
+      summaryPayload?.requestedCandidateCount
+      ?? dashboardPayload?.data?.requestedCandidateCount,
+    );
+    const providerReturnedCandidateCount = finiteOrNull(
+      summaryPayload?.providerReturnedCandidateCount
+      ?? dashboardPayload?.data?.providerReturnedCandidateCount,
+    );
+    const universeSize = finiteOrNull(summaryPayload?.universeSize ?? dashboardPayload?.data?.inputSecurityCount);
+    const eligibleSecurityCount = finiteOrNull(
+      summaryPayload?.eligibleSecurityCount
+      ?? dashboardPayload?.data?.latestEligibleSecurityCount
+      ?? currentTarget?.eligibleSecurityCount,
+    );
+    const limitations = asArray(
+      summaryPayload?.limitations
+      ?? dashboardPayload?.researchScope?.limitations
+      ?? dashboardPayload?.data?.notes,
+    ).map(String).filter(Boolean);
+    const dataModeLabel = momentumDataModeLabel(dataMode);
+    const modeWarning = dataMode === 'demo'
+      ? '합성 데모 결과이며 실제 시장 데이터나 투자 권고가 아닙니다.'
+      : '';
+    const warnings = [modeWarning, ...degradedReasons, ...limitations].filter(Boolean);
+    const statusState = degradedReasons.length ? 'degraded' : (dataMode === 'demo' ? 'demo' : 'ok');
+    const status = `${dataModeLabel} · ${sourceLabel} · ${momentumEvidenceLabel(evidenceStatus)} · 선택 팩터 ${factor} · 비중 정책 ${selectedWeightingPolicy} · 종합 점수 ${formatNumber(compositeScore)} · 모델 ${formatInteger(rows.length)}개 · 현금 ${formatPercent(cashWeight)}${degradedReasons.length ? ` · 계약 경고 ${degradedReasons.join(', ')}` : ''}`;
+    const entities = rows.map((row) => ({
+      id: row.symbol,
+      symbol: row.symbol,
+      name: row.name,
+      label: `${row.symbol} · rank ${row.rank}`,
+      themes: ['Momentum', factor],
+      metrics: {
+        rank: row.rank,
+        factor,
+        dataMode,
+        dataModeLabel,
+        compositeScore,
+        weightingPolicyId: selectedWeightingPolicy,
+        cashWeight,
+        signal: row.signal,
+        modelWeight: row.modelWeight,
+      },
+      signals: ['Momentum schemaVersion 4 모델 포트폴리오'],
+      warnings: warnings.slice(0, 2),
+    }));
+    return {
+      factor,
+      resultIdentity,
+      resultKey: resultIdentity.resultKey,
+      selectedWeightingPolicy,
+      weightingPolicyReason,
+      compositeScore,
+      generatedAt,
+      dataAsOf,
+      dataMode,
+      dataModeLabel,
+      sourceLabel,
+      evidenceStatus,
+      outputLabel: '연구 모델 포트폴리오',
+      status,
+      cashWeight,
+      maxWeight,
+      concentration: summaryPayload?.concentration ?? currentTarget?.concentration ?? null,
+      currentTransition: summaryPayload?.currentTransition ?? dashboardPayload?.currentTransition ?? null,
+      weightSource: dashboardAllocation ? 'dashboard.currentResearchTarget.weights' : 'summary.weights',
+      rows: rows.slice(0, 5),
+      entities,
+      meta: {
+        schemaVersion: 4,
+        resultIdentity,
+        resultKey: resultIdentity.resultKey,
+        selectedFactor: factor,
+        selectedWeightingPolicy,
+        weightingPolicyReason,
+        compositeScore,
+        requestedCandidateCount,
+        providerReturnedCandidateCount,
+        universeSize,
+        eligibleSecurityCount,
+        cashWeight,
+        maxWeight,
+        dataMode,
+        dataModeLabel,
+        sourceLabel,
+        evidenceStatus,
+        researchOnly: true,
+        notInvestmentRecommendation: true,
+        statusState,
+        statusLabel: `${dataModeLabel} · Momentum v4 연구 모델 포트폴리오`,
+        degradedReasons,
+        limitations,
+      },
+    };
+  }
+
+  function momentumRowsFromModelWeights(weights) {
+    return asRecords(weights)
       .slice()
       .sort((a, b) => numberOr(a.rank, 9999) - numberOr(b.rank, 9999))
-      .map((row, index) => ({
-        rank: numberOr(row.rank, index + 1),
-        symbol: stringOr(row.symbol, row.ticker, '-'),
-        signal: finiteOrNull(row.score),
-        displayWeight: finiteOrNull(row.proposed_weight ?? row.default_weight ?? row.pre_cap_weight),
-        finalWeight: finiteOrNull(row.weight),
-      }));
+      .map((row, index) => {
+        return {
+          rank: numberOr(row.rank, index + 1),
+          symbol: stringOr(row.symbol, '-'),
+          name: stringOr(row.name, row.symbol, '-'),
+          signal: finiteOrNull(row.factorScore),
+          modelWeight: finiteOrNull(row.weight),
+        };
+      })
+      .filter((row) => row.symbol !== '-' && row.signal !== null && row.modelWeight !== null);
   }
 
-  function momentumRowsFromHoldings(run, factor, preferredWindow = '') {
-    const factorHoldings = asRecords(run.holdings).filter((row) => !factor || row.factor === factor);
-    const windowHoldings = preferredWindow
-      ? factorHoldings.filter((row) => !row.window || row.window === preferredWindow)
-      : factorHoldings;
-    const holdings = windowHoldings.length ? windowHoldings : factorHoldings;
-    const latestDate = maxString(holdings.map((row) => row.date || row.weight_date));
-    return holdings
-      .filter((row) => !latestDate || row.date === latestDate || row.weight_date === latestDate)
-      .sort((a, b) => numberOr(a.rank, 9999) - numberOr(b.rank, 9999))
-      .map((row, index) => ({
-        rank: numberOr(row.rank, index + 1),
-        symbol: stringOr(row.symbol, row.ticker, '-'),
-        signal: finiteOrNull(row.score),
-        displayWeight: finiteOrNull(row.default_weight ?? row.weight),
-        finalWeight: finiteOrNull(row.weight ?? row.default_weight),
-      }));
+  function validateMomentumAllocation(weights, cashWeightValue, maxWeightValue) {
+    if (!Array.isArray(weights) || asRecords(weights).length !== weights.length) return null;
+    const cashWeight = finiteOrNull(cashWeightValue);
+    const maxWeight = finiteOrNull(maxWeightValue);
+    if (
+      cashWeight === null
+      || cashWeight < 0
+      || cashWeight > 1
+      || maxWeight === null
+      || maxWeight <= 0
+      || maxWeight > 1
+    ) return null;
+
+    const rows = momentumRowsFromModelWeights(weights);
+    if (rows.length !== weights.length) return null;
+    const symbols = new Set();
+    let totalWeight = cashWeight;
+    for (const row of rows) {
+      const symbolKey = row.symbol.trim().toUpperCase();
+      if (
+        !symbolKey
+        || symbols.has(symbolKey)
+        || row.modelWeight < 0
+        || row.modelWeight > maxWeight + 1e-9
+      ) return null;
+      symbols.add(symbolKey);
+      totalWeight += row.modelWeight;
+    }
+    if (Math.abs(totalWeight - 1) > 1e-8) return null;
+    return { rows, cashWeight, maxWeight };
   }
 
-  function latestFactorLeader(run) {
-    const leaders = asRecords(run.factor_leaders);
-    const latestDate = maxString(leaders.map((row) => row.date));
-    return leaders.find((row) => row.date === latestDate) || leaders.at(-1) || null;
+  function matchingMomentumAllocations(summaryAllocation, dashboardAllocation) {
+    const closeNumber = (left, right) => {
+      const scale = Math.max(1, Math.abs(Number(left)), Math.abs(Number(right)));
+      return Math.abs(Number(left) - Number(right)) <= 1e-9 * scale;
+    };
+    if (
+      !closeNumber(summaryAllocation.cashWeight, dashboardAllocation.cashWeight)
+      || !closeNumber(summaryAllocation.maxWeight, dashboardAllocation.maxWeight)
+      || summaryAllocation.rows.length !== dashboardAllocation.rows.length
+    ) return false;
+
+    const dashboardBySymbol = new Map(dashboardAllocation.rows.map((row) => [
+      row.symbol.trim().toUpperCase(),
+      row,
+    ]));
+    return summaryAllocation.rows.every((row) => {
+      const dashboardRow = dashboardBySymbol.get(row.symbol.trim().toUpperCase());
+      return dashboardRow
+        && row.rank === dashboardRow.rank
+        && closeNumber(row.signal, dashboardRow.signal)
+        && closeNumber(row.modelWeight, dashboardRow.modelWeight);
+    });
   }
 
   function parseDram(pricesPayload, seriesPayload, statusPayload, summaryPayload) {
@@ -1550,19 +2420,23 @@
 
   function renderMomentum(summary, mode, error, project) {
     renderMetricCards(panelSelector(project, 'metrics'), [
-      ['베스트 모멘텀 팩터', summary.factor],
+      ['데이터 모드', summary.dataModeLabel],
+      ['선택 팩터', summary.factor],
+      ['비중 정책', summary.selectedWeightingPolicy],
+      ['종합 점수', formatNumber(summary.compositeScore)],
       ['데이터 기준일', formatMaybeDate(summary.dataAsOf)],
-      ['추천/신호 상태', summary.outputLabel],
-      ['업데이트', formatFreshness(summary.generatedAt)],
     ]);
     renderRows(panelSelector(project, 'rows'), summary.rows, (row) => [
       row.rank,
       badge(row.symbol),
       formatNumber(row.signal),
-      formatPercent(row.displayWeight),
-      formatPercent(row.finalWeight),
-    ], 5);
-    setStatus(panelSelector(project, 'status'), buildStatusText(mode, summary.generatedAt, error, summary.status, summaryDataAsOf(summary)), mode);
+      formatPercent(row.modelWeight),
+    ], 4);
+    const statusTone = mode === 'live' && summary.meta?.statusState !== 'ok' ? 'warning' : mode;
+    const statusText = summary.unavailable
+      ? `Momentum 데이터 사용 불가 · 보유 종목 0개 · 사유: ${error || summary.status}`
+      : buildStatusText(mode, summary.generatedAt, error, summary.status, summaryDataAsOf(summary));
+    setStatus(panelSelector(project, 'status'), statusText, summary.unavailable ? 'warning' : statusTone);
   }
 
   function renderDram(summary, mode, error, project) {
@@ -2009,7 +2883,10 @@
   }
 
   function normalizeMomentumFallback() {
-    return { ...FALLBACK_SNAPSHOT.momentum };
+    return momentumUnavailable(
+      'Momentum 공개 JSON을 읽지 못해 보유 종목을 표시하지 않습니다.',
+      'momentum_public_json_unavailable',
+    );
   }
 
   function normalizeDramFallback() {
@@ -2086,9 +2963,9 @@
     if (record.project.id === 'momentum') {
       const limit = firstLimitation(summary.meta || {});
       return {
-        kicker: 'Momentum',
-        title: `베스트 ${summary.factor || '-'} · ${formatMaybeDate(summary.dataAsOf)}`,
-        detail: `${summary.outputLabel || 'Research signal'} — ${limit}`,
+        kicker: `Momentum · ${summary.dataModeLabel || '연구 데이터'}`,
+        title: `선택 ${summary.factor || '-'} · 정책 ${summary.selectedWeightingPolicy || '-'} · 종합 ${formatNumber(summary.compositeScore)}`,
+        detail: `${summary.sourceLabel || '소스 확인 필요'} · ${momentumEvidenceLabel(summary.evidenceStatus)} · 현금 ${formatPercent(summary.cashWeight)} · 기준일 ${formatMaybeDate(summary.dataAsOf)} · ${limit}`,
         tone: summary.meta?.statusState === 'ok' ? '' : 'warning',
       };
     }
@@ -2196,7 +3073,7 @@
   function healthTone(record) {
     if (record.mode !== 'live') return 'warn';
     if (isRecordStale(record)) return 'warn';
-    if (['degraded', 'stale'].includes(record.summary?.meta?.statusState)) return 'warn';
+    if (['demo', 'degraded', 'stale'].includes(record.summary?.meta?.statusState)) return 'warn';
     return 'ok';
   }
 
@@ -2204,6 +3081,7 @@
     const state = record.summary?.meta?.statusState;
     if (record.mode !== 'live') return 'fallback';
     if (isRecordStale(record)) return 'stale';
+    if (record.summary?.meta?.dataModeLabel) return record.summary.meta.dataModeLabel;
     if (state) return state;
     return 'live';
   }
@@ -2348,7 +3226,7 @@
       } else if (record.project.id === 'momentum') {
         asRecords(record.summary.rows).forEach((row) => {
           if (String(row.symbol || '').toUpperCase().includes(token)) {
-            matches.push({ project, matchKey: matchIdentity(record.project.id, row.symbol), label: `${row.symbol} · rank ${row.rank}`, detail: `모멘텀 신호 ${formatNumber(row.signal)}, 표시용 비중 ${formatPercent(row.displayWeight)}`, limit: firstLimitation(meta), tone: meta.statusState === 'ok' ? '' : 'warning' });
+            matches.push({ project, matchKey: matchIdentity(record.project.id, row.symbol), label: `${row.symbol} · rank ${row.rank}`, detail: `${record.summary.dataModeLabel || '연구 데이터'}, 선택 팩터 ${record.summary.factor}, 비중 정책 ${record.summary.selectedWeightingPolicy || '-'}, 현금 ${formatPercent(record.summary.cashWeight)}, 모멘텀 신호 ${formatNumber(row.signal)}, 모델 비중 ${formatPercent(row.modelWeight)}`, limit: firstLimitation(meta), tone: meta.statusState === 'ok' ? '' : 'warning' });
           }
         });
       } else if (record.project.id === 'best') {
@@ -2580,8 +3458,14 @@
       renderSox,
       parseRiskScore,
       renderRiskScore,
-      deriveMomentumDisplayWeights,
-      momentumSignalWeights,
+      isMomentumSummaryV4,
+      isMomentumDashboardV4,
+      validMomentumResultIdentity,
+      matchingMomentumResultIdentity,
+      momentumResultKeyForKeyParts,
+      momentumCanonicalKeyPartsJson,
+      momentumCanonicalRecordsSha256,
+      momentumSha256Hex,
       buildDramSeries,
       isTrendforceDailyObservation,
       compactEtfHistoryPayload,
