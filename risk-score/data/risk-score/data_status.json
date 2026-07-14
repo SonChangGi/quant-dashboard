@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "contract": "risk-score-data-status",
   "projectId": "risk-score",
-  "generatedAt": "2026-07-14T04:06:28Z",
+  "generatedAt": "2026-07-14T05:34:34Z",
   "status": "warning",
   "requiredUniverseCount": 15,
   "availableAssetCount": 15,
@@ -59,7 +59,7 @@
       "vix": {
         "status": "ok",
         "source": "FRED VIXCLS plus committed JSON history cache",
-        "rowCount": 5377,
+        "rowCount": 5378,
         "historyCacheUsed": true,
         "freshFetchStartDate": "2025-12-06",
         "freshFetchRowCount": 154,
@@ -72,7 +72,7 @@
         "historyCacheUsed": true,
         "freshFetchStartDate": "2025-12-06",
         "freshFetchRowCount": 154,
-        "latestDate": "2026-07-10"
+        "latestDate": "2026-07-13"
       },
       "kospi": {
         "status": "ok",
