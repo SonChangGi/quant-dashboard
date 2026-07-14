@@ -176,17 +176,17 @@
       id: 'momentum',
       shortName: 'Momentum',
       title: '모멘텀 팩터 랩',
-      description: '선택된 모멘텀 팩터의 종합 점수와 현재 모델 포트폴리오를 보여주는 데일리 대시보드입니다.',
+      description: '동일 입력으로 Python이 선정한 최고 모멘텀 팩터와 연구 포트폴리오를 보여주는 대시보드입니다.',
       url: 'https://sonchanggi.github.io/momentum-factor-lab/',
       accent: 'MF',
       panelAdapter: 'momentum',
       panel: {
         eyebrow: 'Momentum Factor',
-        title: '선택 모멘텀 팩터 · Model Top 5',
+        title: 'Python 최고 모멘텀 팩터 · Model Top 5',
         contentType: 'table',
         metricLoading: '모멘텀 데이터를 불러오는 중...',
         table: {
-          caption: '선택된 모멘텀 팩터의 현재 모델 포트폴리오 상위 종목',
+          caption: '동일 입력 Python 최고 모멘텀 팩터의 모델 포트폴리오 상위 종목',
           columns: ['순위', '종목', '신호', '모델 비중'],
           loadingText: '데이터를 불러오는 중...',
         },
@@ -1812,7 +1812,7 @@
       : '';
     const warnings = [modeWarning, ...degradedReasons, ...limitations].filter(Boolean);
     const statusState = degradedReasons.length ? 'degraded' : (dataMode === 'demo' ? 'demo' : 'ok');
-    const status = `${dataModeLabel} · ${sourceLabel} · ${momentumEvidenceLabel(evidenceStatus)} · 선택 팩터 ${factor} · 비중 정책 ${selectedWeightingPolicy} · 종합 점수 ${formatNumber(compositeScore)} · 모델 ${formatInteger(rows.length)}개 · 현금 ${formatPercent(cashWeight)}${degradedReasons.length ? ` · 계약 경고 ${degradedReasons.join(', ')}` : ''}`;
+    const status = `${dataModeLabel} · ${sourceLabel} · ${momentumEvidenceLabel(evidenceStatus)} · Python 최고 팩터 ${factor} · 고정 비중 방법 ${selectedWeightingPolicy} · 종합 점수 ${formatNumber(compositeScore)} · 모델 ${formatInteger(rows.length)}개 · 현금 ${formatPercent(cashWeight)}${degradedReasons.length ? ` · 계약 경고 ${degradedReasons.join(', ')}` : ''}`;
     const entities = rows.map((row) => ({
       id: row.symbol,
       symbol: row.symbol,
@@ -3178,7 +3178,7 @@
       const limit = firstLimitation(summary.meta || {});
       return {
         kicker: `Momentum · ${summary.dataModeLabel || '연구 데이터'}`,
-        title: `선택 ${summary.factor || '-'} · 정책 ${summary.selectedWeightingPolicy || '-'} · 종합 ${formatNumber(summary.compositeScore)}`,
+        title: `Python 최고 ${summary.factor || '-'} · 고정 방법 ${summary.selectedWeightingPolicy || '-'} · 종합 ${formatNumber(summary.compositeScore)}`,
         detail: `${summary.sourceLabel || '소스 확인 필요'} · ${momentumEvidenceLabel(summary.evidenceStatus)} · 현금 ${formatPercent(summary.cashWeight)} · 기준일 ${formatMaybeDate(summary.dataAsOf)} · ${limit}`,
         tone: summary.meta?.statusState === 'ok' ? '' : 'warning',
       };
@@ -3440,7 +3440,7 @@
       } else if (record.project.id === 'momentum') {
         asRecords(record.summary.rows).forEach((row) => {
           if (String(row.symbol || '').toUpperCase().includes(token)) {
-            matches.push({ project, matchKey: matchIdentity(record.project.id, row.symbol), label: `${row.symbol} · rank ${row.rank}`, detail: `${record.summary.dataModeLabel || '연구 데이터'}, 선택 팩터 ${record.summary.factor}, 비중 정책 ${record.summary.selectedWeightingPolicy || '-'}, 현금 ${formatPercent(record.summary.cashWeight)}, 모멘텀 신호 ${formatNumber(row.signal)}, 모델 비중 ${formatPercent(row.modelWeight)}`, limit: firstLimitation(meta), tone: meta.statusState === 'ok' ? '' : 'warning' });
+            matches.push({ project, matchKey: matchIdentity(record.project.id, row.symbol), label: `${row.symbol} · rank ${row.rank}`, detail: `${record.summary.dataModeLabel || '연구 데이터'}, Python 최고 팩터 ${record.summary.factor}, 고정 비중 방법 ${record.summary.selectedWeightingPolicy || '-'}, 현금 ${formatPercent(record.summary.cashWeight)}, 모멘텀 신호 ${formatNumber(row.signal)}, 모델 비중 ${formatPercent(row.modelWeight)}`, limit: firstLimitation(meta), tone: meta.statusState === 'ok' ? '' : 'warning' });
           }
         });
       } else if (record.project.id === 'best') {
