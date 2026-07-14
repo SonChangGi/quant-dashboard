@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "contract": "quant-research-summary",
   "projectId": "risk-score",
-  "generatedAt": "2026-07-11T05:43:12Z",
-  "dataAsOf": "2026-07-09",
-  "status": "Watch",
+  "generatedAt": "2026-07-13T23:52:12Z",
+  "dataAsOf": "2026-07-10",
+  "status": "Normal",
   "coverage": {
     "entityCount": 1,
     "observationCount": 5370,
     "startDate": "2004-09-02",
-    "endDate": "2026-07-09",
+    "endDate": "2026-07-10",
     "requiredSources": [
       "FRED NASDAQSOX",
       "FRED VIXCLS"
@@ -21,45 +21,45 @@
       "symbol": "NASDAQSOX",
       "name": "PHLX Semiconductor Sector Index Top-Risk Overlay",
       "label": "SOX Top Risk Score",
-      "status": "Watch",
+      "status": "Normal",
       "signals": [
         "OH 0/5",
-        "RF 3/5",
-        "Rebound Failure"
+        "RF 2/5",
+        "Normal"
       ],
       "metrics": {
-        "latestClose": 12960.0,
-        "oneDayReturn": 0.030618760919509214,
-        "vixClose": 15.84,
+        "latestClose": 12967.16,
+        "oneDayReturn": 0.0005524691358025358,
+        "vixClose": 15.03,
         "ohScore": 0,
-        "rfScore": 3,
-        "topRiskScore": 3,
+        "rfScore": 2,
+        "topRiskScore": 2,
         "confirmedTopRisk": false,
-        "regime": "Rebound Failure",
-        "actionLevel": "watch"
+        "regime": "Normal",
+        "actionLevel": "normal"
       }
     }
   ],
   "riskScore": {
     "current": {
-      "date": "2026-07-09",
-      "close": 12960.0,
-      "oneDayReturn": 0.030618760919509214,
-      "vixClose": 15.84,
+      "date": "2026-07-10",
+      "close": 12967.16,
+      "oneDayReturn": 0.0005524691358025358,
+      "vixClose": 15.03,
       "ohScore": 0,
-      "rfScore": 3,
-      "topRiskScore": 3,
-      "regime": "Rebound Failure",
+      "rfScore": 2,
+      "topRiskScore": 2,
+      "regime": "Normal",
       "confirmation": false,
-      "actionLevel": "watch",
-      "actionLabel": "Watch",
-      "actionText": "신규 추격매수 억제와 trailing stop 점검을 고려할 수 있는 관찰 구간입니다."
+      "actionLevel": "normal",
+      "actionLabel": "Normal",
+      "actionText": "일반 포지션 유지 관점의 risk overlay 상태입니다."
     },
     "factorBreakdown": [
       {
         "factor": "z20_gt_1_5",
         "model": "OH",
-        "currentValue": -0.6108457016645922,
+        "currentValue": -0.7101441338238191,
         "threshold": "z20 > 1.5",
         "signal": false,
         "interpretation": "20D 평균 대비 통계적 과열"
@@ -67,7 +67,7 @@
       {
         "factor": "rsi5_gt_70",
         "model": "OH",
-        "currentValue": 48.71022157011596,
+        "currentValue": 48.897869484013604,
         "threshold": "RSI5 > 70",
         "signal": false,
         "interpretation": "단기 과매수"
@@ -75,7 +75,7 @@
       {
         "factor": "roc20_gt_10",
         "model": "OH",
-        "currentValue": 0.023873798074074415,
+        "currentValue": 0.06231946035132219,
         "threshold": "ROC20 > 10%",
         "signal": false,
         "interpretation": "1개월 강한 momentum"
@@ -83,7 +83,7 @@
       {
         "factor": "gap20_gt_4",
         "model": "OH",
-        "currentValue": -0.03049769243863376,
+        "currentValue": -0.03271428532532583,
         "threshold": "gap20 > 4%",
         "signal": false,
         "interpretation": "20D 추세선 대비 유의미한 이격"
@@ -91,7 +91,7 @@
       {
         "factor": "near_high20",
         "model": "OH",
-        "currentValue": 12960.0,
+        "currentValue": 12967.16,
         "threshold": "C >= 99.5% of High20",
         "signal": false,
         "interpretation": "최근 고점권에서 rally 진행"
@@ -99,7 +99,7 @@
       {
         "factor": "prior_damage",
         "model": "RF",
-        "currentValue": -0.11443471415920492,
+        "currentValue": -0.11394546667103977,
         "threshold": "C < MA50 OR C <= 95% High50",
         "signal": true,
         "interpretation": "중기 추세 훼손 또는 50D 고점 대비 5% 이상 하락"
@@ -107,7 +107,7 @@
       {
         "factor": "rebound_from_low",
         "model": "RF",
-        "currentValue": 0.06173288570150559,
+        "currentValue": 0.054196082767232534,
         "threshold": "C >= 105% Low20",
         "signal": true,
         "interpretation": "20D 저점 대비 5% 이상 반등"
@@ -115,7 +115,7 @@
       {
         "factor": "ma_resistance",
         "model": "RF",
-        "currentValue": -0.03049769243863376,
+        "currentValue": -0.03271428532532583,
         "threshold": "Near MA20/MA50 resistance",
         "signal": false,
         "interpretation": "MA20 또는 MA50 근처 반등 후 안착 미확인"
@@ -123,15 +123,15 @@
       {
         "factor": "weak_momentum",
         "model": "RF",
-        "currentValue": 0.023873798074074415,
+        "currentValue": 0.06231946035132219,
         "threshold": "ROC20 <= 3% OR MA20_slope5 < 0",
-        "signal": true,
+        "signal": false,
         "interpretation": "20D momentum 약화 또는 MA20 하락"
       },
       {
         "factor": "vix_not_low",
         "model": "RF",
-        "currentValue": 15.84,
+        "currentValue": 15.03,
         "threshold": "VIX >= 16 OR VIX > VIX_MA20",
         "signal": false,
         "interpretation": "변동성 regime이 아직 안정되지 않음"
@@ -139,7 +139,7 @@
       {
         "factor": "price_rollover",
         "model": "Confirmation",
-        "currentValue": 12960.0,
+        "currentValue": 12967.16,
         "threshold": "C < MA5",
         "signal": false,
         "interpretation": "가격이 MA5 아래로 내려오며 rally rollover 확인"
@@ -147,7 +147,7 @@
       {
         "factor": "large_down_day",
         "model": "Confirmation",
-        "currentValue": 0.030618760919509214,
+        "currentValue": 0.0005524691358025358,
         "threshold": "ret_1 <= -2%",
         "signal": false,
         "interpretation": "큰 하락일로 단기 매도 압력 확인"
@@ -155,7 +155,7 @@
       {
         "factor": "vix_confirmation",
         "model": "Confirmation",
-        "currentValue": 15.84,
+        "currentValue": 15.03,
         "threshold": "VIX > VIX_MA5 and ΔVIX > 0",
         "signal": false,
         "interpretation": "VIX 상승 전환으로 변동성 확인"
@@ -163,7 +163,7 @@
       {
         "factor": "strong_vix_confirmation",
         "model": "Confirmation",
-        "currentValue": -1.0599999999999987,
+        "currentValue": -0.8100000000000005,
         "threshold": "VIX > VIX_MA5 and ΔVIX >= 1",
         "signal": false,
         "interpretation": "강한 VIX 상승 확인"
