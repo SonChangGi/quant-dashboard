@@ -5,7 +5,7 @@
   const MOMENTUM_RESULT_IDENTITY_VERSION = 'momentum-result-identity-v1';
   const MOMENTUM_CANONICAL_JSON_VERSION = 'rfc8785-jcs-v1';
   const LOWERCASE_SHA256 = /^[0-9a-f]{64}$/;
-  const MOMENTUM_FIXED_WEIGHTING_POLICY = 'score_liquidity_market_cap_rank';
+  const MOMENTUM_FIXED_WEIGHTING_POLICY = 'score_liquidity_rank';
   const MOMENTUM_WEIGHTING_POLICIES = [
     'equal_weight',
     'capped_linear_rank',

@@ -347,7 +347,7 @@ const momentumDashboardV4 = {
   },
 };
 momentumSummaryV4.currentResearchTarget = momentumDashboardV4.currentResearchTarget;
-const momentumV5Policy = 'score_liquidity_market_cap_rank';
+const momentumV5Policy = 'score_liquidity_rank';
 const momentumBestFactorPortfolioV5 = {
   ...momentumCurrentResearchTarget,
   weightingPolicyId: momentumV5Policy,
