@@ -5,6 +5,7 @@
   const MOMENTUM_RESULT_IDENTITY_VERSION = 'momentum-result-identity-v1';
   const MOMENTUM_CANONICAL_JSON_VERSION = 'rfc8785-jcs-v1';
   const LOWERCASE_SHA256 = /^[0-9a-f]{64}$/;
+  const MOMENTUM_FIXED_WEIGHTING_POLICY = 'score_liquidity_market_cap_rank';
   const MOMENTUM_WEIGHTING_POLICIES = [
     'equal_weight',
     'capped_linear_rank',
@@ -23,6 +24,11 @@
     'priceSources',
     'dataSources',
   ];
+  const MOMENTUM_LIVE_SNAPSHOT_HASH_FIELDS_V5 = [
+    ...MOMENTUM_LIVE_SNAPSHOT_HASH_FIELDS,
+    'marketCaps',
+    'marketCapSources',
+  ];
   const MOMENTUM_CANONICAL_GRID = {
     factorCount: 64,
     independentFactorCount: 61,
@@ -31,6 +37,15 @@
     independentPairCount: 244,
     aliasPairCount: 12,
     totalPairCount: 256,
+  };
+  const MOMENTUM_V5_GRID = {
+    factorCount: 64,
+    independentFactorCount: 61,
+    aliasFactorCount: 3,
+    policyCount: 1,
+    independentFactorRunCount: 61,
+    aliasFactorRunCount: 3,
+    totalFactorRunCount: 64,
   };
   const MOMENTUM_ABSOLUTE_GUARDRAIL_RULES = [
     {
@@ -307,8 +322,8 @@
   const SUMMARY_CONTRACT = { versionField: 'schemaVersion', expectedVersion: 1, requiredKeys: ['contract', 'projectId', 'status', 'primaryEntities'] };
   const MOMENTUM_SUMMARY_CONTRACT = {
     versionField: 'schemaVersion',
-    expectedVersion: 4,
-    requiredKeys: ['resultIdentity', 'selectedFactor', 'selectedWeightingPolicy', 'selectedReason', 'gridAccounting', 'currentResearchTarget', 'compositeScore', 'weights', 'cashWeight', 'maxWeight', 'dataAsOf', 'dataMode', 'sourceLabel', 'evidenceStatus', 'researchOnly', 'notInvestmentRecommendation'],
+    expectedVersion: 5,
+    requiredKeys: ['resultIdentity', 'bestFactor', 'weightingPolicy', 'bestFactorReason', 'factorAccounting', 'bestFactorPortfolio', 'allocationMethod', 'compositeScore', 'weights', 'cashWeight', 'maxWeight', 'dataAsOf', 'dataMode', 'sourceLabel', 'evidenceStatus', 'researchOnly', 'notInvestmentRecommendation'],
   };
 
   const PANEL_ADAPTERS = {
@@ -825,8 +840,25 @@
   }
 
   function parseMomentum(payload, detailPayload = null) {
-    const summaryPayload = isMomentumSummaryV4(payload) ? payload : null;
+    const summaryV5 = isMomentumSummaryV5(payload) ? payload : null;
     const detailWasProvided = detailPayload !== null && detailPayload !== undefined;
+    const dashboardV5 = isMomentumDashboardV5(detailPayload)
+      ? detailPayload
+      : (!summaryV5 && isMomentumDashboardV5(payload) ? payload : null);
+    if (summaryV5 || dashboardV5) {
+      if (detailWasProvided && !dashboardV5) {
+        return momentumUnavailable(
+          'Momentum dashboard resultIdentity/resultKey 또는 schemaVersion 5 계약이 유효하지 않아 보유 종목을 표시하지 않습니다.',
+          'invalid_momentum_dashboard_contract',
+        );
+      }
+      const parsedV5 = parseMomentumV5(summaryV5, dashboardV5);
+      return parsedV5 || momentumUnavailable(
+        'Momentum schemaVersion 5 summary/dashboard 계약을 확인할 수 없어 보유 종목을 표시하지 않습니다.',
+        'unsupported_or_incomplete_momentum_contract',
+      );
+    }
+    const summaryPayload = isMomentumSummaryV4(payload) ? payload : null;
     const dashboardPayload = isMomentumDashboardV4(detailPayload)
       ? detailPayload
       : (!summaryPayload && isMomentumDashboardV4(payload) ? payload : null);
@@ -861,13 +893,81 @@
       rows: [],
       entities: [],
       meta: {
-        schemaVersion: 4,
+        schemaVersion: 5,
         statusState: 'unavailable',
         unavailable: true,
         holdingCount: 0,
         degradedReasons: [reason],
       },
     };
+  }
+
+  function validMomentumFactorAccountingV5(accounting) {
+    if (!isRecord(accounting)) return false;
+    const exactIntegers = {
+      independentFactorCount: MOMENTUM_V5_GRID.independentFactorCount,
+      expectedIndependentFactorCount: MOMENTUM_V5_GRID.independentFactorCount,
+      evaluatedIndependentFactorCount: MOMENTUM_V5_GRID.independentFactorCount,
+      missingIndependentFactorCount: 0,
+      diagnosticAliasFactorCount: MOMENTUM_V5_GRID.aliasFactorCount,
+    };
+    if (Object.entries(exactIntegers).some(([field, expected]) => accounting[field] !== expected)) {
+      return false;
+    }
+    const available = accounting.availableIndependentFactorCount;
+    const excluded = accounting.excludedIndependentFactorCount;
+    return Number.isInteger(available)
+      && Number.isInteger(excluded)
+      && available >= 0
+      && excluded >= 0
+      && available + excluded === MOMENTUM_V5_GRID.independentFactorCount
+      && accounting.commonComparableFactorCount === available
+      && isRecord(accounting.exclusionReasonCounts);
+  }
+
+  function isMomentumSummaryV5(payload) {
+    return isRecord(payload)
+      && Number(payload.schemaVersion) === 5
+      && Boolean(validMomentumResultIdentity(payload))
+      && Boolean(stringOr(payload.bestFactor, ''))
+      && payload.weightingPolicy === MOMENTUM_FIXED_WEIGHTING_POLICY
+      && Boolean(stringOr(payload.bestFactorReason, ''))
+      && finiteOrNull(payload.compositeScore) !== null
+      && payload.researchOnly === true
+      && payload.notInvestmentRecommendation === true
+      && typeof payload.dataMode === 'string'
+      && typeof payload.sourceLabel === 'string'
+      && typeof payload.evidenceStatus === 'string'
+      && validMomentumFactorAccountingV5(payload.factorAccounting)
+      && isRecord(payload.bestFactorPortfolio)
+      && isRecord(payload.allocationMethod)
+      && payload.allocationMethod.fixed === true
+      && payload.allocationMethod.policyId === MOMENTUM_FIXED_WEIGHTING_POLICY
+      && Array.isArray(payload.weights);
+  }
+
+  function isMomentumDashboardV5(payload) {
+    return isRecord(payload)
+      && Number(payload.schemaVersion) === 5
+      && Boolean(validMomentumResultIdentity(payload))
+      && Boolean(stringOr(payload.bestFactor, ''))
+      && payload.weightingPolicy === MOMENTUM_FIXED_WEIGHTING_POLICY
+      && Boolean(stringOr(payload.bestFactorReason, ''))
+      && payload.researchScope?.researchOnly === true
+      && payload.researchScope?.notInvestmentRecommendation === true
+      && isRecord(payload.data)
+      && isRecord(payload.researchScope)
+      && isRecord(payload.bestFactorPortfolio)
+      && isRecord(payload.allocationMethod)
+      && payload.allocationMethod.fixed === true
+      && payload.allocationMethod.policyId === MOMENTUM_FIXED_WEIGHTING_POLICY
+      && Array.isArray(payload.factorRanking)
+      && validMomentumMarketSnapshotParity(payload)
+      && validMomentumLiveProvenance(payload)
+      && validMomentumFactorGridV5(payload)
+      && validMomentumAbsoluteGuardrailProfile(payload)
+      && validMomentumConcentrationRows(payload)
+      && validMomentumSelectedConcentrationContract(payload);
   }
 
   function isMomentumSummaryV4(payload) {
@@ -994,7 +1094,11 @@
     const analyzedSecurityCount = payload.data?.analyzedSecurityCount;
     const analyzedSymbols = payload.data?.analyzedSymbols;
     const hashFields = Object.keys(isRecord(hashes) ? hashes : {}).sort();
-    const expectedHashFields = MOMENTUM_LIVE_SNAPSHOT_HASH_FIELDS.slice().sort();
+    const expectedHashFields = (
+      Number(payload.schemaVersion) === 5
+        ? MOMENTUM_LIVE_SNAPSHOT_HASH_FIELDS_V5
+        : MOMENTUM_LIVE_SNAPSHOT_HASH_FIELDS
+    ).slice().sort();
     if (
       !Array.isArray(priceSources)
       || priceSources.length === 0
@@ -1044,6 +1148,69 @@
       && Boolean(stringOr(row.source, '').trim())
       && Boolean(stringOr(row.status, '').trim())
     ));
+  }
+
+  function validMomentumFactorGridV5(payload) {
+    const definitions = payload.factorDefinitions;
+    const ranking = payload.factorRanking;
+    if (
+      !Array.isArray(definitions)
+      || definitions.length !== MOMENTUM_V5_GRID.factorCount
+      || !Array.isArray(ranking)
+      || ranking.length !== MOMENTUM_V5_GRID.totalFactorRunCount
+      || !validMomentumFactorAccountingV5(payload.factorAccounting)
+    ) return false;
+
+    const independent = new Set();
+    const aliases = new Map();
+    const factors = new Set();
+    for (const definition of definitions) {
+      if (!isRecord(definition)) return false;
+      const factor = stringOr(definition.factor, '').trim();
+      const aliasOf = stringOr(definition.compatibility_alias_of, '').trim();
+      if (!factor || factors.has(factor)) return false;
+      factors.add(factor);
+      if (aliasOf) {
+        if (definition.selection_eligible !== false) return false;
+        aliases.set(factor, aliasOf);
+      } else if (definition.selection_eligible === true) {
+        independent.add(factor);
+      } else {
+        return false;
+      }
+    }
+    if (
+      independent.size !== MOMENTUM_V5_GRID.independentFactorCount
+      || aliases.size !== MOMENTUM_V5_GRID.aliasFactorCount
+      || [...aliases.values()].some((factor) => !independent.has(factor))
+    ) return false;
+
+    const rows = new Map();
+    for (const row of ranking) {
+      if (!isRecord(row)) return false;
+      const factor = stringOr(row.factor, '').trim();
+      if (
+        !factors.has(factor)
+        || rows.has(factor)
+        || row.policy_id !== MOMENTUM_FIXED_WEIGHTING_POLICY
+      ) return false;
+      if (aliases.has(factor) && row.comparison_status !== 'duplicate_alias') return false;
+      rows.set(factor, row);
+    }
+    const selected = ranking.filter((row) => row.selected === true);
+    const meta = payload.meta;
+    return rows.size === MOMENTUM_V5_GRID.factorCount
+      && selected.length === 1
+      && selected[0].factor === payload.bestFactor
+      && selected[0].policy_id === payload.weightingPolicy
+      && selected[0].rank === 1
+      && selected[0].selection_eligible === true
+      && isRecord(meta)
+      && meta.factorCount === MOMENTUM_V5_GRID.factorCount
+      && meta.independentFactorCount === MOMENTUM_V5_GRID.independentFactorCount
+      && meta.aliasFactorCount === MOMENTUM_V5_GRID.aliasFactorCount
+      && meta.portfolioCount === MOMENTUM_V5_GRID.factorCount
+      && meta.factorRunCount === MOMENTUM_V5_GRID.totalFactorRunCount;
   }
 
   function validMomentumFactorGrid(payload) {
@@ -1190,7 +1357,7 @@
 
   function validMomentumAbsoluteGuardrailProfile(payload) {
     const expected = expectedMomentumAbsoluteGuardrailProfile(payload);
-    const actual = payload.selectionDecision?.guardrailProfile;
+    const actual = (payload.factorSelectionDecision ?? payload.selectionDecision)?.guardrailProfile;
     return Boolean(expected)
       && isRecord(actual)
       && momentumCanonicalKeyPartsJson(actual) === momentumCanonicalKeyPartsJson(expected);
@@ -1198,7 +1365,8 @@
 
   function validMomentumConcentrationRows(payload) {
     const inputs = payload.researchInputs;
-    if (!isRecord(inputs) || !Array.isArray(payload.factorPolicyRanking)) return false;
+    const ranking = payload.factorRanking ?? payload.factorPolicyRanking;
+    if (!isRecord(inputs) || !Array.isArray(ranking)) return false;
     const metricDomains = {
       min_target_effective_names: (value) => value >= 0,
       current_target_effective_names: (value) => value >= 0,
@@ -1207,7 +1375,7 @@
       max_target_weight: (value) => value >= 0 && value <= 1,
       current_target_max_weight: (value) => value >= 0 && value <= 1,
     };
-    return payload.factorPolicyRanking.every((row) => (
+    return ranking.every((row) => (
       isRecord(row)
       && Object.entries(metricDomains).every(([field, validDomain]) => (
         momentumFiniteNumber(row[field]) && validDomain(row[field])
@@ -1223,12 +1391,13 @@
   }
 
   function validMomentumSelectedConcentrationContract(payload) {
-    const selectedRows = asRecords(payload.factorPolicyRanking).filter((row) => row.selected === true);
+    const ranking = payload.factorRanking ?? payload.factorPolicyRanking;
+    const selectedRows = asRecords(ranking).filter((row) => row.selected === true);
     if (selectedRows.length !== 1 || !isRecord(payload.config)) return false;
     const selected = selectedRows[0];
     if (
-      selected.factor !== payload.selectedFactor
-      || selected.policy_id !== payload.selectedWeightingPolicy
+      selected.factor !== (payload.bestFactor ?? payload.selectedFactor)
+      || selected.policy_id !== (payload.weightingPolicy ?? payload.selectedWeightingPolicy)
       || selected.comparison_status !== 'available'
       || selected.selection_status !== 'eligible'
       || selected.selection_eligible !== true
@@ -1239,7 +1408,7 @@
       || MOMENTUM_CONCENTRATION_GUARDRAILS.some((rule) => selected[rule.flag] !== true)
     ) return false;
 
-    const target = payload.currentResearchTarget;
+    const target = payload.bestFactorPortfolio ?? payload.currentResearchTarget;
     const allocation = validateMomentumAllocation(
       target?.weights,
       target?.cashWeight,
@@ -1459,6 +1628,50 @@
       return null;
     }
     return identities[0];
+  }
+
+  function momentumV5CompatibilityPayload(payload) {
+    if (!payload) return null;
+    return {
+      ...payload,
+      schemaVersion: 4,
+      selectedFactor: payload.bestFactor,
+      selectedWeightingPolicy: payload.weightingPolicy,
+      selectedReason: payload.bestFactorReason,
+      selectionDecision: payload.factorSelectionDecision,
+      gridAccounting: payload.factorAccounting,
+      factorPolicyRanking: payload.factorRanking,
+      currentResearchTarget: payload.bestFactorPortfolio,
+      currentTransition: payload.bestFactorTransition,
+    };
+  }
+
+  function parseMomentumV5(summaryPayload, dashboardPayload) {
+    const parsed = parseMomentumV4(
+      momentumV5CompatibilityPayload(summaryPayload),
+      momentumV5CompatibilityPayload(dashboardPayload),
+    );
+    if (!parsed) return null;
+    const source = dashboardPayload || summaryPayload;
+    const allocationSource = dashboardPayload ? 'dashboard.bestFactorPortfolio.weights' : 'summary.weights';
+    parsed.weightSource = allocationSource;
+    parsed.weightingPolicyReason = source?.bestFactorReason || parsed.weightingPolicyReason;
+    parsed.currentTransition = summaryPayload?.bestFactorTransition
+      ?? dashboardPayload?.bestFactorTransition
+      ?? null;
+    parsed.entities = parsed.entities.map((entity) => ({
+      ...entity,
+      signals: ['Momentum schemaVersion 5 Python 최고 팩터 포트폴리오'],
+    }));
+    parsed.meta = {
+      ...parsed.meta,
+      schemaVersion: 5,
+      bestFactor: parsed.factor,
+      weightingPolicy: parsed.selectedWeightingPolicy,
+      allocationMethod: source?.allocationMethod || null,
+      statusLabel: `${parsed.dataModeLabel} · Momentum v5 Python 최고 팩터 포트폴리오`,
+    };
+    return parsed;
   }
 
   function parseMomentumV4(summaryPayload, dashboardPayload) {
@@ -3459,6 +3672,8 @@
       renderSox,
       parseRiskScore,
       renderRiskScore,
+      isMomentumSummaryV5,
+      isMomentumDashboardV5,
       isMomentumSummaryV4,
       isMomentumDashboardV4,
       validMomentumResultIdentity,

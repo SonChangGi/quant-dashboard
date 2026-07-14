@@ -347,17 +347,86 @@ const momentumDashboardV4 = {
   },
 };
 momentumSummaryV4.currentResearchTarget = momentumDashboardV4.currentResearchTarget;
+const momentumV5Policy = 'score_liquidity_market_cap_rank';
+const momentumBestFactorPortfolioV5 = {
+  ...momentumCurrentResearchTarget,
+  weightingPolicyId: momentumV5Policy,
+};
+const momentumFactorRankingV5 = momentumFactorDefinitions.map((definition, index) => {
+  const base = momentumFactorPolicyRanking.find((row) => (
+    row.factor === definition.factor && row.policy_id === 'capped_linear_rank'
+  ));
+  const selected = definition.factor === 'selected_mom';
+  return {
+    ...base,
+    policy_id: momentumV5Policy,
+    selected,
+    rank: selected ? 1 : (definition.compatibility_alias_of ? null : index + 2),
+    selection_status: definition.compatibility_alias_of ? 'data_excluded' : 'eligible',
+    selection_eligible: !definition.compatibility_alias_of,
+  };
+});
+const momentumFactorAccountingV5 = {
+  version: 2,
+  independentFactorCount: 61,
+  expectedIndependentFactorCount: 61,
+  evaluatedIndependentFactorCount: 61,
+  availableIndependentFactorCount: 61,
+  excludedIndependentFactorCount: 0,
+  missingIndependentFactorCount: 0,
+  diagnosticAliasFactorCount: 3,
+  commonComparableFactorCount: 61,
+  exclusionReasonCounts: {},
+};
+const momentumDashboardV5 = {
+  ...momentumDashboardV4,
+  schemaVersion: 5,
+  bestFactor: 'selected_mom',
+  weightingPolicy: momentumV5Policy,
+  bestFactorReason: 'same-input Python fixed-method factor selection',
+  factorAccounting: momentumFactorAccountingV5,
+  factorRanking: momentumFactorRankingV5,
+  factorSelectionDecision: { guardrailProfile: momentumAbsoluteGuardrailProfile },
+  bestFactorPortfolio: momentumBestFactorPortfolioV5,
+  bestFactorTransition: null,
+  allocationMethod: { policyId: momentumV5Policy, fixed: true },
+  meta: {
+    factorCount: 64,
+    independentFactorCount: 61,
+    aliasFactorCount: 3,
+    portfolioCount: 64,
+    factorRunCount: 64,
+  },
+};
+const momentumSummaryV5 = {
+  ...momentumSummaryV4,
+  schemaVersion: 5,
+  bestFactor: momentumSummaryV4.selectedFactor,
+  weightingPolicy: momentumV5Policy,
+  bestFactorReason: 'same-input Python fixed-method factor selection',
+  factorAccounting: momentumFactorAccountingV5,
+  bestFactorPortfolio: momentumBestFactorPortfolioV5,
+  allocationMethod: {
+    policyId: momentumV5Policy,
+    fixed: true,
+  },
+};
+assert(api.isMomentumSummaryV5(momentumSummaryV5), 'Momentum schema-v5 summary satisfies the fixed-method contract');
+assert(api.isMomentumDashboardV5(momentumDashboardV5), 'Momentum schema-v5 dashboard satisfies the 64-factor fixed-method contract');
+const validMomentumV5 = api.parseMomentum(momentumSummaryV5, momentumDashboardV5);
+assert(validMomentumV5.factor === 'selected_mom' && validMomentumV5.selectedWeightingPolicy === momentumV5Policy, 'Momentum schema-v5 parser keeps the Python best factor and fixed method aligned');
+assert(validMomentumV5.weightSource === 'dashboard.bestFactorPortfolio.weights' && validMomentumV5.rows[0].symbol === 'SEL', 'Momentum schema-v5 parser reads bestFactorPortfolio without a browser-side proxy');
 const momentumContractError = api.validateAdapterContract(
   api.PANEL_ADAPTERS.momentum,
-  { summary: momentumSummaryV4, momentumDashboard: momentumDashboardV4 },
+  { summary: momentumSummaryV5, momentumDashboard: momentumDashboardV4 },
 );
-assert(!momentumContractError, 'Momentum adapter accepts schemaVersion 4 summary contract');
+assert(!momentumContractError, 'Momentum adapter accepts schemaVersion 5 summary contract');
 const oldMomentumContractError = api.validateAdapterContract(
   api.PANEL_ADAPTERS.momentum,
-  { summary: { ...momentumSummaryV4, schemaVersion: 1 }, momentumDashboard: momentumDashboardV4 },
+  { summary: { ...momentumSummaryV5, schemaVersion: 4 }, momentumDashboard: momentumDashboardV4 },
 );
-assert(/expected 4/.test(oldMomentumContractError), 'Momentum adapter rejects the retired summary schema version');
-const { dataMode: omittedMomentumDataMode, ...momentumSummaryWithoutMode } = momentumSummaryV4;
+assert(/expected 5/.test(oldMomentumContractError), 'Momentum adapter rejects the retired summary schema version');
+const { dataMode: omittedMomentumDataMode, ...momentumSummaryWithoutMode } = momentumSummaryV5;
 const missingModeContractError = api.validateAdapterContract(
   api.PANEL_ADAPTERS.momentum,
   { summary: momentumSummaryWithoutMode, momentumDashboard: momentumDashboardV4 },
