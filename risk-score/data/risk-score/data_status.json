@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "contract": "risk-score-data-status",
   "projectId": "risk-score",
-  "generatedAt": "2026-07-13T23:53:03Z",
+  "generatedAt": "2026-07-14T04:06:28Z",
   "status": "warning",
   "requiredUniverseCount": 15,
   "availableAssetCount": 15,
@@ -50,19 +50,19 @@
       "sox": {
         "status": "ok",
         "source": "FRED NASDAQSOX plus committed JSON history cache",
-        "rowCount": 5377,
+        "rowCount": 5378,
         "historyCacheUsed": true,
-        "freshFetchStartDate": "2025-12-05",
+        "freshFetchStartDate": "2025-12-06",
         "freshFetchRowCount": 155,
-        "latestDate": "2026-07-10"
+        "latestDate": "2026-07-13"
       },
       "vix": {
         "status": "ok",
         "source": "FRED VIXCLS plus committed JSON history cache",
         "rowCount": 5377,
         "historyCacheUsed": true,
-        "freshFetchStartDate": "2025-12-05",
-        "freshFetchRowCount": 155,
+        "freshFetchStartDate": "2025-12-06",
+        "freshFetchRowCount": 154,
         "latestDate": "2026-07-10"
       },
       "vxn": {
@@ -70,15 +70,15 @@
         "source": "FRED VXNCLS plus committed JSON history cache",
         "rowCount": 567,
         "historyCacheUsed": true,
-        "freshFetchStartDate": "2025-12-05",
-        "freshFetchRowCount": 155,
+        "freshFetchStartDate": "2025-12-06",
+        "freshFetchRowCount": 154,
         "latestDate": "2026-07-10"
       },
       "kospi": {
         "status": "ok",
         "source": "yahoo_chart",
         "providerSymbol": "^KS11",
-        "rowCount": 5553
+        "rowCount": 5555
       },
       "usdkrw": {
         "status": "ok",
@@ -101,11 +101,11 @@
       "SOX": {
         "status": "ok",
         "source": "FRED NASDAQSOX plus committed JSON history cache",
-        "rowCount": 5370,
+        "rowCount": 5371,
         "historyCacheUsed": true,
-        "freshFetchStartDate": "2025-12-05",
+        "freshFetchStartDate": "2025-12-06",
         "freshFetchRowCount": 155,
-        "latestDate": "2026-07-10"
+        "latestDate": "2026-07-13"
       },
       "MU": {
         "status": "ok",
@@ -213,35 +213,35 @@
         "status": "ok",
         "source": "yahoo_chart",
         "providerSymbol": "005930.KS",
-        "rowCount": 5589,
+        "rowCount": 5590,
         "fallbackUsed": false,
         "providerAttempts": [
           {
             "provider": "yahoo_chart",
             "status": "ok",
             "providerSymbol": "005930.KS",
-            "rowCount": 5589
+            "rowCount": 5590
           }
         ],
         "adjustmentPolicy": "Yahoo adjusted close preferred via includeAdjustedClose=true",
-        "computedRowCount": 5589
+        "computedRowCount": 5590
       },
       "000660.KS": {
         "status": "ok",
         "source": "yahoo_chart",
         "providerSymbol": "000660.KS",
-        "rowCount": 5589,
+        "rowCount": 5590,
         "fallbackUsed": false,
         "providerAttempts": [
           {
             "provider": "yahoo_chart",
             "status": "ok",
             "providerSymbol": "000660.KS",
-            "rowCount": 5589
+            "rowCount": 5590
           }
         ],
         "adjustmentPolicy": "Yahoo adjusted close preferred via includeAdjustedClose=true",
-        "computedRowCount": 5589
+        "computedRowCount": 5590
       },
       "SOXX": {
         "status": "ok",
