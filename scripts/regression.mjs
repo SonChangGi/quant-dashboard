@@ -386,10 +386,13 @@ const momentumDashboardV5 = {
   bestFactorReason: 'same-input Python fixed-method factor selection',
   factorAccounting: momentumFactorAccountingV5,
   factorRanking: momentumFactorRankingV5,
-  factorSelectionDecision: { guardrailProfile: momentumAbsoluteGuardrailProfile },
+  factorSelectionDecision: {
+    guardrailProfile: { ...momentumAbsoluteGuardrailProfile, id: 'absolute-factor-v2' },
+  },
   bestFactorPortfolio: momentumBestFactorPortfolioV5,
   bestFactorTransition: null,
   allocationMethod: { policyId: momentumV5Policy, fixed: true },
+  config: { ...momentumDashboardV4.config, absolute_guardrail_version: 'absolute-factor-v2' },
   meta: {
     factorCount: 64,
     independentFactorCount: 61,

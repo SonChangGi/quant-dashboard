@@ -1311,7 +1311,9 @@
       !isRecord(inputs)
       || inputs.version !== 'research-inputs-v1'
       || !isRecord(config)
-      || config.absolute_guardrail_version !== 'absolute-factor-policy-v1'
+      || !['absolute-factor-policy-v1', 'absolute-factor-v2'].includes(
+        config.absolute_guardrail_version,
+      )
     ) return null;
 
     const rules = [];
@@ -1345,7 +1347,7 @@
     ) return null;
 
     return {
-      id: 'absolute-factor-policy-v1',
+      id: config.absolute_guardrail_version,
       version: 1,
       policyNeutral: true,
       rules,
@@ -3674,6 +3676,13 @@
       renderRiskScore,
       isMomentumSummaryV5,
       isMomentumDashboardV5,
+      validMomentumFactorAccountingV5,
+      validMomentumMarketSnapshotParity,
+      validMomentumLiveProvenance,
+      validMomentumFactorGridV5,
+      validMomentumAbsoluteGuardrailProfile,
+      validMomentumConcentrationRows,
+      validMomentumSelectedConcentrationContract,
       isMomentumSummaryV4,
       isMomentumDashboardV4,
       validMomentumResultIdentity,
