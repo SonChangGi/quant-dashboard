@@ -12,6 +12,7 @@
     'score_liquidity_rank',
   ];
   const MOMENTUM_LIVE_SNAPSHOT_HASH_FIELDS = [
+    'comparisonPrices',
     'prices',
     'volumes',
     'dollarVolumes',

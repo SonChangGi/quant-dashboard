@@ -427,6 +427,7 @@ const liveMomentumSourceHealth = [
   { source: 'fixture_market_data', status: 'ok' },
 ];
 const liveMomentumInputSha256 = {
+  comparisonPrices: '0'.repeat(64),
   prices: '1'.repeat(64),
   volumes: '2'.repeat(64),
   dollarVolumes: '3'.repeat(64),
