@@ -154,7 +154,7 @@
         "rf_ge_4": {
           "label": "RF >= 4",
           "daily": {
-            "signalCount": 1467,
+            "signalCount": 1468,
             "eventCount": 400,
             "evaluatedCount": 1465,
             "downsideHitRate": 0.18088737201365188,
@@ -169,7 +169,7 @@
             "maxAdverseContinuation": 0.1655799550777417
           },
           "event": {
-            "signalCount": 1467,
+            "signalCount": 1468,
             "eventCount": 400,
             "evaluatedCount": 400,
             "downsideHitRate": 0.185,
@@ -220,7 +220,7 @@
         "setup_ge_4": {
           "label": "OH >= 4 OR RF >= 4",
           "daily": {
-            "signalCount": 2125,
+            "signalCount": 2126,
             "eventCount": 567,
             "evaluatedCount": 2123,
             "downsideHitRate": 0.16580310880829016,
@@ -235,7 +235,7 @@
             "maxAdverseContinuation": 0.1655799550777417
           },
           "event": {
-            "signalCount": 2125,
+            "signalCount": 2126,
             "eventCount": 567,
             "evaluatedCount": 567,
             "downsideHitRate": 0.1728395061728395,
@@ -286,7 +286,7 @@
         "confirmed_top_risk": {
           "label": "confirmed_top_risk",
           "daily": {
-            "signalCount": 1902,
+            "signalCount": 1903,
             "eventCount": 541,
             "evaluatedCount": 1900,
             "downsideHitRate": 0.16263157894736843,
@@ -301,7 +301,7 @@
             "maxAdverseContinuation": 0.17252203217965723
           },
           "event": {
-            "signalCount": 1902,
+            "signalCount": 1903,
             "eventCount": 541,
             "evaluatedCount": 541,
             "downsideHitRate": 0.15526802218114602,
@@ -484,7 +484,7 @@
         "rollover_after_setup": {
           "label": "C < MA5 after OH/RF setup",
           "daily": {
-            "signalCount": 1270,
+            "signalCount": 1271,
             "eventCount": 450,
             "evaluatedCount": 1268,
             "downsideHitRate": 0.15930599369085174,
@@ -499,7 +499,7 @@
             "maxAdverseContinuation": 0.17252203217965723
           },
           "event": {
-            "signalCount": 1270,
+            "signalCount": 1271,
             "eventCount": 450,
             "evaluatedCount": 450,
             "downsideHitRate": 0.14,
@@ -517,7 +517,7 @@
         "vix_confirmation_simple": {
           "label": "VIX > VIX_MA5 and delta VIX > 0",
           "daily": {
-            "signalCount": 1756,
+            "signalCount": 1757,
             "eventCount": 627,
             "evaluatedCount": 1755,
             "downsideHitRate": 0.12763532763532764,
@@ -532,7 +532,7 @@
             "maxAdverseContinuation": 0.1873480889377872
           },
           "event": {
-            "signalCount": 1756,
+            "signalCount": 1757,
             "eventCount": 627,
             "evaluatedCount": 627,
             "downsideHitRate": 0.12121212121212122,
@@ -628,7 +628,7 @@
         "rf_ge_4": {
           "label": "RF >= 4",
           "daily": {
-            "signalCount": 213,
+            "signalCount": 214,
             "eventCount": 61,
             "evaluatedCount": 211,
             "downsideHitRate": 0.1895734597156398,
@@ -643,7 +643,7 @@
             "maxAdverseContinuation": 0.15509492514619327
           },
           "event": {
-            "signalCount": 213,
+            "signalCount": 214,
             "eventCount": 61,
             "evaluatedCount": 61,
             "downsideHitRate": 0.18032786885245902,
@@ -694,7 +694,7 @@
         "setup_ge_4": {
           "label": "OH >= 4 OR RF >= 4",
           "daily": {
-            "signalCount": 358,
+            "signalCount": 359,
             "eventCount": 92,
             "evaluatedCount": 356,
             "downsideHitRate": 0.2050561797752809,
@@ -709,7 +709,7 @@
             "maxAdverseContinuation": 0.15509492514619327
           },
           "event": {
-            "signalCount": 358,
+            "signalCount": 359,
             "eventCount": 92,
             "evaluatedCount": 92,
             "downsideHitRate": 0.18478260869565216,
@@ -760,7 +760,7 @@
         "confirmed_top_risk": {
           "label": "confirmed_top_risk",
           "daily": {
-            "signalCount": 302,
+            "signalCount": 303,
             "eventCount": 86,
             "evaluatedCount": 300,
             "downsideHitRate": 0.20666666666666667,
@@ -775,7 +775,7 @@
             "maxAdverseContinuation": 0.15509492514619327
           },
           "event": {
-            "signalCount": 302,
+            "signalCount": 303,
             "eventCount": 86,
             "evaluatedCount": 86,
             "downsideHitRate": 0.16279069767441862,
@@ -958,7 +958,7 @@
         "rollover_after_setup": {
           "label": "C < MA5 after OH/RF setup",
           "daily": {
-            "signalCount": 189,
+            "signalCount": 190,
             "eventCount": 64,
             "evaluatedCount": 187,
             "downsideHitRate": 0.23529411764705882,
@@ -973,7 +973,7 @@
             "maxAdverseContinuation": 0.15509492514619327
           },
           "event": {
-            "signalCount": 189,
+            "signalCount": 190,
             "eventCount": 64,
             "evaluatedCount": 64,
             "downsideHitRate": 0.140625,
@@ -991,7 +991,7 @@
         "vix_confirmation_simple": {
           "label": "VIX > VIX_MA5 and delta VIX > 0",
           "daily": {
-            "signalCount": 242,
+            "signalCount": 243,
             "eventCount": 87,
             "evaluatedCount": 241,
             "downsideHitRate": 0.17012448132780084,
@@ -1006,7 +1006,7 @@
             "maxAdverseContinuation": 0.1873480889377872
           },
           "event": {
-            "signalCount": 242,
+            "signalCount": 243,
             "eventCount": 87,
             "evaluatedCount": 87,
             "downsideHitRate": 0.13793103448275862,
@@ -1102,7 +1102,7 @@
         "rf_ge_4": {
           "label": "RF >= 4",
           "daily": {
-            "signalCount": 54,
+            "signalCount": 55,
             "eventCount": 17,
             "evaluatedCount": 52,
             "downsideHitRate": 0.23076923076923078,
@@ -1117,7 +1117,7 @@
             "maxAdverseContinuation": 0.15509492514619327
           },
           "event": {
-            "signalCount": 54,
+            "signalCount": 55,
             "eventCount": 17,
             "evaluatedCount": 17,
             "downsideHitRate": 0.23529411764705882,
@@ -1168,7 +1168,7 @@
         "setup_ge_4": {
           "label": "OH >= 4 OR RF >= 4",
           "daily": {
-            "signalCount": 122,
+            "signalCount": 123,
             "eventCount": 30,
             "evaluatedCount": 120,
             "downsideHitRate": 0.25,
@@ -1183,7 +1183,7 @@
             "maxAdverseContinuation": 0.15509492514619327
           },
           "event": {
-            "signalCount": 122,
+            "signalCount": 123,
             "eventCount": 30,
             "evaluatedCount": 30,
             "downsideHitRate": 0.26666666666666666,
@@ -1234,7 +1234,7 @@
         "confirmed_top_risk": {
           "label": "confirmed_top_risk",
           "daily": {
-            "signalCount": 106,
+            "signalCount": 107,
             "eventCount": 29,
             "evaluatedCount": 104,
             "downsideHitRate": 0.21153846153846154,
@@ -1249,7 +1249,7 @@
             "maxAdverseContinuation": 0.15509492514619327
           },
           "event": {
-            "signalCount": 106,
+            "signalCount": 107,
             "eventCount": 29,
             "evaluatedCount": 29,
             "downsideHitRate": 0.20689655172413793,
@@ -1432,7 +1432,7 @@
         "rollover_after_setup": {
           "label": "C < MA5 after OH/RF setup",
           "daily": {
-            "signalCount": 61,
+            "signalCount": 62,
             "eventCount": 19,
             "evaluatedCount": 59,
             "downsideHitRate": 0.23728813559322035,
@@ -1447,7 +1447,7 @@
             "maxAdverseContinuation": 0.15509492514619327
           },
           "event": {
-            "signalCount": 61,
+            "signalCount": 62,
             "eventCount": 19,
             "evaluatedCount": 19,
             "downsideHitRate": 0.10526315789473684,
@@ -1465,7 +1465,7 @@
         "vix_confirmation_simple": {
           "label": "VIX > VIX_MA5 and delta VIX > 0",
           "daily": {
-            "signalCount": 85,
+            "signalCount": 86,
             "eventCount": 29,
             "evaluatedCount": 84,
             "downsideHitRate": 0.15476190476190477,
@@ -1480,7 +1480,7 @@
             "maxAdverseContinuation": 0.15509492514619327
           },
           "event": {
-            "signalCount": 85,
+            "signalCount": 86,
             "eventCount": 29,
             "evaluatedCount": 29,
             "downsideHitRate": 0.1724137931034483,
@@ -1576,7 +1576,7 @@
         "rf_ge_4": {
           "label": "RF >= 4",
           "daily": {
-            "signalCount": 36,
+            "signalCount": 37,
             "eventCount": 10,
             "evaluatedCount": 34,
             "downsideHitRate": 0.2647058823529412,
@@ -1591,7 +1591,7 @@
             "maxAdverseContinuation": 0.15509492514619327
           },
           "event": {
-            "signalCount": 36,
+            "signalCount": 37,
             "eventCount": 10,
             "evaluatedCount": 10,
             "downsideHitRate": 0.3,
@@ -1642,7 +1642,7 @@
         "setup_ge_4": {
           "label": "OH >= 4 OR RF >= 4",
           "daily": {
-            "signalCount": 80,
+            "signalCount": 81,
             "eventCount": 19,
             "evaluatedCount": 78,
             "downsideHitRate": 0.28205128205128205,
@@ -1657,7 +1657,7 @@
             "maxAdverseContinuation": 0.15509492514619327
           },
           "event": {
-            "signalCount": 80,
+            "signalCount": 81,
             "eventCount": 19,
             "evaluatedCount": 19,
             "downsideHitRate": 0.2631578947368421,
@@ -1708,7 +1708,7 @@
         "confirmed_top_risk": {
           "label": "confirmed_top_risk",
           "daily": {
-            "signalCount": 69,
+            "signalCount": 70,
             "eventCount": 18,
             "evaluatedCount": 67,
             "downsideHitRate": 0.23880597014925373,
@@ -1723,7 +1723,7 @@
             "maxAdverseContinuation": 0.15509492514619327
           },
           "event": {
-            "signalCount": 69,
+            "signalCount": 70,
             "eventCount": 18,
             "evaluatedCount": 18,
             "downsideHitRate": 0.2222222222222222,
@@ -1906,7 +1906,7 @@
         "rollover_after_setup": {
           "label": "C < MA5 after OH/RF setup",
           "daily": {
-            "signalCount": 39,
+            "signalCount": 40,
             "eventCount": 13,
             "evaluatedCount": 37,
             "downsideHitRate": 0.2702702702702703,
@@ -1921,7 +1921,7 @@
             "maxAdverseContinuation": 0.15509492514619327
           },
           "event": {
-            "signalCount": 39,
+            "signalCount": 40,
             "eventCount": 13,
             "evaluatedCount": 13,
             "downsideHitRate": 0.07692307692307693,
@@ -1939,7 +1939,7 @@
         "vix_confirmation_simple": {
           "label": "VIX > VIX_MA5 and delta VIX > 0",
           "daily": {
-            "signalCount": 44,
+            "signalCount": 45,
             "eventCount": 16,
             "evaluatedCount": 43,
             "downsideHitRate": 0.20930232558139536,
@@ -1954,7 +1954,7 @@
             "maxAdverseContinuation": 0.15509492514619327
           },
           "event": {
-            "signalCount": 44,
+            "signalCount": 45,
             "eventCount": 16,
             "evaluatedCount": 16,
             "downsideHitRate": 0.125,
