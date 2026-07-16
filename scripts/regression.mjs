@@ -54,6 +54,23 @@ assert(
 );
 assert(!api.PANEL_ADAPTERS.momentum.hasUsableData(unavailableMomentumFallback), 'Momentum unavailable state cannot be promoted to usable live holdings');
 
+const validFearAndGreed = api.parseFearAndGreed({
+  schemaVersion: 1,
+  contract: 'quant-research-summary',
+  projectId: 'fearngreed',
+  generatedAt: '2026-07-16T00:00:00Z',
+  dataAsOf: '2026-07-15',
+  status: { state: 'ok', label: '중립', cadence: 'weekdays-after-20:30-KST', expectedFreshnessDays: 3, degradedReasons: [] },
+  primaryEntities: [{ id: 'KOSPI', name: 'KOSPI', themes: ['Sentiment', 'Flow'], signalState: 'neutral', sentimentPercentile: 55, residualZ: 0.2, rollingR2: 0.7, disparity50: 101.2, position: 'cash', primaryProxy: '226490', modelQuality: 'ok', modelConfidence: 'high' }],
+  limitations: ['사후적·탐색적 연구'],
+});
+const fearAdapter = api.PANEL_ADAPTERS.fearngreed;
+assert(validFearAndGreed.current.sentimentPercentile === 55 && validFearAndGreed.current.position === 'cash', 'Fear & Greed parser preserves current percentile and model position');
+assert(validFearAndGreed.entities[0].themes.includes('Flow') && validFearAndGreed.entities[0].sector === 'Korea', 'Fear & Greed entity feeds Korea Sentiment Flow dossier themes');
+assert(fearAdapter.hasUsableData(validFearAndGreed), 'Fear & Greed adapter accepts a dated KOSPI summary');
+const unavailableFear = fearAdapter.fallback();
+assert(unavailableFear.unavailable === true && unavailableFear.rows.length === 0 && unavailableFear.dataAsOf === '', 'Fear & Greed fetch failure exposes unavailable without hardcoded market values');
+
 const malformedDram = api.parseDram({ observations: [{ product_name: 'Bad DRAM', date: 'not-a-date', values: { average: 1.23 } }] }, { series: [] }, { generated_at: '2026-06-10T00:00:00Z' });
 const dramState = fallbackFor(malformedDram, malformedDram.series.length > 0, 'DRAM payload did not contain usable dated price points.');
 assert(dramState.mode === 'fallback', 'HTTP 200 malformed DRAM payload resolves to fallback mode');
@@ -1510,7 +1527,7 @@ const validRiskScore = api.parseRiskScore({
 assert(validRiskScore.current.topRiskScore === 5 && validRiskScore.current.confirmedTopRisk, 'recorded valid Risk Score fixture produces current top-risk row');
 assert(validRiskScore.rows.some((row) => row.label === 'RF Score' && /5/.test(row.value)), 'Risk Score parser exposes OH/RF summary rows');
 
-assert(Object.keys(api.PANEL_ADAPTERS).length === 7, 'panel adapter manifest has seven current adapters including Risk Score');
+assert(Object.keys(api.PANEL_ADAPTERS).length === 8, 'panel adapter manifest has eight current adapters including Fear & Greed');
 const riskScoreAdapter = api.PANEL_ADAPTERS.riskScore;
 assert(Boolean(riskScoreAdapter?.sourceUrls?.summary?.includes('/quant-dashboard/risk-score/data/risk-score/risk_score_summary.json')), 'Risk Score adapter exposes public summary source URL');
 assert(typeof riskScoreAdapter?.parse === 'function', 'Risk Score adapter exposes parser function');
@@ -1641,9 +1658,9 @@ context.document = {
 };
 api.renderProjectNavigation();
 api.renderDashboardPanels();
-assert(domTargets['#top-nav'].children.length === 8, 'manifest renderer creates top navigation links including SOX, Risk Score, and Port');
-assert(domTargets['#hero-actions'].children.length === 8, 'manifest renderer creates hero action links including SOX, Risk Score, and Port');
-assert(domTargets['#summary-grid'].children.length === 7, 'manifest renderer creates seven dashboard panel shells including SOX and Risk Score');
+assert(domTargets['#top-nav'].children.length === 9, 'manifest renderer creates top navigation links including Fear & Greed and Port');
+assert(domTargets['#hero-actions'].children.length === 9, 'manifest renderer creates hero action links including Fear & Greed and Port');
+assert(domTargets['#summary-grid'].children.length === 8, 'manifest renderer creates eight dashboard panel shells including Fear & Greed');
 assert(domTargets['#summary-grid'].children.every((child) => /원본 열기/.test(child.innerHTML)), 'dashboard panel shells preserve original page links');
 assert(domTargets['#summary-grid'].children.some((child) => /panel-detail/.test(child.innerHTML)), 'ETF panel shell includes detail mount for TOP10 cards');
 assert(domTargets['#summary-grid'].children.some((child) => /SOX 구성종목/.test(child.innerHTML)), 'SOX panel shell appears in the central summary grid');

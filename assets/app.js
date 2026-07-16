@@ -169,9 +169,30 @@
     dram: (metrics) => `${metrics.kind || '가격'} · ${formatMaybeDate(metrics.date)} · ${metrics.source || 'source N/A'}`,
     sox: (metrics) => `SOX proxy ${formatPercent(metrics.weight)} · 가격 ${formatNumber(metrics.priceMomentum)} · 실적 ${formatNumber(metrics.earningsMomentum)}`,
     riskScore: (metrics) => `Top ${formatNumber(metrics.topRiskScore)}/5 · OH ${formatNumber(metrics.ohScore)}/5 · RF ${formatNumber(metrics.rfScore)}/5`,
+    fearngreed: (metrics) => `상태 ${metrics.signalState || '산출 불가'} · 백분위 ${formatNumber(metrics.sentimentPercentile)} · 잔차 z ${formatNumber(metrics.residualZ)} · 포지션 ${metrics.position || '확인 필요'}`,
   };
 
   const PROJECTS = [
+    {
+      id: 'fearngreed',
+      shortName: 'Fear & Greed',
+      title: 'Fear & Greed Flow Lab',
+      description: 'KOSPI 수익률로 설명되지 않는 개인 순매수 흐름을 과거 252거래일 회귀 잔차로 측정합니다.',
+      url: 'https://sonchanggi.github.io/fearNgreed/',
+      accent: 'FG',
+      panelAdapter: 'fearngreed',
+      panel: {
+        eyebrow: 'KOSPI Flow Sentiment',
+        title: 'Fear & Greed · 현재 연구 상태',
+        contentType: 'table',
+        metricLoading: 'Fear & Greed 공개 요약을 불러오는 중...',
+        table: {
+          caption: 'KOSPI 개인 수급 회귀 잔차 기반 현재 연구 상태',
+          columns: ['시장', '상태', '백분위', '잔차 z / R²', '50일 이격도', '모형 포지션', '기준일'],
+          loadingText: 'Fear & Greed 데이터를 불러오는 중...',
+        },
+      },
+    },
     {
       id: 'momentum',
       shortName: 'Momentum',
@@ -327,6 +348,18 @@
   };
 
   const PANEL_ADAPTERS = {
+    fearngreed: {
+      sourceUrls: {
+        summary: 'https://sonchanggi.github.io/fearNgreed/data/summary.json',
+      },
+      primarySourceKey: 'summary',
+      contracts: { summary: SUMMARY_CONTRACT },
+      parse: (sources) => parseFearAndGreed(sources.summary),
+      hasUsableData: (summary) => Boolean(summary && summary.unavailable !== true && summary.entityPresent && summary.dataAsOf),
+      fallback: normalizeFearAndGreedUnavailable,
+      render: renderFearAndGreed,
+      emptyReason: 'Fear & Greed summary did not contain a usable KOSPI entity.',
+    },
     momentum: {
       sourceUrls: {
         summary: 'https://sonchanggi.github.io/momentum-factor-lab/data/summary.json',
@@ -2482,6 +2515,62 @@
     };
   }
 
+  function parseFearAndGreed(payload) {
+    if (!isResearchSummary(payload, 'fearngreed')) return normalizeFearAndGreedUnavailable();
+    const meta = summaryMeta(payload);
+    const source = asRecords(payload.primaryEntities)[0];
+    if (!source) return normalizeFearAndGreedUnavailable();
+    const current = {
+      id: stringOr(source.id, 'KOSPI'),
+      name: stringOr(source.name, source.id, 'KOSPI'),
+      signalState: stringOr(source.signalState, 'unavailable'),
+      stateLabel: stringOr(payload.status?.label, source.signalState, '산출 불가'),
+      sentimentPercentile: finiteOrNull(source.sentimentPercentile),
+      residualZ: finiteOrNull(source.residualZ),
+      rollingR2: finiteOrNull(source.rollingR2),
+      return1d: finiteOrNull(source.return1d),
+      flowShare: finiteOrNull(source.flowShare),
+      disparity50: finiteOrNull(source.disparity50),
+      position: stringOr(source.position, 'unavailable'),
+      primaryProxy: stringOr(source.primaryProxy, '226490'),
+      modelQuality: stringOr(source.modelQuality, 'unavailable'),
+      modelConfidence: stringOr(source.modelConfidence, 'unavailable'),
+      date: meta.dataAsOf,
+    };
+    const warnings = [
+      ...meta.degradedReasons,
+      ...asArray(meta.limitations),
+    ].filter(Boolean);
+    const entity = {
+      id: current.id,
+      symbol: 'KOSPI',
+      name: current.name,
+      label: current.name,
+      sector: 'Korea',
+      sectorLabel: 'Korea',
+      themes: asArray(source.themes).length ? asArray(source.themes).map(String) : ['Sentiment', 'Flow'],
+      metrics: { ...current },
+      signals: [`연구 상태 ${current.stateLabel}`, `포지션 ${current.position}`],
+      warnings,
+      status: current.signalState,
+    };
+    return {
+      generatedAt: meta.generatedAt,
+      dataAsOf: meta.dataAsOf,
+      status: stringOr(meta.statusLabel, current.stateLabel),
+      current,
+      rows: [current],
+      entities: [entity],
+      entityPresent: true,
+      meta: {
+        ...meta,
+        statusState: stringOr(meta.statusState, 'unavailable'),
+        statusLabel: stringOr(meta.statusLabel, current.stateLabel),
+        expectedFreshnessDays: finiteOrNull(meta.expectedFreshnessDays),
+      },
+    };
+  }
+
   function parseSox(payload) {
     if (isResearchSummary(payload, 'sox')) {
       const meta = summaryMeta(payload);
@@ -2725,6 +2814,26 @@
       `${formatNumber(row.dcfPerShare)} · 괴리 ${formatPercent(row.dcfGap)}`,
       `${row.qualityStatus} · 가격일 ${formatMaybeDate(row.priceAsOf)}`,
     ], 5);
+    setStatus(panelSelector(project, 'status'), buildStatusText(mode, summary.generatedAt, error, summary.status, summaryDataAsOf(summary)), mode);
+  }
+
+  function renderFearAndGreed(summary, mode, error, project) {
+    const current = summary.current || {};
+    renderMetricCards(panelSelector(project, 'metrics'), [
+      ['연구 상태', current.stateLabel || '산출 불가'],
+      ['백분위 / 잔차 z', `${formatNumber(current.sentimentPercentile)} · ${formatNumber(current.residualZ)}`],
+      ['R² / 50일 이격도', `${formatNumber(current.rollingR2)} · ${formatNumber(current.disparity50)}`],
+      ['포지션 / 기준일', `${current.position || 'unavailable'} · ${formatMaybeDate(current.date || summary.dataAsOf)}`],
+    ]);
+    renderRows(panelSelector(project, 'rows'), asRecords(summary.rows), (row) => [
+      badge(row.name || row.id || 'KOSPI'),
+      row.stateLabel || row.signalState || '산출 불가',
+      formatNumber(row.sentimentPercentile),
+      `${formatNumber(row.residualZ)} / ${formatNumber(row.rollingR2)}`,
+      formatNumber(row.disparity50),
+      `${row.position || 'unavailable'} · ${row.primaryProxy || '226490'}`,
+      formatMaybeDate(row.date),
+    ], 7);
     setStatus(panelSelector(project, 'status'), buildStatusText(mode, summary.generatedAt, error, summary.status, summaryDataAsOf(summary)), mode);
   }
 
@@ -3148,6 +3257,25 @@
     };
   }
 
+  function normalizeFearAndGreedUnavailable() {
+    return {
+      unavailable: true,
+      generatedAt: '',
+      dataAsOf: '',
+      status: 'Fear & Greed 공개 요약을 사용할 수 없습니다.',
+      current: {},
+      rows: [],
+      entities: [],
+      entityPresent: false,
+      meta: {
+        statusState: 'unavailable',
+        statusLabel: 'unavailable',
+        expectedFreshnessDays: null,
+        limitations: ['마지막 시장 수치를 하드코딩된 값으로 대체하지 않습니다.'],
+      },
+    };
+  }
+
   function normalizeValuationFallback() {
     return {
       generatedAt: FALLBACK_SNAPSHOT.valuation.generatedAt,
@@ -3176,6 +3304,15 @@
 
   function briefingItemForRecord(record) {
     const summary = record.summary || {};
+    if (record.project.id === 'fearngreed') {
+      const current = summary.current || {};
+      return {
+        kicker: 'Fear & Greed · KOSPI',
+        title: `${current.stateLabel || '산출 불가'} · 백분위 ${formatNumber(current.sentimentPercentile)}`,
+        detail: `잔차 z ${formatNumber(current.residualZ)} · R² ${formatNumber(current.rollingR2)} · ${current.primaryProxy || '226490'} ${current.position || 'unavailable'} · 기준일 ${formatMaybeDate(summary.dataAsOf)} · ${firstLimitation(summary.meta || {})}`,
+        tone: summary.meta?.statusState === 'ok' ? '' : 'warning',
+      };
+    }
     if (record.project.id === 'momentum') {
       const limit = firstLimitation(summary.meta || {});
       return {
@@ -3666,6 +3803,7 @@
   if (typeof globalThis !== 'undefined') {
     globalThis.__QUANT_DASHBOARD_TESTS__ = {
       parseMomentum,
+      parseFearAndGreed,
       parseDram,
       parseBestFactor,
       parseEtfTracking,
@@ -3674,6 +3812,7 @@
       renderSox,
       parseRiskScore,
       renderRiskScore,
+      renderFearAndGreed,
       isMomentumSummaryV5,
       isMomentumDashboardV5,
       validMomentumFactorAccountingV5,

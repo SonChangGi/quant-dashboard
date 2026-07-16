@@ -35,6 +35,7 @@ try {
   ]);
   if (!html.includes('투자 리서치 허브')) throw new Error('index hero missing');
   if (!app.includes('parseEtfTracking')) throw new Error('ETF Tracking parser missing');
+  if (!app.includes('parseFearAndGreed') || !app.includes('Fear & Greed · 현재 연구 상태')) throw new Error('Fear & Greed parser/panel missing');
   if (!app.includes('parseSox') || !app.includes('SOX 구성종목 · Momentum Top 5')) throw new Error('SOX parser/panel missing');
   if (!app.includes('parseRiskScore') || !app.includes('SOX Top Risk · OH/RF/Confirmation')) throw new Error('Risk Score parser/panel missing');
   if (!app.includes('parseValuation')) throw new Error('Valuation parser missing');

@@ -19,6 +19,7 @@ for (const path of ['index.html', 'assets/styles.css', 'assets/app.js', 'scripts
 }
 
 const projectUrls = [
+  'https://sonchanggi.github.io/fearNgreed/',
   'https://sonchanggi.github.io/momentum-factor-lab/',
   'https://sonchanggi.github.io/dram-price/',
   'https://sonchanggi.github.io/best-factor/',
@@ -33,6 +34,7 @@ for (const url of projectUrls) {
 }
 
 const dataUrls = [
+  'https://sonchanggi.github.io/fearNgreed/data/summary.json',
   'https://sonchanggi.github.io/momentum-factor-lab/data/summary.json',
   'https://sonchanggi.github.io/momentum-factor-lab/data/dashboard.json',
   'https://sonchanggi.github.io/dram-price/data/summary.json',
@@ -72,6 +74,9 @@ assert(contains(files.app, 'validateAdapterContract'), 'versioned public JSON co
 assert(contains(files.app, 'expectedVersion') && contains(files.app, 'schemaVersion') && contains(files.app, 'quant-research-summary'), 'public data contract versions are explicit');
 assert(contains(files.app, 'asRecords'), 'external arrays are filtered to records');
 assert(contains(files.app, 'parseMomentum'), 'momentum parser exists');
+assert(contains(files.app, 'parseFearAndGreed'), 'Fear & Greed parser exists');
+assert(contains(files.app, 'normalizeFearAndGreedUnavailable'), 'Fear & Greed uses unavailable rather than hardcoded market fallback');
+assert(contains(files.app, "id: 'fearngreed'"), 'Fear & Greed project registry entry exists');
 assert(contains(files.app, 'MOMENTUM_SUMMARY_CONTRACT') && contains(files.app, 'expectedVersion: 5'), 'momentum adapter requires schemaVersion 5 summary contract');
 assert(contains(files.app, 'bestFactor') && contains(files.app, 'compositeScore'), 'momentum adapter reads Python best factor and composite score fields');
 assert(contains(files.app, 'weightingPolicy') && contains(files.app, 'bestFactorReason'), 'momentum adapter reads the fixed weighting method and Python best-factor reason');
