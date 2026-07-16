@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "contract": "risk-score-data-status",
   "projectId": "risk-score",
-  "generatedAt": "2026-07-15T23:58:18Z",
+  "generatedAt": "2026-07-16T04:12:17Z",
   "status": "warning",
   "requiredUniverseCount": 15,
   "availableAssetCount": 15,
@@ -50,18 +50,18 @@
       "sox": {
         "status": "ok",
         "source": "FRED NASDAQSOX plus committed JSON history cache",
-        "rowCount": 5379,
+        "rowCount": 5380,
         "historyCacheUsed": true,
-        "freshFetchStartDate": "2025-12-07",
-        "freshFetchRowCount": 156,
-        "latestDate": "2026-07-14"
+        "freshFetchStartDate": "2025-12-08",
+        "freshFetchRowCount": 157,
+        "latestDate": "2026-07-15"
       },
       "vix": {
         "status": "ok",
         "source": "FRED VIXCLS plus committed JSON history cache",
         "rowCount": 5379,
         "historyCacheUsed": true,
-        "freshFetchStartDate": "2025-12-07",
+        "freshFetchStartDate": "2025-12-08",
         "freshFetchRowCount": 156,
         "latestDate": "2026-07-14"
       },
@@ -70,7 +70,7 @@
         "source": "FRED VXNCLS plus committed JSON history cache",
         "rowCount": 567,
         "historyCacheUsed": true,
-        "freshFetchStartDate": "2025-12-07",
+        "freshFetchStartDate": "2025-12-08",
         "freshFetchRowCount": 156,
         "latestDate": "2026-07-14"
       },
@@ -78,7 +78,7 @@
         "status": "ok",
         "source": "yahoo_chart",
         "providerSymbol": "^KS11",
-        "rowCount": 5555
+        "rowCount": 5557
       },
       "usdkrw": {
         "status": "ok",
@@ -93,7 +93,7 @@
         "role": "same_day_sector_proxy_when_fred_sox_context_is_stale",
         "rowCount": 1278,
         "latestDate": "2026-07-15",
-        "latestTopRiskScore": 4,
+        "latestTopRiskScore": 3,
         "note": "SOXQ is used as the effective sector-context proxy only when canonical SOX/VIX context is not same-day fresh."
       }
     },
@@ -101,11 +101,11 @@
       "SOX": {
         "status": "ok",
         "source": "FRED NASDAQSOX plus committed JSON history cache",
-        "rowCount": 5372,
+        "rowCount": 5373,
         "historyCacheUsed": true,
-        "freshFetchStartDate": "2025-12-07",
-        "freshFetchRowCount": 156,
-        "latestDate": "2026-07-14"
+        "freshFetchStartDate": "2025-12-08",
+        "freshFetchRowCount": 157,
+        "latestDate": "2026-07-15"
       },
       "MU": {
         "status": "ok",
@@ -213,35 +213,35 @@
         "status": "ok",
         "source": "yahoo_chart",
         "providerSymbol": "005930.KS",
-        "rowCount": 5591,
+        "rowCount": 5592,
         "fallbackUsed": false,
         "providerAttempts": [
           {
             "provider": "yahoo_chart",
             "status": "ok",
             "providerSymbol": "005930.KS",
-            "rowCount": 5591
+            "rowCount": 5592
           }
         ],
         "adjustmentPolicy": "Yahoo adjusted close preferred via includeAdjustedClose=true",
-        "computedRowCount": 5591
+        "computedRowCount": 5592
       },
       "000660.KS": {
         "status": "ok",
         "source": "yahoo_chart",
         "providerSymbol": "000660.KS",
-        "rowCount": 5591,
+        "rowCount": 5592,
         "fallbackUsed": false,
         "providerAttempts": [
           {
             "provider": "yahoo_chart",
             "status": "ok",
             "providerSymbol": "000660.KS",
-            "rowCount": 5591
+            "rowCount": 5592
           }
         ],
         "adjustmentPolicy": "Yahoo adjusted close preferred via includeAdjustedClose=true",
-        "computedRowCount": 5591
+        "computedRowCount": 5592
       },
       "SOXX": {
         "status": "ok",
