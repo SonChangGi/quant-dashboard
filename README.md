@@ -4,7 +4,7 @@
 
 ## 목적
 
-- 모멘텀 팩터 랩, D램(DRAM) 가격 랩, Best Factor Lab, ETF TOP10 Tracking, SOX 반도체 지수 Cockpit, 기업 가치평가 Lab, Port Portfolio Dashboard를 한 화면에서 연결합니다.
+- Fear & Greed Flow Lab, 모멘텀 팩터 랩, D램(DRAM) 가격 랩, Best Factor Lab, ETF TOP10 Tracking, SOX 반도체 지수 Cockpit, 기업 가치평가 Lab, Port Portfolio Dashboard를 한 화면에서 연결합니다.
 - 각 프로젝트 카드의 버튼으로 원본 GitHub Pages 페이지를 바로 엽니다. Port 카드는 포트폴리오 비중/ETF 기초 노출 도구로 이동합니다.
 - 공개 배포 JSON만 best-effort로 읽되, 공통 `quant-research-summary` contract와 필수 key가 맞지 않으면 fallback/준비중 상태를 보여줍니다.
 - 리서치 브리핑, 티커·테마 dossier, 데이터 상태/자동화 패널로 “오늘 무엇을 확인할지”와 “어떤 한계를 같이 읽어야 하는지”를 먼저 보여줍니다.
@@ -14,6 +14,7 @@
 이 저장소는 다른 프로젝트의 로컬 소스 코드를 직접 import하지 않습니다. 런타임에서는 각 프로젝트의 작은 `summary.json`을 먼저 읽고, 필요한 경우에만 작은 detail JSON을 보조로 읽습니다.
 
 - `https://sonchanggi.github.io/momentum-factor-lab/data/summary.json`
+- `https://sonchanggi.github.io/fearNgreed/data/summary.json`
 - `https://sonchanggi.github.io/dram-price/data/summary.json`
 - `https://sonchanggi.github.io/dram-price/data/prices.json`
 - `https://sonchanggi.github.io/dram-price/data/series.json`
@@ -51,7 +52,7 @@ npm run test:live  # 공개 GitHub Pages JSON 계약을 네트워크로 확인�
 - 모든 프로젝트 원본 링크 존재
 - SOX/가치평가 프로젝트 링크와 `summary.json` endpoint 존재
 - 공개 summary/detail endpoint 상수 존재
-- Momentum / D램(DRAM) / Best Factor / ETF Tracking / SOX / Valuation parser와 fallback 존재
+- Fear & Greed / Momentum / D램(DRAM) / Best Factor / ETF Tracking / SOX / Valuation parser와 fallback 존재
 - freshness/status 표시 hook 존재
 - Research Cockpit, 티커·테마 Dossier, Data Health/automation hook 존재
 - 선택형 live contract smoke로 공개 JSON row 수, schema/contract version, 최신성, payload 크기 확인
