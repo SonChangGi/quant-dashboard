@@ -2,13 +2,13 @@
   "schemaVersion": 1,
   "contract": "risk-score-data-status",
   "projectId": "risk-score",
-  "generatedAt": "2026-07-15T05:35:11Z",
+  "generatedAt": "2026-07-15T23:58:18Z",
   "status": "warning",
   "requiredUniverseCount": 15,
   "availableAssetCount": 15,
   "qualityCounts": {
-    "ok": 10,
-    "warning": 5
+    "ok": 1,
+    "warning": 14
   },
   "providerPolicy": {
     "browserLiveFetch": false,
@@ -62,8 +62,8 @@
         "rowCount": 5379,
         "historyCacheUsed": true,
         "freshFetchStartDate": "2025-12-07",
-        "freshFetchRowCount": 155,
-        "latestDate": "2026-07-13"
+        "freshFetchRowCount": 156,
+        "latestDate": "2026-07-14"
       },
       "vxn": {
         "status": "ok",
@@ -71,7 +71,7 @@
         "rowCount": 567,
         "historyCacheUsed": true,
         "freshFetchStartDate": "2025-12-07",
-        "freshFetchRowCount": 155,
+        "freshFetchRowCount": 156,
         "latestDate": "2026-07-14"
       },
       "kospi": {
@@ -84,16 +84,16 @@
         "status": "ok",
         "source": "yahoo_chart",
         "providerSymbol": "KRW=X",
-        "rowCount": 5844
+        "rowCount": 5845
       },
       "sectorProxy": {
         "status": "ok",
         "source": "asset_price_pipeline",
         "providerSymbol": "SOXQ",
         "role": "same_day_sector_proxy_when_fred_sox_context_is_stale",
-        "rowCount": 1277,
-        "latestDate": "2026-07-14",
-        "latestTopRiskScore": 2,
+        "rowCount": 1278,
+        "latestDate": "2026-07-15",
+        "latestTopRiskScore": 4,
         "note": "SOXQ is used as the effective sector-context proxy only when canonical SOX/VIX context is not same-day fresh."
       }
     },
@@ -111,103 +111,103 @@
         "status": "ok",
         "source": "yahoo_chart",
         "providerSymbol": "MU",
-        "rowCount": 5666,
+        "rowCount": 5668,
         "fallbackUsed": false,
         "providerAttempts": [
           {
             "provider": "yahoo_chart",
             "status": "ok",
             "providerSymbol": "MU",
-            "rowCount": 5666
+            "rowCount": 5668
           }
         ],
         "adjustmentPolicy": "Yahoo adjusted close preferred via includeAdjustedClose=true",
-        "computedRowCount": 5666
+        "computedRowCount": 5668
       },
       "INTC": {
         "status": "ok",
         "source": "yahoo_chart",
         "providerSymbol": "INTC",
-        "rowCount": 5666,
+        "rowCount": 5668,
         "fallbackUsed": false,
         "providerAttempts": [
           {
             "provider": "yahoo_chart",
             "status": "ok",
             "providerSymbol": "INTC",
-            "rowCount": 5666
+            "rowCount": 5668
           }
         ],
         "adjustmentPolicy": "Yahoo adjusted close preferred via includeAdjustedClose=true",
-        "computedRowCount": 5666
+        "computedRowCount": 5668
       },
       "MRVL": {
         "status": "ok",
         "source": "yahoo_chart",
         "providerSymbol": "MRVL",
-        "rowCount": 5666,
+        "rowCount": 5668,
         "fallbackUsed": false,
         "providerAttempts": [
           {
             "provider": "yahoo_chart",
             "status": "ok",
             "providerSymbol": "MRVL",
-            "rowCount": 5666
+            "rowCount": 5668
           }
         ],
         "adjustmentPolicy": "Yahoo adjusted close preferred via includeAdjustedClose=true",
-        "computedRowCount": 5666
+        "computedRowCount": 5668
       },
       "WDC": {
         "status": "ok",
         "source": "yahoo_chart",
         "providerSymbol": "WDC",
-        "rowCount": 5666,
+        "rowCount": 5668,
         "fallbackUsed": false,
         "providerAttempts": [
           {
             "provider": "yahoo_chart",
             "status": "ok",
             "providerSymbol": "WDC",
-            "rowCount": 5666
+            "rowCount": 5668
           }
         ],
         "adjustmentPolicy": "Yahoo adjusted close preferred via includeAdjustedClose=true",
-        "computedRowCount": 5666
+        "computedRowCount": 5668
       },
       "SNDK": {
         "status": "ok",
         "source": "yahoo_chart",
         "providerSymbol": "SNDK",
-        "rowCount": 354,
+        "rowCount": 355,
         "fallbackUsed": false,
         "providerAttempts": [
           {
             "provider": "yahoo_chart",
             "status": "ok",
             "providerSymbol": "SNDK",
-            "rowCount": 354
+            "rowCount": 355
           }
         ],
         "adjustmentPolicy": "Yahoo adjusted close preferred via includeAdjustedClose=true",
-        "computedRowCount": 354
+        "computedRowCount": 355
       },
       "STX": {
         "status": "ok",
         "source": "yahoo_chart",
         "providerSymbol": "STX",
-        "rowCount": 5666,
+        "rowCount": 5668,
         "fallbackUsed": false,
         "providerAttempts": [
           {
             "provider": "yahoo_chart",
             "status": "ok",
             "providerSymbol": "STX",
-            "rowCount": 5666
+            "rowCount": 5668
           }
         ],
         "adjustmentPolicy": "Yahoo adjusted close preferred via includeAdjustedClose=true",
-        "computedRowCount": 5666
+        "computedRowCount": 5668
       },
       "005930.KS": {
         "status": "ok",
@@ -247,103 +247,103 @@
         "status": "ok",
         "source": "yahoo_chart",
         "providerSymbol": "SOXX",
-        "rowCount": 5666,
+        "rowCount": 5668,
         "fallbackUsed": false,
         "providerAttempts": [
           {
             "provider": "yahoo_chart",
             "status": "ok",
             "providerSymbol": "SOXX",
-            "rowCount": 5666
+            "rowCount": 5668
           }
         ],
         "adjustmentPolicy": "Yahoo adjusted close preferred via includeAdjustedClose=true",
-        "computedRowCount": 5666
+        "computedRowCount": 5668
       },
       "SOXQ": {
         "status": "ok",
         "source": "yahoo_chart",
         "providerSymbol": "SOXQ",
-        "rowCount": 1277,
+        "rowCount": 1278,
         "fallbackUsed": false,
         "providerAttempts": [
           {
             "provider": "yahoo_chart",
             "status": "ok",
             "providerSymbol": "SOXQ",
-            "rowCount": 1277
+            "rowCount": 1278
           }
         ],
         "adjustmentPolicy": "Yahoo adjusted close preferred via includeAdjustedClose=true",
-        "computedRowCount": 1277
+        "computedRowCount": 1278
       },
       "SMH": {
         "status": "ok",
         "source": "yahoo_chart",
         "providerSymbol": "SMH",
-        "rowCount": 5666,
+        "rowCount": 5668,
         "fallbackUsed": false,
         "providerAttempts": [
           {
             "provider": "yahoo_chart",
             "status": "ok",
             "providerSymbol": "SMH",
-            "rowCount": 5666
+            "rowCount": 5668
           }
         ],
         "adjustmentPolicy": "Yahoo adjusted close preferred via includeAdjustedClose=true",
-        "computedRowCount": 5666
+        "computedRowCount": 5668
       },
       "XSD": {
         "status": "ok",
         "source": "yahoo_chart",
         "providerSymbol": "XSD",
-        "rowCount": 5139,
+        "rowCount": 5141,
         "fallbackUsed": false,
         "providerAttempts": [
           {
             "provider": "yahoo_chart",
             "status": "ok",
             "providerSymbol": "XSD",
-            "rowCount": 5139
+            "rowCount": 5141
           }
         ],
         "adjustmentPolicy": "Yahoo adjusted close preferred via includeAdjustedClose=true",
-        "computedRowCount": 5139
+        "computedRowCount": 5141
       },
       "PSI": {
         "status": "ok",
         "source": "yahoo_chart",
         "providerSymbol": "PSI",
-        "rowCount": 5295,
+        "rowCount": 5297,
         "fallbackUsed": false,
         "providerAttempts": [
           {
             "provider": "yahoo_chart",
             "status": "ok",
             "providerSymbol": "PSI",
-            "rowCount": 5295
+            "rowCount": 5297
           }
         ],
         "adjustmentPolicy": "Yahoo adjusted close preferred via includeAdjustedClose=true",
-        "computedRowCount": 5295
+        "computedRowCount": 5297
       },
       "DRAM": {
         "status": "ok",
         "source": "yahoo_chart",
         "providerSymbol": "DRAM",
-        "rowCount": 70,
+        "rowCount": 71,
         "fallbackUsed": false,
         "providerAttempts": [
           {
             "provider": "yahoo_chart",
             "status": "ok",
             "providerSymbol": "DRAM",
-            "rowCount": 70
+            "rowCount": 71
           }
         ],
         "adjustmentPolicy": "Yahoo adjusted close preferred via includeAdjustedClose=true",
-        "computedRowCount": 70
+        "computedRowCount": 71
       }
     }
   }
