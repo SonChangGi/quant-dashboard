@@ -1697,9 +1697,9 @@ assert(/Valuation/.test(domTargets['#research-briefing'].innerHTML), 'research b
 assert(/SOX/.test(domTargets['#research-briefing'].innerHTML) && /AAA/.test(domTargets['#research-briefing'].innerHTML), 'research briefing renders SOX central summary item');
 assert(/selected_mom/.test(domTargets['#research-briefing'].innerHTML) && /0\.87/.test(domTargets['#research-briefing'].innerHTML), 'research briefing renders the schema v4 selected Momentum factor and composite score');
 assert(/합성 데모/.test(domTargets['#research-briefing'].innerHTML) && /briefing-item warning/.test(domTargets['#research-briefing'].innerHTML), 'research briefing labels demo evidence without hiding the Momentum result');
-assert(/live/.test(domTargets['#data-health'].innerHTML), 'data health renders live state');
+assert(/정상/.test(domTargets['#data-health'].innerHTML), 'data health renders localized live state');
 assert(/Momentum<\/strong>\s*<span>합성 데모<\/span>/.test(domTargets['#data-health'].innerHTML) && /health-item warn/.test(domTargets['#data-health'].innerHTML), 'data health gives Momentum demo a visible non-ok warning tone');
-assert(/Portfolio snapshot/.test(domTargets['#data-health'].innerHTML), 'data health renders portfolio freshness snapshot');
+assert(/전체 기준일/.test(domTargets['#data-health'].innerHTML), 'data health renders localized portfolio freshness snapshot');
 const mixedFreshness = api.portfolioFreshnessSummary([
   { project: { shortName: 'A' }, summary: { dataAsOf: '2026-06-22' }, generatedAt: '2026-06-23T00:00:00Z' },
   { project: { shortName: 'B' }, summary: { dataAsOf: '2026-06-23' }, generatedAt: '2026-06-23T00:00:00Z' },

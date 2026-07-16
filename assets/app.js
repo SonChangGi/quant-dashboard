@@ -169,7 +169,7 @@
     dram: (metrics) => `${metrics.kind || '가격'} · ${formatMaybeDate(metrics.date)} · ${metrics.source || 'source N/A'}`,
     sox: (metrics) => `SOX proxy ${formatPercent(metrics.weight)} · 가격 ${formatNumber(metrics.priceMomentum)} · 실적 ${formatNumber(metrics.earningsMomentum)}`,
     riskScore: (metrics) => `Top ${formatNumber(metrics.topRiskScore)}/5 · OH ${formatNumber(metrics.ohScore)}/5 · RF ${formatNumber(metrics.rfScore)}/5`,
-    fearngreed: (metrics) => `상태 ${metrics.signalState || '산출 불가'} · 백분위 ${formatNumber(metrics.sentimentPercentile)} · 잔차 z ${formatNumber(metrics.residualZ)} · 포지션 ${metrics.position || '확인 필요'}`,
+    fearngreed: (metrics) => `상태 ${metrics.signalState || '산출 불가'} · 백분위 ${formatNumber(metrics.sentimentPercentile)} · 잔차 z ${formatNumber(metrics.residualZ)} · 포지션 ${formatFearPosition(metrics.position)}`,
   };
 
   const PROJECTS = [
@@ -184,13 +184,8 @@
       panel: {
         eyebrow: 'KOSPI Flow Sentiment',
         title: 'Fear & Greed · 현재 연구 상태',
-        contentType: 'table',
+        contentType: 'metrics',
         metricLoading: 'Fear & Greed 공개 요약을 불러오는 중...',
-        table: {
-          caption: 'KOSPI 개인 수급 회귀 잔차 기반 현재 연구 상태',
-          columns: ['시장', '상태', '백분위', '잔차 z / R²', '50일 이격도', '모형 포지션', '기준일'],
-          loadingText: 'Fear & Greed 데이터를 불러오는 중...',
-        },
       },
     },
     {
@@ -620,7 +615,12 @@
     article.id = panelDomId(project, 'panel');
     article.setAttribute('aria-labelledby', panelDomId(project, 'title'));
 
-    const content = panel.contentType === 'chart' ? chartPanelMarkup(project) : tablePanelMarkup(project);
+    const content = panel.contentType === 'chart'
+      ? chartPanelMarkup(project)
+      : panel.contentType === 'metrics'
+        ? metricsPanelMarkup(project)
+        : tablePanelMarkup(project);
+    if (panel.contentType === 'metrics') article.className += ' metrics-only-panel';
     article.innerHTML = `
       <div class="panel-header">
         <div>
@@ -633,6 +633,15 @@
       <p class="status-line" id="${escapeAttribute(panelDomId(project, 'status'))}">업데이트 확인 중</p>
     `;
     return article;
+  }
+
+  function metricsPanelMarkup(project) {
+    const panel = project.panel || {};
+    return `
+      <div class="metric-row" id="${escapeAttribute(panelDomId(project, 'metrics'))}" aria-live="polite">
+        <div class="skeleton-line">${escapeHtml(panel.metricLoading || '데이터를 불러오는 중...')}</div>
+      </div>
+    `;
   }
 
   function tablePanelMarkup(project) {
@@ -2823,17 +2832,8 @@
       ['연구 상태', current.stateLabel || '산출 불가'],
       ['백분위 / 잔차 z', `${formatNumber(current.sentimentPercentile)} · ${formatNumber(current.residualZ)}`],
       ['R² / 50일 이격도', `${formatNumber(current.rollingR2)} · ${formatNumber(current.disparity50)}`],
-      ['포지션 / 기준일', `${current.position || 'unavailable'} · ${formatMaybeDate(current.date || summary.dataAsOf)}`],
+      ['포지션 / 기준일', `${formatFearPosition(current.position)} · ${formatMaybeDate(current.date || summary.dataAsOf)}`],
     ]);
-    renderRows(panelSelector(project, 'rows'), asRecords(summary.rows), (row) => [
-      badge(row.name || row.id || 'KOSPI'),
-      row.stateLabel || row.signalState || '산출 불가',
-      formatNumber(row.sentimentPercentile),
-      `${formatNumber(row.residualZ)} / ${formatNumber(row.rollingR2)}`,
-      formatNumber(row.disparity50),
-      `${row.position || 'unavailable'} · ${row.primaryProxy || '226490'}`,
-      formatMaybeDate(row.date),
-    ], 7);
     setStatus(panelSelector(project, 'status'), buildStatusText(mode, summary.generatedAt, error, summary.status, summaryDataAsOf(summary)), mode);
   }
 
@@ -3309,7 +3309,7 @@
       return {
         kicker: 'Fear & Greed · KOSPI',
         title: `${current.stateLabel || '산출 불가'} · 백분위 ${formatNumber(current.sentimentPercentile)}`,
-        detail: `잔차 z ${formatNumber(current.residualZ)} · R² ${formatNumber(current.rollingR2)} · ${current.primaryProxy || '226490'} ${current.position || 'unavailable'} · 기준일 ${formatMaybeDate(summary.dataAsOf)} · ${firstLimitation(summary.meta || {})}`,
+        detail: `잔차 z ${formatNumber(current.residualZ)} · R² ${formatNumber(current.rollingR2)} · ${current.primaryProxy || '226490'} ${formatFearPosition(current.position)} · 기준일 ${formatMaybeDate(summary.dataAsOf)}`,
         tone: summary.meta?.statusState === 'ok' ? '' : 'warning',
       };
     }
@@ -3385,8 +3385,8 @@
     const portfolioRow = portfolio ? `
       <article class="health-item ${portfolio.mixed ? 'warn' : 'ok'}">
         <div>
-          <strong>Portfolio snapshot</strong>
-          <span>${portfolio.mixed ? 'mixed freshness' : 'aligned'}</span>
+          <strong>전체 기준일</strong>
+          <span>${portfolio.mixed ? '혼합' : '일치'}</span>
         </div>
         <p>${escapeHtml(portfolio.label)}</p>
         <small>${escapeHtml('허브는 각 프로젝트의 public JSON을 독립적으로 읽습니다. 이 행은 서로 다른 기준일이 섞였는지 보여줍니다.')}</small>
@@ -3432,11 +3432,14 @@
 
   function healthLabel(record) {
     const state = record.summary?.meta?.statusState;
-    if (record.mode !== 'live') return 'fallback';
-    if (isRecordStale(record)) return 'stale';
+    if (record.mode !== 'live') return '대체 데이터';
+    if (isRecordStale(record)) return '갱신 지연';
     if (record.summary?.meta?.dataModeLabel) return record.summary.meta.dataModeLabel;
+    if (state === 'ok') return '정상';
+    if (state === 'degraded') return '주의';
+    if (state === 'unavailable') return '산출 불가';
     if (state) return state;
-    return 'live';
+    return '실시간 공개본';
   }
 
   function isRecordStale(record) {
@@ -3699,6 +3702,15 @@
     const num = finiteOrNull(value);
     if (num === null) return '-';
     return num.toLocaleString('ko-KR', { maximumFractionDigits: 4 });
+  }
+
+  function formatFearPosition(value) {
+    const labels = {
+      cash: '현금',
+      long: '매수·보유',
+      unavailable: '산출 불가',
+    };
+    return labels[value] || value || '확인 필요';
   }
 
   function formatInteger(value) {

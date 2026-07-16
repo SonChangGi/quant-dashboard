@@ -14,6 +14,7 @@ html[data-theme="light"] {
   --line-strong: #d1d6db;
   --primary: #3182f6;
   --primary-dark: #1b64da;
+  --button-primary: #1b64da;
   --primary-soft: #eaf3ff;
   --primary-soft-strong: #d8eaff;
   --success: #008768;
@@ -58,6 +59,7 @@ html[data-theme="dark"] {
   --line-strong: #465267;
   --primary: #5da2ff;
   --primary-dark: #8ec0ff;
+  --button-primary: #1b64da;
   --primary-soft: #182b44;
   --primary-soft-strong: #203a5f;
   --success: #62d4a4;
@@ -215,13 +217,11 @@ h3 { font-size: clamp(1.08rem, 1.8vw, 1.38rem); line-height: 1.3; }
 .hero-note p { margin: 10px 0 0; color: var(--muted-strong); line-height: 1.65; }
 .hero-actions {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 8px;
   max-width: 100%;
   margin-top: 24px;
-  overflow-x: auto;
-  padding: 2px 0 6px;
-  scrollbar-width: thin;
+  padding: 2px 0;
 }
 .hero-actions a, .panel-link, .project-card a {
   display: inline-flex;
@@ -238,7 +238,7 @@ h3 { font-size: clamp(1.08rem, 1.8vw, 1.38rem); line-height: 1.3; }
   font-weight: 850;
   transition: transform .16s ease, background .16s ease;
 }
-.hero-actions a:first-child { color: #ffffff; border-color: var(--primary); background: var(--primary); }
+.hero-actions a:first-child { color: #ffffff; border-color: var(--button-primary); background: var(--button-primary); }
 .hero-actions a:hover, .panel-link:hover, .project-card a:hover { color: var(--primary-dark); background: var(--primary-soft-strong); transform: translateY(-1px); }
 .hero-actions a:first-child:hover { color: #ffffff; background: var(--primary-dark); }
 
@@ -252,7 +252,7 @@ h3 { font-size: clamp(1.08rem, 1.8vw, 1.38rem); line-height: 1.3; }
 .briefing-panel { grid-column: 1; }
 .watchlist-panel { grid-column: 2; }
 .health-panel { grid-column: 1 / -1; }
-.project-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.project-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 .feature-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 .summary-grid { display: grid; gap: 18px; }
 .project-card, .feature-grid article, .panel {
@@ -291,7 +291,7 @@ h3 { font-size: clamp(1.08rem, 1.8vw, 1.38rem); line-height: 1.3; }
 
 .briefing-list, .watchlist-results { display: grid; gap: 9px; }
 .briefing-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.health-list { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px; }
+.health-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
 .briefing-item, .health-item, .watch-match {
   min-width: 0;
   border: 1px solid var(--line);
@@ -329,11 +329,11 @@ h3 { font-size: clamp(1.08rem, 1.8vw, 1.38rem); line-height: 1.3; }
 }
 .watchlist-row button, .watchlist-results button {
   min-height: 40px;
-  border: 1px solid var(--primary);
+  border: 1px solid var(--button-primary);
   border-radius: var(--radius-sm);
   padding: 8px 13px;
   color: #ffffff;
-  background: var(--primary);
+  background: var(--button-primary);
   font-weight: 900;
 }
 .watchlist-results button { min-height: 30px; margin: 0 3px 5px 0; border-color: var(--primary-soft-strong); padding: 5px 9px; color: var(--primary-dark); background: var(--primary-soft); font-size: .8rem; }
@@ -342,6 +342,8 @@ h3 { font-size: clamp(1.08rem, 1.8vw, 1.38rem); line-height: 1.3; }
 .metric-card { min-width: 0; min-height: 112px; border: 1px solid var(--line); border-radius: var(--radius); padding: 15px; background: var(--surface); }
 .metric-card span { display: block; margin-bottom: 6px; color: var(--muted); font-size: .77rem; font-weight: 850; }
 .metric-card strong { display: block; color: var(--ink-strong); font-size: 1.14rem; line-height: 1.3; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.metrics-only-panel .metric-row { margin-bottom: 0; }
+.metrics-only-panel .metric-card { min-height: 96px; }
 .panel-link { min-height: 36px; padding: 7px 11px; }
 .status-line { margin: 13px 0 0; color: var(--muted); font-size: .88rem; line-height: 1.55; }
 .status-line.warning { color: var(--warning); }
