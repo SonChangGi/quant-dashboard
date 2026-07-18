@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "contract": "risk-score-daily",
   "projectId": "risk-score",
-  "generatedAt": "2026-07-17T05:44:21Z",
-  "dataAsOf": "2026-07-15",
+  "generatedAt": "2026-07-17T23:50:05Z",
+  "dataAsOf": "2026-07-16",
   "rows": [
     {
       "date": "2004-09-02",
@@ -397196,7 +397196,7 @@
     {
       "date": "2026-07-16",
       "close": 11867.5,
-      "vix_close": null,
+      "vix_close": 16.73,
       "ma5": 12448.652,
       "ma20": 13172.685999999998,
       "ma50": 12726.0492,
@@ -397204,8 +397204,8 @@
       "high20": 14634.72,
       "high50": 14634.72,
       "low20": 11867.5,
-      "vix_ma5": null,
-      "vix_ma20": null,
+      "vix_ma5": 16.218,
+      "vix_ma20": 16.9955,
       "ret_1": -0.04285786872857167,
       "roc10": -0.11126704450142588,
       "roc20": -0.10731881975775936,
@@ -397216,7 +397216,7 @@
       "z20": -1.7422877224689732,
       "rsi5": 28.765135415973248,
       "rsi14": 41.95494044899054,
-      "vix_delta_1": null,
+      "vix_delta_1": 1.0600000000000005,
       "oh_factors": {
         "z20_gt_1_5": false,
         "rsi5_gt_70": false,
@@ -397225,22 +397225,28 @@
         "near_high20": false
       },
       "oh_score": 0,
-      "rf_score": null,
-      "rf_factors": {},
+      "rf_factors": {
+        "prior_damage": true,
+        "rebound_from_low": false,
+        "ma_resistance": false,
+        "weak_momentum": true,
+        "vix_not_low": true
+      },
+      "rf_score": 3,
       "setup_active": false,
       "setup_recent": true,
       "price_rollover": true,
       "large_down_day": true,
-      "vix_confirmation": false,
-      "strong_vix_confirmation": false,
+      "vix_confirmation": true,
+      "strong_vix_confirmation": true,
       "confirmed_general": true,
       "confirmed_rf": false,
       "confirmed_top_risk": true,
-      "top_risk_score": null,
-      "regime": "Insufficient data",
-      "action_level": "insufficient",
-      "action_label": "Insufficient data",
-      "action_text": "rolling window가 충분해질 때까지 score를 계산하지 않습니다.",
+      "top_risk_score": 3,
+      "regime": "Rebound Failure",
+      "action_level": "confirmed-red",
+      "action_label": "Confirmed Red",
+      "action_text": "leading setup이 가격/변동성 확인 신호와 결합되어 적극적인 beta 축소 또는 protective hedge 검토가 필요한 상태로 분류됩니다.",
       "fwd_min_5": null,
       "fwd_max_5": null,
       "fwd_ret_5": null,
@@ -397259,7 +397265,7 @@
       "signal_gap20_gt_4": false,
       "signal_roc20_gt_10": false,
       "signal_rollover_after_setup": true,
-      "signal_vix_confirmation_simple": false
+      "signal_vix_confirmation_simple": true
     }
   ]
 }

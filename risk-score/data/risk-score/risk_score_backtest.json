@@ -517,7 +517,7 @@
         "vix_confirmation_simple": {
           "label": "VIX > VIX_MA5 and delta VIX > 0",
           "daily": {
-            "signalCount": 1757,
+            "signalCount": 1758,
             "eventCount": 628,
             "evaluatedCount": 1756,
             "downsideHitRate": 0.1275626423690205,
@@ -532,7 +532,7 @@
             "maxAdverseContinuation": 0.1873480889377872
           },
           "event": {
-            "signalCount": 1757,
+            "signalCount": 1758,
             "eventCount": 628,
             "evaluatedCount": 628,
             "downsideHitRate": 0.12101910828025478,
@@ -991,7 +991,7 @@
         "vix_confirmation_simple": {
           "label": "VIX > VIX_MA5 and delta VIX > 0",
           "daily": {
-            "signalCount": 243,
+            "signalCount": 244,
             "eventCount": 88,
             "evaluatedCount": 242,
             "downsideHitRate": 0.16942148760330578,
@@ -1006,7 +1006,7 @@
             "maxAdverseContinuation": 0.1873480889377872
           },
           "event": {
-            "signalCount": 243,
+            "signalCount": 244,
             "eventCount": 88,
             "evaluatedCount": 88,
             "downsideHitRate": 0.13636363636363635,
@@ -1465,7 +1465,7 @@
         "vix_confirmation_simple": {
           "label": "VIX > VIX_MA5 and delta VIX > 0",
           "daily": {
-            "signalCount": 84,
+            "signalCount": 85,
             "eventCount": 29,
             "evaluatedCount": 83,
             "downsideHitRate": 0.1566265060240964,
@@ -1480,7 +1480,7 @@
             "maxAdverseContinuation": 0.15509492514619327
           },
           "event": {
-            "signalCount": 84,
+            "signalCount": 85,
             "eventCount": 29,
             "evaluatedCount": 29,
             "downsideHitRate": 0.1724137931034483,
@@ -1939,7 +1939,7 @@
         "vix_confirmation_simple": {
           "label": "VIX > VIX_MA5 and delta VIX > 0",
           "daily": {
-            "signalCount": 45,
+            "signalCount": 46,
             "eventCount": 17,
             "evaluatedCount": 44,
             "downsideHitRate": 0.20454545454545456,
@@ -1954,7 +1954,7 @@
             "maxAdverseContinuation": 0.15509492514619327
           },
           "event": {
-            "signalCount": 45,
+            "signalCount": 46,
             "eventCount": 17,
             "evaluatedCount": 17,
             "downsideHitRate": 0.11764705882352941,
