@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "contract": "risk-score-daily",
   "projectId": "risk-score",
-  "generatedAt": "2026-07-18T05:28:58Z",
-  "dataAsOf": "2026-07-16",
+  "generatedAt": "2026-07-20T23:54:51Z",
+  "dataAsOf": "2026-07-17",
   "rows": [
     {
       "date": "2004-09-02",
@@ -397270,7 +397270,7 @@
     {
       "date": "2026-07-17",
       "close": 11673.89,
-      "vix_close": null,
+      "vix_close": 18.77,
       "ma5": 12189.998,
       "ma20": 13082.527,
       "ma50": 12739.9154,
@@ -397278,8 +397278,8 @@
       "high20": 14634.72,
       "high50": 14634.72,
       "low20": 11673.89,
-      "vix_ma5": null,
-      "vix_ma20": null,
+      "vix_ma5": 16.966,
+      "vix_ma20": 17.012,
       "ret_1": -0.016314303770802674,
       "roc10": -0.07542479063409313,
       "roc20": -0.1337961441173786,
@@ -397290,7 +397290,7 @@
       "z20": -1.7261075568016782,
       "rsi5": 25.743139499573587,
       "rsi14": 40.62089941131132,
-      "vix_delta_1": null,
+      "vix_delta_1": 2.039999999999999,
       "oh_factors": {
         "z20_gt_1_5": false,
         "rsi5_gt_70": false,
@@ -397299,22 +397299,28 @@
         "near_high20": false
       },
       "oh_score": 0,
-      "rf_score": null,
-      "rf_factors": {},
+      "rf_factors": {
+        "prior_damage": true,
+        "rebound_from_low": false,
+        "ma_resistance": false,
+        "weak_momentum": true,
+        "vix_not_low": true
+      },
+      "rf_score": 3,
       "setup_active": false,
       "setup_recent": false,
       "price_rollover": true,
       "large_down_day": false,
-      "vix_confirmation": false,
-      "strong_vix_confirmation": false,
+      "vix_confirmation": true,
+      "strong_vix_confirmation": true,
       "confirmed_general": false,
       "confirmed_rf": false,
       "confirmed_top_risk": false,
-      "top_risk_score": null,
-      "regime": "Insufficient data",
-      "action_level": "insufficient",
-      "action_label": "Insufficient data",
-      "action_text": "rolling window가 충분해질 때까지 score를 계산하지 않습니다.",
+      "top_risk_score": 3,
+      "regime": "Rebound Failure",
+      "action_level": "watch",
+      "action_label": "Watch",
+      "action_text": "신규 추격매수 억제와 trailing stop 점검을 고려할 수 있는 관찰 구간입니다.",
       "fwd_min_5": null,
       "fwd_max_5": null,
       "fwd_ret_5": null,
@@ -397333,7 +397339,7 @@
       "signal_gap20_gt_4": false,
       "signal_roc20_gt_10": false,
       "signal_rollover_after_setup": false,
-      "signal_vix_confirmation_simple": false
+      "signal_vix_confirmation_simple": true
     }
   ]
 }
