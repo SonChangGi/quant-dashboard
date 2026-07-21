@@ -3,7 +3,8 @@ import vm from 'node:vm';
 
 const MAX_PAYLOAD_BYTES = 8_000_000;
 const MAX_STALENESS_DAYS = 21;
-const REQUIRED_PROJECT_COUNT = 8;
+const REQUIRED_PROJECT_COUNT = 9;
+const KELLY_STATES = new Set(['published', 'live_api', 'stale', 'degraded', 'unavailable', 'ruin']);
 
 const sandbox = { console };
 sandbox.globalThis = sandbox;
@@ -51,7 +52,8 @@ for (const project of panelProjects) {
   assert(payloadBytes > 0, `${project.id} payload byte count is known`);
   assert(payloadBytes <= MAX_PAYLOAD_BYTES, `${project.id} payload is under ${MAX_PAYLOAD_BYTES.toLocaleString('en-US')} bytes`);
   assert(generatedFreshness !== null, `${project.id} payload exposes a parseable generatedAt timestamp`);
-  if (expectedFreshnessDays !== null) {
+  const unavailableContract = project.id === 'kelly' && summary?.meta?.statusState === 'unavailable';
+  if (!unavailableContract && expectedFreshnessDays !== null) {
     assert(freshness !== null, `${project.id} payload exposes a parseable data freshness source`);
     if ((summary?.meta?.dataAsOf || summary?.dataAsOf || summary?.dataEndDate) && freshnessSource === summary?.generatedAt) {
       throw new Error(`${project.id} freshness source did not prefer dataAsOf/dataEndDate over generatedAt`);
@@ -61,8 +63,23 @@ for (const project of panelProjects) {
     } else {
       assert(!staleBySource, `${project.id} fresh dataAsOf is not mislabeled stale`);
     }
-  } else {
+  } else if (!unavailableContract) {
     assert(generatedFreshness <= MAX_STALENESS_DAYS, `${project.id} generatedAt is fresh within ${MAX_STALENESS_DAYS} days`);
+  }
+  if (project.id === 'kelly') {
+    assert(summary.contractValid === true, 'kelly summary passes the strengthened project contract');
+    assert(summary.assetCount === 50, 'kelly catalog contains exactly 50 assets');
+    assert(
+      Number.isInteger(summary.availableAssetCount)
+        && summary.availableAssetCount >= 0
+        && summary.availableAssetCount <= summary.assetCount,
+      'kelly available asset count stays within the fixed catalog',
+    );
+    assert(KELLY_STATES.has(summary.state), 'kelly uses a supported public state');
+    if (summary.state === 'unavailable') {
+      assert(!summary.dataAsOf, 'kelly unavailable state does not claim a market dataAsOf date');
+      assert(summary.fullKelly === null && summary.expectedLogGrowth === null, 'kelly unavailable state does not synthesize calculation values');
+    }
   }
   if (project.id === 'valuation') {
     assert((summary.tickerCount || 0) >= 10, 'valuation covers at least 10 tickers');
