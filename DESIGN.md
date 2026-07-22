@@ -1,5 +1,7 @@
 # Design
 
+> 현재 규범적 기준은 [Quant Research 공통 디자인 v1](docs/common-design-v1.md)입니다. 아래 문서는 기존 시각 언어와 프로젝트별 개선 이력을 보존하는 배경 자료이며, 충돌할 경우 공통 디자인 v1의 정보 구조·차트 상태·검증 계약을 우선합니다.
+
 ## Source of truth
 - Status: Approved Visual Ralph reference implemented
 - Last refreshed: 2026-06-24
