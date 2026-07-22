@@ -11,6 +11,11 @@ const assert = (condition, label) => checks.push({ ok: Boolean(condition), label
 const fallbackFor = (parsed, hasUsableData, reason) => api.resolveLoadState({ ok: true, data: {} }, hasUsableData, reason);
 
 assert(api, 'test API exposed without browser DOM');
+assert(
+  api.PROJECTS.map((project) => project.shortName).join('|')
+    === 'Fear & Greed|Momentum|DRAM|Best Factor|ETF|SOX|Risk Score|Port|Valuation|Kelly',
+  'project manifest preserves the canonical navigation order after Hub',
+);
 const momentumJcsRecordsVector = [
   { z: 1, a: '한글' },
   { nested: { b: 1, a: 2 }, a: true },
