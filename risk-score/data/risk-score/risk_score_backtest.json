@@ -154,7 +154,7 @@
         "rf_ge_4": {
           "label": "RF >= 4",
           "daily": {
-            "signalCount": 1469,
+            "signalCount": 1470,
             "eventCount": 401,
             "evaluatedCount": 1469,
             "downsideHitRate": 0.1817562968005446,
@@ -169,7 +169,7 @@
             "maxAdverseContinuation": 0.1655799550777417
           },
           "event": {
-            "signalCount": 1469,
+            "signalCount": 1470,
             "eventCount": 401,
             "evaluatedCount": 401,
             "downsideHitRate": 0.18703241895261846,
@@ -220,7 +220,7 @@
         "setup_ge_4": {
           "label": "OH >= 4 OR RF >= 4",
           "daily": {
-            "signalCount": 2127,
+            "signalCount": 2128,
             "eventCount": 568,
             "evaluatedCount": 2127,
             "downsideHitRate": 0.16643159379407615,
@@ -235,7 +235,7 @@
             "maxAdverseContinuation": 0.1655799550777417
           },
           "event": {
-            "signalCount": 2127,
+            "signalCount": 2128,
             "eventCount": 568,
             "evaluatedCount": 568,
             "downsideHitRate": 0.1742957746478873,
@@ -286,7 +286,7 @@
         "confirmed_top_risk": {
           "label": "confirmed_top_risk",
           "daily": {
-            "signalCount": 1906,
+            "signalCount": 1907,
             "eventCount": 542,
             "evaluatedCount": 1904,
             "downsideHitRate": 0.16334033613445378,
@@ -301,7 +301,7 @@
             "maxAdverseContinuation": 0.17252203217965723
           },
           "event": {
-            "signalCount": 1906,
+            "signalCount": 1907,
             "eventCount": 542,
             "evaluatedCount": 542,
             "downsideHitRate": 0.15682656826568267,
@@ -628,7 +628,7 @@
         "rf_ge_4": {
           "label": "RF >= 4",
           "daily": {
-            "signalCount": 215,
+            "signalCount": 216,
             "eventCount": 62,
             "evaluatedCount": 215,
             "downsideHitRate": 0.19534883720930232,
@@ -643,7 +643,7 @@
             "maxAdverseContinuation": 0.15509492514619327
           },
           "event": {
-            "signalCount": 215,
+            "signalCount": 216,
             "eventCount": 62,
             "evaluatedCount": 62,
             "downsideHitRate": 0.1935483870967742,
@@ -694,7 +694,7 @@
         "setup_ge_4": {
           "label": "OH >= 4 OR RF >= 4",
           "daily": {
-            "signalCount": 357,
+            "signalCount": 358,
             "eventCount": 92,
             "evaluatedCount": 357,
             "downsideHitRate": 0.21008403361344538,
@@ -709,7 +709,7 @@
             "maxAdverseContinuation": 0.15509492514619327
           },
           "event": {
-            "signalCount": 357,
+            "signalCount": 358,
             "eventCount": 92,
             "evaluatedCount": 92,
             "downsideHitRate": 0.1956521739130435,
@@ -760,7 +760,7 @@
         "confirmed_top_risk": {
           "label": "confirmed_top_risk",
           "daily": {
-            "signalCount": 304,
+            "signalCount": 305,
             "eventCount": 86,
             "evaluatedCount": 302,
             "downsideHitRate": 0.2119205298013245,
@@ -775,7 +775,7 @@
             "maxAdverseContinuation": 0.15509492514619327
           },
           "event": {
-            "signalCount": 304,
+            "signalCount": 305,
             "eventCount": 86,
             "evaluatedCount": 86,
             "downsideHitRate": 0.1744186046511628,
@@ -1102,7 +1102,7 @@
         "rf_ge_4": {
           "label": "RF >= 4",
           "daily": {
-            "signalCount": 56,
+            "signalCount": 57,
             "eventCount": 18,
             "evaluatedCount": 56,
             "downsideHitRate": 0.25,
@@ -1117,7 +1117,7 @@
             "maxAdverseContinuation": 0.15509492514619327
           },
           "event": {
-            "signalCount": 56,
+            "signalCount": 57,
             "eventCount": 18,
             "evaluatedCount": 18,
             "downsideHitRate": 0.2777777777777778,
@@ -1168,7 +1168,7 @@
         "setup_ge_4": {
           "label": "OH >= 4 OR RF >= 4",
           "daily": {
-            "signalCount": 124,
+            "signalCount": 125,
             "eventCount": 31,
             "evaluatedCount": 124,
             "downsideHitRate": 0.25806451612903225,
@@ -1183,7 +1183,7 @@
             "maxAdverseContinuation": 0.15509492514619327
           },
           "event": {
-            "signalCount": 124,
+            "signalCount": 125,
             "eventCount": 31,
             "evaluatedCount": 31,
             "downsideHitRate": 0.2903225806451613,
@@ -1234,7 +1234,7 @@
         "confirmed_top_risk": {
           "label": "confirmed_top_risk",
           "daily": {
-            "signalCount": 110,
+            "signalCount": 111,
             "eventCount": 30,
             "evaluatedCount": 108,
             "downsideHitRate": 0.2222222222222222,
@@ -1249,7 +1249,7 @@
             "maxAdverseContinuation": 0.15509492514619327
           },
           "event": {
-            "signalCount": 110,
+            "signalCount": 111,
             "eventCount": 30,
             "evaluatedCount": 30,
             "downsideHitRate": 0.23333333333333334,
@@ -1576,7 +1576,7 @@
         "rf_ge_4": {
           "label": "RF >= 4",
           "daily": {
-            "signalCount": 38,
+            "signalCount": 39,
             "eventCount": 11,
             "evaluatedCount": 38,
             "downsideHitRate": 0.2894736842105263,
@@ -1591,7 +1591,7 @@
             "maxAdverseContinuation": 0.15509492514619327
           },
           "event": {
-            "signalCount": 38,
+            "signalCount": 39,
             "eventCount": 11,
             "evaluatedCount": 11,
             "downsideHitRate": 0.36363636363636365,
@@ -1642,7 +1642,7 @@
         "setup_ge_4": {
           "label": "OH >= 4 OR RF >= 4",
           "daily": {
-            "signalCount": 82,
+            "signalCount": 83,
             "eventCount": 20,
             "evaluatedCount": 82,
             "downsideHitRate": 0.2926829268292683,
@@ -1657,7 +1657,7 @@
             "maxAdverseContinuation": 0.15509492514619327
           },
           "event": {
-            "signalCount": 82,
+            "signalCount": 83,
             "eventCount": 20,
             "evaluatedCount": 20,
             "downsideHitRate": 0.3,
@@ -1708,7 +1708,7 @@
         "confirmed_top_risk": {
           "label": "confirmed_top_risk",
           "daily": {
-            "signalCount": 73,
+            "signalCount": 74,
             "eventCount": 19,
             "evaluatedCount": 71,
             "downsideHitRate": 0.2535211267605634,
@@ -1723,7 +1723,7 @@
             "maxAdverseContinuation": 0.15509492514619327
           },
           "event": {
-            "signalCount": 73,
+            "signalCount": 74,
             "eventCount": 19,
             "evaluatedCount": 19,
             "downsideHitRate": 0.2631578947368421,
