@@ -1,8 +1,8 @@
 # Design
 
-> 현재 규범적 기준은 여러 프로젝트에서 검증한 공통 타이포그래피·세로 밀도·설명 노출량·상위 메뉴를 정의하는 [Quant Research 공통 디자인 v1.2](docs/common-design-v1.md)이며, 후속 프로젝트의 실행 템플릿은 [공통 디자인 v1.2 프로젝트 적용 프롬프트](docs/common-design-v1-rollout-prompt.md)입니다. 아래 문서는 기존 시각 언어와 프로젝트별 개선 이력을 보존하는 배경 자료이며, 충돌할 경우 공통 디자인 v1.2의 정보 구조·차트 상태·검증 계약을 우선합니다.
+> 현재 최우선 규범은 DRAM, Fear & Greed, ETF Tracking, SOX, Momentum Factor의 실제 구현에서 추출한 [Quant Research Web Design Prompt](docs/web-design.md)입니다. [공통 디자인 v1.2](docs/common-design-v1.md)와 [v1.2 프로젝트 적용 프롬프트](docs/common-design-v1-rollout-prompt.md)는 파일럿 근거로 유지합니다. 아래 문서는 과거 시각 언어와 개선 이력을 보존하는 비규범 배경 자료이며, 충돌할 경우 `docs/web-design.md`를 우선합니다.
 
-## Source of truth
+## Historical source of truth (archived)
 - Status: Approved Visual Ralph reference implemented
 - Last refreshed: 2026-06-24
 - Primary product surfaces:
