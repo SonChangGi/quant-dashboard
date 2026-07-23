@@ -1,5 +1,7 @@
 # Quant Research 공통 디자인 v1.2
 
+> 최신 최우선 규범과 복사용 실행 프롬프트는 [Quant Research Web Design Prompt](web-design.md)입니다. 이 문서는 DRAM·Fear & Greed 파일럿에서 확립한 정보 구조·차트 상태·보호 경계의 근거 문서로 유지합니다.
+
 ## 상태와 적용 범위
 
 - 버전: `1.2.0`
@@ -254,7 +256,7 @@ v1에서는 저장소 간 런타임 CSS·npm 패키지를 공유하지 않는다
 
 - 한 번에 전체 저장소를 바꾸지 않고 프로젝트별 plan-goal로 진행한다.
 - 각 프로젝트는 `현황 감사 → 보호 경계 고정 → 문구 inventory·중복 제거 → 결과 우선 재배치 → 핵심 차트·충돌 방지 → 테스트 → 모바일/테마 QA → 공개 검증` 순서를 따른다.
-- 후속 작업은 [공통 디자인 v1 프로젝트 적용 프롬프트](common-design-v1-rollout-prompt.md)를 시작점으로 사용한다.
+- 신규·후속 작업은 [Quant Research Web Design Prompt](web-design.md)를 시작점으로 사용한다. [v1 프로젝트 적용 프롬프트](common-design-v1-rollout-prompt.md)는 파일럿 이력으로만 참고한다.
 - v1 계약과 충돌하는 도메인 요구는 억지로 맞추지 않고 이 문서의 허용 예외 표에 추가한다.
 - 문구·타이포그래피·여백 같은 비파괴 개선은 v1.x로 갱신하고, 날짜·상태·차트 상태 모델을 바꾸는 변경은 v2 검토 대상으로 둔다.
 

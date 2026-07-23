@@ -6,6 +6,7 @@ const files = {
   app: readFileSync('assets/app.js', 'utf8'),
   readme: readFileSync('README.md', 'utf8'),
   design: readFileSync('DESIGN.md', 'utf8'),
+  webDesign: readFileSync('docs/web-design.md', 'utf8'),
   commonDesign: readFileSync('docs/common-design-v1.md', 'utf8'),
   commonDesignPrompt: readFileSync('docs/common-design-v1-rollout-prompt.md', 'utf8'),
   packageJson: readFileSync('package.json', 'utf8'),
@@ -17,7 +18,7 @@ const checks = [];
 const assert = (condition, label) => checks.push({ label, ok: Boolean(condition) });
 const contains = (file, needle) => file.includes(needle);
 
-for (const path of ['index.html', 'assets/styles.css', 'assets/app.js', 'DESIGN.md', 'docs/common-design-v1.md', 'docs/common-design-v1-rollout-prompt.md', 'scripts/verify.mjs', 'scripts/regression.mjs', 'scripts/static-smoke.mjs', 'scripts/live-contract-smoke.mjs', '.github/workflows/sync-risk-score.yml', 'package.json']) {
+for (const path of ['index.html', 'assets/styles.css', 'assets/app.js', 'DESIGN.md', 'docs/web-design.md', 'docs/common-design-v1.md', 'docs/common-design-v1-rollout-prompt.md', 'scripts/verify.mjs', 'scripts/regression.mjs', 'scripts/static-smoke.mjs', 'scripts/live-contract-smoke.mjs', '.github/workflows/sync-risk-score.yml', 'package.json']) {
   assert(statSync(path).isFile(), `${path} exists`);
 }
 
@@ -160,8 +161,25 @@ assert(contains(files.app, 'status-line'), 'panel status line renderer exists');
 assert(contains(files.html, '투자, 세무, 법률 또는 매매 조언이 아닙니다'), 'research disclaimer exists');
 assert(contains(files.readme, '다른 프로젝트의 로컬 소스 코드를 직접 import하지 않습니다'), 'README isolation note exists');
 assert(contains(files.readme, 'summary.json'), 'README documents summary contract endpoint');
+assert(contains(files.readme, 'docs/web-design.md') && contains(files.design, 'docs/web-design.md'), 'README and DESIGN link the canonical web design prompt');
+assert(
+  [
+    'https://sonchanggi.github.io/dram-price/',
+    'https://sonchanggi.github.io/fearNgreed/',
+    'https://sonchanggi.github.io/etf-tracking/',
+    'https://sonchanggi.github.io/sox/',
+    'https://sonchanggi.github.io/momentum-factor-lab/',
+  ].every((url) => contains(files.webDesign, url)),
+  'web design prompt fixes the five-site reference suite',
+);
+assert(contains(files.webDesign, '## 1. 절대 보호 경계') && contains(files.webDesign, '계산·normalization·selection·aggregation 함수는 동결'), 'web design prompt protects analysis and result behavior');
+assert(contains(files.webDesign, '## 13. 기존 페이지 개선 절차') && contains(files.webDesign, '## 14. 신규 프로젝트 구현 절차') && contains(files.webDesign, 'local preview'), 'web design prompt covers existing and new project workflows');
+assert(contains(files.webDesign, '## 4. 11개 공통 메뉴') && contains(files.webDesign, 'aria-current="page"') && contains(files.webDesign, 'Quant Research Hub'), 'web design prompt fixes the shared navigation contract');
+assert(contains(files.webDesign, '## 9. Table') && contains(files.webDesign, 'tabular') && contains(files.webDesign, '## 10. Chart') && contains(files.webDesign, 'plot 밖 정확값 readout'), 'web design prompt fixes table and chart contracts');
+assert(contains(files.webDesign, 'multi-series comparison chart에만') && contains(files.webDesign, 'date-axis chart에만') && contains(files.webDesign, 'bar·quadrant'), 'web design prompt keeps chart interactions domain-conditional');
+assert(contains(files.webDesign, 'TDS UI Kit') && contains(files.webDesign, '향후에도 Toss 자료에서 새 값을 직접 가져오지 않는다'), 'web design prompt records the Toss reference and reuse boundary');
 assert(contains(files.readme, 'docs/common-design-v1.md'), 'README links the common design v1 contract');
-assert(contains(files.design, 'docs/common-design-v1.md'), 'legacy design history points to the normative v1 contract');
+assert(contains(files.design, 'docs/common-design-v1.md'), 'legacy design history links the v1 reference contract');
 assert(contains(files.commonDesign, '결과 우선 정보 구조'), 'common design v1 fixes the result-first hierarchy');
 assert(contains(files.commonDesign, '프레젠테이션 상태') && contains(files.commonDesign, '분석 상태'), 'common design v1 separates chart exploration from analysis state');
 assert(contains(files.commonDesign, '데이터 기준일') && contains(files.commonDesign, '평가 종료일') && contains(files.commonDesign, '차트 선택일'), 'common design v1 names distinct date roles');
