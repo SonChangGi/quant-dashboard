@@ -7,6 +7,7 @@ const files = {
   readme: readFileSync('README.md', 'utf8'),
   design: readFileSync('DESIGN.md', 'utf8'),
   commonDesign: readFileSync('docs/common-design-v1.md', 'utf8'),
+  commonDesignPrompt: readFileSync('docs/common-design-v1-rollout-prompt.md', 'utf8'),
   packageJson: readFileSync('package.json', 'utf8'),
   liveSmoke: readFileSync('scripts/live-contract-smoke.mjs', 'utf8'),
   riskSyncWorkflow: readFileSync('.github/workflows/sync-risk-score.yml', 'utf8'),
@@ -16,7 +17,7 @@ const checks = [];
 const assert = (condition, label) => checks.push({ label, ok: Boolean(condition) });
 const contains = (file, needle) => file.includes(needle);
 
-for (const path of ['index.html', 'assets/styles.css', 'assets/app.js', 'DESIGN.md', 'docs/common-design-v1.md', 'scripts/verify.mjs', 'scripts/regression.mjs', 'scripts/static-smoke.mjs', 'scripts/live-contract-smoke.mjs', '.github/workflows/sync-risk-score.yml', 'package.json']) {
+for (const path of ['index.html', 'assets/styles.css', 'assets/app.js', 'DESIGN.md', 'docs/common-design-v1.md', 'docs/common-design-v1-rollout-prompt.md', 'scripts/verify.mjs', 'scripts/regression.mjs', 'scripts/static-smoke.mjs', 'scripts/live-contract-smoke.mjs', '.github/workflows/sync-risk-score.yml', 'package.json']) {
   assert(statSync(path).isFile(), `${path} exists`);
 }
 
@@ -169,6 +170,11 @@ assert(contains(files.commonDesign, 'quant-research-theme') && contains(files.co
 assert(contains(files.commonDesign, 'Hub → Fear & Greed → Momentum → DRAM') && contains(files.commonDesign, 'Kelly'), 'common design v1 fixes the project navigation order');
 assert(contains(files.commonDesign, 'skip link') && contains(files.commonDesign, '12px'), 'common design v1 fixes keyboard entry and legible dense labels');
 assert(contains(files.commonDesign, '프로젝트별 plan-goal'), 'common design v1 requires project-by-project rollout');
+assert(contains(files.commonDesign, 'plot 영역 밖') && contains(files.commonDesign, 'absolute overlay'), 'common design v1 keeps exact-value readouts away from plotted marks');
+assert(contains(files.commonDesign, '구현 설명') && contains(files.commonDesign, 'actionExplanation'), 'common design v1 removes implementation narration and repeated row explanations');
+assert(contains(files.readme, 'docs/common-design-v1-rollout-prompt.md') && contains(files.design, 'docs/common-design-v1-rollout-prompt.md'), 'README and DESIGN link the rollout prompt');
+assert(contains(files.commonDesignPrompt, '프로젝트별 plan-goal') && contains(files.commonDesignPrompt, 'Python 수집·분석·전략') && contains(files.commonDesignPrompt, '공개 JSON schema') && contains(files.commonDesignPrompt, 'workflow·GitHub Pages URL'), 'rollout prompt preserves project-by-project analysis, data, and deployment boundaries');
+assert(contains(files.commonDesignPrompt, 'plot 밖의 고정 행') && contains(files.commonDesignPrompt, '구현 설명') && contains(files.commonDesignPrompt, 'bounding box'), 'rollout prompt requires copy reduction and chart collision QA');
 assert(contains(readFileSync('scripts/regression.mjs', 'utf8'), 'malformed momentum payload resolves to fallback mode'), 'malformed payload regression exists');
 assert(contains(readFileSync('scripts/regression.mjs', 'utf8'), 'null/non-object entries resolve to fallback'), 'null-entry payload regression exists');
 assert(contains(readFileSync('scripts/static-smoke.mjs', 'utf8'), 'static server smoke'), 'static server smoke exists');

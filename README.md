@@ -11,7 +11,7 @@
 
 ## 공통 디자인 v1
 
-DRAM과 Fear & Greed 파일럿에서 검증한 결과 우선 정보 구조, 차트 상호작용, 날짜·상태 분리, 모바일·접근성 기준은 [Quant Research 공통 디자인 v1](docs/common-design-v1.md)에 고정합니다.
+DRAM과 Fear & Greed 파일럿에서 검증하고 ETF Tracking 적용으로 보정한 결과 우선 정보 구조, 차트 상호작용, 날짜·상태 분리, 모바일·접근성 기준은 [Quant Research 공통 디자인 v1](docs/common-design-v1.md)에 고정합니다. 다음 프로젝트는 [공통 디자인 v1 프로젝트 적용 프롬프트](docs/common-design-v1-rollout-prompt.md)로 시작합니다.
 
 - 프레임워크가 아니라 사용자 계약을 공유합니다.
 - 각 프로젝트의 데이터·계산·배포 경계는 유지합니다.
