@@ -1,6 +1,6 @@
 # Design
 
-> 현재 규범적 기준은 DRAM의 타이포그래피·세로 밀도·설명 노출량·상위 메뉴를 시각 기준으로 삼는 [Quant Research 공통 디자인 v1.2](docs/common-design-v1.md)이며, 후속 프로젝트의 실행 템플릿은 [공통 디자인 v1.2 프로젝트 적용 프롬프트](docs/common-design-v1-rollout-prompt.md)입니다. 아래 문서는 기존 시각 언어와 프로젝트별 개선 이력을 보존하는 배경 자료이며, 충돌할 경우 공통 디자인 v1.2의 정보 구조·차트 상태·검증 계약을 우선합니다.
+> 현재 규범적 기준은 여러 프로젝트에서 검증한 공통 타이포그래피·세로 밀도·설명 노출량·상위 메뉴를 정의하는 [Quant Research 공통 디자인 v1.2](docs/common-design-v1.md)이며, 후속 프로젝트의 실행 템플릿은 [공통 디자인 v1.2 프로젝트 적용 프롬프트](docs/common-design-v1-rollout-prompt.md)입니다. 아래 문서는 기존 시각 언어와 프로젝트별 개선 이력을 보존하는 배경 자료이며, 충돌할 경우 공통 디자인 v1.2의 정보 구조·차트 상태·검증 계약을 우선합니다.
 
 ## Source of truth
 - Status: Approved Visual Ralph reference implemented
