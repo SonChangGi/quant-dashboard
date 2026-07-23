@@ -9,11 +9,12 @@
 - 공개 배포 JSON만 best-effort로 읽되, 공통 `quant-research-summary` contract와 필수 key가 맞지 않으면 fallback/준비중 상태를 보여줍니다.
 - 리서치 브리핑, 티커·테마 dossier, 데이터 상태/자동화 패널로 “오늘 무엇을 확인할지”와 “어떤 한계를 같이 읽어야 하는지”를 먼저 보여줍니다.
 
-## 공통 디자인 v1
+## 공통 디자인 v1.2
 
-DRAM과 Fear & Greed 파일럿에서 검증하고 ETF Tracking 적용으로 보정한 결과 우선 정보 구조, 차트 상호작용, 날짜·상태 분리, 모바일·접근성 기준은 [Quant Research 공통 디자인 v1](docs/common-design-v1.md)에 고정합니다. 다음 프로젝트는 [공통 디자인 v1 프로젝트 적용 프롬프트](docs/common-design-v1-rollout-prompt.md)로 시작합니다.
+DRAM의 타이포그래피·굵기·세로 밀도·설명 노출량·11개 상위 메뉴를 시각 기준으로 삼고, Fear & Greed와 ETF Tracking에서 검증한 차트 상호작용·날짜·상태·모바일 기준을 [Quant Research 공통 디자인 v1.2](docs/common-design-v1.md)에 고정합니다. 다음 프로젝트는 [공통 디자인 v1.2 프로젝트 적용 프롬프트](docs/common-design-v1-rollout-prompt.md)로 시작합니다.
 
 - 프레임워크가 아니라 사용자 계약을 공유합니다.
+- DRAM의 정보 위계와 밀도를 참고하되 프로젝트별 색감·차트·표·결과 구조는 복제하지 않습니다.
 - 각 프로젝트의 데이터·계산·배포 경계는 유지합니다.
 - 나머지 프로젝트는 한 번에 바꾸지 않고 프로젝트별 plan-goal로 적용합니다.
 
