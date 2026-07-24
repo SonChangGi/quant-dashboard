@@ -55,6 +55,10 @@ class Settings:
     momentum_github_repo: str = "momentum-factor-lab"
     momentum_github_workflow: str = "controlled-analysis.yml"
     momentum_github_ref: str = "main"
+    fear_github_owner: str = "SonChangGi"
+    fear_github_repo: str = "fearNgreed"
+    fear_github_workflow: str = "controlled-analysis.yml"
+    fear_github_ref: str = "main"
     run_api_token: str = ""
     worker_callback_token: str = ""
     allowed_origins: tuple[str, ...] = (
@@ -102,6 +106,22 @@ class Settings:
             ).strip(),
             momentum_github_ref=os.getenv(
                 "QUANT_CONTROL_MOMENTUM_GITHUB_REF",
+                "main",
+            ).strip(),
+            fear_github_owner=os.getenv(
+                "QUANT_CONTROL_FEAR_GITHUB_OWNER",
+                "SonChangGi",
+            ).strip(),
+            fear_github_repo=os.getenv(
+                "QUANT_CONTROL_FEAR_GITHUB_REPO",
+                "fearNgreed",
+            ).strip(),
+            fear_github_workflow=os.getenv(
+                "QUANT_CONTROL_FEAR_GITHUB_WORKFLOW",
+                "controlled-analysis.yml",
+            ).strip(),
+            fear_github_ref=os.getenv(
+                "QUANT_CONTROL_FEAR_GITHUB_REF",
                 "main",
             ).strip(),
             run_api_token=os.getenv("QUANT_CONTROL_RUN_API_TOKEN", "").strip(),
@@ -205,6 +225,22 @@ class Settings:
                     (
                         "QUANT_CONTROL_MOMENTUM_GITHUB_REF",
                         self.momentum_github_ref,
+                    ),
+                    (
+                        "QUANT_CONTROL_FEAR_GITHUB_OWNER",
+                        self.fear_github_owner,
+                    ),
+                    (
+                        "QUANT_CONTROL_FEAR_GITHUB_REPO",
+                        self.fear_github_repo,
+                    ),
+                    (
+                        "QUANT_CONTROL_FEAR_GITHUB_WORKFLOW",
+                        self.fear_github_workflow,
+                    ),
+                    (
+                        "QUANT_CONTROL_FEAR_GITHUB_REF",
+                        self.fear_github_ref,
                     ),
                 )
                 if not value

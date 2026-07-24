@@ -56,6 +56,20 @@ def _providers_from_settings(
                     correlation_builder=lambda run_id: f"Controlled Momentum · {run_id}",
                     correlation_requires_exact_title=True,
                 )
+            elif adapter.project_id == "fear-greed":
+                providers[adapter.project_id] = GitHubActionsWorkerProvider(
+                    enabled=settings.github_enabled,
+                    token=settings.github_token,
+                    owner=settings.fear_github_owner,
+                    repo=settings.fear_github_repo,
+                    workflow=settings.fear_github_workflow,
+                    ref=settings.fear_github_ref,
+                    workflow_inputs_builder=adapter.workflow_inputs,
+                    correlation_builder=(
+                        lambda run_id: f"Controlled Fear & Greed · {run_id}"
+                    ),
+                    correlation_requires_exact_title=True,
+                )
             else:
                 providers[adapter.project_id] = GitHubActionsWorkerProvider(
                     enabled=settings.github_enabled,

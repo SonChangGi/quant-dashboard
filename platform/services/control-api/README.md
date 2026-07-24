@@ -11,6 +11,7 @@ The adapter registry currently contains:
 | --- | --- | --- | --- |
 | `best-factor` | exactly 11 fields, `best-factor/v1` | `best-factor-python-json-v1` | `SonChangGi/best-factor`, `update-dashboard.yml` |
 | `momentum` | exactly 26 `ResearchInputs`, `momentum/v1` | `momentum-research-inputs-rfc8785-v1` | `SonChangGi/momentum-factor-lab`, `controlled-analysis.yml` |
+| `fear-greed` | 16 visible inputs serialized as exactly 17 fields, `fear-greed/control-inputs-v1` | `fear-greed-json-sort-keys-sha256-v1` | `SonChangGi/fearNgreed`, `controlled-analysis.yml` |
 
 Project adapters own normalization, hashing, fallback policy, workflow input
 mapping, artifact URL allowlists, code-version syntax, and result binding.
@@ -35,8 +36,10 @@ by project and covers the complete normalized request.
 
 Best Factor requires all 11 inputs. Momentum requires all 26 public
 `ResearchInputs`; derived `version` and `evaluationWindowDays` are rejected as
-duplicate sources of truth. Both controlled-run adapters require
-`allowFallback=false`.
+duplicate sources of truth. Fear & Greed's 16 visible controls serialize to 17
+wire fields because the composite evaluation-window control binds `window`,
+`historyStart`, `historyEnd`, and `historyEndMode` independently. All three
+controlled-run adapters require `allowFallback=false`.
 
 ## Dispatch durability
 
@@ -116,6 +119,20 @@ holdings. The fetched artifact remains the full schema-v5 result. The adapter
 binds the summary fields to the full artifact; it does not require the bounded
 summary to equal the entire artifact.
 
+Fear & Greed accepts only:
+
+`https://sonchanggi.github.io/fearNgreed/data/control-runs/v1/<safeRunId>/<64hexResultKey>.json`
+
+Its artifact contract is `fear-greed/control-result-v1`, and `codeVersion` must
+be `github:SonChangGi/fearNgreed@<40hex>`. The result key is reproduced from
+the exact run/schema/config binding, data identity, and immutable worker code
+identity. The fetched artifact atomically contains `signals`, `event`, and
+`strategy`; the callback keeps only the allowlisted bounded summary plus the
+result, data, and code identity needed to retrieve and verify that artifact.
+The summary allowlist is `signalDate`, `signalState`, `signalPercentile`,
+`eventAsset`, `eventSample`, `eventCount`, `strategyPosition`,
+`strategyStatus`, `strategyTotalReturn`, and `methodologyVersion`.
+
 A worker failure callback has this exact shape:
 
 ```json
@@ -166,6 +183,8 @@ QUANT_CONTROL_WORKER_RESULT_TIMEOUT_SECONDS=14400
 QUANT_CONTROL_SUPABASE_URL=https://<project>.supabase.co
 QUANT_CONTROL_SUPABASE_SECRET_KEY=<server-only sb_secret key>
 QUANT_CONTROL_GITHUB_TOKEN=<server-only>
+QUANT_CONTROL_FEAR_GITHUB_REPO=fearNgreed
+QUANT_CONTROL_FEAR_GITHUB_WORKFLOW=controlled-analysis.yml
 QUANT_CONTROL_RUN_API_TOKEN=<owner-only>
 QUANT_CONTROL_WORKER_CALLBACK_TOKEN=<worker-only>
 ```

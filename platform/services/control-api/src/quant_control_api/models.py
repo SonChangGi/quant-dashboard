@@ -35,7 +35,11 @@ TERMINAL_STATUSES = {RunStatus.PUBLISHED, RunStatus.FAILED, RunStatus.CANCELLED}
 
 
 class RunCreateRequest(APIModel):
-    input_schema_version: Literal["best-factor/v1", "momentum/v1"]
+    input_schema_version: Literal[
+        "best-factor/v1",
+        "momentum/v1",
+        "fear-greed/control-inputs-v1",
+    ]
     inputs: dict[str, Any] = Field(default_factory=dict)
     allow_fallback: bool = False
 
@@ -43,7 +47,7 @@ class RunCreateRequest(APIModel):
 class InputFieldCapability(APIModel):
     key: str
     label: str
-    type: Literal["enum", "integer", "number", "string-list"]
+    type: Literal["enum", "integer", "number", "string", "string-list"]
     required: bool = True
     default: Any
     choices: list[str] | None = None

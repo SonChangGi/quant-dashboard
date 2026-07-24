@@ -8,4 +8,7 @@ coverage/
 **/.venv/
 **/__pycache__/
 **/.pytest_cache/
+supabase/.temp/
+infra/supabase/.temp/
+infra/supabase/supabase/.temp/
 *.py[cod]

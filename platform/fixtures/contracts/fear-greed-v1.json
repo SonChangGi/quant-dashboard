@@ -1,0 +1,28 @@
+{
+  "projectId": "fear-greed",
+  "inputSchemaVersion": "fear-greed/control-inputs-v1",
+  "inputSchemaHash": "70df5e68d4ecae4ad93fa410ccd74f2a12ee3d2ca0bfcba2ae2074de284c2e61",
+  "configHashAlgorithm": "fear-greed-json-sort-keys-sha256-v1",
+  "defaultConfigHash": "cf8d60da8b6ad43c6849c553b953302721857cfccd1f0d49973f032bada922db",
+  "visibleInputCount": 16,
+  "wireFieldCount": 17,
+  "inputs": {
+    "window": "ytd",
+    "historyStart": "",
+    "historyEnd": "",
+    "historyEndMode": "latest",
+    "model": "raw",
+    "eventAsset": "KOSPI",
+    "eventSample": "all",
+    "backtestProxy": "1x",
+    "backtestPolicy": "compare",
+    "backtestVariant": "raw_ols",
+    "backtestCost": 10,
+    "backtestPeriod": "common",
+    "longExitPercentile": 80,
+    "signalLookback": 196,
+    "signalMinimumR2": 0.4,
+    "signalExtremeTail": 2,
+    "signalMaxHolding": 20
+  }
+}

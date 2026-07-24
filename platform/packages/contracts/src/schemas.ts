@@ -164,7 +164,7 @@ export const projectCapabilitiesSchema = z.object({
     z.object({
       key: z.string().min(1),
       label: z.string().min(1),
-      type: z.enum(["enum", "integer", "number", "string-list"]),
+      type: z.enum(["enum", "integer", "number", "string", "string-list"]),
       required: z.boolean(),
       default: jsonValueSchema,
       choices: z.array(z.string()).nullable().optional(),

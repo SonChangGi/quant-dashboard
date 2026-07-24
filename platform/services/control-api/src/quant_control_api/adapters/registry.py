@@ -4,6 +4,7 @@ from collections.abc import Iterable, Iterator
 
 from .base import AnalysisProjectAdapter
 from .best_factor import BestFactorAdapter
+from .fear_greed import FearGreedAdapter
 from .momentum import MomentumAdapter
 
 
@@ -36,4 +37,6 @@ class ProjectAdapterRegistry:
 
 
 def default_project_adapters() -> ProjectAdapterRegistry:
-    return ProjectAdapterRegistry((BestFactorAdapter(), MomentumAdapter()))
+    return ProjectAdapterRegistry(
+        (BestFactorAdapter(), MomentumAdapter(), FearGreedAdapter())
+    )

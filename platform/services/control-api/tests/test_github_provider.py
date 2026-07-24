@@ -4,6 +4,7 @@ import asyncio
 import json
 
 import httpx
+import pytest
 
 from quant_control_api.adapters import default_project_adapters
 from quant_control_api.app import _providers_from_settings
@@ -119,9 +120,10 @@ def test_provider_registry_keeps_project_targets_and_workflow_mappers_isolated()
         worker_callback_token="worker",
     )
     providers = _providers_from_settings(settings, default_project_adapters())
-    assert set(providers) == {"best-factor", "momentum"}
+    assert set(providers) == {"best-factor", "momentum", "fear-greed"}
     best = providers["best-factor"]
     momentum = providers["momentum"]
+    fear = providers["fear-greed"]
     assert (best.owner, best.repo, best.workflow, best.ref) == (  # type: ignore[attr-defined]
         "SonChangGi",
         "best-factor",
@@ -139,9 +141,51 @@ def test_provider_registry_keeps_project_targets_and_workflow_mappers_isolated()
         "controlled-analysis.yml",
         "main",
     )
+    assert (  # type: ignore[attr-defined]
+        fear.owner,
+        fear.repo,
+        fear.workflow,
+        fear.ref,
+    ) == (
+        "SonChangGi",
+        "fearNgreed",
+        "controlled-analysis.yml",
+        "main",
+    )
+    assert fear.correlation_builder(  # type: ignore[attr-defined]
+        "11111111-1111-4111-8111-111111111111"
+    ) == (
+        "Controlled Fear & Greed · 11111111-1111-4111-8111-111111111111"
+    )
+    assert fear.correlation_requires_exact_title is True  # type: ignore[attr-defined]
 
     async def close() -> None:
         await best.close()  # type: ignore[attr-defined]
         await momentum.close()  # type: ignore[attr-defined]
+        await fear.close()  # type: ignore[attr-defined]
 
     asyncio.run(close())
+
+
+def test_fear_provider_target_can_be_configured_from_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("QUANT_CONTROL_FEAR_GITHUB_OWNER", "ExampleOwner")
+    monkeypatch.setenv("QUANT_CONTROL_FEAR_GITHUB_REPO", "fear-worker")
+    monkeypatch.setenv(
+        "QUANT_CONTROL_FEAR_GITHUB_WORKFLOW",
+        "fear-control.yml",
+    )
+    monkeypatch.setenv("QUANT_CONTROL_FEAR_GITHUB_REF", "release")
+    settings = Settings.from_env()
+    assert (
+        settings.fear_github_owner,
+        settings.fear_github_repo,
+        settings.fear_github_workflow,
+        settings.fear_github_ref,
+    ) == (
+        "ExampleOwner",
+        "fear-worker",
+        "fear-control.yml",
+        "release",
+    )

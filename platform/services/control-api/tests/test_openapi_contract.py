@@ -35,7 +35,11 @@ def test_openapi_route_and_worker_failure_contract_matches_golden() -> None:
     components = schema["components"]["schemas"]
     create_schema = components["RunCreateRequest"]
     version_schema = create_schema["properties"]["inputSchemaVersion"]
-    assert version_schema["enum"] == ["best-factor/v1", "momentum/v1"]
+    assert version_schema["enum"] == [
+        "best-factor/v1",
+        "momentum/v1",
+        "fear-greed/control-inputs-v1",
+    ]
 
     failure_schema = components["WorkerFailureManifest"]
     error_code = failure_schema["properties"]["errorCode"]
