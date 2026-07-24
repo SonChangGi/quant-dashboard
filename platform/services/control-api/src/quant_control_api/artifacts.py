@@ -14,6 +14,10 @@ MOMENTUM_IMMUTABLE_PATH = re.compile(
     r"^/momentum-factor-lab/data/control-runs/v1/"
     r"[A-Za-z0-9][A-Za-z0-9._-]{7,127}/[0-9a-f]{64}\.json$"
 )
+FEAR_GREED_IMMUTABLE_PATH = re.compile(
+    r"^/fearNgreed/data/control-runs/v1/"
+    r"[A-Za-z0-9][A-Za-z0-9._-]{7,127}/[0-9a-f]{64}\.json$"
+)
 
 
 class ArtifactVerificationError(ValueError):
@@ -58,6 +62,9 @@ class HttpArtifactFetcher:
         ) or (
             parsed.hostname == "sonchanggi.github.io"
             and MOMENTUM_IMMUTABLE_PATH.fullmatch(parsed.path)
+        ) or (
+            parsed.hostname == "sonchanggi.github.io"
+            and FEAR_GREED_IMMUTABLE_PATH.fullmatch(parsed.path)
         )
         if not allowlisted:
             raise ArtifactVerificationError("artifact host/path is not allowlisted")

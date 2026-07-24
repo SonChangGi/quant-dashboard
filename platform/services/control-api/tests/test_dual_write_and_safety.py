@@ -190,6 +190,74 @@ def test_mutable_pages_latest_url_is_never_a_control_artifact() -> None:
     asyncio.run(scenario())
 
 
+def test_artifact_fetcher_accepts_verified_fear_greed_pages_result() -> None:
+    async def scenario() -> None:
+        requests: list[httpx.Request] = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            requests.append(request)
+            return httpx.Response(200, content=b"{}", request=request)
+
+        client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+        fetcher = HttpArtifactFetcher(client=client)
+        artifact = ArtifactIdentity(
+            url=(
+                "https://sonchanggi.github.io/fearNgreed/data/control-runs/v1/"
+                "e6177d77-7726-4799-bff9-c1c4ecd360d6/"
+                "f521d5b8414e601dfabc753528c538e5e46fda028f77a5c9891745b1ba123fb8.json"
+            ),
+            sha256="0" * 64,
+            byte_size=2,
+            contract_version="fear-greed/control-result-v1",
+        )
+        assert await fetcher.fetch(artifact) == b"{}"
+        assert len(requests) == 1
+        await client.aclose()
+
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://sonchanggi.github.io/fearNgreed/data/dashboard.json",
+        (
+            "https://sonchanggi.github.io/fearngreed/data/control-runs/v1/"
+            "e6177d77-7726-4799-bff9-c1c4ecd360d6/"
+            "f521d5b8414e601dfabc753528c538e5e46fda028f77a5c9891745b1ba123fb8.json"
+        ),
+        (
+            "https://sonchanggi.github.io/fearNgreed/data/control-runs/v1/"
+            "e6177d77-7726-4799-bff9-c1c4ecd360d6/latest.json"
+        ),
+        (
+            "https://attacker.example/fearNgreed/data/control-runs/v1/"
+            "e6177d77-7726-4799-bff9-c1c4ecd360d6/"
+            "f521d5b8414e601dfabc753528c538e5e46fda028f77a5c9891745b1ba123fb8.json"
+        ),
+    ],
+)
+def test_artifact_fetcher_rejects_fear_greed_url_near_misses(url: str) -> None:
+    async def scenario() -> None:
+        client = httpx.AsyncClient(
+            transport=httpx.MockTransport(
+                lambda request: httpx.Response(200, content=b"{}", request=request)
+            )
+        )
+        fetcher = HttpArtifactFetcher(client=client)
+        artifact = ArtifactIdentity(
+            url=url,
+            sha256="0" * 64,
+            byte_size=2,
+            contract_version="fear-greed/control-result-v1",
+        )
+        with pytest.raises(ArtifactVerificationError, match="host/path"):
+            await fetcher.fetch(artifact)
+        await client.aclose()
+
+    asyncio.run(scenario())
+
+
 @pytest.mark.parametrize(
     ("url", "message"),
     [
