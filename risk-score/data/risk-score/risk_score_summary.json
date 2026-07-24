@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "contract": "quant-research-summary",
   "projectId": "risk-score",
-  "generatedAt": "2026-07-23T05:57:18Z",
-  "dataAsOf": "2026-07-21",
+  "generatedAt": "2026-07-23T23:57:23Z",
+  "dataAsOf": "2026-07-22",
   "status": "Confirmed Red",
   "coverage": {
     "entityCount": 1,
     "observationCount": 5378,
     "startDate": "2004-09-02",
-    "endDate": "2026-07-21",
+    "endDate": "2026-07-22",
     "requiredSources": [
       "FRED NASDAQSOX",
       "FRED VIXCLS"
@@ -24,17 +24,17 @@
       "status": "Confirmed Red",
       "signals": [
         "OH 0/5",
-        "RF 4/5",
+        "RF 5/5",
         "Confirmed top-risk",
         "Rebound Failure"
       ],
       "metrics": {
-        "latestClose": 12356.16,
-        "oneDayReturn": 0.05213877902050856,
-        "vixClose": 17.05,
+        "latestClose": 12410.66,
+        "oneDayReturn": 0.004410755445057424,
+        "vixClose": 16.64,
         "ohScore": 0,
-        "rfScore": 4,
-        "topRiskScore": 4,
+        "rfScore": 5,
+        "topRiskScore": 5,
         "confirmedTopRisk": true,
         "regime": "Rebound Failure",
         "actionLevel": "confirmed-red"
@@ -43,13 +43,13 @@
   ],
   "riskScore": {
     "current": {
-      "date": "2026-07-21",
-      "close": 12356.16,
-      "oneDayReturn": 0.05213877902050856,
-      "vixClose": 17.05,
+      "date": "2026-07-22",
+      "close": 12410.66,
+      "oneDayReturn": 0.004410755445057424,
+      "vixClose": 16.64,
       "ohScore": 0,
-      "rfScore": 4,
-      "topRiskScore": 4,
+      "rfScore": 5,
+      "topRiskScore": 5,
       "regime": "Rebound Failure",
       "confirmation": true,
       "actionLevel": "confirmed-red",
@@ -60,7 +60,7 @@
       {
         "factor": "z20_gt_1_5",
         "model": "OH",
-        "currentValue": -0.6722591020481755,
+        "currentValue": -0.5295360239749592,
         "threshold": "z20 > 1.5",
         "signal": false,
         "interpretation": "20D 평균 대비 통계적 과열"
@@ -68,7 +68,7 @@
       {
         "factor": "rsi5_gt_70",
         "model": "OH",
-        "currentValue": 52.59999817780635,
+        "currentValue": 54.285472784409436,
         "threshold": "RSI5 > 70",
         "signal": false,
         "interpretation": "단기 과매수"
@@ -76,7 +76,7 @@
       {
         "factor": "roc20_gt_10",
         "model": "OH",
-        "currentValue": -0.15569549673652794,
+        "currentValue": -0.079499292045769,
         "threshold": "ROC20 > 10%",
         "signal": false,
         "interpretation": "1개월 강한 momentum"
@@ -84,7 +84,7 @@
       {
         "factor": "gap20_gt_4",
         "model": "OH",
-        "currentValue": -0.037584989604673824,
+        "currentValue": -0.029287976403800986,
         "threshold": "gap20 > 4%",
         "signal": false,
         "interpretation": "20D 추세선 대비 유의미한 이격"
@@ -92,7 +92,7 @@
       {
         "factor": "near_high20",
         "model": "OH",
-        "currentValue": 12356.16,
+        "currentValue": 12410.66,
         "threshold": "C >= 99.5% of High20",
         "signal": false,
         "interpretation": "최근 고점권에서 rally 진행"
@@ -100,7 +100,7 @@
       {
         "factor": "prior_damage",
         "model": "RF",
-        "currentValue": -0.15569549673652794,
+        "currentValue": -0.1519714760514721,
         "threshold": "C < MA50 OR C <= 95% High50",
         "signal": true,
         "interpretation": "중기 추세 훼손 또는 50D 고점 대비 5% 이상 하락"
@@ -108,7 +108,7 @@
       {
         "factor": "rebound_from_low",
         "model": "RF",
-        "currentValue": 0.0584441004669396,
+        "currentValue": 0.06311263854636295,
         "threshold": "C >= 105% Low20",
         "signal": true,
         "interpretation": "20D 저점 대비 5% 이상 반등"
@@ -116,15 +116,15 @@
       {
         "factor": "ma_resistance",
         "model": "RF",
-        "currentValue": -0.037584989604673824,
+        "currentValue": -0.029287976403800986,
         "threshold": "Near MA20/MA50 resistance",
-        "signal": false,
+        "signal": true,
         "interpretation": "MA20 또는 MA50 근처 반등 후 안착 미확인"
       },
       {
         "factor": "weak_momentum",
         "model": "RF",
-        "currentValue": -0.15569549673652794,
+        "currentValue": -0.079499292045769,
         "threshold": "ROC20 <= 3% OR MA20_slope5 < 0",
         "signal": true,
         "interpretation": "20D momentum 약화 또는 MA20 하락"
@@ -132,7 +132,7 @@
       {
         "factor": "vix_not_low",
         "model": "RF",
-        "currentValue": 17.05,
+        "currentValue": 16.64,
         "threshold": "VIX >= 16 OR VIX > VIX_MA20",
         "signal": true,
         "interpretation": "변동성 regime이 아직 안정되지 않음"
@@ -140,7 +140,7 @@
       {
         "factor": "price_rollover",
         "model": "Confirmation",
-        "currentValue": 12356.16,
+        "currentValue": 12410.66,
         "threshold": "C < MA5",
         "signal": false,
         "interpretation": "가격이 MA5 아래로 내려오며 rally rollover 확인"
@@ -148,7 +148,7 @@
       {
         "factor": "large_down_day",
         "model": "Confirmation",
-        "currentValue": 0.05213877902050856,
+        "currentValue": 0.004410755445057424,
         "threshold": "ret_1 <= -2%",
         "signal": false,
         "interpretation": "큰 하락일로 단기 매도 압력 확인"
@@ -156,7 +156,7 @@
       {
         "factor": "vix_confirmation",
         "model": "Confirmation",
-        "currentValue": 17.05,
+        "currentValue": 16.64,
         "threshold": "VIX > VIX_MA5 and ΔVIX > 0",
         "signal": false,
         "interpretation": "VIX 상승 전환으로 변동성 확인"
@@ -164,13 +164,28 @@
       {
         "factor": "strong_vix_confirmation",
         "model": "Confirmation",
-        "currentValue": -1.5999999999999979,
+        "currentValue": -0.41000000000000014,
         "threshold": "VIX > VIX_MA5 and ΔVIX >= 1",
         "signal": false,
         "interpretation": "강한 VIX 상승 확인"
       }
     ],
     "recentSignals": [
+      {
+        "date": "2026-07-22",
+        "close": 12410.66,
+        "ohScore": 0,
+        "rfScore": 5,
+        "topRiskScore": 5,
+        "confirmation": true,
+        "fwdMin5": null,
+        "fwdMax5": null,
+        "fwdRet5": null,
+        "downsideHit": null,
+        "strictTopHit": null,
+        "regime": "Rebound Failure",
+        "actionLabel": "Confirmed Red"
+      },
       {
         "date": "2026-07-21",
         "close": 12356.16,
@@ -1355,21 +1370,6 @@
         "strictTopHit": false,
         "regime": "Rebound Failure",
         "actionLabel": "Confirmed Red"
-      },
-      {
-        "date": "2026-03-09",
-        "close": 7810.4,
-        "ohScore": 0,
-        "rfScore": 4,
-        "topRiskScore": 4,
-        "confirmation": true,
-        "fwdMin5": -0.021411195329304467,
-        "fwdMax5": 0.013336064734200681,
-        "fwdRet5": -0.0018129673256170875,
-        "downsideHit": false,
-        "strictTopHit": false,
-        "regime": "Rebound Failure",
-        "actionLabel": "Confirmed Red"
       }
     ],
     "thresholds": {
@@ -1443,7 +1443,7 @@
     "backtestHighlights": [
       {
         "ruleId": "setup_ge_4",
-        "signalCount": 2128,
+        "signalCount": 2129,
         "eventCount": 568,
         "evaluatedCount": 568,
         "downsideHitRate": 0.1742957746478873,
@@ -1459,7 +1459,7 @@
       },
       {
         "ruleId": "red_zone",
-        "signalCount": 587,
+        "signalCount": 588,
         "eventCount": 220,
         "evaluatedCount": 220,
         "downsideHitRate": 0.20909090909090908,
@@ -1475,7 +1475,7 @@
       },
       {
         "ruleId": "confirmed_top_risk",
-        "signalCount": 1907,
+        "signalCount": 1908,
         "eventCount": 542,
         "evaluatedCount": 542,
         "downsideHitRate": 0.15682656826568267,
@@ -1507,7 +1507,7 @@
       },
       {
         "ruleId": "rf_ge_4",
-        "signalCount": 1470,
+        "signalCount": 1471,
         "eventCount": 401,
         "evaluatedCount": 401,
         "downsideHitRate": 0.18703241895261846,
