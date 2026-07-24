@@ -1,0 +1,13 @@
+{
+  "name": "@quant-research/data-client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@quant-research/contracts": "workspace:*",
+    "react": "^19.2.8"
+  }
+}

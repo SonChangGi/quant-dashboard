@@ -1,0 +1,19 @@
+{
+  "name": "@quant-research/reference-dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@quant-research/charts": "workspace:*",
+    "@quant-research/contracts": "workspace:*",
+    "@quant-research/data-client": "workspace:*",
+    "@quant-research/shell": "workspace:*",
+    "@quant-research/ui": "workspace:*",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "zod": "^3.25.0"
+  }
+}

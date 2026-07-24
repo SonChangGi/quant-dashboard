@@ -1,0 +1,15 @@
+{
+  "name": "@quant-research/shell",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./styles.css": "./src/styles.css"
+  },
+  "dependencies": {
+    "@quant-research/project-registry": "workspace:*",
+    "@quant-research/ui": "workspace:*",
+    "react": "^19.2.8"
+  }
+}

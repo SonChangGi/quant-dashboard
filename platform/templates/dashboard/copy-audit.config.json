@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "projectId": "template-dashboard",
+  "rootDir": ".",
+  "targets": [
+    {
+      "id": "source-fallback",
+      "path": "src",
+      "mode": "source",
+      "extensions": [".ts", ".tsx"]
+    }
+  ],
+  "excludePaths": [
+    "node_modules",
+    "dist",
+    "coverage"
+  ],
+  "roleGates": [
+    "hero-support",
+    "section-support",
+    "chart-instructions"
+  ],
+  "minDuplicateLength": 16,
+  "sourceChannelRules": [],
+  "retainedVisibleCopy": [],
+  "additionalBannedPatterns": []
+}

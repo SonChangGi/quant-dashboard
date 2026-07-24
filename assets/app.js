@@ -350,6 +350,17 @@
       },
     },
   ];
+  const PLATFORM_PROJECT_IDS = {
+    fearngreed: 'fear-greed',
+    momentum: 'momentum',
+    dram: 'dram',
+    best: 'best-factor',
+    etf: 'etf',
+    sox: 'sox',
+    'risk-score': 'risk-score',
+    valuation: 'valuation',
+    kelly: 'kelly',
+  };
 
   const RESEARCH_STATUS_STATES = new Set(['published', 'live_api', 'stale', 'degraded', 'unavailable', 'ruin']);
   const SUMMARY_CONTRACT = { versionField: 'schemaVersion', expectedVersion: 1, requiredKeys: ['contract', 'projectId', 'status', 'primaryEntities'] };
@@ -766,7 +777,10 @@
     const adapter = project ? PANEL_ADAPTERS[project.panelAdapter] : null;
     if (!project || !adapter) return;
 
-    const entries = await Promise.all(Object.entries(adapter.sourceUrls).map(async ([sourceKey, url]) => [sourceKey, await getJsonBestEffort(url)]));
+    const [publishedMetadata, entries] = await Promise.all([
+      getPublishedSnapshotMetadata(PLATFORM_PROJECT_IDS[project.id] || project.id),
+      Promise.all(Object.entries(adapter.sourceUrls).map(async ([sourceKey, url]) => [sourceKey, await getJsonBestEffort(url)])),
+    ]);
     let fetchResults = Object.fromEntries(entries);
     let dataSources = Object.fromEntries(entries.map(([sourceKey, result]) => [sourceKey, result.ok ? result.data : null]));
     const enrichment = await enrichPanelSources(adapter, dataSources, getJsonBestEffort);
@@ -778,6 +792,13 @@
     const hasUsableData = parseResult.ok && adapter.hasUsableData(parseResult.data);
     const loadState = resolveLoadState(primaryResult, hasUsableData, parseResult.error || adapter.emptyReason);
     const summary = hasUsableData ? parseResult.data : adapter.fallback();
+    const summaryAsOf = summaryDataAsOf(summary);
+    const metadataMismatch = Boolean(
+      publishedMetadata.ok
+        && publishedMetadata.data?.dataAsOf
+        && summaryAsOf
+        && publishedMetadata.data.dataAsOf !== summaryAsOf,
+    );
     adapter.render(summary, loadState.mode, loadState.error, project);
     return {
       project,
@@ -787,6 +808,8 @@
       error: loadState.error,
       generatedAt: summary?.generatedAt || '',
       dataAsOf: summaryDataAsOf(summary),
+      publishedMetadata: publishedMetadata.ok ? publishedMetadata.data : null,
+      metadataMismatch,
       payloadBytes: Object.values(fetchResults).reduce((sum, result) => sum + numberOr(result.bytes, 0), 0),
       sourceCount: Object.keys(fetchResults).length,
     };
@@ -858,6 +881,84 @@
       return { ok: false, error: error instanceof Error ? error.message : String(error), url };
     } finally {
       window.clearTimeout(timeout);
+    }
+  }
+
+  function configuredSupabaseMetadata() {
+    const documentRef = globalThis.document;
+    if (!documentRef || typeof documentRef.querySelector !== 'function') return null;
+    const rawUrl = String(documentRef.querySelector('meta[name="quant-supabase-url"]')?.content || '').trim();
+    const publishableKey = String(documentRef.querySelector('meta[name="quant-supabase-publishable-key"]')?.content || '').trim();
+    if (!rawUrl || !publishableKey) return null;
+    if (publishableKey.length > 4096 || /\s/.test(publishableKey)) return null;
+    try {
+      const url = new URL(rawUrl);
+      const localhost = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
+      if (url.protocol !== 'https:' && !(localhost && url.protocol === 'http:')) return null;
+      if (url.username || url.password || url.search || url.hash) return null;
+      return { url: url.toString().replace(/\/+$/, ''), publishableKey };
+    } catch (_) {
+      return null;
+    }
+  }
+
+  async function getPublishedSnapshotMetadata(projectId, timeoutMs = 4500, fetchImpl = null) {
+    const config = configuredSupabaseMetadata();
+    if (!config) return { ok: false, disabled: true, error: 'Supabase metadata is not configured.' };
+    if (!/^[a-z0-9][a-z0-9-]{1,62}$/.test(String(projectId || ''))) {
+      return { ok: false, disabled: false, error: 'Invalid platform project id.' };
+    }
+    const url = new URL(`${config.url}/rest/v1/published_project_snapshots`);
+    url.searchParams.set(
+      'select',
+      'id,project_id,run_id,data_as_of,source,source_hash,artifact_url,artifact_sha256,byte_size,contract_version,created_at',
+    );
+    url.searchParams.set('project_id', `eq.${projectId}`);
+    url.searchParams.set('order', 'data_as_of.desc,created_at.desc');
+    url.searchParams.set('limit', '1');
+    const controller = new AbortController();
+    const timeout = globalThis.setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const request = fetchImpl || globalThis.fetch;
+      if (typeof request !== 'function') throw new Error('Fetch is unavailable.');
+      const response = await request(url.toString(), {
+        signal: controller.signal,
+        cache: 'no-store',
+        headers: {
+          Accept: 'application/json',
+          apikey: config.publishableKey,
+        },
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const rows = await response.json();
+      const row = Array.isArray(rows) && isRecord(rows[0]) ? rows[0] : null;
+      if (!row) return { ok: false, disabled: false, error: 'No published metadata row.' };
+      if (row.project_id !== projectId) throw new Error('Supabase project id mismatch.');
+      const artifactSha256 = String(row.artifact_sha256 || '').toLowerCase();
+      const sourceHash = String(row.source_hash || '').toLowerCase();
+      if (!/^[a-f0-9]{64}$/.test(artifactSha256)) throw new Error('Invalid artifact SHA-256.');
+      if (!/^[a-f0-9]{8,128}$/.test(sourceHash)) throw new Error('Invalid source hash.');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(String(row.data_as_of || ''))) throw new Error('Invalid data date.');
+      return {
+        ok: true,
+        disabled: false,
+        data: {
+          projectId: row.project_id,
+          runId: String(row.run_id || ''),
+          dataAsOf: row.data_as_of,
+          source: String(row.source || ''),
+          sourceHash,
+          artifactUrl: String(row.artifact_url || ''),
+          artifactSha256,
+          byteSize: numberOr(row.byte_size, 0),
+          contractVersion: String(row.contract_version || ''),
+          createdAt: String(row.created_at || ''),
+        },
+      };
+    } catch (error) {
+      return { ok: false, disabled: false, error: error instanceof Error ? error.message : String(error) };
+    } finally {
+      globalThis.clearTimeout(timeout);
     }
   }
 
@@ -3621,6 +3722,7 @@
   }
 
   function healthTone(record) {
+    if (record.metadataMismatch) return 'warn';
     if (record.mode !== 'live') return 'warn';
     if (isRecordStale(record)) return 'warn';
     if (['demo', 'degraded', 'stale', 'unavailable', 'ruin'].includes(record.summary?.meta?.statusState)) return 'warn';
@@ -3629,6 +3731,7 @@
 
   function healthLabel(record) {
     const state = record.summary?.meta?.statusState;
+    if (record.metadataMismatch) return '메타데이터 불일치';
     if (record.mode !== 'live') return '대체 데이터';
     if (isRecordStale(record)) return '갱신 지연';
     if (record.summary?.meta?.dataModeLabel) return record.summary.meta.dataModeLabel;
@@ -4091,6 +4194,9 @@
       buildDramAxisTicks,
       buildEtfPercentAxisTicks,
       formatKellyHeadlineMetric,
+      configuredSupabaseMetadata,
+      getPublishedSnapshotMetadata,
+      PLATFORM_PROJECT_IDS,
     };
   }
 })();
