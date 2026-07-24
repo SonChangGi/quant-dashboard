@@ -443,6 +443,31 @@ def test_supabase_migration_has_private_bounded_control_tables() -> None:
     assert "grant select on public.analysis_runs to service_role" in migration
 
 
+def test_supabase_additive_migration_allows_bound_fear_greed_code_version() -> None:
+    migration = (
+        Path(__file__).resolve().parents[3]
+        / "infra"
+        / "supabase"
+        / "migrations"
+        / "202607240002_allow_fear_greed_code_version.sql"
+    ).read_text(encoding="utf-8")
+
+    assert "drop constraint analysis_runs_code_version_format" in migration
+    assert "add constraint analysis_runs_code_version_format check" in migration
+    assert "project_id = 'best-factor'" in migration
+    assert "code_version ~ '^[0-9a-f]{40}$'" in migration
+    assert "project_id = 'momentum'" in migration
+    assert (
+        "code_version ~ '^github:SonChangGi/momentum-factor-lab@[0-9a-f]{40}$'"
+        in migration
+    )
+    assert "project_id = 'fear-greed'" in migration
+    assert (
+        "code_version ~ '^github:SonChangGi/fearNgreed@[0-9a-f]{40}$'"
+        in migration
+    )
+
+
 def test_health_readiness_and_container_operability_contract() -> None:
     development = create_app(
         settings=Settings(),

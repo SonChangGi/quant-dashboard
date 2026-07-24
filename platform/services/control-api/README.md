@@ -170,8 +170,8 @@ deterministic providers. Copy `.env.example` to configure a real service.
 
 ## Production configuration
 
-Apply `platform/infra/supabase/migrations/202607240001_quant_control_plane.sql`
-first, then set at least:
+Apply every file in `platform/infra/supabase/migrations/` in chronological
+order, then set at least:
 
 ```dotenv
 QUANT_CONTROL_ENV=production
