@@ -1,0 +1,14 @@
+{
+  "name": "@quant-research/charts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./styles.css": "./src/styles.css"
+  },
+  "dependencies": {
+    "@quant-research/ui": "workspace:*",
+    "react": "^19.2.8"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "/healthz": ["get"],
+  "/readyz": ["get"],
+  "/v1/internal/runs/{run_id}/failure": ["post"],
+  "/v1/internal/runs/{run_id}/result-manifest": ["post"],
+  "/v1/projects/{project_id}/capabilities": ["get"],
+  "/v1/projects/{project_id}/runs": ["post"],
+  "/v1/runs/{run_id}": ["get"],
+  "/v1/runs/{run_id}/result": ["get"]
+}

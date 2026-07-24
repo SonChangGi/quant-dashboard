@@ -16,6 +16,63 @@ assert(
     === 'Fear & Greed|Momentum|DRAM|Best Factor|ETF|SOX|Risk Score|Port|Valuation|Kelly',
   'project manifest preserves the canonical navigation order after Hub',
 );
+assert(
+  JSON.stringify(api.PLATFORM_PROJECT_IDS) === JSON.stringify({
+    fearngreed: 'fear-greed',
+    momentum: 'momentum',
+    dram: 'dram',
+    best: 'best-factor',
+    etf: 'etf',
+    sox: 'sox',
+    'risk-score': 'risk-score',
+    valuation: 'valuation',
+    kelly: 'kelly',
+  }),
+  'Hub maps public summary ids to canonical platform project identities',
+);
+assert(api.configuredSupabaseMetadata() === null, 'Supabase metadata lookup is disabled without explicit public configuration');
+const metadataFetches = [];
+context.document = {
+  querySelector(selector) {
+    if (selector === 'meta[name="quant-supabase-url"]') return { content: 'https://project.supabase.co/' };
+    if (selector === 'meta[name="quant-supabase-publishable-key"]') return { content: 'sb_publishable_test_key' };
+    return null;
+  },
+};
+context.setTimeout = setTimeout;
+context.clearTimeout = clearTimeout;
+context.AbortController = AbortController;
+const publishedMetadata = await api.getPublishedSnapshotMetadata('best-factor', 100, async (url, options) => {
+  metadataFetches.push({ url, options });
+  return {
+    ok: true,
+    async json() {
+      return [{
+        id: 'snapshot-1',
+        project_id: 'best-factor',
+        run_id: 'run-1',
+        data_as_of: '2026-07-23',
+        source: 'best-factor-live',
+        source_hash: '1234567890abcdef',
+        artifact_url: 'https://raw.githubusercontent.com/SonChangGi/best-factor/0123456789012345678901234567890123456789/docs/data/latest-results.json',
+        artifact_sha256: 'a'.repeat(64),
+        byte_size: 1024,
+        contract_version: 'best-factor/latest-results/v1',
+        created_at: '2026-07-24T01:00:00Z',
+      }];
+    },
+  };
+});
+assert(publishedMetadata.ok && publishedMetadata.data.dataAsOf === '2026-07-23', 'Hub validates optional Supabase published snapshot metadata');
+assert(
+  metadataFetches.length === 1
+    && metadataFetches[0].url.includes('/rest/v1/published_project_snapshots?')
+    && metadataFetches[0].url.includes('project_id=eq.best-factor')
+    && metadataFetches[0].options.headers.apikey === 'sb_publishable_test_key'
+    && !Object.hasOwn(metadataFetches[0].options.headers, 'Authorization'),
+  'Hub metadata lookup uses the public view and publishable key only',
+);
+delete context.document;
 const momentumJcsRecordsVector = [
   { z: 1, a: '한글' },
   { nested: { b: 1, a: 2 }, a: true },
@@ -1777,6 +1834,11 @@ const staleByDataAsOfRecord = {
 assert(api.recordFreshnessDate(staleByDataAsOfRecord) === '2000-01-01', 'data health freshness source prefers dataAsOf/dataEndDate over generatedAt');
 assert(api.isRecordStale(staleByDataAsOfRecord), 'data health marks a stale dataAsOf as stale even when generatedAt is fresh');
 assert(/기준일/.test(api.recordFreshnessText(staleByDataAsOfRecord)), 'data health text names the data 기준일 used for staleness');
+assert(
+  api.healthTone({ ...staleByDataAsOfRecord, metadataMismatch: true }) === 'warn'
+    && api.healthLabel({ ...staleByDataAsOfRecord, metadataMismatch: true }) === '메타데이터 불일치',
+  'data health fails closed when database metadata and the rendered summary date disagree',
+);
 
 const records = [
   { project: api.PROJECTS.find((project) => project.id === 'momentum'), summary: validMomentum, mode: 'live', generatedAt: validMomentum.generatedAt, payloadBytes: 13000, sourceCount: 2 },

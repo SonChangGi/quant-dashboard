@@ -9,6 +9,8 @@ const files = {
   webDesign: readFileSync('docs/web-design.md', 'utf8'),
   commonDesign: readFileSync('docs/common-design-v1.md', 'utf8'),
   commonDesignPrompt: readFileSync('docs/common-design-v1-rollout-prompt.md', 'utf8'),
+  platformArchitecture: readFileSync('docs/platform-architecture-v1.md', 'utf8'),
+  controlAudit: readFileSync('docs/control-audit-2026-07-24.md', 'utf8'),
   packageJson: readFileSync('package.json', 'utf8'),
   liveSmoke: readFileSync('scripts/live-contract-smoke.mjs', 'utf8'),
   riskSyncWorkflow: readFileSync('.github/workflows/sync-risk-score.yml', 'utf8'),
@@ -18,7 +20,7 @@ const checks = [];
 const assert = (condition, label) => checks.push({ label, ok: Boolean(condition) });
 const contains = (file, needle) => file.includes(needle);
 
-for (const path of ['index.html', 'assets/styles.css', 'assets/app.js', 'DESIGN.md', 'docs/web-design.md', 'docs/common-design-v1.md', 'docs/common-design-v1-rollout-prompt.md', 'scripts/verify.mjs', 'scripts/regression.mjs', 'scripts/static-smoke.mjs', 'scripts/live-contract-smoke.mjs', '.github/workflows/sync-risk-score.yml', 'package.json']) {
+for (const path of ['index.html', 'assets/styles.css', 'assets/app.js', 'DESIGN.md', 'docs/web-design.md', 'docs/common-design-v1.md', 'docs/common-design-v1-rollout-prompt.md', 'docs/platform-architecture-v1.md', 'docs/control-audit-2026-07-24.md', 'scripts/verify.mjs', 'scripts/regression.mjs', 'scripts/static-smoke.mjs', 'scripts/live-contract-smoke.mjs', '.github/workflows/sync-risk-score.yml', '.github/workflows/platform-foundation.yml', 'platform/vercel.json', 'package.json']) {
   assert(statSync(path).isFile(), `${path} exists`);
 }
 
@@ -72,8 +74,19 @@ assert(contains(files.html, 'id="summary-grid"'), 'dynamic dashboard mount exist
 assert(contains(files.html, 'id="research-briefing"'), 'research briefing mount exists');
 assert(contains(files.html, 'id="watchlist-input"'), 'watchlist input exists');
 assert(contains(files.html, 'id="data-health"'), 'data health mount exists');
+assert(
+  contains(files.html, 'name="quant-supabase-url" content=""')
+    && contains(files.html, 'name="quant-supabase-publishable-key" content=""'),
+  'optional Supabase metadata connection is disabled by default',
+);
 assert(contains(files.app, 'FALLBACK_SNAPSHOT'), 'fallback snapshot exists');
 assert(contains(files.app, 'getJsonBestEffort'), 'best-effort fetch helper exists');
+assert(
+  contains(files.app, 'getPublishedSnapshotMetadata')
+    && contains(files.app, 'published_project_snapshots')
+    && contains(files.app, 'metadataMismatch'),
+  'Hub reads optional published metadata while preserving Pages JSON fallback',
+);
 assert(contains(files.app, 'textByteLength'), 'payload byte counter helper exists');
 assert(contains(files.app, 'resolveLoadState'), 'schema/empty-data load state resolver exists');
 assert(contains(files.app, 'parsePanelSafely'), 'parser exception fallback guard exists');
@@ -163,16 +176,36 @@ assert(contains(files.readme, '다른 프로젝트의 로컬 소스 코드를 �
 assert(contains(files.readme, 'summary.json'), 'README documents summary contract endpoint');
 assert(contains(files.readme, 'docs/web-design.md') && contains(files.design, 'docs/web-design.md'), 'README and DESIGN link the canonical web design prompt');
 assert(
+  contains(files.readme, 'docs/platform-architecture-v1.md')
+    && contains(files.readme, 'docs/control-audit-2026-07-24.md')
+    && contains(files.platformArchitecture, 'Do not force every project through FastAPI')
+    && contains(files.controlAudit, 'Analysis controls'),
+  'README links the audited frontend/backend boundary and implementation architecture',
+);
+assert(contains(files.readme, 'Momentum Factor, Best Factor') && contains(files.readme, '여섯 기준 프로젝트'), 'README names the complete six-site design reference suite');
+assert(
   [
     'https://sonchanggi.github.io/dram-price/',
     'https://sonchanggi.github.io/fearNgreed/',
     'https://sonchanggi.github.io/etf-tracking/',
     'https://sonchanggi.github.io/sox/',
     'https://sonchanggi.github.io/momentum-factor-lab/',
+    'https://sonchanggi.github.io/best-factor/',
   ].every((url) => contains(files.webDesign, url)),
-  'web design prompt fixes the five-site reference suite',
+  'web design prompt fixes the six-site reference suite',
 );
+assert(contains(files.webDesign, '버전: `2.2.1`'), 'web design prompt version is pinned');
 assert(contains(files.webDesign, '## 1. 절대 보호 경계') && contains(files.webDesign, '계산·normalization·selection·aggregation 함수는 동결'), 'web design prompt protects analysis and result behavior');
+assert(contains(files.webDesign, '### 1.4 입력의 네 종류를 먼저 선언한다') && ['`display`', '`result_selector`', '`analysis`', '`operation`'].every((kind) => contains(files.webDesign, kind)), 'web design prompt classifies every visible control before implementation');
+assert(contains(files.webDesign, '### 1.5 현재 6개 사이트의 입력 기준선') && contains(files.webDesign, 'command 생성만으로 완료 처리하지 않는다'), 'web design prompt records the audited six-site input baseline');
+assert(contains(files.webDesign, '### 1.6 입력 → 권위 분석 engine → 결과 계약') && contains(files.webDesign, 'config_hash') && contains(files.webDesign, 'artifact URL·SHA-256'), 'web design prompt requires an end-to-end input and artifact identity contract');
+assert(contains(files.webDesign, '실제 bytes를 가져와 byte size와 SHA-256을 검증') && contains(files.webDesign, 'envelope 자기 비교는 금지'), 'web design prompt requires actual artifact-byte verification');
+assert(contains(files.webDesign, 'worker의 실제 최대 실행 시간') && contains(files.webDesign, '내구 저장소에서 재조회'), 'web design prompt covers long-running durable analysis');
+assert(contains(files.webDesign, '### 1.7 입력 민감도와 결정성 테스트') && contains(files.webDesign, '결정적 A/B fixture') && contains(files.webDesign, '단순 mock 호출 횟수만으로'), 'web design prompt requires black-box input sensitivity evidence');
+assert(contains(files.webDesign, '### 1.8 백엔드·프런트엔드 분리 경계') && contains(files.webDesign, '정적 JSON snapshot은 삭제하지 않고'), 'web design prompt separates delivery responsibilities without replacing validated snapshots');
+assert(contains(files.webDesign, 'applied_config') && contains(files.webDesign, 'draft_config') && contains(files.webDesign, 'requested_inputs') && contains(files.webDesign, 'effective_inputs'), 'web design prompt prevents draft and silently-fallbacked inputs from masquerading as applied results');
+assert(contains(files.webDesign, 'effective_config_hash') && contains(files.webDesign, 'config_hash == effective_config_hash'), 'web design prompt binds requested and fallback-effective configurations separately');
+assert(contains(files.webDesign, 'packages/') && contains(files.webDesign, 'data-client/') && contains(files.webDesign, '프로젝트별 view-model'), 'web design prompt defines reusable frontend boundaries without centralizing project calculations');
 assert(contains(files.webDesign, '## 13. 기존 페이지 개선 절차') && contains(files.webDesign, '## 14. 신규 프로젝트 구현 절차') && contains(files.webDesign, 'local preview'), 'web design prompt covers existing and new project workflows');
 assert(contains(files.webDesign, '## 4. 11개 공통 메뉴') && contains(files.webDesign, 'aria-current="page"') && contains(files.webDesign, 'Quant Research Hub'), 'web design prompt fixes the shared navigation contract');
 assert(contains(files.webDesign, '## 9. Table') && contains(files.webDesign, 'tabular') && contains(files.webDesign, '## 10. Chart') && contains(files.webDesign, 'plot 밖 정확값 readout'), 'web design prompt fixes table and chart contracts');

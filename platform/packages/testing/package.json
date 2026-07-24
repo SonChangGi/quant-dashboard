@@ -1,0 +1,18 @@
+{
+  "name": "@quant-research/testing",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@quant-research/contracts": "workspace:*",
+    "@quant-research/charts": "workspace:*",
+    "@quant-research/data-client": "workspace:*",
+    "@quant-research/project-registry": "workspace:*",
+    "@quant-research/shell": "workspace:*",
+    "@quant-research/ui": "workspace:*",
+    "react": "^19.2.8"
+  }
+}

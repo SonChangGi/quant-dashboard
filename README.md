@@ -11,19 +11,23 @@
 
 ## 공통 웹 디자인 프롬프트
 
-앞으로의 기존 페이지 개선과 신규 프로젝트는 [Quant Research Web Design Prompt](docs/web-design.md)를 최우선 디자인 계약으로 사용합니다. 이 문서는 현재 구현된 DRAM, Fear & Greed, ETF Tracking, SOX, Momentum Factor의 실제 디자인을 참조 스위트로 고정하고, 상위 메뉴·색상·타이포그래피·간격·컴포넌트·표·차트·접근성·검증 절차를 함께 정의합니다.
+앞으로의 기존 페이지 개선과 신규 프로젝트는 [Quant Research Web Design Prompt](docs/web-design.md)를 최우선 디자인 계약으로 사용합니다. 이 문서는 현재 구현된 DRAM, Fear & Greed, ETF Tracking, SOX, Momentum Factor, Best Factor의 실제 디자인을 참조 스위트로 고정하고, 상위 메뉴·색상·타이포그래피·간격·컴포넌트·표·차트·접근성·검증 절차를 함께 정의합니다.
 
 [공통 디자인 v1.2](docs/common-design-v1.md)와 [v1.2 프로젝트 적용 프롬프트](docs/common-design-v1-rollout-prompt.md)는 파일럿에서 확립한 정보 구조·차트 상태·보호 경계의 근거 문서로 유지합니다. 충돌할 경우 `docs/web-design.md`를 우선합니다.
 
 - 프레임워크가 아니라 사용자 계약을 공유합니다.
-- 다섯 기준 프로젝트의 공통 디자인 문법을 사용하되 어느 한 페이지를 통째로 복제하지 않습니다.
+- 여섯 기준 프로젝트의 공통 디자인 문법을 사용하되 어느 한 페이지를 통째로 복제하지 않습니다.
 - 메뉴·색상 역할·정보 위계·밀도·상호작용은 맞추고 프로젝트별 차트·표·결과 구조는 유지합니다.
 - 각 프로젝트의 데이터·계산·배포 경계는 유지합니다.
 - 나머지 프로젝트는 한 번에 바꾸지 않고 프로젝트별 plan-goal로 적용합니다.
 
+백엔드·프런트엔드 분리와 단계적 이전은 [Platform Architecture v1](docs/platform-architecture-v1.md)을 따릅니다. 실제 공통 package·신규 프로젝트 template·도입 방법은 [frontend foundation](platform/README.md)에, 현재 입력 경로의 읽기 전용 근거는 [6개 대시보드 control 감사](docs/control-audit-2026-07-24.md)에 기록했습니다.
+
 ## 데이터 경계
 
 이 저장소는 다른 프로젝트의 로컬 소스 코드를 직접 import하지 않습니다. 런타임에서는 각 프로젝트의 작은 `summary.json`을 먼저 읽고, 필요한 경우에만 작은 detail JSON을 보조로 읽습니다.
+
+`index.html`의 `quant-supabase-url`과 `quant-supabase-publishable-key`가 명시적으로 설정된 환경에서는 공개 RLS view의 게시 metadata를 함께 조회합니다. 두 값은 기본적으로 비어 있으며, 설정되지 않았거나 조회가 실패하면 기존 Pages `summary.json` 경로만 사용합니다. Metadata의 기준일과 실제 표시한 summary 기준일이 다르면 어느 한쪽을 새 결과로 간주하지 않고 불일치 상태로 닫힙니다. 브라우저에는 publishable key만 허용하며 service-role key는 사용하지 않습니다.
 
 - `https://sonchanggi.github.io/momentum-factor-lab/data/summary.json`
 - `https://sonchanggi.github.io/fearNgreed/data/summary.json`
