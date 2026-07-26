@@ -1,0 +1,229 @@
+{
+  "$schema": "./quant-project.schema.json",
+  "schema_version": 1,
+  "project": {
+    "id": "replace-me",
+    "name": "Replace Me",
+    "purpose": "The user-visible result this project exists to produce.",
+    "repository": "replace-me-owner/replace-me-repository",
+    "public_url": "https://example.invalid/replace-me/",
+    "fallback_url": "https://example.invalid/replace-me-fallback/"
+  },
+  "protected": {
+    "paths": [
+      "src/analysis/**"
+    ],
+    "result_fixtures": [],
+    "notes": [
+      "List formulas, schemas, date semantics, tables, charts, URLs, and workflows that must not change implicitly.",
+      "Do not protect all generated data bytes when an authorized refresh must update them; protect schemas, generators, fixtures, and invariants instead."
+    ]
+  },
+  "data": {
+    "sources": [
+      {
+        "id": "replace-me-source",
+        "provider": "replace-me-provider",
+        "role": "required",
+        "collector_entrypoint": "replace/me/collector.py",
+        "rights_policy": "replace-with-approved-provider-rights-policy",
+        "secret_names": [],
+        "provider_timezone": "UTC",
+        "session_calendar": "replace-me-calendar",
+        "expected_release_window": "replace-me-window",
+        "allowed_lag": "replace-me-lag",
+        "allowed_lag_seconds": 0,
+        "maximum_source_age_seconds": 0,
+        "rate_limit_policy": "bounded",
+        "retry_policy": "bounded",
+        "cache_policy": "bounded-project-local",
+        "raw_artifact": "data/raw/replace-me.json",
+        "normalized_artifact": "data/normalized/replace-me.json",
+        "schema_contract": "schemas/replace-me.json",
+        "freshness_fields": [
+          "source_as_of",
+          "collected_at",
+          "artifact_sha256"
+        ],
+        "fallback_policy": "fail-closed",
+        "paid_fallback_enabled": false
+      }
+    ],
+    "coherent_cutoff_policy": "replace-with-project-cutoff-policy",
+    "data_manifest_path": "data/manifest.json",
+    "provenance_fields": [
+      "source_id",
+      "source_as_of",
+      "collected_at",
+      "artifact_sha256"
+    ],
+    "source_last_good_policy": "retain-and-report-explicit-state"
+  },
+  "analysis": {
+    "input_schema_contract": "schemas/analysis-input.json",
+    "result_artifact_identity": [
+      {
+        "id": "project",
+        "json_pointer": "/project_id",
+        "identity_field": "project_id"
+      },
+      {
+        "id": "run",
+        "json_pointer": "/run_id",
+        "identity_field": "run_id"
+      }
+    ],
+    "authoritative_entrypoints": [
+      "replace/me/pipeline.py"
+    ],
+    "controls": [
+      {
+        "id": "example-control",
+        "kind": "display",
+        "frontend_field": "",
+        "canonical_field": "",
+        "validation": "",
+        "execution_mapping": "",
+        "result_paths": [],
+        "default_source": ""
+      }
+    ],
+    "result_identity_fields": [
+      "project_id",
+      "run_id",
+      "data_as_of",
+      "code_version",
+      "data_manifest_sha256",
+      "analysis_input_sha256",
+      "analysis_input_validation_sha256",
+      "analysis_entrypoint_sha256",
+      "config_hash",
+      "effective_config_hash",
+      "input_schema_version",
+      "data_schema_version",
+      "result_schema_version",
+      "artifact_sha256"
+    ],
+    "requested_effective_policy": "fail-closed"
+  },
+  "frontend": {
+    "type": "static",
+    "root": "",
+    "build_command": "",
+    "test_commands": [],
+    "design_contract": "",
+    "chart_contracts": [],
+    "table_contracts": []
+  },
+  "backend": {
+    "required": false,
+    "control_api": "",
+    "worker": "",
+    "storage": "",
+    "test_commands": []
+  },
+  "automation": {
+    "mode": "scheduled",
+    "workflows": [
+      ".github/workflows/replace-me-refresh.yml"
+    ],
+    "schedules": [
+      {
+        "id": "replace-me-schedule",
+        "workflow": ".github/workflows/replace-me-refresh.yml",
+        "entrypoint": "replace/me/pipeline.py",
+        "entrypoint_command": "python replace/me/pipeline.py",
+        "job_id": "refresh",
+        "cost_preflight_step_id": "cost-preflight",
+        "entrypoint_step_id": "collect-and-analyze",
+        "cost_preflight_entrypoint": "replace/me/cost_preflight.py",
+        "cost_preflight_command": "python replace/me/cost_preflight.py",
+        "cron": "0 0 * * *",
+        "cron_timezone": "UTC",
+        "business_timezone": "replace-me-timezone",
+        "calendar": "replace-me-calendar",
+        "availability_lag": "replace-me-lag",
+        "idempotency_key": "project-date-config",
+        "concurrency_policy": "one-current-writer",
+        "concurrency_group": "replace-me-automation",
+        "cancel_in_progress": false,
+        "timeout": "replace-me-timeout",
+        "retry_policy": "bounded",
+        "manual_dispatch_mode": "replace-me-backfill-mode",
+        "retention_policy": "replace-me-retention",
+        "enabled_on_default_branch": true
+      }
+    ],
+    "pipeline_stages": [
+      "collect",
+      "validate",
+      "normalize",
+      "coherent_cutoff",
+      "analyze",
+      "validate_result",
+      "stage",
+      "publish",
+      "deploy",
+      "public_readback"
+    ],
+    "freshness_fields": [
+      "source_as_of",
+      "collected_at",
+      "data_as_of",
+      "calculated_at",
+      "published_at",
+      "verified_at"
+    ],
+    "publication_path": "replace/me/public-result.json",
+    "public_readback_urls": [
+      "https://example.invalid/replace-me/public-result.json"
+    ],
+    "last_good_policy": "atomic-current-pointer",
+    "failure_policy": "fail-closed-or-explicit-degraded",
+    "cost_bounds": {
+      "policy": "zero-spend",
+      "retry_ceiling": 2,
+      "concurrency_ceiling": 1,
+      "retention_ceiling": 30,
+      "overage_enabled": false,
+      "paid_fallback_enabled": false,
+      "trial_credit_or_overage_possible": false,
+      "auto_renewing_trial_enabled": false,
+      "automatic_upgrade_enabled": false,
+      "payment_method_change_required": false,
+      "payment_method_registration_required": false,
+      "plan_upgrade_required": false,
+      "pay_as_you_go_enabled": false,
+      "free_quota_exceedance_allowed": false,
+      "paid_add_on_enabled": false,
+      "spend_cap_disabled": false,
+      "spend_cap_enabled": true,
+      "quota_hard_stop": true
+    }
+  },
+  "release": {
+    "base_branch": "main",
+    "approved_account": "replace-me-owner",
+    "preview": "",
+    "production": "https://example.invalid/replace-me/",
+    "cost_policy": "zero-spend-unless-user-first-requests-specific-paid-action",
+    "paid_action_authority": null,
+    "paid_fallback_policy": "prohibited",
+    "authority_note": "Repository files can record policy or receipts but never grant paid authority."
+  },
+  "quality": {
+    "commands": [],
+    "viewports": [
+      "1440x900",
+      "1024x768",
+      "390x844"
+    ],
+    "required_states": [
+      "loading",
+      "ready",
+      "empty",
+      "degraded",
+      "error"
+    ]
+  }
+}
