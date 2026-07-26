@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "goal_id": "replace-me",
+  "project_id": "replace-me",
+  "objective": "",
+  "status": "active",
+  "base_commit": "",
+  "worktree": "",
+  "protected_baseline": "",
+  "scope": {
+    "automated_data_to_web": false,
+    "remote_release": false,
+    "paid_action": false
+  },
+  "required_outcomes": {
+    "automated_data_to_web": false,
+    "remote_release": false
+  },
+  "approval_gates": {
+    "implementation": "pending",
+    "preview": "pending",
+    "release": "pending",
+    "production_replacement": "pending",
+    "paid_action": "prohibited-unless-user-first-requests-specific-scope"
+  },
+  "cost_authority": {
+    "policy": "zero-spend-unless-user-first-requests-specific-paid-action",
+    "paid_action_requested": false,
+    "authority_source": "none",
+    "authority_note": "This goal file records evidence only and can never grant or manufacture paid authority.",
+    "trusted_runtime_envelope_required_for_paid_completion": true,
+    "trusted_runtime_envelope_available": false,
+    "trusted_runtime_envelope_id": "",
+    "trusted_runtime_envelope_sha256": "",
+    "machine_paid_completion_eligible": false,
+    "missing_envelope_decision": "block-paid-action-and-completion",
+    "recorded_paid_scope": null,
+    "remote_or_provider_rule": "no_billable_action-is-prohibited-for-remote-or-provider-actions",
+    "remote_or_provider_completion_classifications": [
+      "verified_zero_charge",
+      "explicit_user_paid_command"
+    ],
+    "actions": [],
+    "canonical_actions_envelope": {
+      "canonicalization": "canonical-json-v1",
+      "action_count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "authoritative_for_cost_gate": true
+    },
+    "numeric_ceiling_policy": {
+      "finite_nonnegative_numbers_required": true,
+      "hard_stop_required": true,
+      "quota_check_before_each_recurring_run": true,
+      "paid_fallback_enabled": false,
+      "auto_renewing_trial_enabled": false,
+      "automatic_upgrade_enabled": false,
+      "payment_method_registration_required": false,
+      "plan_upgrade_required": false,
+      "overage_enabled": false,
+      "pay_as_you_go_enabled": false,
+      "free_quota_exceedance_allowed": false,
+      "paid_add_on_enabled": false,
+      "spend_cap_disabled": false,
+      "spend_cap_enabled": true
+    },
+    "last_preflight": null
+  },
+  "automation_state": {
+    "in_scope": false,
+    "scope_status": "explicitly-out-of-scope",
+    "scope_exclusion_reason": "",
+    "source_registry_baseline": "",
+    "last_good_result_identity": {},
+    "last_completed_stage": "",
+    "schedule_verified": false,
+    "public_readback_verified": false
+  },
+  "stories": [],
+  "checkpoints": [],
+  "last_completed_gate": "",
+  "blockers": [],
+  "updated_at": ""
+}

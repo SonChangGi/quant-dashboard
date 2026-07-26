@@ -1,0 +1,218 @@
+{
+  "schema_version": 2,
+  "project_id": "replace-me",
+  "objective": "",
+  "scope": {
+    "automated_data_to_web": false,
+    "remote_release": false,
+    "paid_action": false
+  },
+  "cost_authority": {
+    "policy": "zero-spend-unless-user-first-requests-specific-paid-action",
+    "classification": "unknown_or_unapproved",
+    "decision": "block",
+    "paid_action_requested": false,
+    "authority_origin": "none",
+    "cost_evidence_sha256": "",
+    "actions": [],
+    "canonical_actions_envelope": {
+      "canonicalization": "canonical-json-v1",
+      "action_count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "authoritative_for_cost_gate": true
+    },
+    "machine_authority_note": "Locally writable fields cannot prove direct-user paid authority. Without a trusted runtime envelope, explicit paid completion remains blocked."
+  },
+  "required_gates": [
+    "contract",
+    "tests",
+    "product",
+    "cost"
+  ],
+  "gates": {
+    "contract": {
+      "status": "pending",
+      "evidence": []
+    },
+    "tests": {
+      "status": "pending",
+      "evidence": []
+    },
+    "product": {
+      "status": "pending",
+      "evidence": []
+    },
+    "cost": {
+      "status": "pending",
+      "evidence": [
+        {
+          "kind": "cost_preflight",
+          "summary": "",
+          "source": "",
+          "checked_at": "",
+          "classification": "unknown_or_unapproved",
+          "decision": "block",
+          "canonical_actions_envelope_sha256": "",
+          "all_remote_or_provider_actions_enumerated": false,
+          "all_numeric_ceilings_validated": false,
+          "all_hard_stops_enabled": false,
+          "trusted_runtime_paid_authority_verified": false
+        }
+      ]
+    },
+    "input_binding": {
+      "status": "not_required",
+      "evidence": []
+    },
+    "collection": {
+      "status": "not_required",
+      "evidence": []
+    },
+    "freshness": {
+      "status": "not_required",
+      "evidence": []
+    },
+    "analysis_result": {
+      "status": "not_required",
+      "evidence": []
+    },
+    "schedule": {
+      "status": "not_required",
+      "evidence": []
+    },
+    "publication": {
+      "status": "not_required",
+      "evidence": []
+    },
+    "preview": {
+      "status": "not_required",
+      "evidence": []
+    },
+    "release": {
+      "status": "not_required",
+      "evidence": []
+    },
+    "public_readback": {
+      "status": "not_required",
+      "evidence": []
+    }
+  },
+  "protected_changes": [],
+  "known_limitations": [],
+  "fallback": {
+    "available": true,
+    "location": ""
+  },
+  "result_identity": {
+    "project_id": "",
+    "run_id": "",
+    "data_as_of": "",
+    "code_version": "",
+    "data_manifest_sha256": "",
+    "analysis_input_sha256": "",
+    "analysis_input_validation_sha256": "",
+    "analysis_entrypoint_sha256": "",
+    "config_hash": "",
+    "effective_config_hash": "",
+    "input_schema_version": "",
+    "data_schema_version": "",
+    "result_schema_version": "",
+    "artifact_sha256": ""
+  },
+  "automation_identity": {
+    "source_manifest_sha256": "",
+    "source_manifest_size": null,
+    "required_source_ids": [],
+    "required_source_count": null,
+    "failed_required_source_count": null,
+    "data_as_of": "",
+    "analysis_code_version": "",
+    "analysis_entrypoint_sha256": "",
+    "analysis_input_sha256": "",
+    "analysis_input_size": null,
+    "analysis_input_validation_sha256": "",
+    "analysis_input_validation_size": null,
+    "analysis_request_manifest_sha256": "",
+    "analysis_request_manifest_size": null,
+    "result_manifest_sha256": "",
+    "result_manifest_size": null,
+    "config_hash": "",
+    "effective_config_hash": "",
+    "input_schema_version": "",
+    "input_schema_sha256": "",
+    "data_schema_version": "",
+    "result_schema_version": "",
+    "run_id": "",
+    "run_url": "",
+    "workflow_run_evidence_sha256": "",
+    "workflow_file_sha256": "",
+    "workflow_started_at": "",
+    "cost_preflight_completed_at": "",
+    "entrypoint_started_at": "",
+    "default_branch": "",
+    "head_sha": "",
+    "job_id": "",
+    "cost_preflight_step_id": "",
+    "entrypoint_step_id": "",
+    "steps_completed": null,
+    "result_artifact_sha256": "",
+    "result_artifact_size": null,
+    "published_result_key": "",
+    "publication_state": "",
+    "previous_generation": null,
+    "candidate_generation": null,
+    "previous_public_result_sha256": "",
+    "previous_data_as_of": "",
+    "previous_published_result_key": "",
+    "public_pointer_before_sha256": "",
+    "public_pointer_before_size": null,
+    "public_pointer_after_sha256": "",
+    "public_pointer_after_size": null,
+    "publication_ordering_evidence_sha256": "",
+    "publication_ordering_evidence_size": null,
+    "publication_ordering_test_output_sha256": "",
+    "publication_ordering_test_output_size": null,
+    "schedule_id": "",
+    "workflow": "",
+    "schedule_last_success_at": "",
+    "deployment_id": "",
+    "public_url": "",
+    "public_http_status": null,
+    "public_response_sha256": "",
+    "public_response_size": null,
+    "frontend_url": "",
+    "frontend_http_status": null,
+    "frontend_response_sha256": "",
+    "frontend_response_size": null,
+    "frontend_binding_evidence_sha256": "",
+    "frontend_binding_evidence_size": null,
+    "frontend_dom_snapshot_sha256": "",
+    "frontend_dom_snapshot_size": null,
+    "public_verified_at": ""
+  },
+  "release_identity": {
+    "repository": "replace-me-owner/replace-me-repository",
+    "account": "replace-me-owner",
+    "branch": "",
+    "commit_sha": "",
+    "ci_run_id": "",
+    "ci_run_url": "",
+    "release_run_evidence_sha256": "",
+    "job_id": "",
+    "steps_completed": null,
+    "cost_preflight_step_id": "",
+    "cost_preflight_completed_at": "",
+    "remote_write_step_id": "",
+    "remote_write_started_at": "",
+    "run_completed_at": "",
+    "deployment_id": "",
+    "production_url": "",
+    "frontend_response_sha256": "",
+    "frontend_response_size": null,
+    "authoritative_result_url": "",
+    "authoritative_result_sha256": "",
+    "authoritative_result_size": null,
+    "public_verified_at": ""
+  },
+  "completed_at": ""
+}

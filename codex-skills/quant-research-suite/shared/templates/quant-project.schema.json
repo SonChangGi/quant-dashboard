@@ -1,0 +1,958 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/quant-project.schema.json",
+  "title": "Quant Research Project Contract",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "project",
+    "protected",
+    "data",
+    "analysis",
+    "frontend",
+    "backend",
+    "automation",
+    "release",
+    "quality"
+  ],
+  "$defs": {
+    "projectRelativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?![A-Za-z][A-Za-z0-9+.-]*:)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\]+$"
+    },
+    "httpUrl": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^https?://[^\\s]+$"
+    }
+  },
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "project": {
+      "type": "object",
+      "required": ["id", "name", "purpose", "repository"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "purpose": {
+          "type": "string",
+          "minLength": 1
+        },
+        "repository": {
+          "type": "string",
+          "pattern": "^[^/\\s]+/[^/\\s]+$"
+        },
+        "public_url": {
+          "oneOf": [
+            {
+              "const": ""
+            },
+            {
+              "$ref": "#/$defs/httpUrl"
+            }
+          ]
+        },
+        "fallback_url": {
+          "oneOf": [
+            {
+              "const": ""
+            },
+            {
+              "$ref": "#/$defs/httpUrl"
+            }
+          ]
+        }
+      },
+      "additionalProperties": true
+    },
+    "protected": {
+      "type": "object",
+      "required": ["paths"],
+      "properties": {
+        "paths": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/projectRelativePath"
+          }
+        },
+        "result_fixtures": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/projectRelativePath"
+          }
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "data": {
+      "type": "object",
+      "required": [
+        "sources",
+        "coherent_cutoff_policy",
+        "source_last_good_policy"
+      ],
+      "properties": {
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "provider",
+              "role",
+              "collector_entrypoint",
+              "rights_policy",
+              "secret_names",
+              "provider_timezone",
+              "session_calendar",
+              "expected_release_window",
+              "allowed_lag",
+              "allowed_lag_seconds",
+              "maximum_source_age_seconds",
+              "rate_limit_policy",
+              "retry_policy",
+              "cache_policy",
+              "raw_artifact",
+              "normalized_artifact",
+              "schema_contract",
+              "freshness_fields",
+              "fallback_policy",
+              "paid_fallback_enabled"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "provider": {
+                "type": "string",
+                "minLength": 1
+              },
+              "role": {
+                "enum": [
+                  "required",
+                  "optional",
+                  "benchmark",
+                  "fallback"
+                ]
+              },
+              "collector_entrypoint": {
+                "$ref": "#/$defs/projectRelativePath"
+              },
+              "rights_policy": {
+                "type": "string",
+                "minLength": 1
+              },
+              "secret_names": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "freshness_fields": {
+                "type": "array",
+                "minItems": 3,
+                "uniqueItems": true,
+                "items": {
+                  "type": "string"
+                },
+                "allOf": [
+                  {
+                    "contains": {
+                      "const": "source_as_of"
+                    }
+                  },
+                  {
+                    "contains": {
+                      "const": "collected_at"
+                    }
+                  },
+                  {
+                    "contains": {
+                      "const": "artifact_sha256"
+                    }
+                  }
+                ]
+              },
+              "provider_timezone": {
+                "type": "string",
+                "minLength": 1
+              },
+              "session_calendar": {
+                "type": "string",
+                "minLength": 1
+              },
+              "expected_release_window": {
+                "type": "string",
+                "minLength": 1
+              },
+              "allowed_lag": {
+                "type": "string",
+                "minLength": 1
+              },
+              "allowed_lag_seconds": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "maximum_source_age_seconds": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "rate_limit_policy": {
+                "type": "string",
+                "minLength": 1
+              },
+              "retry_policy": {
+                "type": "string",
+                "minLength": 1
+              },
+              "cache_policy": {
+                "type": "string",
+                "minLength": 1
+              },
+              "raw_artifact": {
+                "$ref": "#/$defs/projectRelativePath"
+              },
+              "normalized_artifact": {
+                "$ref": "#/$defs/projectRelativePath"
+              },
+              "schema_contract": {
+                "$ref": "#/$defs/projectRelativePath"
+              },
+              "fallback_policy": {
+                "enum": [
+                  "fail-closed",
+                  "explicit-degraded",
+                  "last-good-explicit-degraded"
+                ]
+              },
+              "paid_fallback_enabled": {
+                "const": false
+              }
+            },
+            "additionalProperties": true
+          }
+        },
+        "coherent_cutoff_policy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "data_manifest_path": {
+          "$ref": "#/$defs/projectRelativePath"
+        },
+        "provenance_fields": {
+          "type": "array",
+          "minItems": 4,
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          },
+          "allOf": [
+            {
+              "contains": {
+                "const": "source_id"
+              }
+            },
+            {
+              "contains": {
+                "const": "source_as_of"
+              }
+            },
+            {
+              "contains": {
+                "const": "collected_at"
+              }
+            },
+            {
+              "contains": {
+                "const": "artifact_sha256"
+              }
+            }
+          ]
+        },
+        "source_last_good_policy": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "sources": {
+                "minItems": 1
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "data_manifest_path",
+              "provenance_fields"
+            ]
+          }
+        }
+      ],
+      "additionalProperties": true
+    },
+    "analysis": {
+      "type": "object",
+      "required": [
+        "authoritative_entrypoints",
+        "controls"
+      ],
+      "properties": {
+        "input_schema_contract": {
+          "$ref": "#/$defs/projectRelativePath"
+        },
+        "result_artifact_identity": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["id", "json_pointer", "identity_field"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "json_pointer": {
+                "type": "string",
+                "pattern": "^/"
+              },
+              "identity_field": {
+                "enum": [
+                  "project_id",
+                  "run_id",
+                  "data_as_of",
+                  "code_version",
+                  "data_manifest_sha256",
+                  "analysis_input_sha256",
+                  "config_hash",
+                  "effective_config_hash",
+                  "input_schema_version",
+                  "data_schema_version",
+                  "result_schema_version",
+                  "artifact_sha256"
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "authoritative_entrypoints": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/projectRelativePath"
+          }
+        },
+        "controls": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "kind"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "enum": [
+                  "display",
+                  "result_selector",
+                  "analysis",
+                  "operation"
+                ]
+              }
+            },
+            "additionalProperties": true
+          }
+        },
+        "result_identity_fields": {
+          "type": "array",
+          "minItems": 12,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "allOf": [
+            {
+              "contains": {
+                "const": "project_id"
+              }
+            },
+            {
+              "contains": {
+                "const": "run_id"
+              }
+            },
+            {
+              "contains": {
+                "const": "data_as_of"
+              }
+            },
+            {
+              "contains": {
+                "const": "code_version"
+              }
+            },
+            {
+              "contains": {
+                "const": "data_manifest_sha256"
+              }
+            },
+            {
+              "contains": {
+                "const": "analysis_input_sha256"
+              }
+            },
+            {
+              "contains": {
+                "const": "config_hash"
+              }
+            },
+            {
+              "contains": {
+                "const": "effective_config_hash"
+              }
+            },
+            {
+              "contains": {
+                "const": "input_schema_version"
+              }
+            },
+            {
+              "contains": {
+                "const": "data_schema_version"
+              }
+            },
+            {
+              "contains": {
+                "const": "result_schema_version"
+              }
+            },
+            {
+              "contains": {
+                "const": "artifact_sha256"
+              }
+            }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "authoritative_entrypoints": {
+                "minItems": 1
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "input_schema_contract",
+              "result_artifact_identity",
+              "result_identity_fields"
+            ]
+          }
+        }
+      ],
+      "additionalProperties": true
+    },
+    "frontend": {
+      "type": "object",
+      "required": ["type", "test_commands"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "root": {
+          "oneOf": [
+            {
+              "const": ""
+            },
+            {
+              "$ref": "#/$defs/projectRelativePath"
+            }
+          ]
+        },
+        "design_contract": {
+          "oneOf": [
+            {
+              "const": ""
+            },
+            {
+              "$ref": "#/$defs/projectRelativePath"
+            }
+          ]
+        },
+        "test_commands": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "backend": {
+      "type": "object",
+      "required": ["required", "test_commands"],
+      "properties": {
+        "required": {
+          "type": "boolean"
+        },
+        "test_commands": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "automation": {
+      "type": "object",
+      "required": [
+        "mode",
+        "workflows",
+        "schedules",
+        "cost_bounds"
+      ],
+      "properties": {
+        "mode": {
+          "enum": [
+            "none",
+            "manual",
+            "scheduled"
+          ]
+        },
+        "workflows": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/projectRelativePath"
+          }
+        },
+        "schedules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "workflow",
+              "entrypoint",
+              "entrypoint_command",
+              "job_id",
+              "cost_preflight_step_id",
+              "entrypoint_step_id",
+              "cost_preflight_entrypoint",
+              "cost_preflight_command",
+              "cron",
+              "cron_timezone",
+              "business_timezone",
+              "calendar",
+              "availability_lag",
+              "idempotency_key",
+              "concurrency_policy",
+              "concurrency_group",
+              "cancel_in_progress",
+              "timeout",
+              "retry_policy",
+              "manual_dispatch_mode",
+              "retention_policy",
+              "enabled_on_default_branch"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "workflow": {
+                "$ref": "#/$defs/projectRelativePath"
+              },
+              "entrypoint": {
+                "$ref": "#/$defs/projectRelativePath"
+              },
+              "entrypoint_command": {
+                "type": "string",
+                "minLength": 1
+              },
+              "job_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]+$"
+              },
+              "cost_preflight_step_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]+$"
+              },
+              "entrypoint_step_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]+$"
+              },
+              "cost_preflight_entrypoint": {
+                "$ref": "#/$defs/projectRelativePath"
+              },
+              "cost_preflight_command": {
+                "type": "string",
+                "minLength": 1
+              },
+              "cron": {
+                "type": "string",
+                "pattern": "^\\S+\\s+\\S+\\s+\\S+\\s+\\S+\\s+\\S+$"
+              },
+              "cron_timezone": {
+                "type": "string",
+                "minLength": 1
+              },
+              "business_timezone": {
+                "type": "string",
+                "minLength": 1
+              },
+              "calendar": {
+                "type": "string",
+                "minLength": 1
+              },
+              "availability_lag": {
+                "type": "string",
+                "minLength": 1
+              },
+              "idempotency_key": {
+                "type": "string",
+                "minLength": 1
+              },
+              "concurrency_policy": {
+                "type": "string",
+                "minLength": 1
+              },
+              "concurrency_group": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+              },
+              "cancel_in_progress": {
+                "const": false
+              },
+              "timeout": {
+                "type": "string",
+                "minLength": 1
+              },
+              "retry_policy": {
+                "type": "string",
+                "minLength": 1
+              },
+              "manual_dispatch_mode": {
+                "type": "string",
+                "minLength": 1
+              },
+              "retention_policy": {
+                "type": "string",
+                "minLength": 1
+              },
+              "enabled_on_default_branch": {
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": true
+          }
+        },
+        "pipeline_stages": {
+          "type": "array",
+          "minItems": 10,
+          "items": {
+            "type": "string"
+          }
+        },
+        "freshness_fields": {
+          "type": "array",
+          "minItems": 6,
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          },
+          "allOf": [
+            {"contains": {"const": "source_as_of"}},
+            {"contains": {"const": "collected_at"}},
+            {"contains": {"const": "data_as_of"}},
+            {"contains": {"const": "calculated_at"}},
+            {"contains": {"const": "published_at"}},
+            {"contains": {"const": "verified_at"}}
+          ]
+        },
+        "publication_path": {
+          "$ref": "#/$defs/projectRelativePath"
+        },
+        "public_readback_urls": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/httpUrl"
+          }
+        },
+        "last_good_policy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "failure_policy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "cost_bounds": {
+          "type": "object",
+          "required": [
+            "policy",
+            "overage_enabled",
+            "paid_fallback_enabled",
+            "trial_credit_or_overage_possible",
+            "auto_renewing_trial_enabled",
+            "automatic_upgrade_enabled",
+            "payment_method_change_required",
+            "payment_method_registration_required",
+            "plan_upgrade_required",
+            "pay_as_you_go_enabled",
+            "free_quota_exceedance_allowed",
+            "paid_add_on_enabled",
+            "spend_cap_disabled",
+            "spend_cap_enabled",
+            "quota_hard_stop",
+            "retry_ceiling",
+            "concurrency_ceiling",
+            "retention_ceiling"
+          ],
+          "properties": {
+            "policy": {
+              "const": "zero-spend"
+            },
+            "overage_enabled": {
+              "const": false
+            },
+            "paid_fallback_enabled": {
+              "const": false
+            },
+            "trial_credit_or_overage_possible": {
+              "const": false
+            },
+            "auto_renewing_trial_enabled": {
+              "const": false
+            },
+            "automatic_upgrade_enabled": {
+              "const": false
+            },
+            "payment_method_change_required": {
+              "const": false
+            },
+            "payment_method_registration_required": {
+              "const": false
+            },
+            "plan_upgrade_required": {
+              "const": false
+            },
+            "pay_as_you_go_enabled": {
+              "const": false
+            },
+            "free_quota_exceedance_allowed": {
+              "const": false
+            },
+            "paid_add_on_enabled": {
+              "const": false
+            },
+            "spend_cap_disabled": {
+              "const": false
+            },
+            "spend_cap_enabled": {
+              "const": true
+            },
+            "quota_hard_stop": {
+              "const": true
+            },
+            "retry_ceiling": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10
+            },
+            "concurrency_ceiling": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10
+            },
+            "retention_ceiling": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 3650
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "mode": {
+                "enum": [
+                  "manual",
+                  "scheduled"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "pipeline_stages",
+              "freshness_fields",
+              "publication_path",
+              "public_readback_urls",
+              "last_good_policy",
+              "failure_policy"
+            ],
+            "properties": {
+              "public_readback_urls": {
+                "minItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "mode": {
+                "const": "scheduled"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "workflows": {
+                "minItems": 1
+              },
+              "schedules": {
+                "minItems": 1,
+                "items": {
+                  "properties": {
+                    "enabled_on_default_branch": {
+                      "const": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ],
+      "additionalProperties": true
+    },
+    "release": {
+      "type": "object",
+      "required": [
+        "base_branch",
+        "approved_account",
+        "cost_policy",
+        "paid_action_authority",
+        "paid_fallback_policy"
+      ],
+      "properties": {
+        "base_branch": {
+          "type": "string",
+          "minLength": 1
+        },
+        "approved_account": {
+          "type": "string",
+          "minLength": 1
+        },
+        "cost_policy": {
+          "const": "zero-spend-unless-user-first-requests-specific-paid-action"
+        },
+        "paid_action_authority": {
+          "type": "null"
+        },
+        "paid_fallback_policy": {
+          "const": "prohibited"
+        },
+        "preview": {
+          "oneOf": [
+            {
+              "const": ""
+            },
+            {
+              "$ref": "#/$defs/httpUrl"
+            }
+          ]
+        },
+        "production": {
+          "oneOf": [
+            {
+              "const": ""
+            },
+            {
+              "$ref": "#/$defs/httpUrl"
+            }
+          ]
+        }
+      },
+      "additionalProperties": true
+    },
+    "quality": {
+      "type": "object",
+      "required": ["commands"],
+      "properties": {
+        "commands": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "automation": {
+            "properties": {
+              "mode": {
+                "enum": [
+                  "manual",
+                  "scheduled"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "project": {
+            "required": [
+              "public_url"
+            ],
+            "properties": {
+              "public_url": {
+                "$ref": "#/$defs/httpUrl"
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": true
+}
