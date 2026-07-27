@@ -49,11 +49,11 @@
 - 정상 상태는 짧은 값으로 표시하고 긴 문장은 warning·error일 때만 사용한다.
 
 공통 상위 메뉴
-- 상위 메뉴는 `Hub → Fear & Greed → Momentum → DRAM → Best Factor → ETF → SOX → Risk Score → Port → Valuation → Kelly` 전체 11개 목적지를 최신 `quant-dashboard` registry와 같은 label·순서·URL로 제공한다.
+- 상위 메뉴는 `Hub → Fear & Greed → Momentum → DRAM → Best Factor → ETF → SOX → Port → Kelly` 전체 9개 목적지를 최신 `quant-dashboard` registry와 같은 label·순서·URL로 제공한다.
 - 완료된 일부 프로젝트 또는 Hub·현재 프로젝트만 하드코딩하지 않는다.
 - 각 저장소가 메뉴 데이터와 markup을 자체 구현하며 다른 저장소의 runtime JavaScript·CSS를 직접 import하지 않는다.
 - 공통 compact menu는 sticky shell 약 `58px`, brand `14px`, 메뉴 글자 `12px / 650`, 조작 영역 최소 `44px`로 구성한다. 현재 항목은 기존 primary 색의 soft surface로 구분한다.
-- 현재 페이지 하나에만 `aria-current="page"`를 지정한다. `390px`에서도 접이식 메뉴나 메뉴 영역 자체 스크롤을 통해 11개 링크 모두 keyboard와 touch로 접근할 수 있어야 한다.
+- 현재 페이지 하나에만 `aria-current="page"`를 지정한다. `390px`에서도 접이식 메뉴나 메뉴 영역 자체 스크롤을 통해 9개 링크 모두 keyboard와 touch로 접근할 수 있어야 한다.
 - 본문 skip link와 `quant-research-theme` 및 기존 theme key migration을 유지한다.
 
 차트
@@ -71,7 +71,7 @@
 2. 수정 금지 파일과 허용 프론트엔드 범위를 고정한다.
 3. 수정 전 대상 화면의 computed font-size·font-weight·line-height·간격·scrollHeight와 상위 메뉴 inventory를 저장하고 공통 권장 범위에 대조한다.
 4. visible copy inventory를 만들고 중복·구현 설명·행별 장문을 제거하거나 하나의 닫힌 운영 상세로 이동한다.
-5. 결과 우선 정보 구조, 공통 시각 밀도, 11개 상위 메뉴와 필요한 차트 충돌 방지안을 구현한다.
+5. 결과 우선 정보 구조, 공통 시각 밀도, 9개 상위 메뉴와 필요한 차트 충돌 방지안을 구현한다.
 6. 기존 계산·데이터 테스트와 신규 UI 회귀 테스트를 실행한다.
 7. 데스크톱과 390px 모바일의 라이트·다크를 확인한다.
 8. PR·CI·Pages 배포 후 공개 URL을 다시 읽어 검증한다.
@@ -83,7 +83,7 @@
 - 일반 규제·면책·제한·한계·출처·fallback·자동화 상세가 기본 화면에 반복되지 않고 하나의 닫힌 운영 상세로 통합됐는지 확인한다.
 - 계산된 글자 크기·굵기가 공통 권장 범위와 상대 위계를 따르고 `800` 이상 굵기가 브랜드·eyebrow·소수 핵심 강조 밖에 반복되지 않는지 확인한다.
 - 같은 데이터·viewport에서 불필요한 설명과 여백으로 `scrollHeight`가 증가하지 않았는지 확인한다.
-- 상위 메뉴 링크가 정확히 11개이고 registry와 label·순서·URL이 일치하며 `aria-current="page"`가 정확히 1개인지 확인한다.
+- 상위 메뉴 링크가 정확히 9개이고 registry와 label·순서·URL이 일치하며 `aria-current="page"`가 정확히 1개인지 확인한다.
 - active/muted 계열, 날짜 선택, 키보드, 44px touch target, 페이지 overflow를 확인한다.
 - readout과 plot·축·직접 라벨의 bounding box가 데스크톱·모바일에서 겹치지 않아야 한다.
 - 수정 전후 차트 type·series·axis·legend와 표 column/order를 대조해 공통 디자인과 무관한 구조 변경이 없는지 확인한다.
@@ -92,7 +92,7 @@
 
 완료 보고
 - 바뀐 UI와 제거한 반복 문구를 요약한다.
-- 공통 기준과 일치시킨 타이포그래피·굵기·세로 밀도와 11개 상위 메뉴 검증 결과를 적는다.
+- 공통 기준과 일치시킨 타이포그래피·굵기·세로 밀도와 9개 상위 메뉴 검증 결과를 적는다.
 - 유지한 프로젝트 고유 색감·차트·표·결과 구조를 적는다.
 - Python·분석·JSON·workflow 보호 파일이 바뀌지 않았다는 증거를 별도로 적는다.
 - 테스트, PR, 배포 실행, 공개 URL을 제공한다.

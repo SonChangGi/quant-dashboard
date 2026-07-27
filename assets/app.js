@@ -162,13 +162,11 @@
   };
 
   const ENTITY_METRIC_RENDERERS = {
-    valuation: (metrics) => `현재가 ${formatNumber(metrics.price)} · DCF ${formatNumber(metrics.dcfPerShare)} · 품질 ${metrics.qualityStatus || '확인 필요'}`,
     etf: (metrics) => `${metrics.etf || 'ETF'} TOP10 비중 ${formatPercent(metrics.weight)} · 기준일 ${formatMaybeDate(metrics.date)}`,
     best: (metrics) => `팩터 ${metrics.factor || '-'} · 비중 ${formatPercent(metrics.weight)} · 점수 ${formatNumber(metrics.score)}`,
     momentum: (metrics) => `${metrics.dataModeLabel || '연구 데이터'} · 팩터 ${metrics.factor || '-'} · 정책 ${metrics.weightingPolicyId || '-'} · 현금 ${formatPercent(metrics.cashWeight)} · 신호 ${formatNumber(metrics.signal)} · 모델 비중 ${formatPercent(metrics.modelWeight)}`,
     dram: (metrics) => `${metrics.kind || '가격'} · ${formatMaybeDate(metrics.date)} · ${metrics.source || 'source N/A'}`,
     sox: (metrics) => `SOX proxy ${formatPercent(metrics.weight)} · 가격 ${formatNumber(metrics.priceMomentum)} · 실적 ${formatNumber(metrics.earningsMomentum)}`,
-    riskScore: (metrics) => `Top ${formatNumber(metrics.topRiskScore)}/5 · OH ${formatNumber(metrics.ohScore)}/5 · RF ${formatNumber(metrics.rfScore)}/5`,
     fearngreed: (metrics) => `상태 ${metrics.signalState || '산출 불가'} · 백분위 ${formatNumber(metrics.sentimentPercentile)} · 잔차 z ${formatNumber(metrics.residualZ)} · 포지션 ${formatFearPosition(metrics.position)}`,
     kelly: (metrics) => `Full Kelly ${formatPercent(metrics.fullKelly)} · 공개 시계열 ${formatInteger(metrics.availableAssetCount)}/${formatInteger(metrics.assetCount)}개 · ${metrics.stateLabel || '상태 확인 필요'}`,
   };
@@ -287,52 +285,12 @@
       },
     },
     {
-      id: 'risk-score',
-      shortName: 'Risk Score',
-      title: 'SOX Top Risk Score',
-      description: 'SOX 단기 고점 위험을 과열형 OH Score와 반등 실패형 RF Score, confirmation, 5D backtest로 분리 추적합니다.',
-      url: 'https://sonchanggi.github.io/quant-dashboard/risk-score/',
-      accent: 'RS',
-      panelAdapter: 'riskScore',
-      panel: {
-        eyebrow: 'SOX Top Risk',
-        title: 'SOX Top Risk · OH/RF/Confirmation',
-        contentType: 'table',
-        metricLoading: 'Risk Score 데이터를 불러오는 중...',
-        table: {
-          caption: 'SOX top-risk overlay latest score and backtest context',
-          columns: ['구분', '현재값', '상태', '해석', '기준일'],
-          loadingText: 'Risk Score 요약 데이터를 불러오는 중...',
-        },
-      },
-    },
-    {
       id: 'port',
       shortName: 'Port',
       title: '포트폴리오 비중 Cockpit',
       description: 'ETF·주식 보유 주수와 종가 통화(USD/KRW)를 입력해 최종 비중, ETF 기초 노출, 레버리지 포함/제외, 상관관계를 확인합니다.',
       url: 'https://sonchanggi.github.io/port/',
       accent: 'PT',
-    },
-    {
-      id: 'valuation',
-      shortName: 'Valuation',
-      title: '기업 가치평가 Lab',
-      description: '티커별 DCF 절대가치와 PER/PBR 상대가치의 근거, 진단, 한계를 함께 확인하는 가치평가 워크스페이스입니다.',
-      url: 'https://sonchanggi.github.io/valuation/',
-      accent: 'VAL',
-      panelAdapter: 'valuation',
-      panel: {
-        eyebrow: 'Valuation',
-        title: '기업 가치평가 · 근거 점검 Top 5',
-        contentType: 'table',
-        metricLoading: '가치평가 데이터를 불러오는 중...',
-        table: {
-          caption: 'DCF 기준 주당가치, 현재가 괴리, 데이터 품질을 함께 보는 점검 목록',
-          columns: ['티커', '섹터/테마', '현재가', 'DCF 기준', '근거/한계'],
-          loadingText: '가치평가 데이터를 불러오는 중...',
-        },
-      },
     },
     {
       id: 'kelly',
@@ -357,8 +315,6 @@
     best: 'best-factor',
     etf: 'etf',
     sox: 'sox',
-    'risk-score': 'risk-score',
-    valuation: 'valuation',
     kelly: 'kelly',
   };
 
@@ -461,30 +417,6 @@
       render: renderSox,
       emptyReason: 'SOX summary did not contain usable constituents.',
     },
-    riskScore: {
-      sourceUrls: {
-        summary: 'https://sonchanggi.github.io/quant-dashboard/risk-score/data/risk-score/risk_score_summary.json',
-      },
-      primarySourceKey: 'summary',
-      contracts: { summary: SUMMARY_CONTRACT },
-      parse: (sources) => parseRiskScore(sources.summary),
-      hasUsableData: (summary) => [summary?.current?.topRiskScore, summary?.current?.ohScore, summary?.current?.rfScore].every((value) => finiteOrNull(value) !== null),
-      fallback: normalizeRiskScoreFallback,
-      render: renderRiskScore,
-      emptyReason: 'Risk Score summary did not contain usable current score metrics.',
-    },
-    valuation: {
-      sourceUrls: {
-        summary: 'https://sonchanggi.github.io/valuation/data/summary.json',
-      },
-      primarySourceKey: 'summary',
-      contracts: { summary: SUMMARY_CONTRACT },
-      parse: (sources) => parseValuation(sources.summary),
-      hasUsableData: (summary) => Boolean(summary?.rows?.length),
-      fallback: normalizeValuationFallback,
-      render: renderValuation,
-      emptyReason: 'Valuation summary did not contain usable ticker rows.',
-    },
     kelly: {
       sourceUrls: {
         summary: 'https://sonchanggi.github.io/kelly/data/summary.json',
@@ -558,41 +490,6 @@
         expectedFreshnessDays: 14,
         limitations: ['SOX 공식 무료 비중이 없을 때는 시가총액 정규화 proxy weight를 사용합니다.'],
       },
-    },
-    riskScore: {
-      generatedAt: '2026-06-30T00:00:00Z',
-      dataAsOf: '2026-06-26',
-      status: '마지막 Risk Score 스냅샷 표시 중',
-      current: {
-        date: '2026-06-26', close: 13203.57, oneDayReturn: null, vixClose: null,
-        ohScore: 0, rfScore: 5, topRiskScore: 5, confirmedTopRisk: true,
-        regime: 'Rebound Failure', actionLabel: 'Confirmed Red', actionLevel: 'confirmed-red',
-        actionText: '가격/변동성 기반 confirmation이 켜진 red overlay 상태입니다.',
-      },
-      rows: [
-        { label: 'Top Risk Score', value: '5/5', status: 'Confirmed Red', interpretation: 'OH/RF 중 높은 점수', date: '2026-06-26' },
-        { label: 'OH Score', value: '0/5', status: 'Normal', interpretation: '과열형 setup 비활성', date: '2026-06-26' },
-        { label: 'RF Score', value: '5/5', status: 'Red Zone', interpretation: '반등 실패형 lower-high warning', date: '2026-06-26' },
-        { label: 'Confirmation', value: 'ON', status: 'Confirmed', interpretation: '가격/VIX confirmation', date: '2026-06-26' },
-      ],
-      entities: [{ id: 'sox-top-risk', symbol: 'NASDAQSOX', label: 'SOX Top Risk Score', metrics: { topRiskScore: 5, ohScore: 0, rfScore: 5, confirmedTopRisk: true }, signals: ['Confirmed Red'] }],
-      meta: {
-        statusState: 'fallback', statusLabel: 'Risk Score fallback snapshot', cadence: 'daily-after-market-close', expectedFreshnessDays: 7,
-        limitations: ['뉴스 기반 모델이 아니며 가격/변동성 기반 risk overlay입니다.'],
-      },
-    },
-    valuation: {
-      generatedAt: '2026-06-19T14:43:32Z',
-      status: '마지막 확인 스냅샷 표시 중',
-      tickerCount: 21,
-      sectors: ['기술', '금융', '헬스케어'],
-      methodologyCount: 0,
-      contractVersion: 'fallback',
-      rows: [
-        { ticker: 'AAPL', name: 'Apple Inc.', sectorLabel: '기술', themeTags: ['Consumer Tech', 'Services'], price: 298.01, dcfPerShare: 104.6, qualityStatus: '충분' },
-        { ticker: 'MSFT', name: 'Microsoft Corporation', sectorLabel: '기술', themeTags: ['Cloud', 'AI'], price: 379.4, dcfPerShare: 223.61, qualityStatus: '충분' },
-        { ticker: 'NVDA', name: 'NVIDIA Corp', sectorLabel: '기술', themeTags: ['AI', 'Semiconductors'], price: 210.69, dcfPerShare: 58.4, qualityStatus: '일부 누락' },
-      ],
     },
   };
 
@@ -751,10 +648,6 @@
 
   async function loadEtfPanel() {
     return loadProjectPanel('etf');
-  }
-
-  async function loadValuationPanel() {
-    return loadProjectPanel('valuation');
   }
 
   async function loadDashboardPanels() {
@@ -2585,83 +2478,6 @@
     });
   }
 
-  function parseValuation(payload) {
-    if (isResearchSummary(payload, 'valuation')) {
-      const meta = summaryMeta(payload);
-      const rows = summaryEntities(payload)
-        .map((entity) => {
-          const price = finiteOrNull(entity.metrics.price);
-          const dcfPerShare = finiteOrNull(entity.metrics.dcfPerShare);
-          const dcfGap = price && dcfPerShare !== null ? (dcfPerShare / price) - 1 : null;
-          return {
-            ticker: stringOr(entity.symbol, ''),
-            name: stringOr(entity.name, ''),
-            sectorLabel: stringOr(entity.sectorLabel, entity.sector, '분류 없음'),
-            themeTags: entity.themes.slice(0, 4),
-            price,
-            currency: 'USD',
-            priceAsOf: stringOr(entity.metrics.priceAsOf, ''),
-            dcfPerShare,
-            dcfGap,
-            qualityStatus: stringOr(entity.metrics.qualityStatus, '확인 필요'),
-            companyFile: stringOr(entity.detailPath, ''),
-            warnings: entity.warnings,
-          };
-        })
-        .filter((row) => row.ticker)
-        .sort((a, b) => numberOr(b.dcfGap, -999) - numberOr(a.dcfGap, -999));
-      const sectors = asArray(meta.coverage?.sectors).length
-        ? asArray(meta.coverage.sectors).map(String)
-        : [...new Set(rows.map((row) => row.sectorLabel).filter(Boolean))];
-      return {
-        generatedAt: meta.generatedAt,
-        status: firstLimitation(meta),
-        tickerCount: finiteOrNull(meta.coverage?.entityCount) || rows.length,
-        sectors,
-        methodologyCount: finiteOrNull(highlightValue(meta, '방법론')) || 0,
-        contractVersion: stringOr(payload.schemaVersion, ''),
-        rows: rows.slice(0, 5),
-        allRows: rows,
-        entities: summaryEntities(payload),
-        meta,
-      };
-    }
-    const rows = asRecords(payload?.tickers)
-      .map((row) => {
-        const price = finiteOrNull(row.price);
-        const dcfPerShare = finiteOrNull(row.dcfPerShare);
-        const dcfGap = price && dcfPerShare !== null ? (dcfPerShare / price) - 1 : null;
-        const themes = asArray(row.themeTags).map(String).filter(Boolean).slice(0, 3);
-        return {
-          ticker: stringOr(row.ticker, ''),
-          name: stringOr(row.name, ''),
-          sectorLabel: stringOr(row.sectorLabel, row.sector, '분류 없음'),
-          themeTags: themes,
-          price,
-          currency: stringOr(row.currency, 'USD'),
-          priceAsOf: stringOr(row.priceAsOf, ''),
-          dcfPerShare,
-          dcfGap,
-          qualityStatus: stringOr(row.qualityStatus, '확인 필요'),
-          companyFile: stringOr(row.companyFile, ''),
-        };
-      })
-      .filter((row) => row.ticker)
-      .sort((a, b) => numberOr(b.dcfGap, -999) - numberOr(a.dcfGap, -999));
-    const sectors = [...new Set(rows.map((row) => row.sectorLabel).filter(Boolean))];
-    return {
-      generatedAt: stringOr(payload?.generatedAt, ''),
-      status: stringOr(payload?.modelPolicy?.decisionOwner, '모델은 정답이 아니라 가정 정리 도구입니다. 최종 판단은 사용자가 수행합니다.'),
-      tickerCount: rows.length,
-      sectors,
-      methodologyCount: asArray(payload?.methodologyReferences).length,
-      contractVersion: stringOr(payload?.schemaVersion, ''),
-      rows: rows.slice(0, 5),
-      allRows: rows,
-      meta: {},
-    };
-  }
-
   function parseKelly(payload) {
     if (!isResearchSummary(payload, 'kelly')) return normalizeKellyUnavailable();
     const meta = summaryMeta(payload);
@@ -2865,62 +2681,6 @@
     };
   }
 
-  function parseRiskScore(payload) {
-    if (isResearchSummary(payload, 'risk-score')) {
-      const meta = summaryMeta(payload);
-      const entity = summaryEntities(payload)[0] || {};
-      const metrics = isRecord(entity.metrics) ? entity.metrics : {};
-      const risk = isRecord(payload.riskScore) ? payload.riskScore : {};
-      const current = {
-        date: stringOr(risk.current?.date, payload.dataAsOf, meta.dataAsOf),
-        close: finiteOrNull(risk.current?.close ?? metrics.latestClose),
-        oneDayReturn: finiteOrNull(risk.current?.oneDayReturn ?? metrics.oneDayReturn),
-        vixClose: finiteOrNull(risk.current?.vixClose ?? metrics.vixClose),
-        ohScore: finiteOrNull(risk.current?.ohScore ?? metrics.ohScore),
-        rfScore: finiteOrNull(risk.current?.rfScore ?? metrics.rfScore),
-        topRiskScore: finiteOrNull(risk.current?.topRiskScore ?? metrics.topRiskScore),
-        confirmedTopRisk: Boolean(risk.current?.confirmation ?? metrics.confirmedTopRisk),
-        regime: stringOr(risk.current?.regime, metrics.regime, '확인 필요'),
-        actionLabel: stringOr(risk.current?.actionLabel, payload.status, entity.status, '확인 필요'),
-        actionLevel: stringOr(risk.current?.actionLevel, metrics.actionLevel, ''),
-        actionText: stringOr(risk.current?.actionText, firstLimitation(meta), ''),
-      };
-      const rows = [
-        { label: 'Top Risk Score', value: `${formatNumber(current.topRiskScore)}/5`, status: current.actionLabel, interpretation: 'max(OH Score, RF Score)', date: current.date },
-        { label: 'OH Score', value: `${formatNumber(current.ohScore)}/5`, status: scoreStatus(current.ohScore), interpretation: '과열형 top model', date: current.date },
-        { label: 'RF Score', value: `${formatNumber(current.rfScore)}/5`, status: scoreStatus(current.rfScore), interpretation: '반등 실패형 top model', date: current.date },
-        { label: 'Confirmation', value: current.confirmedTopRisk ? 'ON' : 'OFF', status: current.confirmedTopRisk ? 'Confirmed' : 'Leading/Inactive', interpretation: '가격/VIX confirmation filter', date: current.date },
-        { label: 'SOX close', value: formatNumber(current.close), status: `1D ${formatPercent(current.oneDayReturn)}`, interpretation: `VIX ${formatNumber(current.vixClose)}`, date: current.date },
-      ];
-      return {
-        generatedAt: meta.generatedAt,
-        dataAsOf: meta.dataAsOf,
-        status: current.actionLabel,
-        current,
-        rows,
-        entities: summaryEntities(payload),
-        meta: {
-          ...meta,
-          statusState: stringOr(meta.statusState, 'ok'),
-          statusLabel: current.actionLabel,
-          cadence: stringOr(meta.cadence, payload.automation?.cadence, 'daily-after-market-close'),
-          limitations: meta.limitations.length ? meta.limitations : ['뉴스 기반 모델이 아니며 가격/변동성 기반 risk overlay입니다.'],
-          automation: isRecord(payload.automation) ? payload.automation : meta.automation,
-        },
-      };
-    }
-    return normalizeRiskScoreFallback();
-  }
-
-  function scoreStatus(score) {
-    const value = finiteOrNull(score);
-    if (value === null) return '확인 필요';
-    if (value >= 5) return 'Red Zone';
-    if (value >= 4) return 'High Risk';
-    if (value >= 3) return 'Watch';
-    return 'Normal';
-  }
-
   function normalizeEtfSnapshot(snapshot) {
     if (!isRecord(snapshot)) return null;
     return {
@@ -3042,24 +2802,6 @@
     setStatus(panelSelector(project, 'status'), buildStatusText(mode, summary.generatedAt, error, summary.status, summaryDataAsOf(summary)), mode);
   }
 
-  function renderValuation(summary, mode, error, project) {
-    const calculableGapCount = asRecords(summary.allRows || summary.rows).filter((row) => finiteOrNull(row.dcfGap) !== null).length;
-    renderMetricCards(panelSelector(project, 'metrics'), [
-      ['분석 티커', `${formatInteger(summary.tickerCount || summary.rows.length)}개`],
-      ['섹터', `${asArray(summary.sectors).slice(0, 3).join(' · ') || '확인 필요'}`],
-      ['DCF 괴리 계산', `${formatInteger(calculableGapCount)}개`],
-      ['방법론 참조', `${formatInteger(summary.methodologyCount || 0)}개`],
-    ]);
-    renderRows(panelSelector(project, 'rows'), summary.rows, (row) => [
-      badge(row.ticker),
-      `${row.sectorLabel}${row.themeTags?.length ? ` · ${row.themeTags.join(', ')}` : ''}`,
-      `${formatNumber(row.price)} ${row.currency || 'USD'}`,
-      `${formatNumber(row.dcfPerShare)} · 괴리 ${formatPercent(row.dcfGap)}`,
-      `${row.qualityStatus} · 가격일 ${formatMaybeDate(row.priceAsOf)}`,
-    ], 5);
-    setStatus(panelSelector(project, 'status'), buildStatusText(mode, summary.generatedAt, error, summary.status, summaryDataAsOf(summary)), mode);
-  }
-
   function renderKelly(summary, mode, error, project) {
     const hasCoverage = finiteOrNull(summary.assetCount) !== null
       && finiteOrNull(summary.availableAssetCount) !== null;
@@ -3112,24 +2854,6 @@
       `${formatNumber(row.priceMomentum)} / ${formatNumber(row.earningsMomentum)}`,
       row.status,
     ], 6);
-    setStatus(panelSelector(project, 'status'), buildStatusText(mode, summary.generatedAt, error, summary.status, summaryDataAsOf(summary)), mode);
-  }
-
-  function renderRiskScore(summary, mode, error, project) {
-    const current = summary.current || {};
-    renderMetricCards(panelSelector(project, 'metrics'), [
-      ['Top Risk', `${formatNumber(current.topRiskScore)}/5`],
-      ['OH / RF', `${formatNumber(current.ohScore)}/5 · ${formatNumber(current.rfScore)}/5`],
-      ['Confirmation', current.confirmedTopRisk ? 'ON' : 'OFF'],
-      ['기준일', formatMaybeDate(current.date || summary.dataAsOf)],
-    ]);
-    renderRows(panelSelector(project, 'rows'), asRecords(summary.rows), (row) => [
-      row.label,
-      row.value,
-      row.status,
-      row.interpretation,
-      formatMaybeDate(row.date),
-    ], 5);
     setStatus(panelSelector(project, 'status'), buildStatusText(mode, summary.generatedAt, error, summary.status, summaryDataAsOf(summary)), mode);
   }
 
@@ -3505,16 +3229,6 @@
     };
   }
 
-  function normalizeRiskScoreFallback() {
-    return {
-      ...FALLBACK_SNAPSHOT.riskScore,
-      current: { ...FALLBACK_SNAPSHOT.riskScore.current },
-      rows: FALLBACK_SNAPSHOT.riskScore.rows,
-      entities: FALLBACK_SNAPSHOT.riskScore.entities,
-      meta: FALLBACK_SNAPSHOT.riskScore.meta,
-    };
-  }
-
   function normalizeFearAndGreedUnavailable() {
     return {
       unavailable: true,
@@ -3558,19 +3272,6 @@
         statusLabel: 'unavailable',
         limitations: ['마지막 계산값을 하드코딩된 값으로 대체하지 않습니다.'],
       },
-    };
-  }
-
-  function normalizeValuationFallback() {
-    return {
-      generatedAt: FALLBACK_SNAPSHOT.valuation.generatedAt,
-      status: FALLBACK_SNAPSHOT.valuation.status,
-      tickerCount: FALLBACK_SNAPSHOT.valuation.tickerCount,
-      sectors: FALLBACK_SNAPSHOT.valuation.sectors,
-      methodologyCount: FALLBACK_SNAPSHOT.valuation.methodologyCount || 0,
-      contractVersion: FALLBACK_SNAPSHOT.valuation.contractVersion || 'fallback',
-      rows: FALLBACK_SNAPSHOT.valuation.rows,
-      allRows: FALLBACK_SNAPSHOT.valuation.rows,
     };
   }
 
@@ -3644,15 +3345,6 @@
         tone: summary.meta?.statusState === 'ok' ? '' : 'warning',
       };
     }
-    if (record.project.id === 'risk-score') {
-      const current = summary.current || {};
-      return {
-        kicker: 'Risk Score',
-        title: `Top ${formatNumber(current.topRiskScore)}/5 · ${current.actionLabel || '확인 필요'}`,
-        detail: `OH ${formatNumber(current.ohScore)}/5 · RF ${formatNumber(current.rfScore)}/5 · confirmation ${current.confirmedTopRisk ? 'ON' : 'OFF'} · ${firstLimitation(summary.meta || {})}`,
-        tone: current.confirmedTopRisk || current.topRiskScore >= 4 ? 'warning' : '',
-      };
-    }
     if (record.project.id === 'kelly') {
       const available = finiteOrNull(summary.availableAssetCount);
       const total = finiteOrNull(summary.assetCount);
@@ -3664,13 +3356,6 @@
         title: `시계열 ${coverage} · ${summary.stateLabel || '상태 확인 필요'}`,
         detail: `직접 가정·CSV 계산 사용 가능 · ${summary.statusMessage || firstLimitation(summary.meta || {})}`,
         tone: ['published', 'live_api'].includes(summary.meta?.statusState) ? '' : 'warning',
-      };
-    }
-    if (record.project.id === 'valuation') {
-      return {
-        kicker: 'Valuation',
-        title: `${formatInteger(summary.tickerCount)}개 기업 · ${asArray(summary.sectors).slice(0, 2).join('/') || '다중 섹터'}`,
-        detail: firstLimitation(summary.meta || {}),
       };
     }
     return null;
@@ -3871,19 +3556,7 @@
         }
       });
       if (genericEntities.length) continue;
-      if (record.project.id === 'valuation') {
-        asRecords(record.summary.allRows || record.summary.rows).forEach((row) => {
-          const haystack = [row.ticker, row.name, row.sectorLabel, ...asArray(row.themeTags)].join(' ').toUpperCase();
-          if (haystack.includes(token)) {
-            matches.push({
-              project,
-              label: `${row.ticker} · ${row.sectorLabel}`,
-              detail: `현재가 ${formatNumber(row.price)} ${row.currency || 'USD'}, DCF ${formatNumber(row.dcfPerShare)}, 품질 ${row.qualityStatus}`,
-              limit: firstLimitation(meta),
-            });
-          }
-        });
-      } else if (record.project.id === 'momentum') {
+      if (record.project.id === 'momentum') {
         asRecords(record.summary.rows).forEach((row) => {
           if (String(row.symbol || '').toUpperCase().includes(token)) {
             matches.push({ project, matchKey: matchIdentity(record.project.id, row.symbol), label: `${row.symbol} · rank ${row.rank}`, detail: `${record.summary.dataModeLabel || '연구 데이터'}, Python 최고 팩터 ${record.summary.factor}, 고정 비중 방법 ${record.summary.selectedWeightingPolicy || '-'}, 현금 ${formatPercent(record.summary.cashWeight)}, 모멘텀 신호 ${formatNumber(row.signal)}, 모델 비중 ${formatPercent(row.modelWeight)}`, limit: firstLimitation(meta), tone: meta.statusState === 'ok' ? '' : 'warning' });
@@ -4123,12 +3796,9 @@
       parseDram,
       parseBestFactor,
       parseEtfTracking,
-      parseValuation,
       parseKelly,
       parseSox,
       renderSox,
-      parseRiskScore,
-      renderRiskScore,
       renderKelly,
       renderFearAndGreed,
       normalizeKellyUnavailable,
@@ -4172,7 +3842,6 @@
       resolveLoadState,
       loadProjectPanel,
       loadEtfPanel,
-      loadValuationPanel,
       parsePanelSafely,
       validateAdapterContract,
       isResearchSummary,
