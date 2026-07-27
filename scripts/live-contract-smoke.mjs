@@ -3,7 +3,7 @@ import vm from 'node:vm';
 
 const MAX_PAYLOAD_BYTES = 8_000_000;
 const MAX_STALENESS_DAYS = 21;
-const REQUIRED_PROJECT_COUNT = 9;
+const REQUIRED_PROJECT_COUNT = 7;
 const KELLY_STATES = new Set(['published', 'live_api', 'stale', 'degraded', 'unavailable', 'ruin']);
 
 const sandbox = { console };
@@ -81,11 +81,6 @@ for (const project of panelProjects) {
       assert(summary.fullKelly === null && summary.expectedLogGrowth === null, 'kelly unavailable state does not synthesize calculation values');
     }
   }
-  if (project.id === 'valuation') {
-    assert((summary.tickerCount || 0) >= 10, 'valuation covers at least 10 tickers');
-    assert((summary.sectors || []).length >= 3, 'valuation covers at least 3 sectors/themes');
-  }
-
   results.push({
     project: project.id,
     generatedAt: summary?.generatedAt || 'n/a',
@@ -124,7 +119,6 @@ async function fetchJson(url) {
 
 function rowCountFor(projectId, summary) {
   if (projectId === 'dram') return summary?.series?.length || summary?.entities?.length || 0;
-  if (projectId === 'valuation') return summary?.tickerCount || summary?.rows?.length || 0;
   return summary?.rows?.length || summary?.entities?.length || 0;
 }
 

@@ -13,7 +13,7 @@ const fallbackFor = (parsed, hasUsableData, reason) => api.resolveLoadState({ ok
 assert(api, 'test API exposed without browser DOM');
 assert(
   api.PROJECTS.map((project) => project.shortName).join('|')
-    === 'Fear & Greed|Momentum|DRAM|Best Factor|ETF|SOX|Risk Score|Port|Valuation|Kelly',
+    === 'Fear & Greed|Momentum|DRAM|Best Factor|ETF|SOX|Port|Kelly',
   'project manifest preserves the canonical navigation order after Hub',
 );
 assert(
@@ -24,8 +24,6 @@ assert(
     best: 'best-factor',
     etf: 'etf',
     sox: 'sox',
-    'risk-score': 'risk-score',
-    valuation: 'valuation',
     kelly: 'kelly',
   }),
   'Hub maps public summary ids to canonical platform project identities',
@@ -173,7 +171,7 @@ const kellyRecord = { project: { id: 'kelly' }, summary: validKelly, mode: 'live
 assert(api.healthTone(kellyRecord) === 'warn' && api.healthLabel(kellyRecord) === '산출 불가', 'Kelly unavailable contract renders as warning rather than healthy green');
 const kellyBriefing = api.briefingItemForRecord(kellyRecord);
 assert(kellyBriefing.tone === 'warning' && /0\/50개/.test(kellyBriefing.title) && /직접 가정·CSV/.test(kellyBriefing.detail), 'Kelly briefing separates public market coverage from usable direct-input calculations');
-const wrongKellyProject = { ...validKellyPayload, projectId: 'valuation' };
+const wrongKellyProject = { ...validKellyPayload, projectId: 'other-project' };
 assert(/projectId kelly/.test(api.validateAdapterContract(kellyAdapter, { summary: wrongKellyProject })), 'Kelly adapter rejects another project summary');
 const invalidKellyCoverage = api.parseKelly({ ...validKellyPayload, coverage: { assetCount: 50, availableAssetCount: 51, frequency: 'daily' } });
 assert(!invalidKellyCoverage.contractValid && !kellyAdapter.hasUsableData(invalidKellyCoverage), 'Kelly parser rejects coverage outside the fixed catalog');
@@ -234,11 +232,6 @@ const malformedEtf = api.parseEtfTracking({ generatedAt: '2026-06-17T00:00:00Z',
 const etfState = fallbackFor(malformedEtf, malformedEtf.rows.length > 0, 'ETF Tracking payload did not contain usable ETF rows.');
 assert(etfState.mode === 'fallback', 'HTTP 200 malformed ETF Tracking payload resolves to fallback mode');
 assert(/ETF Tracking payload/.test(etfState.error), 'ETF Tracking fallback keeps explicit schema reason');
-
-const malformedValuation = api.parseValuation({ generatedAt: '2026-06-19T00:00:00Z', tickers: [null, { name: 'No ticker' }] });
-const valuationState = fallbackFor(malformedValuation, malformedValuation.rows.length > 0, 'Valuation payload did not contain usable ticker rows.');
-assert(valuationState.mode === 'fallback', 'HTTP 200 malformed Valuation payload resolves to fallback mode');
-assert(/Valuation payload/.test(valuationState.error), 'Valuation fallback keeps explicit schema reason');
 
 const malformedSox = api.parseSox({ schemaVersion: 1, contract: 'quant-research-summary', projectId: 'sox', status: 'ok', primaryEntities: [null, { metrics: { score: 0.2 } }] });
 const soxState = fallbackFor(malformedSox, malformedSox.rows.length > 0, 'SOX summary did not contain usable constituents.');
@@ -1631,18 +1624,6 @@ assert(genericEnrichmentFailure.fetchResults.enrichment.error.includes('generic 
 assert(api.resolveEtfHistoryUrl('data/history/etf-fixture.json') === 'https://sonchanggi.github.io/etf-tracking/data/history/etf-fixture.json', 'ETF history URL resolver allows same-site per-ETF history JSON');
 assert(api.resolveEtfHistoryUrl('https://evil.example/history.json') === '', 'ETF history URL resolver rejects off-site history URLs');
 
-const validValuation = api.parseValuation({
-  generatedAt: '2026-06-19T00:00:00Z',
-  modelPolicy: { decisionOwner: '사용자' },
-  methodologyReferences: [{ key: 'dcf' }],
-  tickers: [
-    { ticker: 'AAA', name: 'Alpha', sectorLabel: '기술', themeTags: ['AI'], price: 100, dcfPerShare: 120, qualityStatus: '충분' },
-    { ticker: 'BBB', name: 'Beta', sectorLabel: '금융', themeTags: ['Bank'], price: 50, dcfPerShare: 40, qualityStatus: '일부 누락' },
-  ],
-});
-assert(validValuation.rows.length === 2 && validValuation.rows[0].ticker === 'AAA', 'recorded valid Valuation fixture produces DCF gap sorted rows');
-assert(validValuation.tickerCount === 2 && validValuation.sectors.includes('기술'), 'recorded valid Valuation fixture preserves coverage metadata');
-
 const validSox = api.parseSox({
   schemaVersion: 1,
   contract: 'quant-research-summary',
@@ -1659,44 +1640,8 @@ const validSox = api.parseSox({
 assert(validSox.rows.length === 2 && validSox.rows[0].ticker === 'AAA', 'recorded valid SOX fixture sorts summary rows by combined score');
 assert(validSox.topWeight.ticker === 'BBB' && validSox.entities.some((entity) => entity.symbol === 'AAA'), 'SOX parser preserves top proxy weight and dossier entities');
 
-const validRiskScore = api.parseRiskScore({
-  schemaVersion: 1,
-  contract: 'quant-research-summary',
-  projectId: 'risk-score',
-  generatedAt: '2026-06-30T00:00:00Z',
-  dataAsOf: '2026-06-26',
-  status: 'Confirmed Red',
-  coverage: { entityCount: 1 },
-  primaryEntities: [{ id: 'sox-top-risk', symbol: 'NASDAQSOX', metrics: { latestClose: 13203.57, oneDayReturn: -0.01, ohScore: 0, rfScore: 5, topRiskScore: 5, confirmedTopRisk: true, vixClose: 17.2 } }],
-  limitations: ['fixture limitation'],
-  automation: { cadence: 'daily-after-market-close' },
-  riskScore: { current: { date: '2026-06-26', close: 13203.57, oneDayReturn: -0.01, vixClose: 17.2, ohScore: 0, rfScore: 5, topRiskScore: 5, confirmation: true, regime: 'Rebound Failure', actionLabel: 'Confirmed Red', actionLevel: 'confirmed-red', actionText: 'fixture action' } },
-});
-assert(validRiskScore.current.topRiskScore === 5 && validRiskScore.current.confirmedTopRisk, 'recorded valid Risk Score fixture produces current top-risk row');
-assert(validRiskScore.rows.some((row) => row.label === 'RF Score' && /5/.test(row.value)), 'Risk Score parser exposes OH/RF summary rows');
-
-assert(Object.keys(api.PANEL_ADAPTERS).length === 9, 'panel adapter manifest has nine public summary adapters including Kelly');
+assert(Object.keys(api.PANEL_ADAPTERS).length === 7, 'panel adapter manifest has seven active public summary adapters including Kelly');
 assert(Object.keys(api.PANEL_ADAPTERS.kelly.sourceUrls).length === 1, 'Kelly adapter reads only its independent summary.json');
-const riskScoreAdapter = api.PANEL_ADAPTERS.riskScore;
-assert(Boolean(riskScoreAdapter?.sourceUrls?.summary?.includes('/quant-dashboard/risk-score/data/risk-score/risk_score_summary.json')), 'Risk Score adapter exposes public summary source URL');
-assert(typeof riskScoreAdapter?.parse === 'function', 'Risk Score adapter exposes parser function');
-assert(typeof riskScoreAdapter?.render === 'function', 'Risk Score adapter exposes renderer function');
-assert(typeof riskScoreAdapter?.fallback === 'function', 'Risk Score adapter exposes fallback function');
-assert(typeof riskScoreAdapter?.hasUsableData === 'function' && riskScoreAdapter.hasUsableData(validRiskScore), 'Risk Score adapter has usable-data predicate for parsed summary');
-assert(riskScoreAdapter.fallback().current.topRiskScore === 5, 'Risk Score adapter fallback returns current score snapshot');
-const incompleteRiskScore = api.parseRiskScore({
-  schemaVersion: 1,
-  contract: 'quant-research-summary',
-  projectId: 'risk-score',
-  generatedAt: '2026-06-30T00:00:00Z',
-  dataAsOf: '2026-06-26',
-  status: 'schema drift',
-  primaryEntities: [{ id: 'sox-top-risk', symbol: 'NASDAQSOX', metrics: {} }],
-  riskScore: { current: { date: '2026-06-26' } },
-});
-assert(!riskScoreAdapter.hasUsableData(incompleteRiskScore), 'Risk Score adapter rejects incomplete score metrics as unusable data');
-const incompleteRiskState = fallbackFor(incompleteRiskScore, riskScoreAdapter.hasUsableData(incompleteRiskScore), 'Risk Score summary did not contain usable current score metrics.');
-assert(incompleteRiskState.mode === 'fallback' && /Risk Score summary/.test(incompleteRiskState.error), 'Risk Score incomplete payload resolves to explicit fallback mode');
 
 const nullEntryMomentum = api.parseMomentum({
   ...momentumSummaryV4,
@@ -1718,23 +1663,20 @@ const nullEntryEtf = api.parseEtfTracking({ etfs: [null, 'bad', { latest: { top1
 const nullEtfState = fallbackFor(nullEntryEtf, nullEntryEtf.rows.length > 0, 'ETF Tracking payload did not contain usable ETF rows.');
 assert(nullEtfState.mode === 'fallback', 'ETF Tracking null/non-object entries resolve to fallback without throwing');
 
-const nullEntryValuation = api.parseValuation({ tickers: [null, 'bad', { ticker: 'CCC', themeTags: [null, 'Cloud'], price: 'bad' }] });
-assert(nullEntryValuation.rows.length === 1 && nullEntryValuation.rows[0].ticker === 'CCC', 'Valuation null/non-object entries resolve without throwing');
-
 const nullEntrySox = api.parseSox({ schemaVersion: 1, contract: 'quant-research-summary', projectId: 'sox', status: 'ok', primaryEntities: [null, 'bad', { id: 'DDD', metrics: { score: 0.1 } }] });
 assert(nullEntrySox.rows.length === 1 && nullEntrySox.rows[0].ticker === 'DDD', 'SOX null/non-object entries resolve without throwing');
 
 const throwingAdapter = { parse: () => { throw new Error('fixture boom'); } };
 const safeParse = api.parsePanelSafely(throwingAdapter, {});
 assert(safeParse.ok === false && /Payload parse failed/.test(safeParse.error), 'panel parser exceptions convert to explicit fallback reason');
-const contractMismatch = api.validateAdapterContract(api.PANEL_ADAPTERS.valuation, { summary: { schemaVersion: 999, contract: 'quant-research-summary', projectId: 'valuation', status: {}, primaryEntities: [] } });
+const contractMismatch = api.validateAdapterContract(api.PANEL_ADAPTERS.sox, { summary: { schemaVersion: 999, contract: 'quant-research-summary', projectId: 'sox', status: {}, primaryEntities: [] } });
 assert(/expected 1/.test(contractMismatch), 'contract version mismatch is rejected before parsing');
 
 const summaryFixture = {
   schemaVersion: 1,
   contract: 'quant-research-summary',
-  projectId: 'valuation',
-  projectName: 'Valuation Fixture',
+  projectId: 'sox',
+  projectName: 'SOX Fixture',
   generatedAt: '2026-06-19T00:00:00Z',
   dataAsOf: '2026-06-18',
   status: { state: 'ok', label: 'fixture', cadence: 'manual', expectedFreshnessDays: 14 },
@@ -1745,23 +1687,23 @@ const summaryFixture = {
     label: 'NVDA · 기술',
     sectorLabel: '기술',
     themes: ['AI', 'Semiconductors'],
-    metrics: { price: 100, dcfPerShare: 120, qualityStatus: '충분', priceAsOf: '2026-06-18' },
-    warnings: ['상대가치 비교군 확인 필요'],
+    metrics: { score: 0.8, weight: 0.1, priceMomentum: 0.7, earningsMomentum: 0.9 },
+    warnings: ['구성종목 비중 출처 확인 필요'],
   }],
-  limitations: ['모형은 판단 주체가 아니라 계산 보조 도구입니다.'],
-  automation: { workflowUrl: 'https://github.com/SonChangGi/valuation/actions/workflows/data-refresh.yml' },
+  limitations: ['프록시 비중은 공식 지수 비중과 다를 수 있습니다.'],
+  automation: { workflowUrl: 'https://github.com/SonChangGi/sox/actions/workflows/update-sox-data.yml' },
 };
-assert(api.isResearchSummary(summaryFixture, 'valuation'), 'summary fixture satisfies common contract helper');
+assert(api.isResearchSummary(summaryFixture, 'sox'), 'summary fixture satisfies common contract helper');
 
-assert(api.safeAutomationUrl('https://github.com/SonChangGi/valuation/actions/workflows/data-refresh.yml').startsWith('https://github.com/'), 'automation URL allowlist accepts GitHub HTTPS links');
+assert(api.safeAutomationUrl('https://github.com/SonChangGi/sox/actions/workflows/update-sox-data.yml').startsWith('https://github.com/'), 'automation URL allowlist accepts GitHub HTTPS links');
 assert(api.safeAutomationUrl('javascript:alert(1)') === '', 'automation URL allowlist rejects javascript scheme');
 assert(api.safeAutomationUrl('https://evil.example/actions') === '', 'automation URL allowlist rejects unexpected hosts');
-const parsedSummaryValuation = api.parseValuation(summaryFixture);
-assert(parsedSummaryValuation.rows.length === 1 && parsedSummaryValuation.rows[0].ticker === 'NVDA', 'Valuation summary contract parses into panel rows');
+const parsedSummarySox = api.parseSox(summaryFixture);
+assert(parsedSummarySox.rows.length === 1 && parsedSummarySox.rows[0].ticker === 'NVDA', 'SOX summary contract parses into panel rows');
 const dossierMatches = api.watchlistMatchesForToken([
-  { project: { id: 'valuation', shortName: 'Valuation' }, summary: parsedSummaryValuation },
+  { project: { id: 'sox', shortName: 'SOX' }, summary: parsedSummarySox },
 ], 'AI');
-assert(dossierMatches.length === 1 && /비교군/.test(dossierMatches[0].limit), 'watchlist dossier uses summary entities and limitation text without duplicate legacy rows');
+assert(dossierMatches.length === 1 && /비중 출처/.test(dossierMatches[0].limit), 'watchlist dossier uses summary entities and limitation text without duplicate legacy rows');
 
 const etfEntityDossier = api.watchlistMatchesForToken([
   { project: api.PROJECTS.find((project) => project.id === 'etf'), summary: { meta: { statusState: 'ok' }, entities: [
@@ -1807,9 +1749,9 @@ context.document = {
 };
 api.renderProjectNavigation();
 api.renderDashboardPanels();
-assert(domTargets['#top-nav'].children.length === 10, 'manifest renderer creates ten project links including Kelly and Port');
-assert(domTargets['#hero-actions'].children.length === 10, 'manifest renderer creates ten hero action links including Kelly and Port');
-assert(domTargets['#summary-grid'].children.length === 9, 'manifest renderer creates nine public summary panel shells including Kelly');
+assert(domTargets['#top-nav'].children.length === 8, 'manifest renderer creates eight active project links including Kelly and Port');
+assert(domTargets['#hero-actions'].children.length === 8, 'manifest renderer creates eight active hero action links including Kelly and Port');
+assert(domTargets['#summary-grid'].children.length === 7, 'manifest renderer creates seven active public summary panel shells including Kelly');
 assert(domTargets['#summary-grid'].children.every((child) => /원본 열기/.test(child.innerHTML)), 'dashboard panel shells preserve original page links');
 assert(domTargets['#summary-grid'].children.some((child) => /panel-detail/.test(child.innerHTML)), 'ETF panel shell includes detail mount for TOP10 cards');
 assert(domTargets['#summary-grid'].children.some((child) => /SOX 구성종목/.test(child.innerHTML)), 'SOX panel shell appears in the central summary grid');
@@ -1843,12 +1785,10 @@ assert(
 const records = [
   { project: api.PROJECTS.find((project) => project.id === 'momentum'), summary: validMomentum, mode: 'live', generatedAt: validMomentum.generatedAt, payloadBytes: 13000, sourceCount: 2 },
   { project: api.PROJECTS.find((project) => project.id === 'sox'), summary: validSox, mode: 'live', generatedAt: validSox.generatedAt, payloadBytes: 6000, sourceCount: 1 },
-  { project: api.PROJECTS.find((project) => project.id === 'valuation'), summary: validValuation, mode: 'live', generatedAt: validValuation.generatedAt, payloadBytes: 12000, sourceCount: 1 },
   { project: api.PROJECTS.find((project) => project.id === 'etf'), summary: validEtf, mode: 'live', generatedAt: validEtf.generatedAt, payloadBytes: 90000, sourceCount: 1 },
 ];
 api.renderResearchBriefing(records);
 api.renderDataHealth(records);
-assert(/Valuation/.test(domTargets['#research-briefing'].innerHTML), 'research briefing renders valuation item');
 assert(/SOX/.test(domTargets['#research-briefing'].innerHTML) && /AAA/.test(domTargets['#research-briefing'].innerHTML), 'research briefing renders SOX central summary item');
 assert(/selected_mom/.test(domTargets['#research-briefing'].innerHTML) && /0\.87/.test(domTargets['#research-briefing'].innerHTML), 'research briefing renders the schema v4 selected Momentum factor and composite score');
 assert(/합성 데모/.test(domTargets['#research-briefing'].innerHTML) && /briefing-item warning/.test(domTargets['#research-briefing'].innerHTML), 'research briefing labels demo evidence without hiding the Momentum result');
@@ -1860,7 +1800,7 @@ const mixedFreshness = api.portfolioFreshnessSummary([
   { project: { shortName: 'B' }, summary: { dataAsOf: '2026-06-23' }, generatedAt: '2026-06-23T00:00:00Z' },
 ]);
 assert(mixedFreshness.mixed && mixedFreshness.label.includes('혼합 기준일'), 'portfolio freshness snapshot flags mixed project dates');
-assert(api.watchlistMatchesForToken(records, 'AAA').length >= 3, 'watchlist matcher connects valuation, ETF, and SOX ticker exposure');
+assert(api.watchlistMatchesForToken(records, 'AAA').length >= 2, 'watchlist matcher connects ETF and SOX ticker exposure');
 assert(api.parseWatchlistTokens('NVDA, AMD DRAM').join('|') === 'NVDA|AMD|DRAM', 'watchlist token parser handles commas and spaces');
 
 const failed = checks.filter((check) => !check.ok);

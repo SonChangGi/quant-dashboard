@@ -11,9 +11,8 @@
   - `best-factor`: `docs/index.html`, `docs/styles.css`, `docs/app.js`
   - `etf-tracking`: `index.html`, `assets/styles.css`, `assets/app.js`
   - `dram-price`: `web/index.html`, `web/styles.css`, `web/app.js`
-  - `valuation`: `docs/index.html`, `docs/assets/styles.css`, `docs/assets/app.js`
 - Evidence reviewed:
-  - Current UI files and CSS tokens across all six surfaces.
+  - Current UI files and CSS tokens across all five surfaces.
   - Root/package verification entrypoints: `quant-dashboard/package.json`, sibling `package.json`/`pyproject.toml`/README files where present.
   - Existing deployment posture: static GitHub Pages sites with generated or committed JSON payloads.
   - Existing product constraints from sibling READMEs: research-only disclaimers, static-data-first behavior, freshness/status surfacing, and no browser-side secret/API dependence.
@@ -37,7 +36,7 @@
   - Improve scanability of summaries, cards, tables, and charts in Korean/English mixed finance content.
   - Preserve static GitHub Pages reliability and existing automation/deploy flows.
 - Non-goals:
-  - No investment logic changes, factor-selection changes, valuation formula changes, data update policy changes, or JSON schema rewrites.
+  - No investment logic changes, factor-selection changes, data update policy changes, or JSON schema rewrites.
   - No new frontend framework, build system, or runtime dependency unless unavoidable and explicitly approved.
   - No new live-data browser calls or secret-bearing client behavior.
 - Success signals:
@@ -49,7 +48,7 @@
 ## Personas and jobs
 - Primary personas:
   - Individual quant/research operator reviewing daily signals and data freshness.
-  - Portfolio/research reader comparing factor, ETF, DRAM, and valuation evidence quickly.
+  - Portfolio/research reader comparing factor, ETF, and DRAM evidence quickly.
   - Future maintainer needing a clear token/component contract to keep independent repos aligned.
 - User jobs:
   - Open the hub, understand which project data is fresh/degraded, and navigate to the relevant detail page.
@@ -69,7 +68,6 @@
   - `best-factor`: factor ranking summary, holdings, diagnostics, caveats.
   - `etf-tracking`: ETF selector, holdings weight charts, residual/price-aligned explanations, status files.
   - `dram-price`: product/category/source controls, DRAM series charts/tables/status.
-  - `valuation`: ticker search, decision cockpit, DCF/relative valuation, diagnostics, assumptions, print/copy.
 - Content hierarchy:
   - 1. Page identity and latest state/freshness.
   - 2. Primary conclusion or decision cockpit.
@@ -165,10 +163,6 @@
 - `dram-price`:
   - DRAM chart Y-axis labels can render dirty decimals such as `252.92`/`4.4543`; axis tick generation should use clean, rounded ticks without changing the underlying price series.
   - Chart/table/source support panels need stronger axis/grid/text contrast and readable tinted surfaces.
-- `valuation`:
-  - Decision cockpit, method comparison, assumptions, diagnostic, workflow, and methodology cards still contain light-surface remnants that wash out in dark mode.
-  - Mobile hero/nav must remain overflow-safe, and the final print stylesheet must stay light/white for report output.
-
 ## Responsive behavior
 - Supported breakpoints/devices:
   - Mobile narrow widths, tablet, desktop research monitor.
@@ -221,12 +215,12 @@
 
 ## Resolved decisions
 - Visual reference approval: user approved the dark neutral luxury Visual Ralph reference on 2026-06-24.
-- Connected surfaces: quant-dashboard plus momentum-factor-lab, best-factor, etf-tracking, dram-price, and valuation share the same dark neutral design language.
+- Connected surfaces: quant-dashboard plus momentum-factor-lab, best-factor, etf-tracking, and dram-price share the same dark neutral design language.
 - Delivery scope: design-only implementation. Analysis methodology, calculation logic, generated results, JSON contracts, data automation, and research disclaimers are protected boundaries.
 
 ## Readability remediation audit — 2026-06-29
 - Protected boundary: this pass is UI-only. Static HTML/CSS and browser-rendered explanatory JS may change; calculation code, generated result/data JSON, analysis methodology, automation schedules, and existing disclaimer intent remain unchanged.
-- Connected surfaces now treated as one Pages family for readability: `quant-dashboard`, `momentum-factor-lab`, `dram-price`, `best-factor`, `etf-tracking`, `sox`, `port`, and `valuation`.
+- Connected surfaces now treated as one Pages family for readability: `quant-dashboard`, `momentum-factor-lab`, `dram-price`, `best-factor`, `etf-tracking`, `sox`, and `port`.
 - Shared page structure decisions:
   - Every site gets fixed “↑ 위 / ↓ 아래” jump controls with real `#top` and `#page-bottom` anchors.
   - Operational notices, manual-update panels, data-contract warnings, and caveats belong near the bottom when they are not required to interpret the first result view.

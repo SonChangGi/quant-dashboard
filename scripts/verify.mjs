@@ -13,14 +13,13 @@ const files = {
   controlAudit: readFileSync('docs/control-audit-2026-07-24.md', 'utf8'),
   packageJson: readFileSync('package.json', 'utf8'),
   liveSmoke: readFileSync('scripts/live-contract-smoke.mjs', 'utf8'),
-  riskSyncWorkflow: readFileSync('.github/workflows/sync-risk-score.yml', 'utf8'),
 };
 
 const checks = [];
 const assert = (condition, label) => checks.push({ label, ok: Boolean(condition) });
 const contains = (file, needle) => file.includes(needle);
 
-for (const path of ['index.html', 'assets/styles.css', 'assets/app.js', 'DESIGN.md', 'docs/web-design.md', 'docs/common-design-v1.md', 'docs/common-design-v1-rollout-prompt.md', 'docs/platform-architecture-v1.md', 'docs/control-audit-2026-07-24.md', 'scripts/verify.mjs', 'scripts/regression.mjs', 'scripts/static-smoke.mjs', 'scripts/live-contract-smoke.mjs', '.github/workflows/sync-risk-score.yml', '.github/workflows/platform-foundation.yml', 'platform/vercel.json', 'package.json']) {
+for (const path of ['index.html', 'assets/styles.css', 'assets/app.js', 'DESIGN.md', 'docs/web-design.md', 'docs/common-design-v1.md', 'docs/common-design-v1-rollout-prompt.md', 'docs/platform-architecture-v1.md', 'docs/control-audit-2026-07-24.md', 'scripts/verify.mjs', 'scripts/regression.mjs', 'scripts/static-smoke.mjs', 'scripts/live-contract-smoke.mjs', '.github/workflows/platform-foundation.yml', 'platform/vercel.json', 'package.json']) {
   assert(statSync(path).isFile(), `${path} exists`);
 }
 
@@ -31,8 +30,6 @@ const projectUrls = [
   'https://sonchanggi.github.io/best-factor/',
   'https://sonchanggi.github.io/etf-tracking/',
   'https://sonchanggi.github.io/sox/',
-  'https://sonchanggi.github.io/quant-dashboard/risk-score/',
-  'https://sonchanggi.github.io/valuation/',
   'https://sonchanggi.github.io/port/',
   'https://sonchanggi.github.io/kelly/',
 ];
@@ -53,8 +50,6 @@ const dataUrls = [
   'https://sonchanggi.github.io/etf-tracking/data/dashboard.json',
   'https://sonchanggi.github.io/etf-tracking/data/history.json',
   'https://sonchanggi.github.io/sox/data/summary.json',
-  'https://sonchanggi.github.io/quant-dashboard/risk-score/data/risk-score/risk_score_summary.json',
-  'https://sonchanggi.github.io/valuation/data/summary.json',
   'https://sonchanggi.github.io/kelly/data/summary.json',
 ];
 for (const url of dataUrls) {
@@ -138,12 +133,6 @@ assert(contains(files.app, 'parseEtfTracking'), 'ETF Tracking parser exists');
 assert(contains(files.app, 'parseSox'), 'SOX summary parser exists');
 assert(contains(files.app, 'renderSox'), 'SOX dashboard panel renderer exists');
 assert(contains(files.app, 'SOX 구성종목 · Momentum Top 5'), 'SOX central summary panel copy exists');
-assert(contains(files.app, 'parseRiskScore'), 'Risk Score summary parser exists');
-assert(contains(files.app, 'renderRiskScore'), 'Risk Score dashboard panel renderer exists');
-assert(contains(files.app, "riskScore: {\n      sourceUrls") && contains(files.app, "parse: (sources) => parseRiskScore(sources.summary)") && contains(files.app, "fallback: normalizeRiskScoreFallback"), 'Risk Score adapter keeps source/parse/fallback contract');
-assert(contains(files.app, 'SOX Top Risk · OH/RF/Confirmation'), 'Risk Score central summary panel copy exists');
-assert(contains(files.app, "id: 'risk-score'"), 'Risk Score project registry entry exists');
-assert(contains(files.app, 'parseValuation'), 'Valuation parser exists');
 assert(contains(files.app, 'parseKelly') && contains(files.app, 'renderKelly'), 'Kelly parser and panel renderer exist');
 assert(contains(files.app, 'normalizeKellyUnavailable'), 'Kelly fetch or contract failure stays unavailable without hardcoded calculation values');
 assert(contains(files.app, "expectedProjectId: 'kelly'") && contains(files.app, 'KELLY_SUMMARY_CONTRACT'), 'Kelly adapter requires its own project identity and coverage contract');
@@ -207,7 +196,7 @@ assert(contains(files.webDesign, 'applied_config') && contains(files.webDesign, 
 assert(contains(files.webDesign, 'effective_config_hash') && contains(files.webDesign, 'config_hash == effective_config_hash'), 'web design prompt binds requested and fallback-effective configurations separately');
 assert(contains(files.webDesign, 'packages/') && contains(files.webDesign, 'data-client/') && contains(files.webDesign, '프로젝트별 view-model'), 'web design prompt defines reusable frontend boundaries without centralizing project calculations');
 assert(contains(files.webDesign, '## 13. 기존 페이지 개선 절차') && contains(files.webDesign, '## 14. 신규 프로젝트 구현 절차') && contains(files.webDesign, 'local preview'), 'web design prompt covers existing and new project workflows');
-assert(contains(files.webDesign, '## 4. 11개 공통 메뉴') && contains(files.webDesign, 'aria-current="page"') && contains(files.webDesign, 'Quant Research Hub'), 'web design prompt fixes the shared navigation contract');
+assert(contains(files.webDesign, '## 4. 9개 공통 메뉴') && contains(files.webDesign, 'aria-current="page"') && contains(files.webDesign, 'Quant Research Hub'), 'web design prompt fixes the shared navigation contract');
 assert(contains(files.webDesign, '## 9. Table') && contains(files.webDesign, 'tabular') && contains(files.webDesign, '## 10. Chart') && contains(files.webDesign, 'plot 밖 정확값 readout'), 'web design prompt fixes table and chart contracts');
 assert(contains(files.webDesign, 'multi-series comparison chart에만') && contains(files.webDesign, 'date-axis chart에만') && contains(files.webDesign, 'bar·quadrant'), 'web design prompt keeps chart interactions domain-conditional');
 assert(contains(files.webDesign, 'TDS UI Kit') && contains(files.webDesign, '향후에도 Toss 자료에서 새 값을 직접 가져오지 않는다'), 'web design prompt records the Toss reference and reuse boundary');
@@ -226,7 +215,7 @@ assert(contains(files.commonDesign, '구현 설명') && contains(files.commonDes
 assert(contains(files.commonDesign, '버전: `1.2.0`') && contains(files.commonDesign, '공통 타이포그래피와 세로 밀도'), 'common design v1.2 fixes the shared typography and density reference');
 assert(contains(files.commonDesign, '`15px`, `line-height: 1.55`') && contains(files.commonDesign, '`800` 이상'), 'common design v1.2 fixes the shared type scale and weight hierarchy');
 assert(contains(files.commonDesign, '작은 disclaimer') && contains(files.commonDesign, '기본 닫힘 `운영 상세`'), 'common design v1.2 does not exempt fine print from copy reduction');
-assert(contains(files.commonDesign, '11개 항목') && contains(files.commonDesign, '완료된 일부 프로젝트나 현재 프로젝트와 Hub만'), 'common design v1.2 requires the complete shared navigation');
+assert(contains(files.commonDesign, '9개 항목') && contains(files.commonDesign, '완료된 일부 프로젝트나 현재 프로젝트와 Hub만'), 'common design v1.2 requires the complete shared navigation');
 assert(contains(files.commonDesign, '승인된 기존 색 토큰·primary·의미색') && contains(files.commonDesign, 'type·series·axis·legend·column·order를 보존'), 'common design v1.2 preserves project-specific visuals and analytical surfaces');
 assert(contains(files.commonDesign, '역사적 적용 사례의 도메인 차이(비규범)') && contains(files.commonDesign, '비규범 파일럿 근거'), 'common design v1.2 keeps pilot projects as evidence rather than normative templates');
 assert(contains(files.readme, 'docs/common-design-v1-rollout-prompt.md') && contains(files.design, 'docs/common-design-v1-rollout-prompt.md'), 'README and DESIGN link the rollout prompt');
@@ -234,7 +223,7 @@ assert(contains(files.commonDesignPrompt, '프로젝트별 plan-goal') && contai
 assert(contains(files.commonDesignPrompt, 'plot 밖의 고정 행') && contains(files.commonDesignPrompt, '구현 설명') && contains(files.commonDesignPrompt, 'bounding box'), 'rollout prompt requires copy reduction and chart collision QA');
 assert(contains(files.commonDesignPrompt, 'Quant Research 공통 디자인 v1.2') && contains(files.commonDesignPrompt, '공통 타이포그래피와 밀도') && contains(files.commonDesignPrompt, '통일성의 범위'), 'rollout prompt applies the shared visual reference');
 assert(contains(files.commonDesignPrompt, '`15px / 1.55`') && contains(files.commonDesignPrompt, '`800` 이상'), 'rollout prompt carries the compact type and weight rules');
-assert(contains(files.commonDesignPrompt, 'Hub → Fear & Greed → Momentum → DRAM') && contains(files.commonDesignPrompt, '정확히 11개'), 'rollout prompt requires the full registry-driven top navigation');
+assert(contains(files.commonDesignPrompt, 'Hub → Fear & Greed → Momentum → DRAM') && contains(files.commonDesignPrompt, '정확히 9개'), 'rollout prompt requires the full registry-driven top navigation');
 assert(contains(files.commonDesignPrompt, 'sticky shell 약 `58px`') && contains(files.commonDesignPrompt, '메뉴 글자 `12px / 650`'), 'rollout prompt carries the compact shared navigation density');
 assert(contains(files.commonDesignPrompt, '`데이터 · 출처 · 운영 상세`'), 'rollout prompt consolidates secondary copy in one named closed details section');
 assert(contains(files.commonDesignPrompt, '기존 차트 유형·패널·축·범례·계열') && contains(files.commonDesignPrompt, '기존 색 토큰'), 'rollout prompt preserves project-specific charts, tables, and colors');
@@ -246,23 +235,8 @@ assert(contains(files.packageJson, '"test:live"'), 'package exposes optional liv
 assert(contains(files.packageJson, '"test:publish"') && contains(files.packageJson, 'npm run test:live'), 'package exposes publish gate with live contract smoke');
 assert(contains(files.liveSmoke, 'MAX_PAYLOAD_BYTES') && contains(files.liveSmoke, 'MAX_STALENESS_DAYS'), 'live contract smoke checks payload size and freshness');
 assert(contains(files.liveSmoke, 'validateAdapterContract'), 'live contract smoke rejects incompatible contract versions');
-assert(contains(files.liveSmoke, 'REQUIRED_PROJECT_COUNT = 9'), 'live contract smoke requires all nine public summary panels');
-assert(!contains(files.app, '../momentum-factor-lab') && !contains(files.app, '../dram-price') && !contains(files.app, '../best-factor') && !contains(files.app, '../etf-tracking') && !contains(files.app, '../sox') && !contains(files.app, '../valuation') && !contains(files.app, '../risk-score') && !contains(files.app, '../kelly'), 'no sibling local source paths referenced');
-assert(statSync('risk-score/index.html').isFile(), 'Risk Score deploy subtree index exists');
-assert(statSync('risk-score/assets/app.js').isFile(), 'Risk Score deploy subtree app asset exists');
-assert(statSync('risk-score/data/risk-score/risk_score_summary.json').isFile(), 'Risk Score deploy subtree summary JSON exists');
-assert(contains(files.riskSyncWorkflow, 'repository: SonChangGi/risk-score') && contains(files.riskSyncWorkflow, 'path: .source/risk-score'), 'Risk Score mirror workflow checks out the canonical source explicitly');
-assert(contains(files.riskSyncWorkflow, 'scripts/verify_data_freshness.py') && contains(files.riskSyncWorkflow, 'scripts/verify_quant_dashboard_sync.py'), 'Risk Score mirror workflow gates publication on source freshness and exact mirror verification');
-assert(contains(files.riskSyncWorkflow, 'python3 .source/risk-score/scripts/sync_to_quant_dashboard.py') && contains(files.riskSyncWorkflow, 'npm test'), 'Risk Score mirror workflow builds through the source-owned script and verifies Quant Dashboard');
-assert(contains(files.riskSyncWorkflow, 'verify-source:') && contains(files.riskSyncWorkflow, 'publish-mirror:') && contains(files.riskSyncWorkflow, 'needs: verify-source'), 'Risk Score mirror validation and publication use separate dependent jobs');
-assert(contains(files.riskSyncWorkflow, 'permissions:\n  contents: read') && contains(files.riskSyncWorkflow, 'permissions:\n      contents: write'), 'Risk Score source validation is read-only and only publication receives write permission');
-assert(contains(files.riskSyncWorkflow, 'actions/upload-artifact@') && contains(files.riskSyncWorkflow, 'actions/download-artifact@') && contains(files.riskSyncWorkflow, 'SHA256SUMS'), 'Risk Score mirror crosses the permission boundary as a checksummed artifact');
-const actionPins = [...files.riskSyncWorkflow.matchAll(/^\s*uses:\s+([^@\s]+)@([^\s#]+)/gm)];
-assert(actionPins.length > 0 && actionPins.every(([, , ref]) => /^[0-9a-f]{40}$/.test(ref)), 'all third-party workflow actions are pinned to full commit SHAs');
-const publishJob = files.riskSyncWorkflow.split(/^  publish-mirror:\s*$/m)[1] || '';
-assert(!contains(publishJob, '.source/risk-score/scripts/') && !contains(publishJob, 'repository: SonChangGi/risk-score'), 'write-enabled publication job does not execute or check out remote Risk Score source code');
-assert(contains(files.riskSyncWorkflow, 'contents: write') && !contains(files.riskSyncWorkflow, 'QUANT_DASHBOARD_TOKEN'), 'Risk Score mirror publication uses the deploy repository token without a cross-repository secret');
-assert(contains(files.riskSyncWorkflow, 'quant-dashboard-risk-score-sync') && contains(files.riskSyncWorkflow, 'cancel-in-progress: false'), 'Risk Score mirror workflow serializes scheduled retries');
+assert(contains(files.liveSmoke, 'REQUIRED_PROJECT_COUNT = 7'), 'live contract smoke requires all seven active public summary panels');
+assert(!contains(files.app, '../momentum-factor-lab') && !contains(files.app, '../dram-price') && !contains(files.app, '../best-factor') && !contains(files.app, '../etf-tracking') && !contains(files.app, '../sox') && !contains(files.app, '../kelly'), 'no sibling local source paths referenced');
 
 const failed = checks.filter((check) => !check.ok);
 for (const check of checks) {
