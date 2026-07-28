@@ -22,10 +22,11 @@ from .base import NormalizedAnalysisInputs, ProjectRequestError
 
 PROJECT_ID = "momentum"
 PROJECT_NAME = "Momentum Factor Lab"
-INPUT_SCHEMA_VERSION = "momentum/v1"
-INPUT_SCHEMA_HASH = "b80cf941ee1b66dcc64c360bdbabaf0e5ed8026d0ec25fc132c0731f11871766"
+INPUT_SCHEMA_VERSION = "momentum/v2"
+INPUT_SCHEMA_HASH = "a2240581098f496fc555edac9d4b0e342eee6221a87e046a47f51ee7f6a4e81e"
 CONFIG_HASH_ALGORITHM = "momentum-research-inputs-rfc8785-v1"
 RESULT_CONTRACT_VERSION = "momentum/schema-v5-control-result-v1"
+LEGACY_INPUT_SCHEMA_VERSION = "momentum/v1"
 STATIC_FALLBACK_URL = "https://sonchanggi.github.io/momentum-factor-lab/data/dashboard.json"
 CODE_VERSION_PATTERN = re.compile(
     r"^github:SonChangGi/momentum-factor-lab@[0-9a-f]{40}$"
@@ -40,7 +41,7 @@ ARTIFACT_PATH_PATTERN = re.compile(
 
 INPUT_KEYS = (
     "rebalanceFrequency",
-    "evaluationYears",
+    "evaluationWindowDays",
     "topN",
     "maxWeight",
     "transactionCostBps",
@@ -69,7 +70,7 @@ INPUT_KEYS = (
 
 DEFAULT_INPUTS: dict[str, Any] = {
     "rebalanceFrequency": "ME",
-    "evaluationYears": 3,
+    "evaluationWindowDays": 756,
     "topN": 20,
     "maxWeight": 0.10,
     "transactionCostBps": 5.0,
@@ -126,7 +127,13 @@ def _field(
 
 INPUT_FIELDS = [
     _field("rebalanceFrequency", "enum", choices=["W", "ME", "QE"]),
-    _field("evaluationYears", "integer", minimum=1, maximum=10),
+    _field(
+        "evaluationWindowDays",
+        "integer",
+        minimum=252,
+        maximum=2520,
+        unit="sessions",
+    ),
     _field("topN", "integer", minimum=1, maximum=50),
     _field("maxWeight", "number", exclusive_minimum=0, maximum=1),
     _field("transactionCostBps", "number", minimum=0, unit="bps"),
@@ -206,7 +213,7 @@ def normalize_inputs(inputs: dict[str, Any]) -> NormalizedAnalysisInputs:
         ):
             raise ValueError(f"{key} must be a finite number")
     for key in (
-        "evaluationYears",
+        "evaluationWindowDays",
         "topN",
         "minHistoryDays",
         "liquidityLookbackDays",
@@ -217,8 +224,8 @@ def normalize_inputs(inputs: dict[str, Any]) -> NormalizedAnalysisInputs:
             raise TypeError(f"{key} must be an integer")
     if normalized["rebalanceFrequency"] not in {"W", "ME", "QE"}:
         raise ValueError("rebalanceFrequency must be W, ME, or QE")
-    if not 1 <= normalized["evaluationYears"] <= 10:
-        raise ValueError("evaluationYears must be between 1 and 10")
+    if not 252 <= normalized["evaluationWindowDays"] <= 2520:
+        raise ValueError("evaluationWindowDays must be between 252 and 2520")
     if not 1 <= normalized["topN"] <= 50:
         raise ValueError("topN must be between 1 and 50")
     if not 0 < normalized["maxWeight"] <= 1:
@@ -278,12 +285,52 @@ def normalize_inputs(inputs: dict[str, Any]) -> NormalizedAnalysisInputs:
     )
 
 
-def _research_inputs_with_derived(normalized: dict[str, Any]) -> dict[str, Any]:
-    return {
-        "version": "research-inputs-v1",
-        **normalized,
-        "evaluationWindowDays": normalized["evaluationYears"] * 252,
-    }
+def _evaluation_window_days(
+    normalized: dict[str, Any],
+    *,
+    input_schema_version: str,
+) -> int:
+    if input_schema_version == INPUT_SCHEMA_VERSION:
+        value = normalized.get("evaluationWindowDays")
+        if not isinstance(value, int) or isinstance(value, bool):
+            raise ValueError(
+                "Momentum v2 normalized inputs have no integer evaluationWindowDays"
+            )
+        return value
+    if input_schema_version == LEGACY_INPUT_SCHEMA_VERSION:
+        years = normalized.get("evaluationYears")
+        if not isinstance(years, int) or isinstance(years, bool):
+            raise ValueError(
+                "Momentum v1 normalized inputs have no integer evaluationYears"
+            )
+        return years * 252
+    raise ValueError(
+        f"unsupported Momentum input schema version: {input_schema_version}"
+    )
+
+
+def _research_inputs_for_schema(
+    normalized: dict[str, Any],
+    *,
+    input_schema_version: str,
+) -> dict[str, Any]:
+    if input_schema_version == INPUT_SCHEMA_VERSION:
+        return {
+            "version": "research-inputs-v2",
+            **normalized,
+        }
+    if input_schema_version == LEGACY_INPUT_SCHEMA_VERSION:
+        return {
+            "version": "research-inputs-v1",
+            **normalized,
+            "evaluationWindowDays": _evaluation_window_days(
+                normalized,
+                input_schema_version=input_schema_version,
+            ),
+        }
+    raise ValueError(
+        f"unsupported Momentum input schema version: {input_schema_version}"
+    )
 
 
 def _data_identity(payload: dict[str, Any]) -> dict[str, str]:
@@ -526,14 +573,21 @@ class MomentumAdapter:
                                 f"Momentum keyParts {digest_field} is not a SHA-256 digest"
                             )
                     normalized_engine_inputs = key_parts.get("normalizedInputs")
+                    evaluation_window_days = _evaluation_window_days(
+                        record.normalized_inputs,
+                        input_schema_version=record.input_schema_version,
+                    )
+                    minimum_evaluation_observations = max(
+                        252,
+                        evaluation_window_days - 252,
+                    )
                     expected_engine_inputs = {
                         "rebalance_frequency": record.normalized_inputs[
                             "rebalanceFrequency"
                         ],
-                        "evaluation_window_days": record.normalized_inputs[
-                            "evaluationYears"
-                        ]
-                        * 252,
+                        "evaluation_window_days": evaluation_window_days,
+                        "min_evaluation_observations": minimum_evaluation_observations,
+                        "min_daily_risk_observations": minimum_evaluation_observations,
                         "top_n": record.normalized_inputs["topN"],
                         "max_weight": record.normalized_inputs["maxWeight"],
                         "transaction_cost_bps": record.normalized_inputs[
@@ -633,8 +687,9 @@ class MomentumAdapter:
                             errors.append(
                                 "Momentum controlled result must bind live_market sourceMode"
                             )
-            expected_research_inputs = _research_inputs_with_derived(
-                record.normalized_inputs
+            expected_research_inputs = _research_inputs_for_schema(
+                record.normalized_inputs,
+                input_schema_version=record.input_schema_version,
             )
             if fetched.get("researchInputs") != expected_research_inputs:
                 errors.append("Momentum artifact researchInputs do not match the request")

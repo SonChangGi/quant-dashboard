@@ -4,6 +4,7 @@ import hashlib
 import json
 from datetime import UTC, date, datetime
 
+import pytest
 from fastapi.testclient import TestClient
 
 from quant_control_api.adapters.momentum import (
@@ -13,6 +14,8 @@ from quant_control_api.adapters.momentum import (
     INPUT_SCHEMA_VERSION,
     RESULT_CONTRACT_VERSION,
     MomentumAdapter,
+    _evaluation_window_days,
+    _research_inputs_for_schema,
     canonical_sha256,
 )
 from quant_control_api.app import create_app
@@ -23,11 +26,12 @@ from quant_control_api.models import (
     ArtifactIdentity,
     DataIdentity,
     ResultBinding,
+    RunStatus,
     WorkerResultManifest,
 )
 from quant_control_api.providers.fake import FakeWorkerProvider
 from quant_control_api.settings import Settings
-from quant_control_api.store import InMemoryRunStore
+from quant_control_api.store import InMemoryRunStore, RunRecord
 
 
 def _client() -> tuple[TestClient, FakeWorkerProvider, MappingArtifactFetcher]:
@@ -56,13 +60,29 @@ def _full_artifact(
     inputs: dict[str, object],
     calculated_at: datetime,
 ) -> dict[str, object]:
+    if "evaluationWindowDays" in inputs:
+        evaluation_window_days = int(inputs["evaluationWindowDays"])
+        research_inputs = {
+            "version": "research-inputs-v2",
+            **inputs,
+        }
+    else:
+        evaluation_window_days = int(inputs["evaluationYears"]) * 252
+        research_inputs = {
+            "version": "research-inputs-v1",
+            **inputs,
+            "evaluationWindowDays": evaluation_window_days,
+        }
+    minimum_evaluation_observations = max(252, evaluation_window_days - 252)
     input_hashes = {
         "prices": "a" * 64,
         "volumes": "b" * 64,
     }
     engine_inputs = {
         "rebalance_frequency": inputs["rebalanceFrequency"],
-        "evaluation_window_days": int(inputs["evaluationYears"]) * 252,
+        "evaluation_window_days": evaluation_window_days,
+        "min_evaluation_observations": minimum_evaluation_observations,
+        "min_daily_risk_observations": minimum_evaluation_observations,
         "top_n": inputs["topN"],
         "max_weight": inputs["maxWeight"],
         "transaction_cost_bps": inputs["transactionCostBps"],
@@ -123,11 +143,7 @@ def _full_artifact(
             "resultKey": result_key,
             "keyParts": key_parts,
         },
-        "researchInputs": {
-            "version": "research-inputs-v1",
-            **inputs,
-            "evaluationWindowDays": int(inputs["evaluationYears"]) * 252,
-        },
+        "researchInputs": research_inputs,
         "bestFactor": "downside_adjusted_12m",
         "weightingPolicy": "score_liquidity_rank",
         "data": {
@@ -172,9 +188,9 @@ def _manifest(
         binding=ResultBinding(
             project_id="momentum",
             run_id=str(run["runId"]),
-            input_schema_version=INPUT_SCHEMA_VERSION,
-            input_schema_hash=INPUT_SCHEMA_HASH,
-            config_hash_algorithm=CONFIG_HASH_ALGORITHM,
+            input_schema_version=str(run["inputSchemaVersion"]),
+            input_schema_hash=str(run["inputSchemaHash"]),
+            config_hash_algorithm=str(run["configHashAlgorithm"]),
             config_hash=str(run["configHash"]),
         ),
         requested_inputs=run["requestedInputs"],  # type: ignore[arg-type]
@@ -210,10 +226,22 @@ def test_momentum_capabilities_are_worker_authoritative() -> None:
     assert capability["projectId"] == "momentum"
     assert capability["inputSchemaVersion"] == INPUT_SCHEMA_VERSION
     assert capability["inputSchemaHash"] == INPUT_SCHEMA_HASH
+    assert INPUT_SCHEMA_HASH == (
+        "a2240581098f496fc555edac9d4b0e342eee6221a87e046a47f51ee7f6a4e81e"
+    )
     assert capability["configHashAlgorithm"] == CONFIG_HASH_ALGORITHM
     assert capability["defaultConfigHash"] == (
-        "5ec9424d09859c597a8c1a504f2352d109c2adb31c2aa93e363f377a6a3962eb"
+        "a0a776fc7ce1227c4a39c14fbea19eb4fe667e0539cb081d5e60e562b709751d"
     )
+    evaluation_window = next(
+        field
+        for field in capability["inputs"]
+        if field["key"] == "evaluationWindowDays"
+    )
+    assert evaluation_window["type"] == "integer"
+    assert evaluation_window["minimum"] == 252
+    assert evaluation_window["maximum"] == 2520
+    assert evaluation_window["unit"] == "sessions"
     assert len(capability["inputs"]) == 26
     assert capability["fallback"]["analysisRunAllowFallback"] is False
     assert capability["fallback"]["scheduledOwnerOperationMayFallback"] is False
@@ -225,7 +253,7 @@ def test_momentum_dispatch_maps_exact_26_inputs_and_control_identity() -> None:
         created = client.post(
             "/v1/projects/momentum/runs",
             headers={"Idempotency-Key": "momentum-dispatch-001"},
-            json=_submission(topN=25),
+            json=_submission(topN=25, evaluationWindowDays=300),
         )
     assert created.status_code == 202
     run = created.json()
@@ -239,6 +267,83 @@ def test_momentum_dispatch_maps_exact_26_inputs_and_control_identity() -> None:
     assert workflow_inputs["control_input_schema_hash"] == INPUT_SCHEMA_HASH
     assert workflow_inputs["control_config_hash"] == run["configHash"]
     assert len(run["normalizedInputs"]) == 26
+    assert run["normalizedInputs"]["evaluationWindowDays"] == 300
+    assert "evaluationYears" not in run["normalizedInputs"]
+
+
+def test_momentum_v1_research_inputs_remain_readable_for_stored_results() -> None:
+    legacy = {
+        **DEFAULT_INPUTS,
+        "evaluationYears": 3,
+    }
+    legacy.pop("evaluationWindowDays")
+    assert _evaluation_window_days(
+        legacy,
+        input_schema_version="momentum/v1",
+    ) == 756
+    assert _research_inputs_for_schema(
+        legacy,
+        input_schema_version="momentum/v1",
+    ) == {
+        "version": "research-inputs-v1",
+        **legacy,
+        "evaluationWindowDays": 756,
+    }
+
+
+def test_momentum_v1_stored_artifact_still_passes_semantic_restore_validation() -> None:
+    calculated_at = datetime(2026, 7, 24, 1, 2, 3, tzinfo=UTC)
+    legacy_inputs = {
+        **DEFAULT_INPUTS,
+        "evaluationYears": 3,
+    }
+    legacy_inputs.pop("evaluationWindowDays")
+    legacy_config_hash = canonical_sha256(legacy_inputs)
+    legacy_run = {
+        "runId": "legacy-run-001",
+        "inputSchemaVersion": "momentum/v1",
+        "inputSchemaHash": (
+            "b80cf941ee1b66dcc64c360bdbabaf0e5ed8026d0ec25fc132c0731f11871766"
+        ),
+        "configHashAlgorithm": CONFIG_HASH_ALGORITHM,
+        "configHash": legacy_config_hash,
+        "effectiveConfigHash": legacy_config_hash,
+        "requestedInputs": legacy_inputs,
+        "normalizedInputs": legacy_inputs,
+        "effectiveInputs": legacy_inputs,
+    }
+    full = _full_artifact(
+        inputs=legacy_inputs,
+        calculated_at=calculated_at,
+    )
+    artifact_bytes = json.dumps(full, separators=(",", ":")).encode()
+    manifest = _manifest(
+        run=legacy_run,
+        full_artifact=full,
+        artifact_bytes=artifact_bytes,
+    )
+    record = RunRecord(
+        project_id="momentum",
+        run_id=str(legacy_run["runId"]),
+        status=RunStatus.PUBLISHED,
+        input_schema_version=str(legacy_run["inputSchemaVersion"]),
+        input_schema_hash=str(legacy_run["inputSchemaHash"]),
+        config_hash_algorithm=str(legacy_run["configHashAlgorithm"]),
+        config_hash=legacy_config_hash,
+        effective_config_hash=legacy_config_hash,
+        requested_inputs=legacy_inputs,
+        normalized_inputs=legacy_inputs,
+        effective_inputs=legacy_inputs,
+        ignored_inputs=[],
+        allow_fallback=False,
+        provider="github-actions",
+        idempotency_key_digest="legacy-idempotency",
+        request_digest="legacy-request",
+        created_at=calculated_at,
+        updated_at=calculated_at,
+    )
+
+    MomentumAdapter().validate_result_binding(record, manifest, artifact_bytes)
 
 
 def test_momentum_callback_binds_full_artifact_to_bounded_summary() -> None:
@@ -310,6 +415,54 @@ def test_momentum_callback_rejects_tampered_result_identity_key_parts() -> None:
         )
     assert callback.status_code == 409
     assert "do not reproduce resultKey" in callback.json()["error"]["message"]
+
+
+@pytest.mark.parametrize(
+    "derived_field",
+    [
+        "min_evaluation_observations",
+        "min_daily_risk_observations",
+    ],
+)
+def test_momentum_callback_rejects_tampered_derived_evaluation_gate(
+    derived_field: str,
+) -> None:
+    client, _, fetcher = _client()
+    calculated_at = datetime(2026, 7, 24, 1, 2, 3, tzinfo=UTC)
+    with client:
+        created = client.post(
+            "/v1/projects/momentum/runs",
+            headers={"Idempotency-Key": f"momentum-{derived_field}-tamper-001"},
+            json=_submission(evaluationWindowDays=1_000),
+        ).json()
+        full = _full_artifact(
+            inputs=created["normalizedInputs"],
+            calculated_at=calculated_at,
+        )
+        identity = full["resultIdentity"]
+        key_parts = identity["keyParts"]  # type: ignore[index]
+        normalized_inputs = key_parts["normalizedInputs"]  # type: ignore[index]
+        normalized_inputs[derived_field] += 1  # type: ignore[index]
+        tampered_result_key = canonical_sha256(key_parts)
+        full["resultKey"] = tampered_result_key
+        identity["resultKey"] = tampered_result_key  # type: ignore[index]
+        artifact_bytes = json.dumps(full, separators=(",", ":")).encode()
+        manifest = _manifest(
+            run=created,
+            full_artifact=full,
+            artifact_bytes=artifact_bytes,
+        )
+        fetcher.artifacts[str(manifest.artifact.url)] = artifact_bytes
+        callback = client.post(
+            f"/v1/internal/runs/{created['runId']}/result-manifest",
+            headers={"Authorization": "Bearer worker-secret"},
+            json=manifest.model_dump(mode="json", by_alias=True),
+        )
+    assert callback.status_code == 409
+    assert (
+        f"Momentum engine input {derived_field} does not match the request"
+        in callback.json()["error"]["message"]
+    )
 
 
 def test_project_idempotency_and_artifact_allowlists_are_isolated() -> None:
@@ -411,7 +564,34 @@ def test_momentum_fails_closed_on_partial_inputs_and_fallback_request() -> None:
             headers={"Idempotency-Key": "momentum-fallback-001"},
             json={**_submission(), "allowFallback": True},
         )
+        legacy_years = client.post(
+            "/v1/projects/momentum/runs",
+            headers={"Idempotency-Key": "momentum-legacy-years-001"},
+            json={
+                **_submission(),
+                "inputs": {
+                    **DEFAULT_INPUTS,
+                    "evaluationYears": 3,
+                },
+            },
+        )
+        too_short = client.post(
+            "/v1/projects/momentum/runs",
+            headers={"Idempotency-Key": "momentum-window-short-001"},
+            json=_submission(evaluationWindowDays=251),
+        )
+        too_long = client.post(
+            "/v1/projects/momentum/runs",
+            headers={"Idempotency-Key": "momentum-window-long-001"},
+            json=_submission(evaluationWindowDays=2521),
+        )
     assert invalid.status_code == 422
     assert invalid.json()["error"]["code"] == "invalid_analysis_inputs"
     assert fallback.status_code == 409
     assert fallback.json()["error"]["code"] == "fallback_not_supported_for_controlled_runs"
+    assert legacy_years.status_code == 422
+    assert "evaluationYears" in legacy_years.json()["error"]["message"]
+    assert too_short.status_code == 422
+    assert "between 252 and 2520" in too_short.json()["error"]["message"]
+    assert too_long.status_code == 422
+    assert "between 252 and 2520" in too_long.json()["error"]["message"]

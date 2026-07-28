@@ -10,7 +10,7 @@ The adapter registry currently contains:
 | projectId | input contract | hash contract | worker |
 | --- | --- | --- | --- |
 | `best-factor` | exactly 11 fields, `best-factor/v1` | `best-factor-python-json-v1` | `SonChangGi/best-factor`, `update-dashboard.yml` |
-| `momentum` | exactly 26 `ResearchInputs`, `momentum/v1` | `momentum-research-inputs-rfc8785-v1` | `SonChangGi/momentum-factor-lab`, `controlled-analysis.yml` |
+| `momentum` | exactly 26 `ResearchInputs`, `momentum/v2` | `momentum-research-inputs-rfc8785-v1` | `SonChangGi/momentum-factor-lab`, `controlled-analysis.yml` |
 | `fear-greed` | 16 visible inputs serialized as exactly 17 fields, `fear-greed/control-inputs-v1` | `fear-greed-json-sort-keys-sha256-v1` | `SonChangGi/fearNgreed`, `controlled-analysis.yml` |
 
 Project adapters own normalization, hashing, fallback policy, workflow input
@@ -35,8 +35,9 @@ when configured, `Authorization: Bearer <owner token>`. Idempotency is isolated
 by project and covers the complete normalized request.
 
 Best Factor requires all 11 inputs. Momentum requires all 26 public
-`ResearchInputs`; derived `version` and `evaluationWindowDays` are rejected as
-duplicate sources of truth. Fear & Greed's 16 visible controls serialize to 17
+`ResearchInputs`; `evaluationWindowDays` is an authoritative integer from 252
+through 2520 sessions, while derived `version` is rejected as a duplicate
+source of truth. Fear & Greed's 16 visible controls serialize to 17
 wire fields because the composite evaluation-window control binds `window`,
 `historyStart`, `historyEnd`, and `historyEndMode` independently. All three
 controlled-run adapters require `allowFallback=false`.
@@ -140,7 +141,7 @@ A worker failure callback has this exact shape:
   "binding": {
     "projectId": "momentum",
     "runId": "<control UUID>",
-    "inputSchemaVersion": "momentum/v1",
+    "inputSchemaVersion": "momentum/v2",
     "inputSchemaHash": "<64hex>",
     "configHashAlgorithm": "momentum-research-inputs-rfc8785-v1",
     "configHash": "<64hex>"

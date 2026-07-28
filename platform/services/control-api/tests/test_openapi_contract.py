@@ -37,7 +37,7 @@ def test_openapi_route_and_worker_failure_contract_matches_golden() -> None:
     version_schema = create_schema["properties"]["inputSchemaVersion"]
     assert version_schema["enum"] == [
         "best-factor/v1",
-        "momentum/v1",
+        "momentum/v2",
         "fear-greed/control-inputs-v1",
     ]
 

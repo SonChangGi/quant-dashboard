@@ -37,7 +37,7 @@ TERMINAL_STATUSES = {RunStatus.PUBLISHED, RunStatus.FAILED, RunStatus.CANCELLED}
 class RunCreateRequest(APIModel):
     input_schema_version: Literal[
         "best-factor/v1",
-        "momentum/v1",
+        "momentum/v2",
         "fear-greed/control-inputs-v1",
     ]
     inputs: dict[str, Any] = Field(default_factory=dict)
