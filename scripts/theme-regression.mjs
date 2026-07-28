@@ -5,7 +5,7 @@ import vm from 'node:vm';
 const source = readFileSync('assets/theme.js', 'utf8');
 const html = readFileSync('index.html', 'utf8');
 
-assert.match(html, /assets\/theme\.js\?v=20260722-common-v1/, 'HTML cache-busts the common-design v1 theme runtime');
+assert.match(html, /assets\/theme\.js\?v=20260728-hub-ui/, 'HTML cache-busts the results-first Hub theme runtime');
 
 function createStorage(entries = {}) {
   const values = new Map(Object.entries(entries));
@@ -67,7 +67,14 @@ function runTheme({ search = '', stored = {}, systemDark = false } = {}) {
   assert.equal(page.storage.getItem('quant-dashboard-theme'), null, 'query preview still completes legacy-key migration');
 }
 
-for (const legacyKey of ['quant-dashboard-theme', 'quant-calm-theme', 'dram-price-theme']) {
+for (const legacyKey of [
+  'quant-dashboard-theme',
+  'quant-calm-theme',
+  'dram-price-theme',
+  'etf-tracking-theme',
+  'momentum-factor-theme',
+  'sox-theme',
+]) {
   const page = runTheme({ stored: { [legacyKey]: 'dark' } });
   assert.equal(page.root.dataset.theme, 'dark', `${legacyKey} is read during migration`);
   assert.equal(page.storage.getItem('quant-research-theme'), 'dark', `${legacyKey} migrates to the canonical key`);

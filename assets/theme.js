@@ -2,7 +2,14 @@
   'use strict';
 
   const STORAGE_KEY = 'quant-research-theme';
-  const LEGACY_STORAGE_KEYS = ['quant-dashboard-theme', 'quant-calm-theme', 'dram-price-theme'];
+  const LEGACY_STORAGE_KEYS = [
+    'quant-dashboard-theme',
+    'quant-calm-theme',
+    'dram-price-theme',
+    'etf-tracking-theme',
+    'momentum-factor-theme',
+    'sox-theme',
+  ];
   const root = document.documentElement;
 
   function isTheme(value) {
@@ -77,8 +84,7 @@
   }
 
   function bindThemeToggle() {
-    const persisted = storedTheme();
-    applyTheme(requestedTheme() || persisted || systemTheme() || currentTheme());
+    applyTheme(currentTheme());
     const button = document.querySelector('#theme-toggle');
     if (!button) return;
     button.addEventListener('click', () => {
@@ -87,6 +93,9 @@
       saveTheme(nextTheme);
     });
   }
+
+  const initialStoredTheme = storedTheme();
+  applyTheme(requestedTheme() || initialStoredTheme || systemTheme() || currentTheme());
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', bindThemeToggle, { once: true });

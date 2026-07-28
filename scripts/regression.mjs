@@ -170,7 +170,7 @@ assert(api.formatKellyHeadlineMetric({ value: 6.5, unit: 'percent' }) === '6.5%'
 const kellyRecord = { project: { id: 'kelly' }, summary: validKelly, mode: 'live', generatedAt: validKelly.generatedAt, dataAsOf: '' };
 assert(api.healthTone(kellyRecord) === 'warn' && api.healthLabel(kellyRecord) === '산출 불가', 'Kelly unavailable contract renders as warning rather than healthy green');
 const kellyBriefing = api.briefingItemForRecord(kellyRecord);
-assert(kellyBriefing.tone === 'warning' && /0\/50개/.test(kellyBriefing.title) && /직접 가정·CSV/.test(kellyBriefing.detail), 'Kelly briefing separates public market coverage from usable direct-input calculations');
+assert(kellyBriefing.tone === 'warning' && /0\/50개/.test(kellyBriefing.title) && /직접 가정 계산/.test(kellyBriefing.detail), 'Kelly briefing separates public market coverage from usable direct-input calculations');
 const wrongKellyProject = { ...validKellyPayload, projectId: 'other-project' };
 assert(/projectId kelly/.test(api.validateAdapterContract(kellyAdapter, { summary: wrongKellyProject })), 'Kelly adapter rejects another project summary');
 const invalidKellyCoverage = api.parseKelly({ ...validKellyPayload, coverage: { assetCount: 50, availableAssetCount: 51, frequency: 'daily' } });
@@ -1580,6 +1580,8 @@ const etfGridYPositions = [...etfMiniMarkup.matchAll(/<line x1="76" x2="1088" y1
 assert((etfMiniMarkup.match(/stroke="#d9e2f1"/g) || []).length >= 4 && /최근 1개월 비중\(%\)/.test(etfMiniMarkup), 'ETF mini chart renders a taller multi-tick percent axis');
 assert(Math.max(...etfGridYPositions) - Math.min(...etfGridYPositions) > 240, 'ETF mini chart percent axis uses the expanded vertical plotting area');
 assert((etfMiniMarkup.match(/class="etf-data-point"/g) || []).length === 4, 'ETF mini chart renders every recorded daily point');
+assert((etfMiniMarkup.match(/tabindex="0"/g) || []).length === 1 && /class="etf-mini-plot" tabindex="0"/.test(etfMiniMarkup), 'ETF mini chart uses one keyboard entry point on the chart frame');
+assert(!/class="etf-data-point"[^>]*tabindex=/.test(etfMiniMarkup) && /etf-chart-readout/.test(etfMiniMarkup), 'ETF points leave the tab order while retaining an external exact-value readout');
 assert((etfMiniMarkup.match(/class="legend-key"/g) || []).length === 2, 'ETF mini chart legend includes every TOP10 series');
 
 const etfHistoryPayload = api.compactEtfHistoryPayload({
@@ -1719,6 +1721,7 @@ class ElementStub {
     this.tagName = tagName;
     this.children = [];
     this.attributes = {};
+    this.dataset = {};
     this.className = '';
     this.id = '';
     this.href = '';
@@ -1733,8 +1736,6 @@ class ElementStub {
 }
 const domTargets = {
   '#top-nav': new ElementStub('nav'),
-  '#hero-actions': new ElementStub('div'),
-  '#project-grid': new ElementStub('div'),
   '#summary-grid': new ElementStub('div'),
   '#etf-details': new ElementStub('div'),
   '#research-briefing': new ElementStub('div'),
@@ -1750,9 +1751,9 @@ context.document = {
 api.renderProjectNavigation();
 api.renderDashboardPanels();
 assert(domTargets['#top-nav'].children.length === 8, 'manifest renderer creates eight active project links including Kelly and Port');
-assert(domTargets['#hero-actions'].children.length === 8, 'manifest renderer creates eight active hero action links including Kelly and Port');
-assert(domTargets['#summary-grid'].children.length === 7, 'manifest renderer creates seven active public summary panel shells including Kelly');
-assert(domTargets['#summary-grid'].children.every((child) => /원본 열기/.test(child.innerHTML)), 'dashboard panel shells preserve original page links');
+assert(domTargets['#summary-grid'].children.length === 8, 'manifest renderer creates seven public summary panels plus the Port project link card');
+assert(domTargets['#summary-grid'].children.every((child) => /열기/.test(child.innerHTML)), 'dashboard panel shells preserve project page links');
+assert(domTargets['#summary-grid'].children.some((child) => /project-link-card/.test(child.innerHTML) && /포트폴리오 비중 Cockpit/.test(child.innerHTML)), 'Port remains a link-only project card without a fabricated public summary');
 assert(domTargets['#summary-grid'].children.some((child) => /panel-detail/.test(child.innerHTML)), 'ETF panel shell includes detail mount for TOP10 cards');
 assert(domTargets['#summary-grid'].children.some((child) => /SOX 구성종목/.test(child.innerHTML)), 'SOX panel shell appears in the central summary grid');
 assert(domTargets['#summary-grid'].children.some((child) => /Kelly 비중/.test(child.innerHTML)), 'Kelly panel shell appears in the central summary grid');

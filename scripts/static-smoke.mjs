@@ -27,30 +27,32 @@ const server = createServer(async (request, response) => {
 await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
 const { port } = server.address();
 try {
-  const [html, app, css] = await Promise.all([
+  const [html, app, css, sharedNav] = await Promise.all([
     fetch(`http://127.0.0.1:${port}/`).then((response) => response.text()),
     fetch(`http://127.0.0.1:${port}/assets/app.js`).then((response) => response.text()),
     fetch(`http://127.0.0.1:${port}/assets/styles.css`).then((response) => response.text()),
+    fetch(`http://127.0.0.1:${port}/assets/shared-nav.css`).then((response) => response.text()),
   ]);
-  if (!html.includes('투자 리서치 허브')) throw new Error('index hero missing');
+  if (!html.includes('퀀트 리서치 현황')) throw new Error('results-first page header missing');
   if (!app.includes('parseEtfTracking')) throw new Error('ETF Tracking parser missing');
   if (!app.includes('parseFearAndGreed') || !app.includes('Fear & Greed · 현재 연구 상태')) throw new Error('Fear & Greed parser/panel missing');
   if (!app.includes('parseSox') || !app.includes('SOX 구성종목 · Momentum Top 5')) throw new Error('SOX parser/panel missing');
-  if (!app.includes('parseKelly') || !app.includes('Kelly 비중 · 데이터 계약 상태')) throw new Error('Kelly parser/panel missing');
+  if (!app.includes('parseKelly') || !app.includes('Kelly 비중 · 입력 및 데이터 상태')) throw new Error('Kelly parser/panel missing');
   if (!app.includes('https://sonchanggi.github.io/kelly/data/summary.json')) throw new Error('Kelly public summary endpoint missing');
   if (!app.includes('renderEtfDetailCards') || !app.includes('renderEtfMiniChart')) throw new Error('ETF Tracking detail card/chart renderer missing');
   if (!app.includes('momentumDashboard') || !app.includes('buildDramAxisTicks') || !app.includes('buildEtfPercentAxisTicks')) throw new Error('dashboard readability improvements missing');
   if (!html.includes('id="top-nav"')) throw new Error('dynamic top navigation mount missing');
   if (!html.includes('id="summary-grid"')) throw new Error('dynamic dashboard mount missing');
   if (!html.includes('id="research-briefing"') || !html.includes('id="data-health"')) throw new Error('research cockpit mounts missing');
-  if (!html.includes('티커·테마 Dossier')) throw new Error('dossier copy missing');
+  if (!html.includes('티커·테마 연결')) throw new Error('watchlist copy missing');
   if (!app.includes('PANEL_ADAPTERS')) throw new Error('panel adapter manifest missing');
   if (!app.includes('quant-research-summary') || !app.includes('summaryEntities')) throw new Error('summary contract support missing');
   if (!app.includes('renderDashboardPanels')) throw new Error('manifest-driven panel renderer missing');
   if (!css.includes('.panel')) throw new Error('panel CSS missing');
   if (!css.includes('.etf-detail-grid') || !css.includes('.etf-top10-list')) throw new Error('ETF detail CSS missing');
   if (!css.includes('.health-link')) throw new Error('automation health link CSS missing');
-  console.log('PASS static server smoke served index.html, assets/app.js, and assets/styles.css');
+  if (!sharedNav.includes('position: fixed !important') || !sharedNav.includes('--quant-shared-nav-height: 101px')) throw new Error('fixed shared navigation CSS missing');
+  console.log('PASS static server smoke served index.html, app/styles, and fixed shared navigation CSS');
 } finally {
   await new Promise((resolve) => server.close(resolve));
 }

@@ -176,7 +176,7 @@
       id: 'fearngreed',
       shortName: 'Fear & Greed',
       title: 'Fear & Greed Flow Lab',
-      description: 'KOSPI 수익률로 설명되지 않는 개인 순매수 흐름을 과거 252거래일 회귀 잔차로 측정합니다.',
+      description: 'KOSPI 대비 개인 순매수 잔차와 현재 전략 상태를 확인합니다.',
       url: 'https://sonchanggi.github.io/fearNgreed/',
       accent: 'FG',
       panelAdapter: 'fearngreed',
@@ -191,7 +191,7 @@
       id: 'momentum',
       shortName: 'Momentum',
       title: '모멘텀 팩터 랩',
-      description: '동일 입력으로 Python이 선정한 최고 모멘텀 팩터와 연구 포트폴리오를 보여주는 대시보드입니다.',
+      description: '최고 모멘텀 팩터와 고정 70/30 연구 포트폴리오를 확인합니다.',
       url: 'https://sonchanggi.github.io/momentum-factor-lab/',
       accent: 'MF',
       panelAdapter: 'momentum',
@@ -211,7 +211,7 @@
       id: 'dram',
       shortName: 'DRAM',
       title: 'D램(DRAM) 가격 랩',
-      description: 'D램(DRAM) 현물가, 고정가, 주간 현물 프록시를 모니터링하는 가격 대시보드입니다.',
+      description: 'D램 현물가·고정가·주간 현물 프록시를 모니터링합니다.',
       url: 'https://sonchanggi.github.io/dram-price/',
       accent: 'DR',
       panelAdapter: 'dram',
@@ -227,7 +227,7 @@
       id: 'best',
       shortName: 'Best Factor',
       title: 'Best Factor Lab',
-      description: '미국 주식 팩터 랭킹, 성과 지표, 최신 편입 종목과 비중을 확인합니다.',
+      description: '미국 주식 팩터 랭킹과 최신 편입 종목·비중을 확인합니다.',
       url: 'https://sonchanggi.github.io/best-factor/',
       accent: 'BF',
       panelAdapter: 'best',
@@ -247,7 +247,7 @@
       id: 'etf',
       shortName: 'ETF',
       title: 'ETF TOP10 Tracking',
-      description: '한국 상장 액티브 ETF 3종의 TOP10 편입 종목, 비중 변화, 편입·편출 신호를 추적합니다.',
+      description: '한국 상장 액티브 ETF 3종의 TOP10 비중과 편입·편출 신호를 추적합니다.',
       url: 'https://sonchanggi.github.io/etf-tracking/',
       accent: 'ETF',
       panelAdapter: 'etf',
@@ -268,7 +268,7 @@
       id: 'sox',
       shortName: 'SOX',
       title: 'SOX 반도체 지수 Cockpit',
-      description: '필라델피아 반도체 지수 구성종목의 프록시 비중, 가격 모멘텀, 실적 모멘텀을 함께 비교합니다.',
+      description: 'SOX 구성종목의 프록시 비중과 가격·실적 모멘텀을 비교합니다.',
       url: 'https://sonchanggi.github.io/sox/',
       accent: 'SX',
       panelAdapter: 'sox',
@@ -288,7 +288,7 @@
       id: 'port',
       shortName: 'Port',
       title: '포트폴리오 비중 Cockpit',
-      description: 'ETF·주식 보유 주수와 종가 통화(USD/KRW)를 입력해 최종 비중, ETF 기초 노출, 레버리지 포함/제외, 상관관계를 확인합니다.',
+      description: '티커·보유 주수·종가 통화로 비중과 ETF 기초 노출을 계산합니다.',
       url: 'https://sonchanggi.github.io/port/',
       accent: 'PT',
     },
@@ -296,13 +296,13 @@
       id: 'kelly',
       shortName: 'Kelly',
       title: 'Kelly Allocation Lab',
-      description: '과거 성과지표, 단일·다자산 Kelly 비중, 2배 레버리지 성장률과 리밸런싱 효과를 같은 기준으로 비교합니다.',
+      description: '티커·비중·수익·위험을 입력해 사용자 비중과 Kelly 배분을 비교합니다.',
       url: 'https://sonchanggi.github.io/kelly/',
       accent: 'KL',
       panelAdapter: 'kelly',
       panel: {
         eyebrow: 'Kelly Allocation',
-        title: 'Kelly 비중 · 데이터 계약 상태',
+        title: 'Kelly 비중 · 입력 및 데이터 상태',
         contentType: 'metrics',
         metricLoading: 'Kelly 공개 요약을 불러오는 중...',
       },
@@ -504,40 +504,22 @@
     document.addEventListener('DOMContentLoaded', () => {
       renderProjectNavigation();
       renderDashboardPanels();
+      renderHubStatus([], getPanelProjects().length);
       loadDashboardPanels();
     });
   }
 
   function renderProjectNavigation() {
     const topNav = $('#top-nav');
-    const heroActions = $('#hero-actions');
-    const projectGrid = $('#project-grid');
 
     if (topNav) {
       topNav.replaceChildren(...PROJECTS.map((project) => createProjectLink(project, project.shortName)));
-    }
-
-    if (heroActions) {
-      heroActions.replaceChildren(...PROJECTS.map((project) => createProjectLink(project, `${project.shortName} 열기`)));
-    }
-
-    if (projectGrid) {
-      projectGrid.replaceChildren(...PROJECTS.map((project) => {
-        const article = document.createElement('article');
-        article.className = 'project-card';
-        article.innerHTML = `
-          <div class="project-icon" aria-hidden="true">${escapeHtml(project.accent)}</div>
-          <h3>${escapeHtml(project.title)}</h3>
-          <p>${escapeHtml(project.description)}</p>
-          <a href="${escapeAttribute(project.url)}" aria-label="${escapeAttribute(project.title)} 원본 페이지 열기">원본 페이지 열기</a>
-        `;
-        return article;
-      }));
     }
   }
 
   function createProjectLink(project, label) {
     const link = document.createElement('a');
+    link.className = 'quant-shared-nav__link';
     link.href = project.url;
     link.textContent = label;
     link.setAttribute('data-project-id', project.id);
@@ -547,32 +529,60 @@
   function renderDashboardPanels() {
     const summaryGrid = $('#summary-grid');
     if (!summaryGrid) return;
-    summaryGrid.replaceChildren(...getPanelProjects().map(createPanelShell));
+    summaryGrid.replaceChildren(...PROJECTS.map((project) => (
+      project.panelAdapter && project.panel && PANEL_ADAPTERS[project.panelAdapter]
+        ? createPanelShell(project)
+        : createLinkPanelShell(project)
+    )));
   }
 
   function createPanelShell(project) {
     const panel = project.panel || {};
     const article = document.createElement('article');
-    article.className = 'panel panel-wide';
+    const contentType = panel.contentType || 'table';
+    article.className = `panel panel-wide panel--${contentType} panel--${project.id}`;
     article.id = panelDomId(project, 'panel');
+    article.dataset.projectId = project.id;
     article.setAttribute('aria-labelledby', panelDomId(project, 'title'));
 
-    const content = panel.contentType === 'chart'
+    const content = contentType === 'chart'
       ? chartPanelMarkup(project)
-      : panel.contentType === 'metrics'
+      : contentType === 'metrics'
         ? metricsPanelMarkup(project)
         : tablePanelMarkup(project);
-    if (panel.contentType === 'metrics') article.className += ' metrics-only-panel';
+    if (contentType === 'metrics') article.className += ' metrics-only-panel';
     article.innerHTML = `
       <div class="panel-header">
         <div>
           <p class="eyebrow">${escapeHtml(panel.eyebrow || project.shortName)}</p>
           <h3 id="${escapeAttribute(panelDomId(project, 'title'))}">${escapeHtml(panel.title || project.title)}</h3>
         </div>
-        <a class="panel-link" href="${escapeAttribute(project.url)}">원본 열기</a>
+        <a class="panel-link" href="${escapeAttribute(project.url)}">${escapeHtml(project.shortName)} 열기</a>
       </div>
-      ${content}
       <p class="status-line" id="${escapeAttribute(panelDomId(project, 'status'))}">업데이트 확인 중</p>
+      ${content}
+    `;
+    return article;
+  }
+
+  function createLinkPanelShell(project) {
+    const article = document.createElement('article');
+    article.className = `panel panel-wide panel--link panel--${project.id}`;
+    article.id = panelDomId(project, 'panel');
+    article.dataset.projectId = project.id;
+    article.setAttribute('aria-labelledby', panelDomId(project, 'title'));
+    article.innerHTML = `
+      <div class="project-link-card">
+        <div class="project-link-identity">
+          <span class="project-monogram" aria-hidden="true">${escapeHtml(project.accent)}</span>
+          <div>
+            <p class="eyebrow">${escapeHtml(project.shortName)}</p>
+            <h3 id="${escapeAttribute(panelDomId(project, 'title'))}">${escapeHtml(project.title)}</h3>
+          </div>
+        </div>
+        <p>${escapeHtml(project.description)}</p>
+        <a class="panel-link" href="${escapeAttribute(project.url)}">${escapeHtml(project.shortName)} 열기</a>
+      </div>
     `;
     return article;
   }
@@ -660,9 +670,12 @@
       const availableRecords = projects.map((item) => PANEL_RECORDS.get(item.id)).filter(Boolean);
       renderResearchBriefing(availableRecords);
       renderDataHealth(availableRecords);
+      renderHubStatus(availableRecords, projects.length);
       bindWatchlist(availableRecords);
     }));
-    return projects.map((project) => PANEL_RECORDS.get(project.id)).filter(Boolean);
+    const records = projects.map((project) => PANEL_RECORDS.get(project.id)).filter(Boolean);
+    renderHubStatus(records, projects.length);
+    return records;
   }
 
   async function loadProjectPanel(projectOrId) {
@@ -2861,29 +2874,36 @@
     const target = $(selector);
     if (!target) return;
     const cards = asRecords(rows).map((row) => `
-      <article class="etf-detail-card">
-        <div class="etf-detail-head">
-          <div>
+      <details class="etf-detail-card">
+        <summary class="etf-detail-head">
+          <span>
             <strong>${escapeHtml(row.name)}</strong>
             <span>${escapeHtml(row.code || row.fullName || '')} · ${escapeHtml(formatMaybeDate(row.date))}</span>
-          </div>
-          <a href="https://sonchanggi.github.io/etf-tracking/" aria-label="${escapeAttribute(row.name)} ETF Tracking 원본 열기">상세</a>
+          </span>
+          <span class="etf-detail-summary-value">TOP10 ${escapeHtml(formatPercent(row.top10Weight))}</span>
+        </summary>
+        <div class="etf-detail-body">
+          <a class="etf-detail-link" href="https://sonchanggi.github.io/etf-tracking/" aria-label="${escapeAttribute(row.name)} ETF Tracking 원본 열기">ETF 원본 열기</a>
+          ${renderEtfMiniChart(row)}
+          <ol class="etf-top10-list" aria-label="${escapeAttribute(row.name)} 최신 TOP10 보유종목">
+            ${renderEtfTop10Items(row.top10)}
+          </ol>
         </div>
-        ${renderEtfMiniChart(row)}
-        <ol class="etf-top10-list" aria-label="${escapeAttribute(row.name)} 최신 TOP10 보유종목">
-          ${renderEtfTop10Items(row.top10)}
-        </ol>
-      </article>
+      </details>
     `).join('');
     target.innerHTML = `
       <div class="etf-detail-heading">
-        <div>
-          <strong>ETF별 최신 TOP10과 최근 1개월 비중 변화</strong>
-          <span>표는 최신 기준일, 그래프는 현재 TOP10 종목의 최근 31일 저장 비중 히스토리를 표시합니다.</span>
-        </div>
+        <strong>ETF별 TOP10 비중 · 최근 1개월 비중 변화</strong>
       </div>
       <div class="etf-detail-grid">${cards || '<div class="skeleton-line">ETF 상세 요약을 표시할 데이터가 없습니다.</div>'}</div>
     `;
+    bindChartKeyboardFrames(target, {
+      frameSelector: '.etf-mini-plot',
+      seriesSelector: '.etf-mini-series',
+      pointSelector: '.etf-data-point',
+      readoutSelector: '.etf-chart-readout',
+      navigationLabel: '날짜/종목',
+    });
   }
 
   function renderEtfTop10Items(top10) {
@@ -2944,15 +2964,16 @@
         const pathData = segment.map((point, pointIndex) => `${pointIndex ? 'L' : 'M'} ${x(point.date).toFixed(1)} ${y(point.value).toFixed(1)}`).join(' ');
         return `<path class="etf-mini-line" d="${pathData}" fill="none" stroke="${color}" stroke-width="${item.rank <= 3 ? 3.8 : 2.8}" stroke-linecap="round" stroke-linejoin="round"/>`;
       }).join('');
-      const pointMarks = item.points.filter((point) => Number.isFinite(point.value)).map((point) => {
+      const pointMarks = item.points.filter((point) => Number.isFinite(point.value)).map((point, pointIndex) => {
         const pointX = x(point.date);
         const pointY = y(point.value);
         const valueText = formatPercent(point.value);
+        const keyboardLabel = `${item.label} · ${formatMaybeDate(point.date)} · ${valueText}`;
         const labelWidth = Math.max(50, valueText.length * 8 + 16);
         const labelX = pointX > width - margin.right - 70 ? -labelWidth - 9 : 9;
         const labelY = pointY < margin.top + 36 ? 9 : -33;
         return `
-          <g class="etf-data-point" transform="translate(${pointX.toFixed(1)} ${pointY.toFixed(1)})" tabindex="0" role="img" aria-label="${escapeAttribute(`${item.label} ${formatMaybeDate(point.date)} ${valueText}`)}">
+          <g class="etf-data-point" transform="translate(${pointX.toFixed(1)} ${pointY.toFixed(1)})" data-series-index="${index}" data-point-index="${pointIndex}" data-date="${escapeAttribute(point.date)}" data-keyboard-label="${escapeAttribute(keyboardLabel)}">
             <circle class="etf-point-hit" r="10" fill="transparent"/>
             <circle class="etf-mini-point" r="${item.rank <= 3 ? 4.7 : 4}" fill="${color}"/>
             <g class="etf-point-label" transform="translate(${labelX} ${labelY})" aria-hidden="true">
@@ -2974,9 +2995,15 @@
       const anchor = index === 0 ? 'start' : index === xTickDates.length - 1 ? 'end' : 'middle';
       return `<text x="${x(date).toFixed(1)}" y="${height - 22}" text-anchor="${anchor}" fill="#9aa4b2" font-size="14" font-weight="650">${escapeHtml(formatMaybeDate(date))}</text>`;
     }).join('');
+    const initialSeries = chartSeries[0];
+    const initialPoint = asArray(initialSeries?.points).filter((point) => Number.isFinite(point.value)).at(-1);
+    const initialReadout = initialSeries && initialPoint
+      ? `${initialSeries.label} · ${formatMaybeDate(initialPoint.date)} · ${formatPercent(initialPoint.value)}`
+      : '차트 값을 확인할 수 없습니다.';
+    const frameLabel = `${row.name} TOP10 비중 변화. 좌우 방향키로 날짜, 위아래 방향키로 종목을 탐색합니다.`;
     return `
       <div class="etf-mini-chart">
-        <div class="etf-mini-plot">
+        <div class="etf-mini-plot" tabindex="0" role="group" aria-label="${escapeAttribute(frameLabel)}" data-base-label="${escapeAttribute(frameLabel)}">
           <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeAttribute(row.name)} TOP10 비중 변화 미니 그래프">
             <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"/>
             <text x="${margin.left}" y="30" fill="#d8dee8" font-size="16" font-weight="800">최근 1개월 비중(%)</text>
@@ -2986,9 +3013,67 @@
             ${paths}
           </svg>
         </div>
+        <p class="chart-keyboard-readout etf-chart-readout" aria-live="polite">${escapeHtml(initialReadout)} <span>· 방향키: 날짜/종목</span></p>
         <div class="chart-legend etf-mini-legend">${legend}</div>
       </div>
     `;
+  }
+
+  function bindChartKeyboardFrames(root, selectors) {
+    if (!root?.querySelectorAll) return;
+    const navigationLabel = stringOr(selectors.navigationLabel, '날짜/종목');
+    root.querySelectorAll(selectors.frameSelector).forEach((frame) => {
+      const seriesGroups = [...frame.querySelectorAll(selectors.seriesSelector)];
+      if (!seriesGroups.length) return;
+      const readout = frame.parentElement?.querySelector(selectors.readoutSelector);
+      let seriesIndex = 0;
+      let pointIndex = Math.max(seriesGroups[0].querySelectorAll(selectors.pointSelector).length - 1, 0);
+
+      const pointsForSeries = (index) => [...(seriesGroups[index]?.querySelectorAll(selectors.pointSelector) || [])];
+      const closestPointIndex = (points, targetDate) => {
+        const target = Date.parse(targetDate);
+        if (!Number.isFinite(target)) return Math.max(points.length - 1, 0);
+        return points.reduce((bestIndex, point, index) => {
+          const distance = Math.abs(Date.parse(point.dataset.date) - target);
+          const bestDistance = Math.abs(Date.parse(points[bestIndex]?.dataset.date) - target);
+          return distance < bestDistance ? index : bestIndex;
+        }, 0);
+      };
+      const update = () => {
+        seriesGroups.forEach((series) => series.classList.remove('is-keyboard-active'));
+        frame.querySelectorAll(selectors.pointSelector).forEach((point) => point.classList.remove('is-keyboard-active'));
+        const points = pointsForSeries(seriesIndex);
+        if (!points.length) return;
+        pointIndex = Math.max(0, Math.min(pointIndex, points.length - 1));
+        const point = points[pointIndex];
+        seriesGroups[seriesIndex].classList.add('is-keyboard-active');
+        point.classList.add('is-keyboard-active');
+        frame.classList.add('is-keyboard-active');
+        const label = point.dataset.keyboardLabel || '선택값 확인 필요';
+        if (readout) readout.innerHTML = `${escapeHtml(label)} <span>· 방향키: ${escapeHtml(navigationLabel)}</span>`;
+        frame.setAttribute('aria-label', `${frame.dataset.baseLabel || '차트'} 현재 선택 ${label}`);
+      };
+
+      frame.addEventListener('focus', update);
+      frame.addEventListener('keydown', (event) => {
+        const points = pointsForSeries(seriesIndex);
+        if (!points.length) return;
+        const currentDate = points[pointIndex]?.dataset.date || '';
+        if (event.key === 'ArrowLeft') pointIndex = Math.max(0, pointIndex - 1);
+        else if (event.key === 'ArrowRight') pointIndex = Math.min(points.length - 1, pointIndex + 1);
+        else if (event.key === 'Home') pointIndex = 0;
+        else if (event.key === 'End') pointIndex = points.length - 1;
+        else if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+          const direction = event.key === 'ArrowUp' ? -1 : 1;
+          seriesIndex = (seriesIndex + direction + seriesGroups.length) % seriesGroups.length;
+          pointIndex = closestPointIndex(pointsForSeries(seriesIndex), currentDate);
+        } else {
+          return;
+        }
+        event.preventDefault();
+        update();
+      });
+    });
   }
 
   function splitChartPointSegments(points) {
@@ -3066,6 +3151,13 @@
     target.innerHTML = `<div class="dram-source-grid">${[...sourceBuckets.entries()]
       .map(([source, sourceSeries]) => renderDramSourceChart(source, sourceSeries))
       .join('')}</div>`;
+    bindChartKeyboardFrames(target, {
+      frameSelector: '.dram-chart-frame',
+      seriesSelector: '.dram-series',
+      pointSelector: '.dram-data-point',
+      readoutSelector: '.dram-chart-readout',
+      navigationLabel: '날짜/제품',
+    });
   }
 
   function renderDramSourceChart(source, chartSeries) {
@@ -3106,7 +3198,10 @@
       const color = COLORS[index % COLORS.length];
       const validPoints = item.points.filter(([, value]) => Number.isFinite(Number(value)));
       const pathData = validPoints.map(([date, value], pointIndex) => `${pointIndex === 0 ? 'M' : 'L'} ${x(date).toFixed(1)} ${y(Number(value)).toFixed(1)}`).join(' ');
-      const circles = validPoints.map(([date, value], pointIndex) => `<circle class="dram-data-point${pointIndex === validPoints.length - 1 ? ' endpoint' : ''}" cx="${x(date).toFixed(1)}" cy="${y(Number(value)).toFixed(1)}" r="${pointIndex === validPoints.length - 1 ? '4.2' : '3.3'}" fill="${color}"><title>${escapeHtml(`${item.name} · ${date} · ${formatNumber(value)}`)}</title></circle>`).join('');
+      const circles = validPoints.map(([date, value], pointIndex) => {
+        const keyboardLabel = `${item.name} · ${date} · ${formatNumber(value)} USD`;
+        return `<circle class="dram-data-point${pointIndex === validPoints.length - 1 ? ' endpoint' : ''}" cx="${x(date).toFixed(1)}" cy="${y(Number(value)).toFixed(1)}" r="${pointIndex === validPoints.length - 1 ? '4.2' : '3.3'}" fill="${color}" data-series-index="${index}" data-point-index="${pointIndex}" data-date="${escapeAttribute(date)}" data-keyboard-label="${escapeAttribute(keyboardLabel)}"><title>${escapeHtml(`${item.name} · ${date} · ${formatNumber(value)}`)}</title></circle>`;
+      }).join('');
       const labels = validPoints.map(([date, value], pointIndex) => {
         const label = formatNumber(value);
         const labelWidth = Math.min(96, Math.max(48, label.length * 7.2 + 18));
@@ -3119,7 +3214,7 @@
         const labelY = Math.max(margin.top + 18, Math.min(pointY - 14 + lane * 18, height - margin.bottom - 8));
         return `<g class="dram-value-label" transform="translate(${labelX.toFixed(1)} ${labelY.toFixed(1)})"><rect x="0" y="-16" width="${labelWidth.toFixed(1)}" height="21" rx="6"/><text x="8" y="-5" dominant-baseline="middle">${escapeHtml(label)}</text></g>`;
       }).join('');
-      return `<g class="dram-series" tabindex="0" focusable="true" role="img" aria-label="${escapeAttribute(`${item.name} 일별 가격 추이`)}" style="--series-color:${color}"><path class="dram-series-hit" d="${pathData}" fill="none" stroke="transparent"/><path class="dram-series-line" d="${pathData}" fill="none" stroke="${color}"/>${circles}<g class="dram-value-layer">${labels}</g></g>`;
+      return `<g class="dram-series" data-series-index="${index}" data-series-label="${escapeAttribute(item.name)}" style="--series-color:${color}"><path class="dram-series-hit" d="${pathData}" fill="none" stroke="transparent"/><path class="dram-series-line" d="${pathData}" fill="none" stroke="${color}"/>${circles}<g class="dram-value-layer">${labels}</g></g>`;
     }).join('');
 
     const legend = chartSeries.map((item, index) => `
@@ -3129,12 +3224,18 @@
     const sourceName = dramSourceLabel(source);
     const firstDate = allDates[0] || '';
     const lastDate = allDates.at(-1) || '';
+    const initialSeries = chartSeries[0];
+    const initialPoint = asArray(initialSeries?.points).filter(([, value]) => Number.isFinite(Number(value))).at(-1);
+    const initialReadout = initialSeries && initialPoint
+      ? `${initialSeries.name} · ${initialPoint[0]} · ${formatNumber(initialPoint[1])} USD`
+      : '차트 값을 확인할 수 없습니다.';
+    const frameLabel = `${sourceName} D램 일별 가격. 좌우 방향키로 날짜, 위아래 방향키로 제품을 탐색합니다.`;
     return `<article class="dram-source-card">
       <div class="dram-source-heading">
         <div><p class="eyebrow">Data source</p><h4>${escapeHtml(sourceName)}</h4><p>${formatInteger(points.length)}개 관측치 · ${escapeHtml(firstDate)} ~ ${escapeHtml(lastDate)}</p></div>
         <span>${formatInteger(chartSeries.length)} series</span>
       </div>
-      <div class="dram-chart-frame">
+      <div class="dram-chart-frame" tabindex="0" role="group" aria-label="${escapeAttribute(frameLabel)}" data-base-label="${escapeAttribute(frameLabel)}">
         <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeAttribute(`${sourceName} D램 일별 가격 추이`)}">
           <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"/>
           <text x="${margin.left}" y="18" fill="#d8dee8" font-size="13" font-weight="700">일별 가격 · USD</text>
@@ -3144,6 +3245,7 @@
           ${xTicks}${paths}
         </svg>
       </div>
+      <p class="chart-keyboard-readout dram-chart-readout" aria-live="polite">${escapeHtml(initialReadout)} <span>· 방향키: 날짜/제품</span></p>
       <div class="chart-legend dram-legend">${legend}</div>
     </article>`;
   }
@@ -3354,11 +3456,46 @@
       return {
         kicker: 'Kelly Allocation',
         title: `시계열 ${coverage} · ${summary.stateLabel || '상태 확인 필요'}`,
-        detail: `직접 가정·CSV 계산 사용 가능 · ${summary.statusMessage || firstLimitation(summary.meta || {})}`,
+        detail: `직접 가정 계산 가능 · ${summary.statusMessage || firstLimitation(summary.meta || {})}`,
         tone: ['published', 'live_api'].includes(summary.meta?.statusState) ? '' : 'warning',
       };
     }
     return null;
+  }
+
+  function renderHubStatus(records = [], total = getPanelProjects().length) {
+    const coverageTarget = $('#hub-status-coverage');
+    const dateTarget = $('#hub-status-date');
+    const attentionTarget = $('#hub-status-attention');
+    const operationsTarget = $('#operations-summary');
+    const expected = Math.max(numberOr(total, 0), records.length);
+    const loaded = records.length;
+    const warningCount = records.filter((record) => healthTone(record) !== 'ok').length;
+    const portfolio = portfolioFreshnessSummary(records);
+    const isComplete = expected > 0 && loaded === expected;
+
+    if (coverageTarget) {
+      coverageTarget.textContent = `${loaded}/${expected} ${isComplete ? '확인 완료' : '확인 중'}`;
+    }
+    if (dateTarget) {
+      dateTarget.textContent = portfolio
+        ? portfolio.mixed
+          ? `${formatMaybeDate(portfolio.oldest)}–${formatMaybeDate(portfolio.newest)}`
+          : formatMaybeDate(portfolio.newest)
+        : '확인 중';
+    }
+    if (attentionTarget) {
+      attentionTarget.textContent = loaded
+        ? warningCount
+          ? `${warningCount}개`
+          : '없음'
+        : '확인 중';
+    }
+    if (operationsTarget) {
+      operationsTarget.textContent = isComplete
+        ? `${loaded}개 공개 요약 · 주의 ${warningCount}개`
+        : `${loaded}/${expected}개 공개 요약 확인 중`;
+    }
   }
 
   function renderDataHealth(records = []) {
@@ -3372,7 +3509,6 @@
           <span>${portfolio.mixed ? '혼합' : '일치'}</span>
         </div>
         <p>${escapeHtml(portfolio.label)}</p>
-        <small>${escapeHtml('허브는 각 프로젝트의 public JSON을 독립적으로 읽습니다. 이 행은 서로 다른 기준일이 섞였는지 보여줍니다.')}</small>
       </article>
     ` : '';
     const rows = records.map((record) => `
@@ -3834,6 +3970,7 @@
       renderEtfDetailCards,
       renderResearchBriefing,
       briefingItemForRecord,
+      renderHubStatus,
       renderDataHealth,
       healthTone,
       healthLabel,

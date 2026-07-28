@@ -3,6 +3,7 @@ import { readFileSync, statSync } from 'node:fs';
 const files = {
   html: readFileSync('index.html', 'utf8'),
   css: readFileSync('assets/styles.css', 'utf8'),
+  sharedNav: readFileSync('assets/shared-nav.css', 'utf8'),
   app: readFileSync('assets/app.js', 'utf8'),
   readme: readFileSync('README.md', 'utf8'),
   design: readFileSync('DESIGN.md', 'utf8'),
@@ -19,7 +20,7 @@ const checks = [];
 const assert = (condition, label) => checks.push({ label, ok: Boolean(condition) });
 const contains = (file, needle) => file.includes(needle);
 
-for (const path of ['index.html', 'assets/styles.css', 'assets/app.js', 'DESIGN.md', 'docs/web-design.md', 'docs/common-design-v1.md', 'docs/common-design-v1-rollout-prompt.md', 'docs/platform-architecture-v1.md', 'docs/control-audit-2026-07-24.md', 'scripts/verify.mjs', 'scripts/regression.mjs', 'scripts/static-smoke.mjs', 'scripts/live-contract-smoke.mjs', '.github/workflows/platform-foundation.yml', 'platform/vercel.json', 'package.json']) {
+for (const path of ['index.html', 'assets/styles.css', 'assets/shared-nav.css', 'assets/app.js', 'DESIGN.md', 'docs/web-design.md', 'docs/common-design-v1.md', 'docs/common-design-v1-rollout-prompt.md', 'docs/platform-architecture-v1.md', 'docs/control-audit-2026-07-24.md', 'scripts/verify.mjs', 'scripts/regression.mjs', 'scripts/static-smoke.mjs', 'scripts/live-contract-smoke.mjs', '.github/workflows/platform-foundation.yml', 'platform/vercel.json', 'package.json']) {
   assert(statSync(path).isFile(), `${path} exists`);
 }
 
@@ -69,6 +70,38 @@ assert(contains(files.html, 'id="summary-grid"'), 'dynamic dashboard mount exist
 assert(contains(files.html, 'id="research-briefing"'), 'research briefing mount exists');
 assert(contains(files.html, 'id="watchlist-input"'), 'watchlist input exists');
 assert(contains(files.html, 'id="data-health"'), 'data health mount exists');
+assert(contains(files.html, 'class="skip-link"') && contains(files.html, 'id="main-content"'), 'keyboard users can skip the shared navigation');
+assert(
+  contains(files.html, 'quant-shared-nav')
+    && contains(files.html, 'assets/shared-nav.css')
+    && contains(files.sharedNav, 'position: fixed !important')
+    && contains(files.sharedNav, '--quant-shared-nav-height: 101px'),
+  'shared navigation stays fixed and reserves desktop/mobile document space',
+);
+assert(
+  contains(files.html, 'site-nav-inner quant-shared-nav__inner')
+    && contains(files.html, 'id="hub-status-coverage"')
+    && contains(files.html, 'id="hub-status-date"')
+    && contains(files.html, 'id="hub-status-attention"'),
+  'compact shared navigation and results-first Hub status strip exist',
+);
+assert(
+  contains(files.html, '<details class="operations-panel">')
+    && contains(files.html, '데이터 · 출처 · 운영 상세')
+    && !contains(files.html, 'id="hero-actions"')
+    && !contains(files.html, 'id="project-grid"')
+    && !contains(files.html, 'roadmap-section'),
+  'repeated navigation and explanatory sections are consolidated into one closed operations disclosure',
+);
+assert(
+  contains(files.css, '.site-nav-inner')
+    && contains(files.css, 'min-height: 58px')
+    && contains(files.css, 'font-size: 15px')
+    && contains(files.css, 'line-height: 1.55')
+    && contains(files.css, '.skip-link'),
+  'shared navigation, typography density, and keyboard entry styles are present',
+);
+assert(contains(files.app, 'createLinkPanelShell') && contains(files.app, 'renderHubStatus'), 'result-card registry includes Port and dynamic Hub status rendering');
 assert(
   contains(files.html, 'name="quant-supabase-url" content=""')
     && contains(files.html, 'name="quant-supabase-publishable-key" content=""'),
@@ -147,8 +180,27 @@ assert(contains(files.app, 'etfHistoryEnrichmentFailure'), 'ETF Tracking history
 assert(contains(files.app, 'renderEtfDetailCards'), 'ETF Tracking TOP10 detail renderer exists');
 assert(contains(files.app, 'renderEtfMiniChart'), 'ETF Tracking mini chart renderer exists');
 assert(contains(files.app, 'buildEtfPercentAxisTicks') && contains(files.app, '최근 1개월 비중(%)'), 'ETF mini chart exposes a readable percent y-axis');
+assert(
+  contains(files.app, 'bindChartKeyboardFrames')
+    && contains(files.app, 'class="etf-mini-plot" tabindex="0"')
+    && contains(files.app, 'class="dram-chart-frame" tabindex="0"')
+    && contains(files.app, 'chart-keyboard-readout')
+    && contains(files.app, "navigationLabel: '날짜/제품'"),
+  'ETF and DRAM charts use one focusable frame with arrow-key exploration and an external exact-value readout',
+);
+assert(
+  !/class="etf-data-point"[^>]*tabindex=/.test(files.app)
+    && !/class="dram-series"[^>]*tabindex=/.test(files.app),
+  'SVG data points and series do not create excessive keyboard tab stops',
+);
 assert(contains(files.css, '.etf-detail-grid'), 'ETF Tracking detail grid CSS exists');
 assert(contains(files.css, '.etf-top10-list'), 'ETF Tracking TOP10 list CSS exists');
+assert(
+  contains(files.css, '.panel--momentum :is(th, td):nth-child(3)')
+    && contains(files.css, '.panel--sox :is(th, td):nth-child(6)')
+    && !contains(files.css, 'th:not(:first-child)'),
+  'table alignment is project-aware so numeric cells align right without moving ticker or status text',
+);
 assert(contains(files.app, 'latest_holdings'), 'best factor holdings optional field is handled');
 assert(contains(files.app, 'formatFreshness'), 'freshness formatter exists');
 assert(contains(files.app, 'renderResearchBriefing'), 'research briefing renderer exists');
