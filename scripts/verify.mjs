@@ -14,13 +14,16 @@ const files = {
   controlAudit: readFileSync('docs/control-audit-2026-07-24.md', 'utf8'),
   packageJson: readFileSync('package.json', 'utf8'),
   liveSmoke: readFileSync('scripts/live-contract-smoke.mjs', 'utf8'),
+  publicHealthPolicy: readFileSync('scripts/public-health-policy.mjs', 'utf8'),
+  platformFoundationWorkflow: readFileSync('.github/workflows/platform-foundation.yml', 'utf8'),
+  publicHealthWorkflow: readFileSync('.github/workflows/public-data-health.yml', 'utf8'),
 };
 
 const checks = [];
 const assert = (condition, label) => checks.push({ label, ok: Boolean(condition) });
 const contains = (file, needle) => file.includes(needle);
 
-for (const path of ['index.html', 'assets/styles.css', 'assets/shared-nav.css', 'assets/app.js', 'DESIGN.md', 'docs/web-design.md', 'docs/common-design-v1.md', 'docs/common-design-v1-rollout-prompt.md', 'docs/platform-architecture-v1.md', 'docs/control-audit-2026-07-24.md', 'scripts/verify.mjs', 'scripts/regression.mjs', 'scripts/static-smoke.mjs', 'scripts/live-contract-smoke.mjs', '.github/workflows/platform-foundation.yml', 'platform/vercel.json', 'package.json']) {
+for (const path of ['index.html', 'assets/styles.css', 'assets/shared-nav.css', 'assets/app.js', 'DESIGN.md', 'docs/web-design.md', 'docs/common-design-v1.md', 'docs/common-design-v1-rollout-prompt.md', 'docs/platform-architecture-v1.md', 'docs/control-audit-2026-07-24.md', 'scripts/verify.mjs', 'scripts/regression.mjs', 'scripts/static-smoke.mjs', 'scripts/live-contract-smoke.mjs', 'scripts/public-health-policy.mjs', '.github/workflows/platform-foundation.yml', '.github/workflows/public-data-health.yml', 'platform/vercel.json', 'package.json']) {
   assert(statSync(path).isFile(), `${path} exists`);
 }
 
@@ -51,6 +54,7 @@ const dataUrls = [
   'https://sonchanggi.github.io/etf-tracking/data/dashboard.json',
   'https://sonchanggi.github.io/etf-tracking/data/history.json',
   'https://sonchanggi.github.io/sox/data/summary.json',
+  'https://sonchanggi.github.io/port/data/summary.json',
   'https://sonchanggi.github.io/kelly/data/summary.json',
 ];
 for (const url of dataUrls) {
@@ -166,10 +170,15 @@ assert(contains(files.app, 'parseEtfTracking'), 'ETF Tracking parser exists');
 assert(contains(files.app, 'parseSox'), 'SOX summary parser exists');
 assert(contains(files.app, 'renderSox'), 'SOX dashboard panel renderer exists');
 assert(contains(files.app, 'SOX 구성종목 · Momentum Top 5'), 'SOX central summary panel copy exists');
+assert(contains(files.app, 'parsePort') && contains(files.app, 'renderPort'), 'Port parser and public summary panel renderer exist');
+assert(contains(files.app, 'PORT_STATUS_STATES') && contains(files.app, 'criticalIssueCount === 0'), 'Port adapter fails closed on unknown or critical upstream states');
+assert(contains(files.app, "expectedProjectId: 'port'") && contains(files.app, 'PORT_SUMMARY_CONTRACT'), 'Port adapter requires its own project identity and coverage contract');
 assert(contains(files.app, 'parseKelly') && contains(files.app, 'renderKelly'), 'Kelly parser and panel renderer exist');
 assert(contains(files.app, 'normalizeKellyUnavailable'), 'Kelly fetch or contract failure stays unavailable without hardcoded calculation values');
 assert(contains(files.app, "expectedProjectId: 'kelly'") && contains(files.app, 'KELLY_SUMMARY_CONTRACT'), 'Kelly adapter requires its own project identity and coverage contract');
 assert(contains(files.app, "kelly: {\n      sourceUrls") && contains(files.app, "parse: (sources) => parseKelly(sources.summary)"), 'Kelly adapter reads only its public summary contract');
+assert(contains(files.app, 'PROJECT_EXPECTED_FRESHNESS_DAYS') && contains(files.app, 'expectedFreshnessDays'), 'every panel has a project-level freshness fallback');
+assert(contains(files.app, 'minDataAsOf') && contains(files.app, 'reasonCodes'), 'Kelly asset-date range and reason codes feed Hub health');
 assert(contains(files.app, 'ETF별 TOP10 비중'), 'ETF Tracking detail panel label exists');
 assert(contains(files.app, '최근 1개월 비중 변화'), 'ETF Tracking chart copy names the one-month history window');
 assert(contains(files.app, 'enrichEtfTrackingSources'), 'ETF Tracking adapter loads per-ETF history sources');
@@ -285,9 +294,22 @@ assert(contains(readFileSync('scripts/regression.mjs', 'utf8'), 'null/non-object
 assert(contains(readFileSync('scripts/static-smoke.mjs', 'utf8'), 'static server smoke'), 'static server smoke exists');
 assert(contains(files.packageJson, '"test:live"'), 'package exposes optional live contract smoke');
 assert(contains(files.packageJson, '"test:publish"') && contains(files.packageJson, 'npm run test:live'), 'package exposes publish gate with live contract smoke');
-assert(contains(files.liveSmoke, 'MAX_PAYLOAD_BYTES') && contains(files.liveSmoke, 'MAX_STALENESS_DAYS'), 'live contract smoke checks payload size and freshness');
+assert(contains(files.liveSmoke, 'MAX_PAYLOAD_BYTES') && contains(files.liveSmoke, 'MAX_GENERATION_AGE_DAYS'), 'live contract smoke checks payload size and freshness');
+assert(contains(files.liveSmoke, "'transport'") && contains(files.liveSmoke, "'contract'") && contains(files.liveSmoke, "'freshness'"), 'live health report distinguishes transient transport from hard contract and freshness failures');
+assert(contains(files.publicHealthWorkflow, 'cron: "15 5 * * 2-6"') && contains(files.publicHealthWorkflow, 'workflow_run:'), 'public health runs on schedule and after the main platform workflow');
+assert(contains(files.publicHealthWorkflow, 'Fail hard contract, freshness, or observability regressions') && contains(files.publicHealthWorkflow, 'HEALTH_EXIT" == "2"'), 'scheduled monitor softens one transport incident but fails broad observability and contract/freshness regressions');
+assert(
+  contains(files.publicHealthPolicy, 'TRANSPORT_HARD_FAILURE_PROJECT_THRESHOLD = 2')
+    && contains(files.publicHealthPolicy, 'operationalFindingsFor')
+    && contains(files.publicHealthPolicy, 'reason codes'),
+  'public health policy reports operational degradation and escalates broad transport loss',
+);
+assert(
+  files.platformFoundationWorkflow.split('".github/workflows/public-data-health.yml"').length - 1 === 2,
+  'public health workflow changes trigger Platform Foundation on pull requests and main pushes',
+);
 assert(contains(files.liveSmoke, 'validateAdapterContract'), 'live contract smoke rejects incompatible contract versions');
-assert(contains(files.liveSmoke, 'REQUIRED_PROJECT_COUNT = 7'), 'live contract smoke requires all seven active public summary panels');
+assert(contains(files.liveSmoke, 'REQUIRED_PROJECT_COUNT = 8'), 'live contract smoke requires all eight active public summary panels');
 assert(!contains(files.app, '../momentum-factor-lab') && !contains(files.app, '../dram-price') && !contains(files.app, '../best-factor') && !contains(files.app, '../etf-tracking') && !contains(files.app, '../sox') && !contains(files.app, '../kelly'), 'no sibling local source paths referenced');
 
 const failed = checks.filter((check) => !check.ok);

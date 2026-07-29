@@ -1,0 +1,77 @@
+name: Public data health
+
+on:
+  schedule:
+    # Runs after the last scheduled retry window across the linked dashboards.
+    - cron: "15 5 * * 2-6"
+  workflow_run:
+    workflows: ["Platform Foundation"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-data-health
+  cancel-in-progress: true
+
+jobs:
+  monitor:
+    if: >-
+      ${{ github.event_name != 'workflow_run' ||
+          (github.event.workflow_run.head_branch == 'main' &&
+           github.event.workflow_run.conclusion == 'success') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Check out the monitored main revision
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || 'main' }}
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22"
+      - name: Inspect all public summary contracts
+        id: health
+        run: |
+          set +e
+          npm run test:live -- --report artifacts/public-data-health.json
+          status=$?
+          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
+          exit 0
+      - name: Upload bounded public-health evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: public-data-health-${{ github.run_id }}
+          path: artifacts/public-data-health.json
+          if-no-files-found: error
+          retention-days: 14
+      - name: Summarize health classification
+        if: always()
+        env:
+          HEALTH_EXIT: ${{ steps.health.outputs.exit_code }}
+        run: |
+          echo "## Quant Dashboard public data health" >> "$GITHUB_STEP_SUMMARY"
+          if [[ -f artifacts/public-data-health.json ]]; then
+            jq -r '"State: **\(.state)**  \nHealthy projects: \(.counts.healthyProjectCount)/\(.counts.projectCount)  \nHard findings: \(.counts.hardFindingCount)  \nTransient findings: \(.counts.transientFindingCount)"' artifacts/public-data-health.json >> "$GITHUB_STEP_SUMMARY"
+            jq -r '.findings[]? | "- **\(.severity)** [\(.category)] \(.project): \(.message)"' artifacts/public-data-health.json >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [[ "$HEALTH_EXIT" == "2" ]]; then
+            echo "::warning::Only one bounded transport incident or upstream degraded/stale operation warnings were observed."
+          fi
+      - name: Fail hard contract, freshness, or observability regressions
+        if: always()
+        env:
+          HEALTH_EXIT: ${{ steps.health.outputs.exit_code }}
+        run: |
+          if [[ "$HEALTH_EXIT" == "1" ]]; then
+            echo "A public contract, freshness, or broad observability gate failed." >&2
+            exit 1
+          fi
+          if [[ "$HEALTH_EXIT" != "0" && "$HEALTH_EXIT" != "2" ]]; then
+            echo "The public-health monitor itself failed unexpectedly." >&2
+            exit 1
+          fi

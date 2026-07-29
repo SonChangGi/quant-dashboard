@@ -1,5 +1,10 @@
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
+import {
+  operationalFindingsFor,
+  TRANSPORT_HARD_FAILURE_PROJECT_THRESHOLD,
+  transportEscalation,
+} from './public-health-policy.mjs';
 
 const source = readFileSync('assets/app.js', 'utf8');
 const context = vm.createContext({ console, URL });
@@ -11,6 +16,31 @@ const assert = (condition, label) => checks.push({ ok: Boolean(condition), label
 const fallbackFor = (parsed, hasUsableData, reason) => api.resolveLoadState({ ok: true, data: {} }, hasUsableData, reason);
 
 assert(api, 'test API exposed without browser DOM');
+const degradedOperationalFindings = operationalFindingsFor('kelly', {
+  state: 'degraded',
+  reasonCodes: ['yahoo_public_display_rights_unconfirmed'],
+  meta: {
+    statusState: 'degraded',
+    degradedReasons: ['stooq_html_challenge'],
+  },
+});
+assert(
+  degradedOperationalFindings.some((finding) => /upstream state is degraded/.test(finding.message))
+    && degradedOperationalFindings.some((finding) => /stooq_html_challenge/.test(finding.message))
+    && degradedOperationalFindings.some((finding) => /yahoo_public_display_rights_unconfirmed/.test(finding.message)),
+  'public health reports degraded upstream state and Kelly reason codes',
+);
+assert(
+  transportEscalation(['kelly'], 8) === null,
+  'one transient transport outage remains a soft observation warning',
+);
+const broadTransportFailure = transportEscalation(['kelly', 'etf'], 8);
+assert(
+  TRANSPORT_HARD_FAILURE_PROJECT_THRESHOLD === 2
+    && broadTransportFailure?.severity === 'hard'
+    && broadTransportFailure?.affectedProjects.length === 2,
+  'two or more unobservable projects become a hard observability failure',
+);
 assert(
   api.PROJECTS.map((project) => project.shortName).join('|')
     === 'Fear & Greed|Momentum|DRAM|Best Factor|ETF|SOX|Port|Kelly',
@@ -24,6 +54,7 @@ assert(
     best: 'best-factor',
     etf: 'etf',
     sox: 'sox',
+    port: 'port',
     kelly: 'kelly',
   }),
   'Hub maps public summary ids to canonical platform project identities',
@@ -143,8 +174,21 @@ const validKellyPayload = {
     state: 'unavailable',
     label: '시장 데이터 연결 전',
     message: '공급자 권한과 서버 측 비밀키가 확인된 데이터만 게시합니다.',
+    expectedFreshnessDays: 10,
   },
   coverage: { assetCount: 50, availableAssetCount: 0, frequency: 'daily' },
+  freshness: {
+    maxAgeDays: 10,
+    evaluatedAt: '2026-07-21',
+    cutoffDate: '2026-07-11',
+    minDataAsOf: null,
+    maxDataAsOf: null,
+    freshAssetCount: 0,
+    staleAssetCount: 0,
+    latestAssetCount: 0,
+    unavailableAssetCount: 50,
+  },
+  reasonCodes: ['yahoo_public_display_rights_unconfirmed'],
   primaryEntities: [{
     id: 'kelly-allocation-lab',
     name: 'Kelly Allocation Lab',
@@ -175,6 +219,27 @@ const wrongKellyProject = { ...validKellyPayload, projectId: 'other-project' };
 assert(/projectId kelly/.test(api.validateAdapterContract(kellyAdapter, { summary: wrongKellyProject })), 'Kelly adapter rejects another project summary');
 const invalidKellyCoverage = api.parseKelly({ ...validKellyPayload, coverage: { assetCount: 50, availableAssetCount: 51, frequency: 'daily' } });
 assert(!invalidKellyCoverage.contractValid && !kellyAdapter.hasUsableData(invalidKellyCoverage), 'Kelly parser rejects coverage outside the fixed catalog');
+const invalidKellyFreshnessCoverage = api.parseKelly({
+  ...validKellyPayload,
+  state: 'degraded',
+  dataAsOf: '2026-07-20',
+  status: { ...validKellyPayload.status, state: 'degraded' },
+  coverage: { assetCount: 50, availableAssetCount: 2, frequency: 'daily' },
+  freshness: {
+    ...validKellyPayload.freshness,
+    minDataAsOf: '2026-07-20',
+    maxDataAsOf: '2026-07-20',
+    freshAssetCount: 1,
+    staleAssetCount: 0,
+    latestAssetCount: 2,
+    unavailableAssetCount: 49,
+  },
+  primaryEntities: [{
+    ...validKellyPayload.primaryEntities[0],
+    state: 'degraded',
+  }],
+});
+assert(!invalidKellyFreshnessCoverage.contractValid, 'Kelly parser rejects available/fresh/stale and latest-count aggregate drift');
 const unknownKellyState = api.parseKelly({
   ...validKellyPayload,
   state: 'mystery',
@@ -1642,7 +1707,67 @@ const validSox = api.parseSox({
 assert(validSox.rows.length === 2 && validSox.rows[0].ticker === 'AAA', 'recorded valid SOX fixture sorts summary rows by combined score');
 assert(validSox.topWeight.ticker === 'BBB' && validSox.entities.some((entity) => entity.symbol === 'AAA'), 'SOX parser preserves top proxy weight and dossier entities');
 
-assert(Object.keys(api.PANEL_ADAPTERS).length === 7, 'panel adapter manifest has seven active public summary adapters including Kelly');
+const validPortPayload = {
+  schemaVersion: 1,
+  contract: 'quant-research-summary',
+  projectId: 'port',
+  generatedAt: '2026-07-28T06:13:36Z',
+  dataAsOf: '2026-07-28',
+  status: {
+    state: 'degraded',
+    label: '225개 가격 자산 · warnings 6',
+    cadence: 'scheduled',
+    expectedFreshnessDays: 5,
+    warningCount: 6,
+    criticalIssueCount: 0,
+  },
+  coverage: {
+    assetCount: 225,
+    historyAssetCount: 225,
+    priceFallbackCount: 0,
+    holdingsSourceCounts: { official: 3, live: 22, no_holdings: 17, proxy: 3 },
+  },
+  automation: { workflowUrl: 'https://github.com/SonChangGi/port/actions/workflows/update-data.yml' },
+  primaryEntities: [{ symbol: 'SPY', name: 'SPY', metrics: { price: 739.09 } }],
+  limitations: ['무료 공개 holdings는 지연될 수 있습니다.'],
+};
+const validPort = api.parsePort(validPortPayload);
+assert(!api.validateAdapterContract(api.PANEL_ADAPTERS.port, { summary: validPortPayload }), 'Port adapter accepts its own public summary contract');
+assert(api.PANEL_ADAPTERS.port.hasUsableData(validPort) && validPort.assetCount === 225 && validPort.warningCount === 6, 'Port adapter joins collection coverage into Hub health');
+assert(api.briefingItemForRecord({ project: { id: 'port' }, summary: validPort }).detail.includes('가격 fallback 0개'), 'Port briefing exposes fallback and warning diagnostics');
+const invalidPortHoldingsCounts = api.parsePort({
+  ...validPortPayload,
+  coverage: {
+    ...validPortPayload.coverage,
+    holdingsSourceCounts: { official: 3, live: -1 },
+  },
+});
+assert(!invalidPortHoldingsCounts.contractValid, 'Port adapter rejects negative or non-integer holdings source counts');
+const invalidPortState = api.parsePort({
+  ...validPortPayload,
+  status: {
+    ...validPortPayload.status,
+    state: 'mystery',
+  },
+});
+assert(
+  !invalidPortState.contractValid && !api.PANEL_ADAPTERS.port.hasUsableData(invalidPortState),
+  'Port adapter rejects unsupported public status states',
+);
+const criticalPort = api.parsePort({
+  ...validPortPayload,
+  status: {
+    ...validPortPayload.status,
+    criticalIssueCount: 1,
+  },
+});
+assert(
+  !criticalPort.contractValid && !api.PANEL_ADAPTERS.port.hasUsableData(criticalPort),
+  'Port adapter fails closed when critical collection issues are present',
+);
+
+assert(Object.keys(api.PANEL_ADAPTERS).length === 8, 'panel adapter manifest has eight active public summary adapters including Port and Kelly');
+assert(Object.keys(api.PANEL_ADAPTERS.port.sourceUrls).length === 1, 'Port adapter reads only its independent summary.json');
 assert(Object.keys(api.PANEL_ADAPTERS.kelly.sourceUrls).length === 1, 'Kelly adapter reads only its independent summary.json');
 
 const nullEntryMomentum = api.parseMomentum({
@@ -1751,9 +1876,9 @@ context.document = {
 api.renderProjectNavigation();
 api.renderDashboardPanels();
 assert(domTargets['#top-nav'].children.length === 8, 'manifest renderer creates eight active project links including Kelly and Port');
-assert(domTargets['#summary-grid'].children.length === 8, 'manifest renderer creates seven public summary panels plus the Port project link card');
+assert(domTargets['#summary-grid'].children.length === 8, 'manifest renderer creates eight public summary panels');
 assert(domTargets['#summary-grid'].children.every((child) => /열기/.test(child.innerHTML)), 'dashboard panel shells preserve project page links');
-assert(domTargets['#summary-grid'].children.some((child) => /project-link-card/.test(child.innerHTML) && /포트폴리오 비중 Cockpit/.test(child.innerHTML)), 'Port remains a link-only project card without a fabricated public summary');
+assert(domTargets['#summary-grid'].children.some((child) => /포트폴리오 데이터/.test(child.innerHTML)), 'Port public summary panel appears in the central grid');
 assert(domTargets['#summary-grid'].children.some((child) => /panel-detail/.test(child.innerHTML)), 'ETF panel shell includes detail mount for TOP10 cards');
 assert(domTargets['#summary-grid'].children.some((child) => /SOX 구성종목/.test(child.innerHTML)), 'SOX panel shell appears in the central summary grid');
 assert(domTargets['#summary-grid'].children.some((child) => /Kelly 비중/.test(child.innerHTML)), 'Kelly panel shell appears in the central summary grid');
@@ -1782,6 +1907,24 @@ assert(
     && api.healthLabel({ ...staleByDataAsOfRecord, metadataMismatch: true }) === '메타데이터 불일치',
   'data health fails closed when database metadata and the rendered summary date disagree',
 );
+const momentumFreshnessFallbackRecord = {
+  project: api.PROJECTS.find((project) => project.id === 'momentum'),
+  summary: { dataAsOf: '2000-01-01', meta: {} },
+  mode: 'live',
+};
+assert(api.expectedFreshnessDays(momentumFreshnessFallbackRecord) === 5, 'Momentum receives a project-level freshness expectation when its custom contract omits one');
+assert(api.isRecordStale(momentumFreshnessFallbackRecord), 'project-level freshness defaults close the Momentum stale-data blind spot');
+const kellyRangeRecord = {
+  project: api.PROJECTS.find((project) => project.id === 'kelly'),
+  summary: {
+    ...validKelly,
+    minDataAsOf: '2026-07-10',
+    maxDataAsOf: '2026-07-28',
+    meta: { ...validKelly.meta, minDataAsOf: '2026-07-10', maxDataAsOf: '2026-07-28' },
+  },
+};
+assert(api.recordFreshnessDate(kellyRangeRecord) === '2026-07-10', 'Kelly health uses the oldest asset date rather than the maximum aggregate date');
+assert(/자산별 기준일/.test(api.recordFreshnessText(kellyRangeRecord)), 'Kelly health names its asset-level data date range');
 
 const records = [
   { project: api.PROJECTS.find((project) => project.id === 'momentum'), summary: validMomentum, mode: 'live', generatedAt: validMomentum.generatedAt, payloadBytes: 13000, sourceCount: 2 },
@@ -1793,8 +1936,8 @@ api.renderDataHealth(records);
 assert(/SOX/.test(domTargets['#research-briefing'].innerHTML) && /AAA/.test(domTargets['#research-briefing'].innerHTML), 'research briefing renders SOX central summary item');
 assert(/selected_mom/.test(domTargets['#research-briefing'].innerHTML) && /0\.87/.test(domTargets['#research-briefing'].innerHTML), 'research briefing renders the schema v4 selected Momentum factor and composite score');
 assert(/합성 데모/.test(domTargets['#research-briefing'].innerHTML) && /briefing-item warning/.test(domTargets['#research-briefing'].innerHTML), 'research briefing labels demo evidence without hiding the Momentum result');
-assert(/정상/.test(domTargets['#data-health'].innerHTML), 'data health renders localized live state');
-assert(/Momentum<\/strong>\s*<span>합성 데모<\/span>/.test(domTargets['#data-health'].innerHTML) && /health-item warn/.test(domTargets['#data-health'].innerHTML), 'data health gives Momentum demo a visible non-ok warning tone');
+assert(/갱신 지연/.test(domTargets['#data-health'].innerHTML), 'data health renders localized stale state from project-level freshness defaults');
+assert(/Momentum<\/strong>\s*<span>갱신 지연<\/span>/.test(domTargets['#data-health'].innerHTML) && /health-item warn/.test(domTargets['#data-health'].innerHTML), 'data health prioritizes stale Momentum data over its demo evidence label');
 assert(/전체 기준일/.test(domTargets['#data-health'].innerHTML), 'data health renders localized portfolio freshness snapshot');
 const mixedFreshness = api.portfolioFreshnessSummary([
   { project: { shortName: 'A' }, summary: { dataAsOf: '2026-06-22' }, generatedAt: '2026-06-23T00:00:00Z' },
