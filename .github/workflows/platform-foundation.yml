@@ -12,6 +12,7 @@ on:
       - "index.html"
       - "package.json"
       - ".github/workflows/platform-foundation.yml"
+      - ".github/workflows/public-data-health.yml"
   push:
     branches: [main]
     paths:
@@ -24,6 +25,7 @@ on:
       - "index.html"
       - "package.json"
       - ".github/workflows/platform-foundation.yml"
+      - ".github/workflows/public-data-health.yml"
   workflow_dispatch:
 
 permissions:

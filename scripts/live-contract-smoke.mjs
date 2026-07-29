@@ -1,10 +1,16 @@
-import { readFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 import vm from 'node:vm';
+import {
+  operationalFindingsFor,
+  transportEscalation,
+} from './public-health-policy.mjs';
 
 const MAX_PAYLOAD_BYTES = 8_000_000;
-const MAX_STALENESS_DAYS = 21;
-const REQUIRED_PROJECT_COUNT = 7;
+const MAX_GENERATION_AGE_DAYS = 21;
+const REQUIRED_PROJECT_COUNT = 8;
 const KELLY_STATES = new Set(['published', 'live_api', 'stale', 'degraded', 'unavailable', 'ruin']);
+const reportPath = argumentValue('--report');
 
 const sandbox = { console };
 sandbox.globalThis = sandbox;
@@ -15,23 +21,70 @@ const api = sandbox.__QUANT_DASHBOARD_TESTS__;
 if (!api) throw new Error('Dashboard test API was not exported.');
 
 const { PROJECTS, PANEL_ADAPTERS } = api;
-const panelProjects = PROJECTS.filter((project) => project.panelAdapter && PANEL_ADAPTERS[project.panelAdapter]);
+const panelProjects = PROJECTS.filter(
+  (project) => project.panelAdapter && PANEL_ADAPTERS[project.panelAdapter],
+);
 const results = [];
+const findings = [];
 
 if (panelProjects.length !== REQUIRED_PROJECT_COUNT) {
-  throw new Error(`Expected ${REQUIRED_PROJECT_COUNT} panel projects, found ${panelProjects.length}.`);
+  addFinding('hub', 'contract', 'hard', `Expected ${REQUIRED_PROJECT_COUNT} panel projects, found ${panelProjects.length}.`);
 }
 
 for (const project of panelProjects) {
   const adapter = PANEL_ADAPTERS[project.panelAdapter];
-  const entries = await Promise.all(
-    Object.entries(adapter.sourceUrls).map(async ([sourceKey, url]) => [sourceKey, await fetchJson(url)])
-  );
+  let entries;
+  try {
+    entries = await Promise.all(
+      Object.entries(adapter.sourceUrls).map(async ([sourceKey, url]) => [
+        sourceKey,
+        await fetchJson(url),
+      ]),
+    );
+  } catch (error) {
+    const category = error instanceof PublicFetchError ? error.category : 'transport';
+    addFinding(project.id, category, category === 'transport' ? 'transient' : 'hard', error.message);
+    results.push(resultRow(project.id, {
+      state: category === 'transport' ? 'transient' : 'hard',
+      sources: 0,
+    }));
+    continue;
+  }
+
+  const projectFindingStart = findings.length;
   const payloadBytes = entries.reduce((sum, [, result]) => sum + result.bytes, 0);
-  const dataSources = Object.fromEntries(entries.map(([sourceKey, result]) => [sourceKey, result.data]));
+  const dataSources = Object.fromEntries(
+    entries.map(([sourceKey, result]) => [sourceKey, result.data]),
+  );
   const contractError = api.validateAdapterContract(adapter, dataSources);
-  assert(!contractError, `${project.id} contract is compatible: ${contractError || 'ok'}`);
-  const summary = adapter.parse(dataSources);
+  if (contractError) {
+    addFinding(project.id, 'contract', 'hard', contractError);
+    results.push(resultRow(project.id, {
+      state: 'contract',
+      payloadBytes,
+      sources: entries.length,
+    }));
+    continue;
+  }
+
+  let summary;
+  try {
+    summary = adapter.parse(dataSources);
+  } catch (error) {
+    addFinding(
+      project.id,
+      'contract',
+      'hard',
+      `Payload parse failed: ${error instanceof Error ? error.message : String(error)}`,
+    );
+    results.push(resultRow(project.id, {
+      state: 'contract',
+      payloadBytes,
+      sources: entries.length,
+    }));
+    continue;
+  }
+
   const usable = adapter.hasUsableData(summary);
   const record = {
     project,
@@ -42,58 +95,145 @@ for (const project of panelProjects) {
     payloadBytes,
     sourceCount: entries.length,
   };
-  const generatedFreshness = freshnessDays(summary?.generatedAt);
+  const generatedAgeDays = ageDays(summary?.generatedAt);
   const freshnessSource = api.recordFreshnessDate(record);
-  const freshness = freshnessDays(freshnessSource);
-  const expectedFreshnessDays = finiteNumber(summary?.meta?.expectedFreshnessDays);
+  const freshnessAgeDays = ageDays(freshnessSource);
+  const expectedFreshnessDays = api.expectedFreshnessDays(record);
   const staleBySource = api.isRecordStale(record);
 
-  assert(usable, `${project.id} live payload is usable`);
-  assert(payloadBytes > 0, `${project.id} payload byte count is known`);
-  assert(payloadBytes <= MAX_PAYLOAD_BYTES, `${project.id} payload is under ${MAX_PAYLOAD_BYTES.toLocaleString('en-US')} bytes`);
-  assert(generatedFreshness !== null, `${project.id} payload exposes a parseable generatedAt timestamp`);
-  const unavailableContract = project.id === 'kelly' && summary?.meta?.statusState === 'unavailable';
-  if (!unavailableContract && expectedFreshnessDays !== null) {
-    assert(freshness !== null, `${project.id} payload exposes a parseable data freshness source`);
-    if ((summary?.meta?.dataAsOf || summary?.dataAsOf || summary?.dataEndDate) && freshnessSource === summary?.generatedAt) {
-      throw new Error(`${project.id} freshness source did not prefer dataAsOf/dataEndDate over generatedAt`);
-    }
-    if (freshness > expectedFreshnessDays) {
-      assert(staleBySource, `${project.id} dataAsOf staleness is detected by dashboard health logic`);
-    } else {
-      assert(!staleBySource, `${project.id} fresh dataAsOf is not mislabeled stale`);
-    }
-  } else if (!unavailableContract) {
-    assert(generatedFreshness <= MAX_STALENESS_DAYS, `${project.id} generatedAt is fresh within ${MAX_STALENESS_DAYS} days`);
-  }
-  if (project.id === 'kelly') {
-    assert(summary.contractValid === true, 'kelly summary passes the strengthened project contract');
-    assert(summary.assetCount === 50, 'kelly catalog contains exactly 50 assets');
-    assert(
-      Number.isInteger(summary.availableAssetCount)
-        && summary.availableAssetCount >= 0
-        && summary.availableAssetCount <= summary.assetCount,
-      'kelly available asset count stays within the fixed catalog',
+  check(project.id, usable, 'contract', `${project.id} live payload is not usable`);
+  check(project.id, payloadBytes > 0, 'contract', `${project.id} payload byte count is missing`);
+  check(
+    project.id,
+    payloadBytes <= MAX_PAYLOAD_BYTES,
+    'contract',
+    `${project.id} payload exceeds ${MAX_PAYLOAD_BYTES.toLocaleString('en-US')} bytes`,
+  );
+  check(
+    project.id,
+    generatedAgeDays !== null,
+    'contract',
+    `${project.id} generatedAt is missing or invalid`,
+  );
+  check(
+    project.id,
+    expectedFreshnessDays !== null,
+    'contract',
+    `${project.id} has no expected freshness policy`,
+  );
+
+  const unavailableContract = project.id === 'kelly'
+    && summary?.meta?.statusState === 'unavailable';
+  if (!unavailableContract) {
+    check(
+      project.id,
+      freshnessAgeDays !== null,
+      'contract',
+      `${project.id} has no parseable data freshness source`,
     );
-    assert(KELLY_STATES.has(summary.state), 'kelly uses a supported public state');
-    if (summary.state === 'unavailable') {
-      assert(!summary.dataAsOf, 'kelly unavailable state does not claim a market dataAsOf date');
-      assert(summary.fullKelly === null && summary.expectedLogGrowth === null, 'kelly unavailable state does not synthesize calculation values');
+    if (
+      summary?.meta?.dataAsOf
+      || summary?.meta?.minDataAsOf
+      || summary?.dataAsOf
+      || summary?.dataEndDate
+    ) {
+      check(
+        project.id,
+        freshnessSource !== summary?.generatedAt,
+        'contract',
+        `${project.id} freshness source incorrectly used generatedAt`,
+      );
+    }
+    if (freshnessAgeDays !== null && expectedFreshnessDays !== null) {
+      check(
+        project.id,
+        freshnessAgeDays <= expectedFreshnessDays || staleBySource,
+        'contract',
+        `${project.id} stale data is not detected by Hub health logic`,
+      );
+      if (freshnessAgeDays > expectedFreshnessDays) {
+        addFinding(
+          project.id,
+          'freshness',
+          'hard',
+          `${project.id} data is ${freshnessAgeDays.toFixed(1)} days old; expected <= ${expectedFreshnessDays} days`,
+        );
+      }
     }
   }
-  results.push({
-    project: project.id,
+  if (generatedAgeDays !== null && generatedAgeDays > MAX_GENERATION_AGE_DAYS) {
+    addFinding(
+      project.id,
+      'freshness',
+      'hard',
+      `${project.id} generation is ${generatedAgeDays.toFixed(1)} days old`,
+    );
+  }
+
+  if (project.id === 'kelly') validateKelly(summary, project.id);
+  operationalFindingsFor(project.id, summary).forEach((finding) => findings.push(finding));
+
+  const projectFindings = findings.slice(projectFindingStart);
+  results.push(resultRow(project.id, {
+    state: projectFindings.some((finding) => finding.severity === 'hard')
+      ? 'hard'
+      : projectFindings.some((finding) => finding.category === 'operation')
+        ? 'degraded'
+        : projectFindings.length
+          ? 'transient'
+        : 'ok',
     generatedAt: summary?.generatedAt || 'n/a',
     freshnessSource: freshnessSource || 'n/a',
     staleBySource,
     payloadBytes,
     sources: entries.length,
     rows: rowCountFor(project.id, summary),
-  });
+  }));
+}
+
+const transientTransportProjects = findings
+  .filter((finding) => finding.category === 'transport' && finding.severity === 'transient')
+  .map((finding) => finding.project);
+const broadTransportFailure = transportEscalation(
+  transientTransportProjects,
+  panelProjects.length,
+);
+if (broadTransportFailure) {
+  findings.push(broadTransportFailure);
+  const affectedProjects = new Set(broadTransportFailure.affectedProjects);
+  results
+    .filter((result) => affectedProjects.has(result.project))
+    .forEach((result) => {
+      result.state = 'hard';
+    });
+}
+
+const hardFindings = findings.filter((finding) => finding.severity === 'hard');
+const transientFindings = findings.filter((finding) => finding.severity === 'transient');
+const report = {
+  schemaVersion: 1,
+  contract: 'quant-dashboard-public-health',
+  generatedAt: new Date().toISOString(),
+  state: hardFindings.length ? 'failed' : transientFindings.length ? 'degraded' : 'healthy',
+  counts: {
+    projectCount: panelProjects.length,
+    healthyProjectCount: results.filter((result) => result.state === 'ok').length,
+    hardFindingCount: hardFindings.length,
+    transientFindingCount: transientFindings.length,
+  },
+  findings,
+  projects: results,
+};
+
+if (reportPath) {
+  const target = resolve(reportPath);
+  mkdirSync(dirname(target), { recursive: true });
+  writeFileSync(target, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
 }
 
 console.table(results.map((result) => ({
   project: result.project,
+  state: result.state,
   generatedAt: result.generatedAt,
   freshnessSource: result.freshnessSource,
   staleBySource: result.staleBySource,
@@ -101,20 +241,109 @@ console.table(results.map((result) => ({
   rows: result.rows,
   payloadKB: Math.round(result.payloadBytes / 1024),
 })));
-console.log(`Live contract smoke passed for ${results.length} public dashboard payloads.`);
+for (const finding of findings) {
+  const prefix = finding.severity === 'hard' ? 'ERROR' : 'WARN';
+  console.error(`${prefix} [${finding.category}] ${finding.project}: ${finding.message}`);
+}
+console.log(
+  `Public health ${report.state}: ${report.counts.healthyProjectCount}/${report.counts.projectCount} healthy, `
+  + `${hardFindings.length} hard, ${transientFindings.length} transient.`,
+);
+
+if (hardFindings.length) process.exitCode = 1;
+else if (transientFindings.length) process.exitCode = 2;
+
+function validateKelly(summary, projectId) {
+  check(projectId, summary.contractValid === true, 'contract', 'kelly strengthened contract failed');
+  check(projectId, summary.assetCount === 50, 'contract', 'kelly catalog is not exactly 50 assets');
+  check(
+    projectId,
+    Number.isInteger(summary.availableAssetCount)
+      && summary.availableAssetCount >= 0
+      && summary.availableAssetCount <= summary.assetCount,
+    'contract',
+    'kelly available asset count is outside the fixed catalog',
+  );
+  check(projectId, KELLY_STATES.has(summary.state), 'contract', 'kelly state is unsupported');
+  check(
+    projectId,
+    Number.isInteger(summary.freshAssetCount)
+      && Number.isInteger(summary.staleAssetCount)
+      && Number.isInteger(summary.unavailableAssetCount)
+      && summary.freshAssetCount + summary.staleAssetCount + summary.unavailableAssetCount
+        === summary.assetCount
+      && summary.availableAssetCount === summary.freshAssetCount + summary.staleAssetCount
+      && Number.isInteger(summary.latestAssetCount)
+      && summary.latestAssetCount <= summary.availableAssetCount,
+    'contract',
+    'kelly asset freshness counts do not reconcile',
+  );
+  check(
+    projectId,
+    Array.isArray(summary.reasonCodes)
+      && summary.reasonCodes.every((reason) => /^[a-z0-9_]+$/.test(reason)),
+    'contract',
+    'kelly reason codes are missing or unstable',
+  );
+  if (summary.state === 'unavailable') {
+    check(projectId, !summary.dataAsOf, 'contract', 'kelly unavailable state claims dataAsOf');
+    check(
+      projectId,
+      summary.fullKelly === null && summary.expectedLogGrowth === null,
+      'contract',
+      'kelly unavailable state synthesized calculation values',
+    );
+  }
+}
 
 async function fetchJson(url) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 12_000);
   try {
     const response = await fetch(url, { signal: controller.signal, cache: 'no-store' });
-    if (!response.ok) throw new Error(`${url} returned HTTP ${response.status}`);
+    if (!response.ok) {
+      const category = response.status === 429 || response.status >= 500
+        ? 'transport'
+        : 'contract';
+      throw new PublicFetchError(category, `${url} returned HTTP ${response.status}`);
+    }
     const text = await response.text();
     const bytes = Buffer.byteLength(text, 'utf8');
-    return { url, bytes, data: JSON.parse(text) };
+    try {
+      return { url, bytes, data: JSON.parse(text) };
+    } catch {
+      throw new PublicFetchError('contract', `${url} returned invalid JSON`);
+    }
+  } catch (error) {
+    if (error instanceof PublicFetchError) throw error;
+    throw new PublicFetchError(
+      'transport',
+      `${url} fetch failed: ${error instanceof Error ? error.message : String(error)}`,
+    );
   } finally {
     clearTimeout(timeout);
   }
+}
+
+function check(project, condition, category, message) {
+  if (!condition) addFinding(project, category, 'hard', message);
+}
+
+function addFinding(project, category, severity, message) {
+  findings.push({ project, category, severity, message });
+}
+
+function resultRow(project, values = {}) {
+  return {
+    project,
+    state: values.state || 'unknown',
+    generatedAt: values.generatedAt || 'n/a',
+    freshnessSource: values.freshnessSource || 'n/a',
+    staleBySource: Boolean(values.staleBySource),
+    payloadBytes: values.payloadBytes || 0,
+    sources: values.sources || 0,
+    rows: values.rows || 0,
+  };
 }
 
 function rowCountFor(projectId, summary) {
@@ -122,18 +351,21 @@ function rowCountFor(projectId, summary) {
   return summary?.rows?.length || summary?.entities?.length || 0;
 }
 
-function freshnessDays(value) {
+function ageDays(value) {
   const timestamp = Date.parse(value || '');
   if (!Number.isFinite(timestamp)) return null;
   return (Date.now() - timestamp) / (24 * 60 * 60 * 1000);
 }
 
-function finiteNumber(value) {
-  if (value === null || value === undefined || value === '') return null;
-  const number = Number(value);
-  return Number.isFinite(number) ? number : null;
+function argumentValue(name) {
+  const index = process.argv.indexOf(name);
+  return index >= 0 ? process.argv[index + 1] || '' : '';
 }
 
-function assert(condition, message) {
-  if (!condition) throw new Error(message);
+class PublicFetchError extends Error {
+  constructor(category, message) {
+    super(message);
+    this.name = 'PublicFetchError';
+    this.category = category;
+  }
 }

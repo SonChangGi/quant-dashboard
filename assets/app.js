@@ -168,6 +168,7 @@
     dram: (metrics) => `${metrics.kind || '가격'} · ${formatMaybeDate(metrics.date)} · ${metrics.source || 'source N/A'}`,
     sox: (metrics) => `SOX proxy ${formatPercent(metrics.weight)} · 가격 ${formatNumber(metrics.priceMomentum)} · 실적 ${formatNumber(metrics.earningsMomentum)}`,
     fearngreed: (metrics) => `상태 ${metrics.signalState || '산출 불가'} · 백분위 ${formatNumber(metrics.sentimentPercentile)} · 잔차 z ${formatNumber(metrics.residualZ)} · 포지션 ${formatFearPosition(metrics.position)}`,
+    port: (metrics) => `가격 ${formatInteger(metrics.assetCount)}개 · history ${formatInteger(metrics.historyAssetCount)}개 · 경고 ${formatInteger(metrics.warningCount)}건`,
     kelly: (metrics) => `Full Kelly ${formatPercent(metrics.fullKelly)} · 공개 시계열 ${formatInteger(metrics.availableAssetCount)}/${formatInteger(metrics.assetCount)}개 · ${metrics.stateLabel || '상태 확인 필요'}`,
   };
 
@@ -291,6 +292,13 @@
       description: '티커·보유 주수·종가 통화로 비중과 ETF 기초 노출을 계산합니다.',
       url: 'https://sonchanggi.github.io/port/',
       accent: 'PT',
+      panelAdapter: 'port',
+      panel: {
+        eyebrow: 'Portfolio Weights',
+        title: '포트폴리오 데이터 · 수집 상태',
+        contentType: 'metrics',
+        metricLoading: 'Port 공개 요약을 불러오는 중...',
+      },
     },
     {
       id: 'kelly',
@@ -315,15 +323,32 @@
     best: 'best-factor',
     etf: 'etf',
     sox: 'sox',
+    port: 'port',
     kelly: 'kelly',
   };
+  const PROJECT_EXPECTED_FRESHNESS_DAYS = Object.freeze({
+    fearngreed: 5,
+    momentum: 5,
+    dram: 5,
+    best: 5,
+    etf: 5,
+    sox: 5,
+    port: 5,
+    kelly: 10,
+  });
 
   const RESEARCH_STATUS_STATES = new Set(['published', 'live_api', 'stale', 'degraded', 'unavailable', 'ruin']);
+  const PORT_STATUS_STATES = new Set(['ok', 'published', 'live_api', 'stale', 'degraded', 'unavailable']);
   const SUMMARY_CONTRACT = { versionField: 'schemaVersion', expectedVersion: 1, requiredKeys: ['contract', 'projectId', 'status', 'primaryEntities'] };
   const KELLY_SUMMARY_CONTRACT = {
     ...SUMMARY_CONTRACT,
     expectedProjectId: 'kelly',
-    requiredKeys: ['contract', 'projectId', 'state', 'generatedAt', 'dataAsOf', 'status', 'coverage', 'primaryEntities', 'limitations'],
+    requiredKeys: ['contract', 'projectId', 'state', 'generatedAt', 'dataAsOf', 'status', 'coverage', 'freshness', 'reasonCodes', 'primaryEntities', 'limitations'],
+  };
+  const PORT_SUMMARY_CONTRACT = {
+    ...SUMMARY_CONTRACT,
+    expectedProjectId: 'port',
+    requiredKeys: ['contract', 'projectId', 'generatedAt', 'dataAsOf', 'status', 'coverage', 'automation', 'primaryEntities', 'limitations'],
   };
   const MOMENTUM_SUMMARY_CONTRACT = {
     versionField: 'schemaVersion',
@@ -416,6 +441,18 @@
       fallback: normalizeSoxFallback,
       render: renderSox,
       emptyReason: 'SOX summary did not contain usable constituents.',
+    },
+    port: {
+      sourceUrls: {
+        summary: 'https://sonchanggi.github.io/port/data/summary.json',
+      },
+      primarySourceKey: 'summary',
+      contracts: { summary: PORT_SUMMARY_CONTRACT },
+      parse: (sources) => parsePort(sources.summary),
+      hasUsableData: (summary) => summary?.contractValid === true,
+      fallback: normalizePortUnavailable,
+      render: renderPort,
+      emptyReason: 'Port summary did not contain a usable collection contract.',
     },
     kelly: {
       sourceUrls: {
@@ -1395,7 +1432,7 @@
     const config = payload.config;
     if (
       !isRecord(inputs)
-      || inputs.version !== 'research-inputs-v1'
+      || !['research-inputs-v1', 'research-inputs-v2'].includes(inputs.version)
       || !isRecord(config)
       || !['absolute-factor-policy-v1', 'absolute-factor-v2'].includes(
         config.absolute_guardrail_version,
@@ -2495,6 +2532,8 @@
     if (!isResearchSummary(payload, 'kelly')) return normalizeKellyUnavailable();
     const meta = summaryMeta(payload);
     const coverage = isRecord(payload.coverage) ? payload.coverage : {};
+    const freshness = isRecord(payload.freshness) ? payload.freshness : {};
+    const reasonCodes = asArray(payload.reasonCodes).map(String).filter(Boolean);
     const sourceEntities = asRecords(payload.primaryEntities);
     const sourceEntity = sourceEntities[0] || {};
     const headlineMetrics = asRecords(sourceEntity.headlineMetrics);
@@ -2512,6 +2551,13 @@
     const state = stringOr(payload.state, payload.status?.state, sourceEntity.state, 'unavailable');
     const stateLabel = stringOr(payload.status?.label, meta.statusLabel, state);
     const statusMessage = stringOr(payload.status?.message, firstLimitation(meta));
+    const minDataAsOf = stringOr(freshness.minDataAsOf, '');
+    const maxDataAsOf = stringOr(freshness.maxDataAsOf, meta.dataAsOf, '');
+    const freshAssetCount = finiteOrNull(freshness.freshAssetCount);
+    const staleAssetCount = finiteOrNull(freshness.staleAssetCount);
+    const latestAssetCount = finiteOrNull(freshness.latestAssetCount);
+    const unavailableAssetCount = finiteOrNull(freshness.unavailableAssetCount);
+    const freshnessMaxAgeDays = finiteOrNull(freshness.maxAgeDays);
     const entityPresent = sourceEntities.length === 1 && sourceEntity.id === 'kelly-allocation-lab';
     const coverageValid = Number.isInteger(assetCount)
       && assetCount === 50
@@ -2533,6 +2579,24 @@
       && payload.status.state === state
       && sourceEntity.state === state
       && (state !== 'unavailable' || (availableAssetCount === 0 && !meta.dataAsOf));
+    const freshnessContractValid = Number.isInteger(freshAssetCount)
+      && Number.isInteger(staleAssetCount)
+      && Number.isInteger(latestAssetCount)
+      && Number.isInteger(unavailableAssetCount)
+      && Number.isInteger(freshnessMaxAgeDays)
+      && freshnessMaxAgeDays > 0
+      && freshAssetCount >= 0
+      && staleAssetCount >= 0
+      && latestAssetCount >= 0
+      && unavailableAssetCount >= 0
+      && freshAssetCount + staleAssetCount + unavailableAssetCount === assetCount
+      && availableAssetCount === freshAssetCount + staleAssetCount
+      && latestAssetCount <= availableAssetCount
+      && (!minDataAsOf || Number.isFinite(Date.parse(minDataAsOf)))
+      && (!maxDataAsOf || Number.isFinite(Date.parse(maxDataAsOf)))
+      && (!minDataAsOf || !maxDataAsOf || minDataAsOf <= maxDataAsOf)
+      && maxDataAsOf === meta.dataAsOf
+      && reasonCodes.every((reason) => /^[a-z0-9_]+$/.test(reason));
     const metadataValid = Number.isFinite(Date.parse(meta.generatedAt))
       && Array.isArray(payload.limitations);
     const contractValid = RESEARCH_STATUS_STATES.has(state)
@@ -2540,6 +2604,7 @@
       && coverageValid
       && headlineMetricsValid
       && stateParityValid
+      && freshnessContractValid
       && metadataValid;
     const entity = {
       id: stringOr(sourceEntity.id, 'kelly-allocation-lab'),
@@ -2554,6 +2619,9 @@
         expectedLogGrowth,
         assetCount,
         availableAssetCount,
+        freshAssetCount,
+        staleAssetCount,
+        latestAssetCount,
         stateLabel,
       },
       signals: [stateLabel, `공개 시계열 ${formatInteger(availableAssetCount)}/${formatInteger(assetCount)}개`],
@@ -2571,6 +2639,14 @@
       statusMessage,
       assetCount,
       availableAssetCount,
+      minDataAsOf,
+      maxDataAsOf,
+      freshAssetCount,
+      staleAssetCount,
+      latestAssetCount,
+      unavailableAssetCount,
+      freshnessMaxAgeDays,
+      reasonCodes,
       frequency: stringOr(coverage.frequency, '확인 필요'),
       fullKelly,
       expectedLogGrowth,
@@ -2583,7 +2659,60 @@
         statusState: state,
         statusLabel: stateLabel,
         cadence: stringOr(meta.cadence, coverage.frequency, 'manual'),
+        minDataAsOf,
+        maxDataAsOf,
+        expectedFreshnessDays: freshnessMaxAgeDays,
+        reasonCodes,
       },
+    };
+  }
+
+  function parsePort(payload) {
+    if (!isResearchSummary(payload, 'port')) return normalizePortUnavailable();
+    const meta = summaryMeta(payload);
+    const coverage = isRecord(payload.coverage) ? payload.coverage : {};
+    const entities = summaryEntities(payload);
+    const assetCount = finiteOrNull(coverage.assetCount);
+    const historyAssetCount = finiteOrNull(coverage.historyAssetCount);
+    const priceFallbackCount = finiteOrNull(coverage.priceFallbackCount);
+    const warningCount = finiteOrNull(payload.status?.warningCount);
+    const criticalIssueCount = finiteOrNull(payload.status?.criticalIssueCount);
+    const state = stringOr(meta.statusState, 'unavailable');
+    const holdingsSourceCounts = isRecord(coverage.holdingsSourceCounts)
+      ? coverage.holdingsSourceCounts
+      : {};
+    const holdingsCountsValid = Object.keys(holdingsSourceCounts).length > 0
+      && Object.values(holdingsSourceCounts).every(
+        (value) => Number.isInteger(value) && value >= 0,
+      );
+    const countsValid = [assetCount, historyAssetCount, priceFallbackCount, warningCount, criticalIssueCount]
+      .every((value) => Number.isInteger(value) && value >= 0);
+    const contractValid = Number.isFinite(Date.parse(meta.generatedAt))
+      && Number.isFinite(Date.parse(meta.dataAsOf))
+      && countsValid
+      && holdingsCountsValid
+      && PORT_STATUS_STATES.has(state)
+      && criticalIssueCount === 0
+      && historyAssetCount <= assetCount
+      && priceFallbackCount <= assetCount
+      && Array.isArray(payload.primaryEntities)
+      && Array.isArray(payload.limitations);
+    return {
+      contractValid,
+      generatedAt: meta.generatedAt,
+      dataAsOf: meta.dataAsOf,
+      state,
+      stateLabel: stringOr(meta.statusLabel, meta.statusState, '상태 확인 필요'),
+      status: stringOr(meta.statusLabel, meta.statusState, '상태 확인 필요'),
+      assetCount,
+      historyAssetCount,
+      priceFallbackCount,
+      warningCount,
+      criticalIssueCount,
+      holdingsSourceCounts,
+      rows: entities,
+      entities,
+      meta,
     };
   }
 
@@ -2824,10 +2953,43 @@
     renderMetricCards(panelSelector(project, 'metrics'), [
       ['공개 데이터 상태', summary.stateLabel || '확인 필요'],
       ['시계열 커버리지', coverage],
+      ['자산별 기준일', summary.minDataAsOf && summary.maxDataAsOf
+        ? `${formatMaybeDate(summary.minDataAsOf)}–${formatMaybeDate(summary.maxDataAsOf)}`
+        : '확인 불가'],
+      ['Fresh / stale', Number.isInteger(summary.freshAssetCount) && Number.isInteger(summary.staleAssetCount)
+        ? `${formatInteger(summary.freshAssetCount)} / ${formatInteger(summary.staleAssetCount)}개`
+        : '확인 불가'],
+      ['최신일 자산', Number.isInteger(summary.latestAssetCount)
+        ? `${formatInteger(summary.latestAssetCount)}개`
+        : '확인 불가'],
       ['Full Kelly', formatKellyHeadlineMetric(summary.fullKellyMetric)],
       ['기대 로그성장률', formatKellyHeadlineMetric(summary.expectedLogGrowthMetric)],
     ]);
-    setStatus(panelSelector(project, 'status'), buildStatusText(mode, summary.generatedAt, error, summary.status, summaryDataAsOf(summary)), mode);
+    const reasons = summary.reasonCodes?.length
+      ? ` · 사유 ${summary.reasonCodes.join(', ')}`
+      : '';
+    setStatus(
+      panelSelector(project, 'status'),
+      `${buildStatusText(mode, summary.generatedAt, error, summary.status, summaryDataAsOf(summary))}${reasons}`,
+      mode,
+    );
+  }
+
+  function renderPort(summary, mode, error, project) {
+    const holdings = summary.holdingsSourceCounts || {};
+    renderMetricCards(panelSelector(project, 'metrics'), [
+      ['가격 자산', `${formatInteger(summary.assetCount)}개`],
+      ['History 자산', `${formatInteger(summary.historyAssetCount)}개`],
+      ['가격 fallback', `${formatInteger(summary.priceFallbackCount)}개`],
+      ['Holdings live / official', `${formatInteger(holdings.live)} / ${formatInteger(holdings.official)}개`],
+      ['경고 / 중대', `${formatInteger(summary.warningCount)} / ${formatInteger(summary.criticalIssueCount)}건`],
+      ['데이터 기준일', formatMaybeDate(summary.dataAsOf)],
+    ]);
+    setStatus(
+      panelSelector(project, 'status'),
+      buildStatusText(mode, summary.generatedAt, error, summary.status, summaryDataAsOf(summary)),
+      mode,
+    );
   }
 
   function formatKellyHeadlineMetric(metric) {
@@ -3362,6 +3524,14 @@
       statusMessage: '네트워크 또는 공개 계약을 확인하세요.',
       assetCount: null,
       availableAssetCount: null,
+      minDataAsOf: '',
+      maxDataAsOf: '',
+      freshAssetCount: null,
+      staleAssetCount: null,
+      latestAssetCount: null,
+      unavailableAssetCount: null,
+      freshnessMaxAgeDays: null,
+      reasonCodes: [],
       frequency: '',
       fullKelly: null,
       expectedLogGrowth: null,
@@ -3373,6 +3543,32 @@
         statusState: 'unavailable',
         statusLabel: 'unavailable',
         limitations: ['마지막 계산값을 하드코딩된 값으로 대체하지 않습니다.'],
+      },
+    };
+  }
+
+  function normalizePortUnavailable() {
+    return {
+      unavailable: true,
+      contractValid: false,
+      generatedAt: '',
+      dataAsOf: '',
+      state: 'unavailable',
+      stateLabel: '공개 계약 확인 불가',
+      status: 'Port 공개 요약을 사용할 수 없습니다.',
+      assetCount: null,
+      historyAssetCount: null,
+      priceFallbackCount: null,
+      warningCount: null,
+      criticalIssueCount: null,
+      holdingsSourceCounts: {},
+      rows: [],
+      entities: [],
+      meta: {
+        statusState: 'unavailable',
+        statusLabel: 'unavailable',
+        expectedFreshnessDays: PROJECT_EXPECTED_FRESHNESS_DAYS.port,
+        limitations: ['마지막 시장 수치를 하드코딩된 값으로 대체하지 않습니다.'],
       },
     };
   }
@@ -3456,8 +3652,16 @@
       return {
         kicker: 'Kelly Allocation',
         title: `시계열 ${coverage} · ${summary.stateLabel || '상태 확인 필요'}`,
-        detail: `직접 가정 계산 가능 · ${summary.statusMessage || firstLimitation(summary.meta || {})}`,
+        detail: `직접 가정 계산 가능 · 자산별 기준일 ${formatMaybeDate(summary.minDataAsOf)}–${formatMaybeDate(summary.maxDataAsOf)} · fresh/stale ${formatInteger(summary.freshAssetCount)}/${formatInteger(summary.staleAssetCount)}개 · ${summary.reasonCodes?.join(', ') || summary.statusMessage || firstLimitation(summary.meta || {})}`,
         tone: ['published', 'live_api'].includes(summary.meta?.statusState) ? '' : 'warning',
+      };
+    }
+    if (record.project.id === 'port') {
+      return {
+        kicker: 'Portfolio Weights',
+        title: `가격 ${formatInteger(summary.assetCount)}개 · history ${formatInteger(summary.historyAssetCount)}개`,
+        detail: `경고 ${formatInteger(summary.warningCount)}건 · 가격 fallback ${formatInteger(summary.priceFallbackCount)}개 · 기준일 ${formatMaybeDate(summary.dataAsOf)}`,
+        tone: summary.meta?.statusState === 'ok' ? '' : 'warning',
       };
     }
     return null;
@@ -3518,7 +3722,7 @@
           <span>${escapeHtml(healthLabel(record))}</span>
         </div>
         <p>${escapeHtml(recordFreshnessText(record))}</p>
-        <small>${escapeHtml(`${formatBytes(record.payloadBytes)} · ${record.sourceCount}개 JSON · ${record.summary?.meta?.cadence || 'cadence 확인 필요'}${record.error ? ` · ${record.error}` : ''}`)}</small>
+        <small>${escapeHtml(`${formatBytes(record.payloadBytes)} · ${record.sourceCount}개 JSON · ${record.summary?.meta?.cadence || 'cadence 확인 필요'} · freshness ${formatInteger(expectedFreshnessDays(record))}일${recordHealthDiagnostics(record)}${record.error ? ` · ${record.error}` : ''}`)}</small>
         ${safeAutomationUrl(record.summary?.meta?.automation?.workflowUrl) ? `<a class="health-link" href="${escapeAttribute(safeAutomationUrl(record.summary.meta.automation.workflowUrl))}" rel="noopener noreferrer">자동화/수동 실행</a>` : ''}
       </article>
     `).join('');
@@ -3568,7 +3772,7 @@
   }
 
   function isRecordStale(record) {
-    const expectedDays = finiteOrNull(record?.summary?.meta?.expectedFreshnessDays);
+    const expectedDays = expectedFreshnessDays(record);
     const freshnessDate = Date.parse(recordFreshnessDate(record));
     if (expectedDays === null || !Number.isFinite(freshnessDate)) return false;
     const days = (Date.now() - freshnessDate) / (24 * 60 * 60 * 1000);
@@ -3577,7 +3781,15 @@
 
   function recordFreshnessDate(record) {
     const summary = isRecord(record?.summary) ? record.summary : {};
-    return stringOr(summaryDataAsOf(summary), record?.dataAsOf, record?.generatedAt, summary.generatedAt, '');
+    return stringOr(
+      summary.meta?.minDataAsOf,
+      summary.minDataAsOf,
+      summaryDataAsOf(summary),
+      record?.dataAsOf,
+      record?.generatedAt,
+      summary.generatedAt,
+      '',
+    );
   }
 
   function summaryDataAsOf(summary) {
@@ -3592,10 +3804,32 @@
   }
 
   function recordFreshnessText(record) {
+    const minimum = stringOr(record?.summary?.meta?.minDataAsOf, record?.summary?.minDataAsOf, '');
+    const maximum = stringOr(record?.summary?.meta?.maxDataAsOf, record?.summary?.maxDataAsOf, '');
     const dataAsOf = summaryDataAsOf(record?.summary) || record?.dataAsOf || '';
     const generatedAt = stringOr(record?.generatedAt, record?.summary?.generatedAt, '');
+    if (minimum && maximum && minimum !== maximum) {
+      return `자산별 기준일 ${formatMaybeDate(minimum)}–${formatMaybeDate(maximum)} · 업데이트 ${formatFreshness(generatedAt)}`;
+    }
     if (dataAsOf) return `기준일 ${formatMaybeDate(dataAsOf)} · 업데이트 ${formatFreshness(generatedAt)}`;
     return `업데이트 ${formatFreshness(generatedAt)}`;
+  }
+
+  function expectedFreshnessDays(record) {
+    return finiteOrNull(record?.summary?.meta?.expectedFreshnessDays)
+      ?? finiteOrNull(PROJECT_EXPECTED_FRESHNESS_DAYS[record?.project?.id]);
+  }
+
+  function recordHealthDiagnostics(record) {
+    if (record?.project?.id !== 'kelly') return '';
+    const summary = record.summary || {};
+    const counts = Number.isInteger(summary.freshAssetCount) && Number.isInteger(summary.staleAssetCount)
+      ? ` · fresh/stale ${summary.freshAssetCount}/${summary.staleAssetCount}`
+      : '';
+    const reasons = asArray(summary.reasonCodes).length
+      ? ` · ${asArray(summary.reasonCodes).join(',')}`
+      : '';
+    return `${counts}${reasons}`;
   }
 
   function safeAutomationUrl(value) {
@@ -3932,12 +4166,15 @@
       parseDram,
       parseBestFactor,
       parseEtfTracking,
+      parsePort,
       parseKelly,
       parseSox,
       renderSox,
       renderKelly,
+      renderPort,
       renderFearAndGreed,
       normalizeKellyUnavailable,
+      normalizePortUnavailable,
       isMomentumSummaryV5,
       isMomentumDashboardV5,
       validMomentumFactorAccountingV5,
@@ -3986,6 +4223,7 @@
       summaryEntities,
       entitySummaryLine,
       isRecordStale,
+      expectedFreshnessDays,
       recordFreshnessDate,
       recordFreshnessText,
       portfolioFreshnessSummary,
@@ -4003,6 +4241,7 @@
       configuredSupabaseMetadata,
       getPublishedSnapshotMetadata,
       PLATFORM_PROJECT_IDS,
+      PROJECT_EXPECTED_FRESHNESS_DAYS,
     };
   }
 })();
