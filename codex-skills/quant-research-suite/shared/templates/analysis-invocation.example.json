@@ -1,0 +1,24 @@
+{
+  "$schema": "../schemas/analysis-invocation.schema.json",
+  "schema_version": 1,
+  "project_id": "replace-me",
+  "run_id": "run-base",
+  "entrypoint_path": "analysis/run.py",
+  "entrypoint_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "input_path": "captures/base-input.json",
+  "input_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "result_path": "captures/base-result.json",
+  "result_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "started_at": "2026-07-26T00:01:10Z",
+  "completed_at": "2026-07-26T00:01:50Z",
+  "exit_code": 0,
+  "binding": {
+    "kind": "argv-option",
+    "argv": [
+      "analysis/run.py",
+      "--lookback-days",
+      "20"
+    ],
+    "entrypoint_argv_index": 0
+  }
+}

@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/quant-research-suite/goal-state-v2.schema.json",
+  "title": "Durable goal state cache",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "document_type",
+    "schema_version",
+    "goal_id",
+    "project_id",
+    "objective",
+    "objective_sha256",
+    "intent_sha256",
+    "acceptance",
+    "required_outcomes",
+    "status",
+    "project_binding",
+    "plan",
+    "manifest",
+    "assurance",
+    "profiles",
+    "required_capabilities",
+    "runtime_capabilities",
+    "runtime_facts",
+    "open_story_ids",
+    "ledger",
+    "last_checkpoint",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "$schema": {"type": "string"},
+    "document_type": {"const": "quant_goal_state"},
+    "schema_version": {"const": 2},
+    "goal_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[a-z0-9_-]+$"
+    },
+    "project_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$"
+    },
+    "objective": {"type": "string", "minLength": 1},
+    "objective_sha256": {"$ref": "#/$defs/sha256"},
+    "intent_sha256": {"$ref": "#/$defs/sha256"},
+    "acceptance": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "text"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "text": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "required_outcomes": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "status": {"enum": ["active", "blocked", "complete"]},
+    "project_binding": {"type": "object"},
+    "plan": {"oneOf": [{"type": "null"}, {"type": "object"}]},
+    "manifest": {"oneOf": [{"type": "null"}, {"type": "object"}]},
+    "assurance": {
+      "enum": ["light", "standard", "strict", "release"]
+    },
+    "profiles": {"type": "array", "items": {"type": "string"}},
+    "required_capabilities": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string"}
+    },
+    "runtime_capabilities": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string"}
+    },
+    "runtime_facts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["multi_agent_write_used", "write_story_ids"],
+      "properties": {
+        "multi_agent_write_used": {"type": "boolean"},
+        "write_story_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "pattern": "^[a-z0-9_-]+$"}
+        }
+      }
+    },
+    "open_story_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^[a-z0-9_-]+$"}
+    },
+    "ledger": {"type": "object"},
+    "last_checkpoint": {"type": "object"},
+    "created_at": {"type": "string"},
+    "updated_at": {"type": "string"}
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

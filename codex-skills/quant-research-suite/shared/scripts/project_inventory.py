@@ -45,7 +45,7 @@ DEFAULT_MAX_DEPTH = 6
 def run_git(root: Path, *args: str) -> dict[str, Any]:
     try:
         result = subprocess.run(
-            ["git", "-C", str(root), *args],
+            ["git", "--no-optional-locks", "-C", str(root), *args],
             capture_output=True,
             text=True,
             timeout=15,
@@ -83,11 +83,29 @@ def scan_visible_files(
     rows: list[Path] = []
     ignored_directory_count = 0
     pruned_directory_count = 0
+    skipped_symlinks: list[str] = []
+    walk_errors: list[str] = []
     deepest_included_depth = 0
+
+    def record_walk_error(error: OSError) -> None:
+        filename = error.filename
+        display = ""
+        if filename:
+            try:
+                display = Path(filename).resolve(strict=False).relative_to(
+                    root
+                ).as_posix()
+            except (OSError, ValueError):
+                display = Path(filename).name
+        walk_errors.append(
+            f"{display or '<unknown>'}: {error.strerror or str(error)}"
+        )
+
     for current, directory_names, file_names in os.walk(
         root,
         topdown=True,
         followlinks=False,
+        onerror=record_walk_error,
     ):
         current_path = Path(current)
         relative_directory = current_path.relative_to(root)
@@ -95,7 +113,15 @@ def scan_visible_files(
 
         visible_directories = []
         for name in sorted(directory_names):
-            if name in IGNORED_PARTS:
+            path = current_path / name
+            relative = (
+                relative_directory / name
+                if relative_directory.parts
+                else Path(name)
+            )
+            if path.is_symlink():
+                skipped_symlinks.append(relative.as_posix())
+            elif name in IGNORED_PARTS:
                 ignored_directory_count += 1
             else:
                 visible_directories.append(name)
@@ -116,6 +142,9 @@ def scan_visible_files(
             if any(part in IGNORED_PARTS for part in relative.parts):
                 continue
             path = current_path / name
+            if path.is_symlink():
+                skipped_symlinks.append(relative.as_posix())
+                continue
             if path.is_file():
                 rows.append(relative)
                 deepest_included_depth = max(
@@ -124,13 +153,27 @@ def scan_visible_files(
                 )
 
     ordered = sorted(rows, key=lambda item: item.as_posix())
+    skipped_symlinks = sorted(set(skipped_symlinks))
+    incomplete_reasons: list[str] = []
+    if pruned_directory_count:
+        incomplete_reasons.append("depth_limit")
+    if skipped_symlinks:
+        incomplete_reasons.append("symlinks_skipped")
+    if walk_errors:
+        incomplete_reasons.append("filesystem_errors")
     return ordered, {
         "max_depth": max_depth,
         "file_count": len(ordered),
         "deepest_included_depth": deepest_included_depth,
+        "complete": not incomplete_reasons,
+        "incomplete_reasons": incomplete_reasons,
         "depth_truncated": pruned_directory_count > 0,
         "pruned_directory_count": pruned_directory_count,
         "ignored_directory_count": ignored_directory_count,
+        "symlink_skipped_count": len(skipped_symlinks),
+        "symlink_paths": skipped_symlinks,
+        "filesystem_error_count": len(walk_errors),
+        "filesystem_errors": walk_errors,
     }
 
 
@@ -444,6 +487,8 @@ def main() -> int:
         ),
         "notes": [
             "This inventory is local and read-only.",
+            "The scanner never follows project symlinks; skipped paths and other "
+            "coverage limits are reported in scan.",
             "Workflow presence is not proof of a successful scheduled run.",
             "Workflow hints are static and do not prove default-branch enablement or live execution.",
             "Git upstream and divergence are local tracking state; this command does not fetch.",

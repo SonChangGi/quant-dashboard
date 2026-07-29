@@ -1,0 +1,241 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/quant-research-suite/worker-delivery-receipt.schema.json",
+  "title": "Hash-bound worker delivery receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "document_type",
+    "schema_version",
+    "team_run_id",
+    "assignment_id",
+    "packet_sha256",
+    "status",
+    "source",
+    "baseline_snapshot",
+    "final_snapshot",
+    "changed_paths",
+    "delivery_artifacts",
+    "claims",
+    "evidence",
+    "checks",
+    "cleanup",
+    "unverified",
+    "blockers",
+    "completed_at",
+    "receipt_sha256"
+  ],
+  "properties": {
+    "$schema": {"type": "string"},
+    "document_type": {"const": "quant_worker_delivery_receipt"},
+    "schema_version": {"const": 1},
+    "team_run_id": {"$ref": "#/$defs/portableId"},
+    "assignment_id": {"$ref": "#/$defs/portableId"},
+    "packet_sha256": {"$ref": "#/$defs/sha256"},
+    "status": {"enum": ["ready_for_integration", "blocked", "failed"]},
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "project_binding_sha256",
+        "workspace_binding_sha256",
+        "baseline_workspace_sha256",
+        "final_workspace_sha256"
+      ],
+      "properties": {
+        "project_binding_sha256": {"$ref": "#/$defs/sha256"},
+        "workspace_binding_sha256": {"$ref": "#/$defs/sha256"},
+        "baseline_workspace_sha256": {"$ref": "#/$defs/sha256"},
+        "final_workspace_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "baseline_snapshot": {"$ref": "#/$defs/workspaceSnapshot"},
+    "final_snapshot": {"$ref": "#/$defs/workspaceSnapshot"},
+    "changed_paths": {"$ref": "#/$defs/pathArray"},
+    "delivery_artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "kind", "ref", "sha256", "secret_scan"],
+        "properties": {
+          "id": {"$ref": "#/$defs/portableId"},
+          "kind": {
+            "enum": ["patch", "commit_bundle", "artifact", "report"]
+          },
+          "ref": {"$ref": "#/$defs/pathText"},
+          "sha256": {"$ref": "#/$defs/sha256"},
+          "secret_scan": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["mode", "evidence_id"],
+            "properties": {
+              "mode": {"enum": ["validated_text", "external_scan"]},
+              "evidence_id": {
+                "oneOf": [
+                  {"type": "null"},
+                  {"$ref": "#/$defs/portableId"}
+                ]
+              }
+            },
+            "allOf": [
+              {
+                "if": {
+                  "properties": {"mode": {"const": "validated_text"}},
+                  "required": ["mode"]
+                },
+                "then": {
+                  "properties": {"evidence_id": {"type": "null"}}
+                },
+                "else": {
+                  "properties": {
+                    "evidence_id": {"$ref": "#/$defs/portableId"}
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "claims": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/claim"}
+    },
+    "evidence": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/evidence"}
+    },
+    "checks": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/check"}
+    },
+    "cleanup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "summary"],
+      "properties": {
+        "status": {"enum": ["passed", "blocked", "not_run"]},
+        "summary": {"type": "string", "minLength": 1}
+      }
+    },
+    "unverified": {"$ref": "#/$defs/stringArray"},
+    "blockers": {"$ref": "#/$defs/stringArray"},
+    "completed_at": {"type": "string", "format": "date-time"},
+    "receipt_sha256": {"$ref": "#/$defs/sha256"}
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {"status": {"const": "ready_for_integration"}},
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "delivery_artifacts": {"minItems": 1},
+          "claims": {"minItems": 1},
+          "evidence": {"minItems": 1},
+          "checks": {"minItems": 1},
+          "cleanup": {
+            "properties": {"status": {"const": "passed"}}
+          },
+          "unverified": {"maxItems": 0},
+          "blockers": {"maxItems": 0}
+        }
+      },
+      "else": {
+        "properties": {
+          "blockers": {"minItems": 1}
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "portableId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[a-z0-9][a-z0-9_-]{0,127}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "portableIdArray": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/portableId"}
+    },
+    "nonEmptyPortableIdArray": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/portableId"}
+    },
+    "stringArray": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "pathArray": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/pathText"}
+    },
+    "pathText": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?![A-Za-z]:)(?!//)(?!.*\\\\).+$"
+    },
+    "workspaceSnapshot": {
+      "type": "object",
+      "required": [
+        "snapshot_version",
+        "protected_patterns",
+        "sha256"
+      ],
+      "properties": {
+        "snapshot_version": {"const": 2},
+        "protected_patterns": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/pathText"}
+        },
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["acceptance_id", "status", "evidence_ids"],
+      "properties": {
+        "acceptance_id": {"$ref": "#/$defs/portableId"},
+        "status": {"enum": ["passed", "failed", "unverified"]},
+        "evidence_ids": {"$ref": "#/$defs/nonEmptyPortableIdArray"}
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "status", "summary", "artifact_ids"],
+      "properties": {
+        "id": {"$ref": "#/$defs/portableId"},
+        "kind": {"enum": ["command", "inspection", "artifact"]},
+        "status": {"enum": ["passed", "failed", "unverified"]},
+        "summary": {"type": "string", "minLength": 1},
+        "artifact_ids": {"$ref": "#/$defs/portableIdArray"}
+      }
+    },
+    "check": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "summary", "status", "evidence_ids"],
+      "properties": {
+        "id": {"$ref": "#/$defs/portableId"},
+        "summary": {"type": "string", "minLength": 1},
+        "status": {"enum": ["passed", "failed", "unverified"]},
+        "evidence_ids": {"$ref": "#/$defs/nonEmptyPortableIdArray"}
+      }
+    }
+  }
+}

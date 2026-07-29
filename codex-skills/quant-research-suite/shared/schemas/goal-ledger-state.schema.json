@@ -1,0 +1,583 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/quant-research-suite/goal-ledger-state.schema.json",
+  "title": "Host-aligned durable Goal evidence ledger state",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "document_type",
+    "schema_version",
+    "goal_id",
+    "project_id",
+    "project_binding",
+    "state_root",
+    "host",
+    "objective",
+    "objective_sha256",
+    "acceptance",
+    "acceptance_revision",
+    "acceptance_revisions",
+    "plan",
+    "plan_revisions",
+    "assurance",
+    "proof_policy",
+    "checkpoint",
+    "blockers",
+    "next_action",
+    "stories",
+    "reviews",
+    "review_context",
+    "completion_ready",
+    "completion_history",
+    "ledger",
+    "workspace",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "$schema": {"type": "string"},
+    "document_type": {"const": "quant_goal_ledger_state"},
+    "schema_version": {"const": 1},
+    "goal_id": {"$ref": "#/$defs/portableId"},
+    "project_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$"
+    },
+    "project_binding": {
+      "type": "object",
+      "required": ["root_realpath", "identity_sha256"],
+      "properties": {
+        "root_realpath": {"type": "string", "minLength": 1},
+        "git_common_dir_realpath": {
+          "oneOf": [{"type": "null"}, {"type": "string"}]
+        },
+        "origin_fingerprint_sha256": {
+          "oneOf": [{"type": "null"}, {"$ref": "#/$defs/sha256"}]
+        },
+        "identity_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "state_root": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path_realpath",
+        "device",
+        "inode",
+        "binding_sha256"
+      ],
+      "properties": {
+        "path_realpath": {"type": "string", "minLength": 1},
+        "device": {"type": "integer", "minimum": 0},
+        "inode": {"type": "integer", "minimum": 1},
+        "binding_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "host": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "goal_id",
+        "last_observed_state",
+        "observed_at",
+        "source"
+      ],
+      "properties": {
+        "goal_id": {"type": "string", "minLength": 1},
+        "last_observed_state": {"$ref": "#/$defs/hostState"},
+        "observed_at": {"type": "string", "format": "date-time"},
+        "source": {"type": "string", "minLength": 1}
+      }
+    },
+    "objective": {"type": "string", "minLength": 1},
+    "objective_sha256": {"$ref": "#/$defs/sha256"},
+    "acceptance": {"$ref": "#/$defs/acceptance"},
+    "acceptance_revision": {"type": "integer", "minimum": 1},
+    "acceptance_revisions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "revision",
+          "sha256",
+          "reason",
+          "recorded_at",
+          "acceptance"
+        ],
+        "properties": {
+          "revision": {"type": "integer", "minimum": 1},
+          "sha256": {"$ref": "#/$defs/sha256"},
+          "reason": {"type": "string", "minLength": 1},
+          "recorded_at": {"type": "string", "format": "date-time"},
+          "acceptance": {"$ref": "#/$defs/acceptance"},
+          "steering": {"$ref": "#/$defs/steering"}
+        }
+      }
+    },
+    "plan": {
+      "oneOf": [{"type": "null"}, {"$ref": "#/$defs/planRevision"}]
+    },
+    "plan_revisions": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/planRevision"}
+    },
+    "assurance": {
+      "enum": ["light", "standard", "strict", "release"]
+    },
+    "delivery": {
+      "enum": ["local", "release"]
+    },
+    "proof_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "activation_reasons",
+        "required_capabilities",
+        "required_review_roles",
+        "required_gates",
+        "manifest"
+      ],
+      "properties": {
+        "activation_reasons": {"$ref": "#/$defs/uniqueStrings"},
+        "required_capabilities": {"$ref": "#/$defs/uniqueStrings"},
+        "required_review_roles": {"$ref": "#/$defs/uniqueStrings"},
+        "required_gates": {"$ref": "#/$defs/uniqueStrings"},
+        "manifest": {
+          "oneOf": [
+            {"type": "null"},
+            {
+              "type": "object",
+              "required": [
+                "path_realpath",
+                "path_project_relative",
+                "sha256",
+                "schema_version",
+                "project_id"
+              ],
+              "properties": {
+                "path_realpath": {"type": "string", "minLength": 1},
+                "path_project_relative": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sha256": {"$ref": "#/$defs/sha256"},
+                "schema_version": {"const": 2},
+                "project_id": {"type": "string", "minLength": 1}
+              }
+            }
+          ]
+        }
+      }
+    },
+    "checkpoint": {
+      "oneOf": [{"type": "null"}, {"type": "object"}]
+    },
+    "continuation_capsule": {
+      "oneOf": [
+        {"type": "null"},
+        {"$ref": "#/$defs/continuationCapsule"}
+      ]
+    },
+    "blockers": {
+      "type": "object",
+      "propertyNames": {"pattern": "^[a-z0-9_-]+$"},
+      "additionalProperties": {"type": "object"}
+    },
+    "next_action": {
+      "oneOf": [{"type": "null"}, {"type": "string", "minLength": 1}]
+    },
+    "stories": {
+      "type": "object",
+      "propertyNames": {"pattern": "^[a-z0-9_-]+$"},
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status",
+          "mode",
+          "envelope_sha256",
+          "baseline_workspace_sha256",
+          "plan_revision",
+          "acceptance_revision",
+          "acceptance_ids",
+          "write_scope",
+          "protected_scope",
+          "superseded_by_acceptance_revision",
+          "receipt_sha256",
+          "receipt_path",
+          "return_count",
+          "returns",
+          "returned_workspace_sha256"
+        ],
+        "properties": {
+          "status": {
+            "enum": ["open", "returned", "accepted", "superseded"]
+          },
+          "mode": {"enum": ["advisory", "read_only", "write"]},
+          "envelope_sha256": {"$ref": "#/$defs/sha256"},
+          "baseline_workspace_sha256": {"$ref": "#/$defs/sha256"},
+          "plan_revision": {"type": "integer", "minimum": 0},
+          "acceptance_revision": {"type": "integer", "minimum": 1},
+          "acceptance_ids": {"$ref": "#/$defs/uniqueStrings"},
+          "write_scope": {"$ref": "#/$defs/uniqueStrings"},
+          "protected_scope": {"$ref": "#/$defs/uniqueStrings"},
+          "superseded_by_acceptance_revision": {
+            "oneOf": [
+              {"type": "null"},
+              {"type": "integer", "minimum": 2}
+            ]
+          },
+          "receipt_sha256": {
+            "oneOf": [{"type": "null"}, {"$ref": "#/$defs/sha256"}]
+          },
+          "receipt_path": {
+            "oneOf": [{"type": "null"}, {"type": "string", "minLength": 1}]
+          },
+          "return_count": {"type": "integer", "minimum": 0},
+          "returns": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "receipt_sha256",
+                "receipt_path",
+                "return_count",
+                "workspace_sha256"
+              ],
+              "properties": {
+                "receipt_sha256": {"$ref": "#/$defs/sha256"},
+                "receipt_path": {"type": "string", "minLength": 1},
+                "return_count": {"type": "integer", "minimum": 1},
+                "workspace_sha256": {"$ref": "#/$defs/sha256"}
+              }
+            }
+          },
+          "returned_workspace_sha256": {
+            "oneOf": [{"type": "null"}, {"$ref": "#/$defs/sha256"}]
+          }
+        }
+      }
+    },
+    "reviews": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "review_id",
+          "role",
+          "status",
+          "plan_revision",
+          "acceptance_revision",
+          "acceptance_ids",
+          "workspace_sha256",
+          "receipt_sha256",
+          "review_scope",
+          "carry_forward_from_receipt_sha256",
+          "open_blocking_finding_ids",
+          "resolved_finding_ids",
+          "recorded_at",
+          "event_seq"
+        ],
+        "properties": {
+          "review_id": {"$ref": "#/$defs/portableId"},
+          "role": {"$ref": "#/$defs/reviewRole"},
+          "status": {"enum": ["passed", "needs_repair", "blocked"]},
+          "plan_revision": {"type": "integer", "minimum": 0},
+          "acceptance_revision": {"type": "integer", "minimum": 1},
+          "acceptance_ids": {"$ref": "#/$defs/uniqueStrings"},
+          "workspace_sha256": {"$ref": "#/$defs/sha256"},
+          "receipt_sha256": {"$ref": "#/$defs/sha256"},
+          "review_scope": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["patterns", "sha256"],
+            "properties": {
+              "patterns": {"$ref": "#/$defs/uniqueStrings"},
+              "sha256": {"$ref": "#/$defs/sha256"}
+            }
+          },
+          "carry_forward_from_receipt_sha256": {
+            "oneOf": [
+              {"type": "null"},
+              {"$ref": "#/$defs/sha256"}
+            ]
+          },
+          "open_blocking_finding_ids": {
+            "$ref": "#/$defs/uniqueStrings"
+          },
+          "resolved_finding_ids": {
+            "$ref": "#/$defs/uniqueStrings"
+          },
+          "evidence_candidate_sha256": {"$ref": "#/$defs/sha256"},
+          "recorded_at": {"type": "string", "format": "date-time"},
+          "event_seq": {"type": "integer", "minimum": 1}
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {"role": {"const": "terminal_critic"}},
+              "required": ["role"]
+            },
+            "then": {"required": ["evidence_candidate_sha256"]}
+          }
+        ]
+      }
+    },
+    "review_context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["terminal_after_event_seq"],
+      "properties": {
+        "terminal_after_event_seq": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "completion_ready": {
+      "oneOf": [
+        {"type": "null"},
+        {"$ref": "#/$defs/completion"}
+      ]
+    },
+    "completion_history": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/completion"}
+    },
+    "ledger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "event_count", "tail_sha256"],
+      "properties": {
+        "path": {"const": "goal-ledger.jsonl"},
+        "event_count": {"type": "integer", "minimum": 1},
+        "tail_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "workspace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "project_fingerprint",
+        "last_event_workspace_sha256"
+      ],
+      "properties": {
+        "project_fingerprint": {"$ref": "#/$defs/sha256"},
+        "last_event_workspace_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "created_at": {"type": "string", "format": "date-time"},
+    "updated_at": {"type": "string", "format": "date-time"}
+  },
+  "$defs": {
+    "completion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "receipt_sha256",
+        "receipt_path",
+        "pre_ledger_tail_sha256",
+        "evidence_candidate_sha256",
+        "terminal_review_receipt_sha256",
+        "workspace_sha256",
+        "plan_revision",
+        "acceptance_revision",
+        "recorded_at",
+        "event_seq"
+      ],
+      "properties": {
+        "receipt_sha256": {"$ref": "#/$defs/sha256"},
+        "receipt_path": {"type": "string", "minLength": 1},
+        "pre_ledger_tail_sha256": {"$ref": "#/$defs/sha256"},
+        "evidence_candidate_sha256": {"$ref": "#/$defs/sha256"},
+        "terminal_review_receipt_sha256": {
+          "oneOf": [
+            {"type": "null"},
+            {"$ref": "#/$defs/sha256"}
+          ]
+        },
+        "workspace_sha256": {"$ref": "#/$defs/sha256"},
+        "plan_revision": {"type": "integer", "minimum": 0},
+        "acceptance_revision": {"type": "integer", "minimum": 1},
+        "recorded_at": {"type": "string", "format": "date-time"},
+        "event_seq": {"type": "integer", "minimum": 1}
+      }
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "portableId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[a-z0-9_-]+$"
+    },
+    "uniqueStrings": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "steering": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["op", "source_ids", "target_ids"],
+        "properties": {
+          "op": {
+            "enum": [
+              "clarify",
+              "add",
+              "retire",
+              "split",
+              "merge",
+              "reorder",
+              "replace"
+            ]
+          },
+          "source_ids": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {"$ref": "#/$defs/portableId"}
+          },
+          "target_ids": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {"$ref": "#/$defs/portableId"}
+          }
+        }
+      }
+    },
+    "acceptance": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "text"],
+        "properties": {
+          "id": {"$ref": "#/$defs/portableId"},
+          "text": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "hostState": {
+      "enum": [
+        "active",
+        "waiting",
+        "paused",
+        "blocked",
+        "completed",
+        "cancelled",
+        "superseded"
+      ]
+    },
+    "reviewRole": {
+      "enum": [
+        "integration_review",
+        "architecture_review",
+        "adversarial_qa",
+        "terminal_critic"
+      ]
+    },
+    "planRevision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "acceptance_revision",
+        "sha256",
+        "artifact_path",
+        "recorded_at"
+      ],
+      "properties": {
+        "revision": {"type": "integer", "minimum": 1},
+        "acceptance_revision": {"type": "integer", "minimum": 1},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "artifact_path": {"type": "string", "minLength": 1},
+        "recorded_at": {"type": "string", "format": "date-time"},
+        "carried_forward_from_revision": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "continuationCapsule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "context_sha256",
+        "acceptance_revision",
+        "plan_revision",
+        "workspace_sha256",
+        "open_work",
+        "open_story_ids",
+        "worker_states",
+        "current_evidence_refs",
+        "stale_evidence_refs",
+        "blocker_ids",
+        "pending_authority",
+        "no_repeat",
+        "next_action",
+        "recorded_at",
+        "sha256"
+      ],
+      "properties": {
+        "kind": {"enum": ["handoff", "suspension"]},
+        "context_sha256": {"$ref": "#/$defs/sha256"},
+        "acceptance_revision": {"type": "integer", "minimum": 1},
+        "plan_revision": {"type": "integer", "minimum": 0},
+        "workspace_sha256": {"$ref": "#/$defs/sha256"},
+        "open_work": {"$ref": "#/$defs/uniqueStrings"},
+        "open_story_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/portableId"}
+        },
+        "worker_states": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "status", "story_id"],
+            "properties": {
+              "id": {"$ref": "#/$defs/portableId"},
+              "status": {"$ref": "#/$defs/portableId"},
+              "story_id": {
+                "oneOf": [
+                  {"type": "null"},
+                  {"$ref": "#/$defs/portableId"}
+                ]
+              }
+            }
+          }
+        },
+        "current_evidence_refs": {"$ref": "#/$defs/uniqueStrings"},
+        "stale_evidence_refs": {"$ref": "#/$defs/uniqueStrings"},
+        "blocker_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/portableId"}
+        },
+        "pending_authority": {"$ref": "#/$defs/uniqueStrings"},
+        "no_repeat": {"$ref": "#/$defs/uniqueStrings"},
+        "next_action": {
+          "oneOf": [
+            {"type": "null"},
+            {"type": "string", "minLength": 1}
+          ]
+        },
+        "recorded_at": {"type": "string", "format": "date-time"},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    }
+  }
+}

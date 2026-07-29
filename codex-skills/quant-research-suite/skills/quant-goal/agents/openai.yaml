@@ -1,4 +1,6 @@
 interface:
   display_name: "Quant Goal"
-  short_description: "Finish explicit goals with repeated proof"
-  default_prompt: "Use $quant-goal to turn the explicitly approved objective into durable checkpoints, implement it through bounded stories, repeatedly audit contracts, data-to-public automation, cost authority, and user experience, repair defects, and finish only when the required evidence and approved release gates pass. Auto-renewing or free-to-paid trials, payment method registration, plan upgrades, paid overage or pay-as-you-go use, exceeding a verified free quota, paid add-ons, and Spend cap disablement are paid actions and are prohibited unless a direct prior user request names the exact bounded paid action; free-plan cost hard stops must remain enabled."
+  short_description: "Manual $quant-goal invocation only"
+  default_prompt: "The current user explicitly invoked $quant-goal; keep the host Goal as canonical, use ordinary workers or an isolated team when independent lanes help, exhaust free-only source and method fallbacks, separate light/standard/strict assurance from local/release delivery, persist only meaningful durable checkpoints, and complete against fresh acceptance evidence without activating another skill, allowing paid data, or crossing remote, provider, destructive, paid, or future-turn activation boundaries."
+policy:
+  allow_implicit_invocation: false

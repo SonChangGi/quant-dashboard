@@ -1,5 +1,39 @@
 # Data Collection, Analysis, and Publication Contract
 
+## Contents
+
+- [Activation and scope](#activation-and-scope)
+- [Outcome](#outcome)
+- [Project-owned source registry](#project-owned-source-registry)
+- [Authoritative pipeline](#authoritative-pipeline)
+- [Required identities and timestamps](#required-identities-and-timestamps)
+- [Schedule contract](#schedule-contract)
+- [Partial failure and recovery](#partial-failure-and-recovery)
+- [Verification matrix](#verification-matrix)
+- [Existing and new projects](#existing-and-new-projects)
+- [Completion evidence](#completion-evidence)
+
+## Activation and scope
+
+Use this full contract only for scheduled collection, public publication, raw
+redistribution, or an explicitly selected strict reproducibility path. Do not
+require it for a local/private exploration, one-time notebook, prototype, or
+non-PIT retrospective analysis. Those use the lighter
+`capabilities/external-data.md` contract.
+
+All selected data sources must remain eligible under the permanent free-only
+policy in `core/authority.md`: no paid data, trial, expiring credit,
+free-to-paid conversion, payment method, subscription, PAYG, overage, paid
+add-on, or paid tier. If a source becomes paid for the required use, stop new
+collection and switch to a free source, free derivation or proxy, or a narrower
+honest result. Paid data is never a fallback or approval option.
+
+This contract proves the automated and public claims actually selected. It does
+not manufacture a PIT claim. Require historical PIT lineage only when
+acceptance claims point-in-time, as-known-then, look-ahead-free,
+survivorship-free, or historically investable results. Otherwise preserve and
+display the applicable non-PIT limitations.
+
 ## Outcome
 
 Automate the full chain from approved source data to a publicly verified result
@@ -11,7 +45,8 @@ unless the user explicitly approves an analysis change.
 
 ## Project-owned source registry
 
-Each project must own a non-secret registry for every source:
+Each active automated or public data pipeline must own a non-secret registry
+for every source it uses:
 
 - stable source ID, provider, endpoint or collector entrypoint;
 - required, optional, benchmark, or fallback role;
@@ -58,8 +93,9 @@ Treat these as separate, observable gates:
 
 1. **Collect** — fetch each source into an immutable or content-addressed raw
    snapshot; record provider response state and source `as_of`.
-2. **Validate** — enforce rights, schema, types, units, dates, duplicates,
-   coverage, null limits, revision/frozen-history policy and source-specific
+2. **Validate** — enforce the rights needed for the selected publication or
+   redistribution, plus schema, types, units, dates, duplicates, coverage,
+   null limits, the claim-selected revision/PIT policy, and source-specific
    quality rules.
 3. **Normalize** — create the existing canonical analysis input without changing
    formulas or silently filling unavailable values.
@@ -176,7 +212,11 @@ evaluation can turn a failed preflight into a successful final conclusion.
 - Optional-source failure: publish only when the project contract allows a
   degraded result and the missing contribution is explicit.
 - Stale source: apply the project's allowed-lag rule; never relabel it as current.
-- Schema or rights failure: fail closed.
+- Schema failure: fail closed for the affected pipeline.
+- Rights failure or uncertainty: fail closed for unsupported public display or
+  raw redistribution, not for an otherwise permitted private analysis. Try an
+  eligible free source, permitted aggregation or derivation, private output, or
+  narrower claim before declaring the whole objective blocked.
 - Provider revision: preserve provenance and use the project's frozen-history or
   backfill policy.
 - Analysis or artifact failure: retain the last-good public pointer.
@@ -221,8 +261,9 @@ For an existing project:
 
 For a new project:
 
-- define the source registry, rights, cutoff, schemas, schedules, failure states,
-  result identity, public path and fallback before enabling automation;
+- define the source registry, use-specific rights, cutoff, schemas, schedules,
+  failure states, result identity, public path and free-only fallback before
+  enabling automation;
 - start with a manual end-to-end run and public readback;
 - enable the schedule only after deterministic and failure-path tests pass.
 

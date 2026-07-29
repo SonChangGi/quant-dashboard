@@ -1,0 +1,27 @@
+{
+  "$schema": "../schemas/story-envelope.schema.json",
+  "document_type": "quant_story_envelope",
+  "schema_version": 1,
+  "goal_id": "goal-replace-me",
+  "story_id": "story-ui-audit",
+  "project_binding_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "objective": "Audit the implemented UI.",
+  "mode": "read_only",
+  "write_scope": [],
+  "protected_scope": [
+    "analysis/**",
+    "data/**"
+  ],
+  "depends_on": [],
+  "acceptance": [
+    {
+      "id": "s1",
+      "text": "Desktop and mobile behavior is inspected."
+    }
+  ],
+  "external_effects": "none",
+  "cost_class": "no_billable_action",
+  "baseline_workspace_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "issued_at": "2026-07-26T00:00:00Z",
+  "envelope_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+}

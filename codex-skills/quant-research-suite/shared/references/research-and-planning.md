@@ -1,5 +1,14 @@
 # Research and Planning Contract
 
+## Contents
+
+- [Research routing](#research-routing)
+- [Evidence record](#evidence-record)
+- [Repository audit](#repository-audit)
+- [External-data decision rule](#external-data-decision-rule)
+- [Architecture decision](#architecture-decision)
+- [Plan quality gate](#plan-quality-gate)
+
 ## Research routing
 
 Research must answer a decision in the plan.
@@ -47,7 +56,7 @@ Inspect:
 
 Do not read secret values. Record only required secret names and whether the path is configured.
 
-When data automation is present, also inspect:
+When scheduled or publicly published data automation is in scope, also inspect:
 
 - every source and its role, rights, collector, timezone/calendar, availability
   lag, cache, schema, raw/normalized artifact, and stale/fallback behavior;
@@ -62,6 +71,35 @@ When data automation is present, also inspect:
 Workflow presence is not schedule proof. A recently fetched source is not proof
 of a coherent latest analysis, and a successful deployment is not proof of fresh
 public data.
+
+## External-data decision rule
+
+Separate source eligibility, analytical fitness, and publication rights:
+
+- eligibility: the required data is zero-charge without a trial, expiring
+  credit, automatic paid conversion, payment method, subscription, PAYG,
+  overage, paid add-on, or paid tier;
+- analytical fitness: the fields, dates, adjustments, coverage, and known
+  limitations support the intended calculation and claim;
+- publication rights: the selected display, derived output, or raw
+  redistribution is supported for the intended audience.
+
+Exclude ineligible paid data from alternatives instead of presenting it for
+approval. If a currently eligible source becomes paid, plan a free replacement,
+free reconstruction or proxy, or a narrower honest claim.
+
+Require historical PIT provenance only for a PIT, as-known-then,
+look-ahead-free, survivorship-free, or historically investable claim. A
+non-PIT retrospective or current-universe exploration may proceed when its
+limitations are explicit. For price work, treat adjusted-price semantics as
+separate from a corporate-actions feed; require the latter only when dividends,
+reinvestment, splits, total return, or event timing are part of acceptance.
+
+When material source or method uncertainty remains, consider independent
+read-only lanes for free-source discovery, reconstruction or proxy methods,
+bias/quality review, and operational feasibility. The primary planner compares
+their evidence and selects the strongest zero-charge path; agent output is not
+authority or proof by itself.
 
 ## Architecture decision
 
@@ -105,11 +143,18 @@ A plan is actionable only when it includes:
 - local-preview gate;
 - release authority gate;
 - rollback/fallback;
-- risks, costs, provider rights, and open decisions.
+- material risks, free-only data eligibility, use-specific provider rights,
+  and open decisions.
 
 If any remote/provider action is proposed, the plan must classify its cost risk
 under `cost-and-authority.md`. If data-to-web automation is in scope, it must map
 the full `data-automation.md` pipeline, failure policy, recurring bounds, and
 public-readback evidence.
+
+For a local/private or exploratory data task, keep the Plan Packet lighter:
+record the provider/endpoint, source and collection dates, relevant fields,
+adjusted/raw semantics, transformations, and known limitations. Do not require
+the full automation registry, publication-rights packet, or PIT history unless
+the selected delivery or claim needs it.
 
 Do not use “improve”, “optimize”, “modernize”, or “make robust” without measurable evidence.

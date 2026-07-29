@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import shutil
 import sys
 import tempfile
@@ -87,6 +88,26 @@ class PackageShapeValidationTests(unittest.TestCase):
                 "obvious private key block content is prohibited: README.md",
                 errors,
             )
+
+    def test_rejects_unsealed_team_protocol_example(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = self.copy_suite(directory)
+            packet = (
+                root
+                / "shared"
+                / "templates"
+                / "team-run-packet.example.json"
+            )
+            value = json.loads(packet.read_text(encoding="utf-8"))
+            value["activation_reason"] = "Mutated after the packet was sealed."
+            packet.write_text(
+                json.dumps(value, indent=2) + "\n",
+                encoding="utf-8",
+            )
+
+            errors = self.validate_copy(root)
+
+            self.assertIn("team packet example self-hash is invalid", errors)
 
 
 if __name__ == "__main__":

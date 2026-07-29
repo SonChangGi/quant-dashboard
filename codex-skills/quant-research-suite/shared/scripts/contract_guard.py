@@ -46,7 +46,7 @@ def git_value(root: Path, *args: str) -> str:
 
 
 def should_ignore(relative: str) -> bool:
-    parts = Path(relative).parts
+    parts = tuple(part.casefold() for part in Path(relative).parts)
     return ".git" in parts or "__pycache__" in parts or "node_modules" in parts
 
 

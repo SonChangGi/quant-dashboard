@@ -42,10 +42,22 @@ V2_COST_CLASSES = {
 }
 LOCAL_CANONICALIZATION = "canonical-json-v1"
 HEX = frozenset("0123456789abcdef")
+MAX_FUTURE_CLOCK_SKEW = timedelta(minutes=5)
 
 
 def reject_nonfinite_json(value: str) -> None:
     raise ValueError(f"non-finite JSON number is prohibited: {value}")
+
+
+def unique_json_object(
+    pairs: list[tuple[str, Any]],
+) -> dict[str, Any]:
+    value: dict[str, Any] = {}
+    for key, item in pairs:
+        if key in value:
+            raise ValueError(f"duplicate JSON object key: {key}")
+        value[key] = item
+    return value
 
 
 def nonempty(value: Any) -> bool:
@@ -180,6 +192,7 @@ def load_object(
         loaded = json.loads(
             path.read_text(encoding="utf-8"),
             parse_constant=reject_nonfinite_json,
+            object_pairs_hook=unique_json_object,
         )
     except (OSError, json.JSONDecodeError, ValueError) as exc:
         errors.append(f"invalid {label}: {exc}")
@@ -1071,6 +1084,7 @@ def load_json_capture(
         loaded = json.loads(
             path.read_text(encoding="utf-8"),
             parse_constant=reject_nonfinite_json,
+            object_pairs_hook=unique_json_object,
         )
     except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as exc:
         errors.append(f"{label} is not valid JSON: {exc}")
@@ -3169,6 +3183,55 @@ def main() -> int:
     parser.add_argument("--project-root")
     parser.add_argument("--require-automation", action="store_true")
     parser.add_argument("--require-release", action="store_true")
+    parser.add_argument(
+        "--require-capability",
+        action="append",
+        default=[],
+        help="Receipt v3 capability floor; repeatable",
+    )
+    parser.add_argument(
+        "--minimum-assurance",
+        choices=("light", "standard", "strict", "release"),
+        help="Receipt v3 assurance floor",
+    )
+    parser.add_argument(
+        "--input-binding-capture",
+        help="Receipt v3 project-relative A/B capture file",
+    )
+    parser.add_argument(
+        "--team-packet",
+        help="Receipt v3 agent-team Team Run Packet JSON path",
+    )
+    parser.add_argument(
+        "--team-delivery",
+        action="append",
+        default=[],
+        help="Receipt v3 agent-team worker Delivery Receipt path; repeatable",
+    )
+    parser.add_argument(
+        "--team-integration",
+        help="Receipt v3 agent-team Integration Receipt JSON path",
+    )
+    parser.add_argument(
+        "--team-artifact-root",
+        help="Receipt v3 agent-team proof and delivery-artifact root",
+    )
+    parser.add_argument(
+        "--team-workspace-root",
+        help="Receipt v3 canonical workspace root for agent-team validation",
+    )
+    parser.add_argument(
+        "--team-baseline-root",
+        help="Receipt v3 preserved packet-issuance workspace root",
+    )
+    parser.add_argument(
+        "--team-worker-root",
+        action="append",
+        default=[],
+        help=(
+            "Receipt v3 live worker root as assignment-id=path; repeatable"
+        ),
+    )
     parser.add_argument("--result-artifact")
     parser.add_argument("--source-manifest")
     parser.add_argument("--analysis-input")
@@ -3198,6 +3261,7 @@ def main() -> int:
         loaded = json.loads(
             path.read_text(encoding="utf-8"),
             parse_constant=reject_nonfinite_json,
+            object_pairs_hook=unique_json_object,
         )
     except (OSError, json.JSONDecodeError, ValueError) as exc:
         print(f"EVIDENCE RECEIPT FAILED\n- invalid receipt: {exc}")
@@ -3206,6 +3270,10 @@ def main() -> int:
         print("EVIDENCE RECEIPT FAILED\n- receipt root must be an object")
         return 2
     receipt: dict[str, Any] = loaded
+    if receipt.get("schema_version") == 3:
+        from validate_evidence_v3 import run as run_v3
+
+        return run_v3(receipt, args)
     if receipt.get("schema_version") == 1:
         if not args.allow_legacy_v1:
             print(
@@ -3219,6 +3287,22 @@ def main() -> int:
         return 3
 
     errors: list[str] = []
+    if (
+        args.require_capability
+        or args.minimum_assurance
+        or args.input_binding_capture
+        or args.team_packet
+        or args.team_delivery
+        or args.team_integration
+        or args.team_artifact_root
+        or args.team_workspace_root
+        or args.team_baseline_root
+        or args.team_worker_root
+    ):
+        errors.append(
+            "capability, assurance, input-binding, and agent-team options require "
+            "receipt schema_version 3"
+        )
     if receipt.get("schema_version") != 2:
         errors.append("schema_version must equal 2")
     if not nonempty(receipt.get("project_id")):
@@ -3228,6 +3312,10 @@ def main() -> int:
     completed = parse_time(receipt.get("completed_at"))
     if completed is None:
         errors.append("completed_at must be timezone-aware ISO-8601")
+    elif completed.astimezone(timezone.utc) > (
+        datetime.now(timezone.utc) + MAX_FUTURE_CLOCK_SKEW
+    ):
+        errors.append("completed_at exceeds allowed future clock skew")
 
     manifest = load_object(args.manifest, "manifest", errors)
     goal = load_object(args.goal_state, "goal state", errors)

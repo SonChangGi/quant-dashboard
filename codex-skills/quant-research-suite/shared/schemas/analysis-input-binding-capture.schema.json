@@ -1,0 +1,168 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/quant-research-suite/analysis-input-binding-capture.schema.json",
+  "title": "Authoritative analysis input binding capture",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "project_id",
+    "generated_at",
+    "analysis_entrypoint",
+    "capture_driver",
+    "controls"
+  ],
+  "properties": {
+    "$schema": {"type": "string"},
+    "schema_version": {"const": 2},
+    "project_id": {"type": "string", "minLength": 1},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "analysis_entrypoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "capture_driver": {"$ref": "#/$defs/captureDriver"},
+    "controls": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/control"}
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "captureDriver": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "adapter_id",
+        "tool",
+        "tool_version",
+        "runner_path",
+        "runner_sha256",
+        "runner_argv_index",
+        "command_argv",
+        "exit_code"
+      ],
+      "properties": {
+        "adapter_id": {"type": "string", "minLength": 1},
+        "tool": {"type": "string", "minLength": 1},
+        "tool_version": {"type": "string", "minLength": 1},
+        "runner_path": {"type": "string", "minLength": 1},
+        "runner_sha256": {"$ref": "#/$defs/sha256"},
+        "runner_argv_index": {"const": 0},
+        "command_argv": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "exit_code": {"const": 0}
+      }
+    },
+    "run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "entrypoint_sha256",
+        "input_path",
+        "input_sha256",
+        "result_path",
+        "result_sha256",
+        "invocation_artifact",
+        "execution_trace_artifact",
+        "run_id",
+        "started_at",
+        "completed_at",
+        "exit_code"
+      ],
+      "properties": {
+        "entrypoint_sha256": {"$ref": "#/$defs/sha256"},
+        "input_path": {"type": "string", "minLength": 1},
+        "input_sha256": {"$ref": "#/$defs/sha256"},
+        "result_path": {"type": "string", "minLength": 1},
+        "result_sha256": {"$ref": "#/$defs/sha256"},
+        "invocation_artifact": {"$ref": "#/$defs/artifact"},
+        "execution_trace_artifact": {"$ref": "#/$defs/artifact"},
+        "run_id": {"type": "string", "minLength": 1},
+        "started_at": {"type": "string", "format": "date-time"},
+        "completed_at": {"type": "string", "format": "date-time"},
+        "exit_code": {"const": 0}
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "size",
+        "sha256",
+        "media_type"
+      ],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "size": {"type": "integer", "minimum": 1},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "media_type": {"type": "string", "minLength": 1}
+      }
+    },
+    "runtimePhase": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "capture_id",
+        "session_id",
+        "started_at",
+        "control_committed_at",
+        "dispatch_observed_at",
+        "result_observed_at",
+        "view_bound_at",
+        "completed_at",
+        "dispatch_artifact",
+        "adopted_result_artifact",
+        "view_artifact",
+        "trace_artifact"
+      ],
+      "properties": {
+        "capture_id": {"type": "string", "minLength": 1},
+        "session_id": {"type": "string", "minLength": 1},
+        "started_at": {"type": "string", "format": "date-time"},
+        "control_committed_at": {"type": "string", "format": "date-time"},
+        "dispatch_observed_at": {"type": "string", "format": "date-time"},
+        "result_observed_at": {"type": "string", "format": "date-time"},
+        "view_bound_at": {"type": "string", "format": "date-time"},
+        "completed_at": {"type": "string", "format": "date-time"},
+        "dispatch_artifact": {"$ref": "#/$defs/artifact"},
+        "adopted_result_artifact": {"$ref": "#/$defs/artifact"},
+        "view_artifact": {"$ref": "#/$defs/artifact"},
+        "trace_artifact": {"$ref": "#/$defs/artifact"}
+      }
+    },
+    "control": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "control_id",
+        "baseline",
+        "repeat",
+        "variant",
+        "baseline_runtime",
+        "variant_runtime"
+      ],
+      "properties": {
+        "control_id": {"type": "string", "minLength": 1},
+        "baseline": {"$ref": "#/$defs/run"},
+        "repeat": {"$ref": "#/$defs/run"},
+        "variant": {"$ref": "#/$defs/run"},
+        "baseline_runtime": {"$ref": "#/$defs/runtimePhase"},
+        "variant_runtime": {"$ref": "#/$defs/runtimePhase"}
+      }
+    }
+  }
+}

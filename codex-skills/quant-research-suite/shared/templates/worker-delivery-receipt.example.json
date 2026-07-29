@@ -1,0 +1,89 @@
+{
+  "$schema": "../schemas/worker-delivery-receipt.schema.json",
+  "document_type": "quant_worker_delivery_receipt",
+  "schema_version": 1,
+  "team_run_id": "team-example",
+  "assignment_id": "implement-ui",
+  "packet_sha256": "4092da3a888ba5f88da3f9c2fd9d294512c8f1e3c4479fa406c68e2ef52f7c73",
+  "status": "ready_for_integration",
+  "source": {
+    "project_binding_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "workspace_binding_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "baseline_workspace_sha256": "ccc7c4191e67a2b32157255105f341f4d3c2af33878372b67edf897e67605372",
+    "final_workspace_sha256": "73d6a4224c8d24ed2dfacd6b2f4c2b9f21400b83634078ec2654938b11accbb8"
+  },
+  "baseline_snapshot": {
+    "kind": "directory",
+    "head": null,
+    "branch": null,
+    "diff_sha256": null,
+    "paths": {},
+    "snapshot_version": 2,
+    "protected_patterns": ["src/analysis/**"],
+    "protected_paths": {},
+    "sha256": "ccc7c4191e67a2b32157255105f341f4d3c2af33878372b67edf897e67605372"
+  },
+  "final_snapshot": {
+    "kind": "directory",
+    "head": null,
+    "branch": null,
+    "diff_sha256": null,
+    "paths": {
+      "src/ui/panel.ts": {
+        "kind": "file",
+        "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "size": 128,
+        "mode": 420
+      }
+    },
+    "snapshot_version": 2,
+    "protected_patterns": ["src/analysis/**"],
+    "protected_paths": {},
+    "sha256": "73d6a4224c8d24ed2dfacd6b2f4c2b9f21400b83634078ec2654938b11accbb8"
+  },
+  "changed_paths": ["src/ui/panel.ts"],
+  "delivery_artifacts": [
+    {
+      "id": "ui-patch",
+      "kind": "patch",
+      "ref": "artifacts/implement-ui.patch",
+      "sha256": "5ff6114bf5fc854b18afb70df7612e0972eb97537a5243c686ac5554f52448bc",
+      "secret_scan": {
+        "mode": "validated_text",
+        "evidence_id": null
+      }
+    }
+  ],
+  "claims": [
+    {
+      "acceptance_id": "a-ui",
+      "status": "passed",
+      "evidence_ids": ["focused-check"]
+    }
+  ],
+  "evidence": [
+    {
+      "id": "focused-check",
+      "kind": "command",
+      "status": "passed",
+      "summary": "The project-native focused test passed on the worker snapshot.",
+      "artifact_ids": ["ui-patch"]
+    }
+  ],
+  "checks": [
+    {
+      "id": "unit",
+      "summary": "The focused unit test passed.",
+      "status": "passed",
+      "evidence_ids": ["focused-check"]
+    }
+  ],
+  "cleanup": {
+    "status": "passed",
+    "summary": "Changed files contain no dead code, masking fallback, or unrelated edits."
+  },
+  "unverified": [],
+  "blockers": [],
+  "completed_at": "2026-07-27T00:10:00Z",
+  "receipt_sha256": "a45a06e0a2b361d719b820d991ea50816c3cb7453b2c38cb51369240a3490147"
+}

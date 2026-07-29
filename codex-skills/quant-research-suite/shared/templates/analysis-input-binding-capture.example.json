@@ -1,0 +1,164 @@
+{
+  "$schema": "../schemas/analysis-input-binding-capture.schema.json",
+  "schema_version": 2,
+  "project_id": "replace-me",
+  "generated_at": "2026-07-26T00:08:00Z",
+  "analysis_entrypoint": {
+    "path": "analysis/run.py",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "capture_driver": {
+    "adapter_id": "project-ui-driver-v1",
+    "tool": "project-owned-ui-driver",
+    "tool_version": "replace-me",
+    "runner_path": "tests/e2e/input-binding-runner",
+    "runner_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "runner_argv_index": 0,
+    "command_argv": [
+      "tests/e2e/input-binding-runner"
+    ],
+    "exit_code": 0
+  },
+  "controls": [
+    {
+      "control_id": "lookback-days",
+      "baseline": {
+        "entrypoint_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "input_path": "captures/base-input.json",
+        "input_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "result_path": "captures/base-result.json",
+        "result_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "invocation_artifact": {
+          "path": "captures/base-invocation.json",
+          "size": 1,
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+          "media_type": "application/json"
+        },
+        "execution_trace_artifact": {
+          "path": "captures/base-analysis-trace.bin",
+          "size": 1,
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+          "media_type": "application/octet-stream"
+        },
+        "run_id": "run-base",
+        "started_at": "2026-07-26T00:01:00Z",
+        "completed_at": "2026-07-26T00:02:00Z",
+        "exit_code": 0
+      },
+      "repeat": {
+        "entrypoint_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "input_path": "captures/repeat-input.json",
+        "input_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "result_path": "captures/repeat-result.json",
+        "result_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "invocation_artifact": {
+          "path": "captures/repeat-invocation.json",
+          "size": 1,
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+          "media_type": "application/json"
+        },
+        "execution_trace_artifact": {
+          "path": "captures/repeat-analysis-trace.bin",
+          "size": 1,
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+          "media_type": "application/octet-stream"
+        },
+        "run_id": "run-repeat",
+        "started_at": "2026-07-26T00:03:00Z",
+        "completed_at": "2026-07-26T00:04:00Z",
+        "exit_code": 0
+      },
+      "variant": {
+        "entrypoint_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "input_path": "captures/variant-input.json",
+        "input_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "result_path": "captures/variant-result.json",
+        "result_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "invocation_artifact": {
+          "path": "captures/variant-invocation.json",
+          "size": 1,
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+          "media_type": "application/json"
+        },
+        "execution_trace_artifact": {
+          "path": "captures/variant-analysis-trace.bin",
+          "size": 1,
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+          "media_type": "application/octet-stream"
+        },
+        "run_id": "run-variant",
+        "started_at": "2026-07-26T00:05:00Z",
+        "completed_at": "2026-07-26T00:06:00Z",
+        "exit_code": 0
+      },
+      "baseline_runtime": {
+        "capture_id": "lookback-base-runtime",
+        "session_id": "ui-session-base",
+        "started_at": "2026-07-26T00:00:00Z",
+        "control_committed_at": "2026-07-26T00:00:15Z",
+        "dispatch_observed_at": "2026-07-26T00:00:30Z",
+        "result_observed_at": "2026-07-26T00:02:15Z",
+        "view_bound_at": "2026-07-26T00:02:30Z",
+        "completed_at": "2026-07-26T00:02:45Z",
+        "dispatch_artifact": {
+          "path": "captures/base-dispatch.json",
+          "size": 1,
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+          "media_type": "application/json"
+        },
+        "adopted_result_artifact": {
+          "path": "captures/base-adopted-result.json",
+          "size": 1,
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+          "media_type": "application/json"
+        },
+        "view_artifact": {
+          "path": "captures/base-bound-view.json",
+          "size": 1,
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+          "media_type": "application/json"
+        },
+        "trace_artifact": {
+          "path": "captures/base-runtime-trace.bin",
+          "size": 1,
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+          "media_type": "application/octet-stream"
+        }
+      },
+      "variant_runtime": {
+        "capture_id": "lookback-variant-runtime",
+        "session_id": "ui-session-variant",
+        "started_at": "2026-07-26T00:04:30Z",
+        "control_committed_at": "2026-07-26T00:04:40Z",
+        "dispatch_observed_at": "2026-07-26T00:04:50Z",
+        "result_observed_at": "2026-07-26T00:06:15Z",
+        "view_bound_at": "2026-07-26T00:06:30Z",
+        "completed_at": "2026-07-26T00:06:45Z",
+        "dispatch_artifact": {
+          "path": "captures/variant-dispatch.json",
+          "size": 1,
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+          "media_type": "application/json"
+        },
+        "adopted_result_artifact": {
+          "path": "captures/variant-adopted-result.json",
+          "size": 1,
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+          "media_type": "application/json"
+        },
+        "view_artifact": {
+          "path": "captures/variant-bound-view.json",
+          "size": 1,
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+          "media_type": "application/json"
+        },
+        "trace_artifact": {
+          "path": "captures/variant-runtime-trace.bin",
+          "size": 1,
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+          "media_type": "application/octet-stream"
+        }
+      }
+    }
+  ]
+}

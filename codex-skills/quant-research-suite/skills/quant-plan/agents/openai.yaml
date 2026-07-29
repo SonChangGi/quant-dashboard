@@ -1,4 +1,6 @@
 interface:
   display_name: "Quant Plan"
-  short_description: "Audit, research, and plan before changes"
-  default_prompt: "Use $quant-plan to audit the current project, research primary sources where useful, protect existing contracts, map any source-to-public automation, and produce an evidence-backed plan without changing code or external systems. Auto-renewing or free-to-paid trials, payment method registration, plan upgrades, paid overage or pay-as-you-go use, exceeding a verified free quota, paid add-ons, and Spend cap disablement are paid actions and are prohibited unless a direct prior user request names the exact bounded paid action; free-plan cost hard stops must remain enabled."
+  short_description: "Manual $quant-plan invocation only"
+  default_prompt: "The current user explicitly invoked $quant-plan; inspect relevant facts, use bounded read-only specialists when independent lanes help, return the smallest decision-complete Plan Packet or concise audit, separate light/standard/strict assurance from local/release delivery, use only free data and never propose paid data, match rights and PIT evidence to the actual claim, bind Strict review to the exact Plan and acceptance revisions, and finish without mutating the target or activating another skill across remote, provider, destructive, secret-bearing, raw-redistribution, or paid boundaries."
+policy:
+  allow_implicit_invocation: false

@@ -1,4 +1,6 @@
 interface:
   display_name: "Quant Developer"
-  short_description: "Build, verify, and safely release full stack"
-  default_prompt: "Use $quant-developer to implement the approved project change with one integration owner across frontend, backend, input-result binding, multi-source collection, scheduled analysis, publication, tests, and local preview; release remotely only when explicitly authorized and prove the public result. Auto-renewing or free-to-paid trials, payment method registration, plan upgrades, paid overage or pay-as-you-go use, exceeding a verified free quota, paid add-ons, and Spend cap disablement are paid actions and are prohibited unless a direct prior user request names the exact bounded paid action; free-plan cost hard stops must remain enabled."
+  short_description: "Manual $quant-developer invocation only"
+  default_prompt: "The current user explicitly invoked $quant-developer; implement the smallest coherent repository-native change that completes the outcome, use free-only source and method fallbacks plus bounded workers when helpful, verify the real surface in proportion to the claim, and return Delivery Evidence bound to changed paths and checks without activating another skill, allowing paid data, completing a parent Goal, or crossing remote, provider, destructive, or paid authority boundaries."
+policy:
+  allow_implicit_invocation: false

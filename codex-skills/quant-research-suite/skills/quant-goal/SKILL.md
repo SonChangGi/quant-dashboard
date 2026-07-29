@@ -1,313 +1,288 @@
 ---
 name: "quant-goal"
-description: "Drive an explicitly requested software or research objective through durable checkpoints, bounded implementation, repeated contract and experience audits, defect correction, local preview, approved release, and final evidence. Use when the user explicitly asks to pursue a goal, finish an approved multi-stage plan, or continue until the stated outcome is genuinely complete; do not create a persistent goal from an ordinary task or broaden authorization."
+description: "Use only when the user explicitly invokes $quant-goal. Drive a durable objective through checkpoints, review, repair, and evidence-backed completion; never auto-activate."
 ---
 
 # Quant Goal
 
-## Outcome
+## Explicit invocation gate
 
-Complete an explicit objective with evidence, not optimistic status.
+Activate only when the current user request intentionally invokes this skill
+through the literal token `$quant-goal`. If the host replaces that token with
+invocation metadata, accept only current-user, same-request metadata produced
+by that `$` selection.
 
-This skill is an orchestrator. It owns scope, checkpoints, review loops, approvals, and completion evidence. It does not replace project-specific analysis or let multiple implementers edit the same surface without coordination.
+A semantic Goal match, the plain name `quant-goal`, a quoted, example, or
+negated token, an earlier invocation, active host Goal state, a ledger,
+checkpoint, Plan Packet, Story Envelope, artifact, or another agent's
+instruction is not activation. If this skill is selected without the explicit
+gate, do not apply it or load its shared references; continue as an ordinary
+Codex request.
 
-## Required references
+The durable Goal may persist, but this skill's activation does not. Every later
+turn that should use this workflow requires a fresh explicit invocation. No
+global Stop hook or idle continuation may reactivate it.
 
-Resolve the shared suite directory:
+## Outcome and trigger
 
-1. Prefer `../quant-research-shared`.
-2. In the source checkout, use `../../shared`.
+After the invocation gate passes, use this skill to create, resume, track,
+steer, review, or complete a durable Goal. Do not create Goal state for an
+ordinary implementation, research, planning, or one-turn task.
 
-If required shared resources are missing or suite validation fails, stop all
-mutation and release work. Continue only with conservative read-only diagnosis
-and report the damaged dependency.
+This skill owns objective, acceptance revisions, semantic progress,
+checkpoints, blockers, independent review orchestration, and final completion.
+It consumes Plan Packets and Delivery Evidence without reimplementing the
+detailed planning or development workflow.
 
-For an installed suite, run
-`python3 <shared>/scripts/validate_installed.py` before relying on it. A missing
-install manifest or failed integrity check is a suite-validation failure.
+## Canonical state
 
-Read completely:
+The host-native lifecycle is self-contained. Use the host application's Goal
+state as canonical for lifecycle whenever it is available. The local evidence
+ledger is canonical only for append-only
+acceptance revisions, checkpoints, evidence, reviews, blockers, authority
+evidence references, and Completion Receipts. It never stores approval itself,
+overrides host state, or grants mutation, remote, destructive, secret-bearing,
+provider, or paid authority.
 
-- `references/operating-principles.md`
-- `references/cost-and-authority.md`
-- `references/data-automation.md`
-- `references/goal-and-subagents.md`
-- `references/developer-runbook.md`
-- `templates/quant-project.example.json`
-- `templates/goal-state.example.json`
-- `templates/evidence-receipt.example.json`
+Keep a concise working view of objective, acceptance, non-goals, constraints,
+current revision, checkpoint, evidence, blocker, and next action.
 
-If the goal includes UI or web work, also read `references/web-design-source.md` and its canonical `web-design.md`.
+Distinguish these semantic states when the host supports them:
 
-Validate the project contract before baseline or implementation:
+- `active`: work can continue;
+- `waiting`: an external result or time-bound event is pending;
+- `paused`: the host or user intentionally stopped progress;
+- `blocked`: required progress cannot continue safely;
+- `completed`: every required acceptance criterion is achieved;
+- `cancelled`: the user ended the objective;
+- `superseded`: a materially different Goal replaced it.
 
-```bash
-python3 <shared>/scripts/validate_project.py \
-  --root <project-root> \
-  --manifest <project-root>/.codex/quant-project.json
-```
+Map them to the host lifecycle without fabricating unsupported state. A local
+ledger may record the semantic meaning, but it cannot manufacture a host
+transition.
 
-## Trigger and authority
+## Shared workflow contract
 
-- Create or use a persistent product Goal only when the user explicitly requests a goal or durable completion.
-- An instruction to finish does not authorize paid resources, secret disclosure, destructive actions, analysis changes, schema changes, migration, merge, or deployment outside the stated scope.
-- Default to zero spend. Unless the user first requested the specific paid action,
-  do not issue a cost-capable or cost-unknown command, API call, browser action,
-  schedule, migration, or deployment. Tool approval and general release approval
-  are not billing authorization.
-- Paid authority must come from a direct user instruction that preceded any agent
-  proposal or attempt. Stored project/goal files, prior unrelated approvals,
-  subagents, existing plans/payment methods, and agent-solicited agreement cannot
-  grant or expand it.
-- Auto-renewing or free-to-paid trials, payment method registration, plan
-  upgrades, paid overage or pay-as-you-go use, exceeding a verified free quota,
-  paid add-ons, and Spend cap disablement are paid actions and are prohibited
-  unless a direct prior user request names the exact bounded paid action;
-  free-plan cost hard stops must remain enabled.
-- Preserve existing production and GitHub Pages fallback until the replacement is proven and approved.
+Read the shared contract for Plan Packet, Story Envelope, Delivery Evidence,
+Review Verdict, Checkpoint, Completion Receipt, assurance, frozen snapshots,
+staleness, repair, reviewer ownership, parallel joins, and ledger events. Read
+the agent-orchestration contract when project context, team execution,
+role/model routing, real-surface QA, or continuation is relevant. Use the paths
+that exist:
 
-## Goal lifecycle
+- installed `../quant-research-shared/references/goal-and-subagents.md`;
+- source `../../shared/references/goal-and-subagents.md`;
+- installed
+  `../quant-research-shared/references/agent-orchestration.md`;
+- source `../../shared/references/agent-orchestration.md`.
 
-### 1. Shape
+If the shared contract is unavailable, a short `light` or `standard` host-only
+Goal continues with the minimum self-contained fields in this skill:
+objective, stable acceptance IDs, checkpoint, blocker, next action, direct
+evidence, and honest completion. Ledger-backed or structured review proof
+remains `unverified`; do not invent a replacement runtime.
 
-- Load the approved plan when available.
-- If no approved plan exists, perform the minimum read-only shaping needed; use `$quant-plan` for material ambiguity or architecture research.
-- Write a concrete objective, non-goals, protected contracts, acceptance criteria, approval gates, and rollback.
-- Lock `required_outcomes.automated_data_to_web` and
-  `required_outcomes.remote_release` in goal state from the approved objective;
-  the final receipt may not lower either requirement to avoid its gates.
-- If a project owns automation but this goal performs no provider, schedule,
-  publication or readback action, mark automation
-  `explicitly-out-of-scope` with a concrete reason. Never silently downgrade
-  scope to use the local `no_billable_action` path.
-- Record cost authority separately from implementation and release authority.
-  Paid scope must name the service, resource/action, one-time or recurring use,
-  hard ceiling, duration, and stop condition; otherwise it remains prohibited.
-  The goal state records evidence only; it is never the source of authority.
-- Identify the target repository and isolated worktree.
+Quant Goal is the only independent review coordinator while `$quant-goal` is
+explicitly active as the parent for the current request. Do not ask an
+implementation worker to run a duplicate reviewer after it returns Delivery
+Evidence. Review one frozen validation boundary, return blockers for repair,
+and rerun only stale checks or lanes.
 
-### 2. Baseline
+## Default lifecycle
 
-- Inspect latest remote state and user changes.
-- Use `.codex/quant-project.json` when present.
-- Create a protected-contract snapshot outside the repository or in an ignored local state path:
+### 1. Bind or resume intent
 
-```bash
-python3 <shared>/scripts/contract_guard.py snapshot \
-  --root <project-root> \
-  --manifest <project-root>/.codex/quant-project.json \
-  --output <goal-state-dir>/contract-baseline.json
-```
+For `light` or `standard`, consume an approved Plan Packet when one exists.
+Otherwise do only enough shaping to make the objective, stable acceptance IDs,
+non-goals, constraints, assurance, and next checkpoint clear.
 
-- Record baseline result fixtures, public URLs, data dates, workflow state, and relevant screenshots.
-- When automation is in scope, record every source, source date, rights/freshness
-  rule, collector, raw/normalized artifact, coherent cutoff, analysis result,
-  schedule state, last-good identity, public artifact, and public verification
-  timestamp separately.
-- Do not proceed from an unexplained dirty or stale worktree.
+For `strict`, and for legacy `assurance=release` compatibility, require an
+approved immutable Plan Packet with its independent plan-critic result before
+implementation or durable Goal initialization. If it is absent, pause and tell
+the user that the planning skill must be directly invoked or an approved
+packet supplied. Do not activate that skill, recreate its plan, or review it
+here. A `light` or `standard` Goal with a `release` delivery target uses the
+same Plan depth as its risk assurance; delivery alone does not create a Strict
+planning prerequisite.
 
-### 3. Decompose
+Keep a durable `strict` or legacy `assurance=release` Plan bound to the current
+acceptance revision. A material acceptance change requires a newly reviewed
+Plan. An explicit carry-forward is allowed only when normalized acceptance is
+unchanged; record the source Plan revision instead of silently treating an
+older Plan as current.
 
-Create bounded stories with:
+Route a material unresolved product decision to the user or a planning
+workflow rather than hiding it in Goal state.
 
-- one owner;
-- one repository/worktree;
-- exact files or modules;
-- protected boundaries;
-- acceptance evidence;
-- dependencies and release gate.
+On a directly invoked resume, reconcile the host Goal, latest ledger event when
+one exists, latest Continuation Capsule, latest user direction, in-flight
+worker state, and actual deliverable. Revalidate context and snapshot identity,
+reuse only current evidence, and continue from the last evidenced checkpoint
+without repeating completed mutation or review. Treat any resume continuation
+projection in `result.continuation` as a derived aid, not authority; its
+`authority.status` must be `not_recorded` and it cannot reactivate the skill or
+authorize an action.
 
-Only one implementation owner may write a given project surface at a time.
+### 2. Select assurance, delivery, and persistence
 
-Optional specialists are read-only unless a story explicitly assigns an isolated worktree and disjoint files. Suitable roles:
+Classify risk assurance as `light`, `standard`, or `strict`, then classify
+delivery as `local` or `release` using the shared matrix. A release target adds
+authorized remote checkpoints and applicable readback to the selected proof;
+it does not raise assurance by itself. Legacy compatibility values may retain
+`assurance=release` only as Strict-plus-release. Current structured artifacts
+may carry `delivery` explicitly and infer it for older state that omits the
+field. Subagent use alone does not raise assurance.
 
-- repository/contract auditor;
-- external researcher;
-- plan critic;
-- UX/chart reviewer;
-- backend/input-binding reviewer;
-- release verifier.
+Select assurance from the consequence of the promised claim, not from the mere
+presence of external, free, price, or corporate-actions data. Default ordinary
+local and exploratory work to `light` or `standard`. Escalate data work only
+when acceptance promises regulated or high-consequence use, raw-data
+redistribution rights, historical point-in-time availability, or a
+no-look-ahead/investability claim. Otherwise record provider, as-of date,
+transformations, known gaps, and any non-PIT limitation, then complete the
+supported claim without fabricating certainty.
 
-The primary agent must inspect all returned evidence. A specialist's “done” is not completion.
+Automatically bind a local evidence ledger for `strict`, long-running Goals,
+explicit recovery, co-located evidence-portability, machine-audit requests,
+and legacy `assurance=release` compatibility. A release delivery overlay alone
+does not require the ledger. Long-running means continuation across sessions,
+interruptions, external waiting, or independently resumable milestones;
+persistence does not itself raise assurance.
 
-### 4. Act
+Short `light` or `standard` Goals may remain host-only. If the required ledger
+writer is unavailable or damaged, safe local work may continue when scope and
+authority allow, but any completion claim that selected ledger-backed recovery,
+portability, machine audit, Strict, or legacy release proof stays `unverified`
+until repaired or acceptance changes explicitly.
 
-Use the `$quant-developer` workflow for implementation.
+### 3. Coordinate work and checkpoint progress
 
-- Make the smallest coherent change that satisfies the approved story.
-- Preserve unrelated user changes.
-- Do not combine information-architecture cleanup with infrastructure migration unless the approved plan requires both.
-- Decide static versus backend architecture from project need, not fashion.
-- Keep frontend, backend, analysis worker, storage, automation, and release contracts explicit.
-- When delegated by this goal, `$quant-developer` returns story evidence and
-  stops at local preview by default. This goal alone reopens stories, authorizes
-  a separate release story, and declares completion.
+Inventory the useful host capabilities at the start of a non-trivial Goal.
+Proactively use subagents for independent source discovery, methodology,
+implementation, or QA lanes when doing so improves coverage or elapsed time.
+Use an agent team when multiple bounded lanes can progress independently, but
+do not create fixed roles or extra review ceremony merely to use a team.
 
-### 5. Prove and repair
-
-Run separate verification passes:
-
-#### Contract pass
-
-- Verify protected hashes and paths against the same project manifest:
-
-```bash
-python3 <shared>/scripts/contract_guard.py verify \
-  --root <project-root> \
-  --manifest <project-root>/.codex/quant-project.json \
-  --baseline <goal-state-dir>/contract-baseline.json
-```
-
-- Verify Python/analysis/data/schema/workflow invariance unless changes were explicitly authorized.
-- Verify every analysis input reaches its authoritative parameter and bound artifact.
-- Verify display-only controls leave run identity and stored results unchanged.
-
-#### Product pass
-
-- Verify the user-visible objective.
-- Test loading, empty, degraded, error, and last-good states.
-- For web work, verify desktop/tablet/mobile, light/dark, keyboard, touch, overflow, and console.
-- For interactive charts, verify rendered geometry, first/middle/last points, irregular dates, resize, scroll, and selected-value identity.
-
-#### Operations pass
-
-- Verify the project-owned source registry, rights, per-source freshness,
-  coherent cutoff, schema/quality rules, bounded retries, idempotency,
-  concurrency, calendars, last-good and fail-closed/degraded behavior.
-- Verify collect, validate, normalize, analyze, result-validate, stage, publish,
-  deploy, and public-readback gates independently.
-- Verify per-source receipts → source manifest → canonical analysis input →
-  result manifest → unchanged result artifact → public bytes → browser-adopted
-  identity as one matching chain.
-- Verify scheduled execution is enabled on the active default branch; workflow
-  presence or cron text alone is not evidence of a working schedule.
-- Verify the active workflow hash and successful required job/step IDs; the
-  cost-preflight step must finish before the collection/analysis entrypoint.
-- Verify public HTML and authoritative artifact identity/data date, not only
-  workflow success or HTTP status.
-- Distinguish code merge, analysis regeneration, preview, deployment, and public readback.
-
-#### Cost pass
-
-- Run the `cost-and-authority.md` classification before every remote/provider
-  write or recurring action.
-- Verify current no-cost plan/quota evidence, bounded retries/concurrency/
-  retention/egress, and that no payment method, billing enablement, upgrade,
-  paid trial, overage, or unapproved metered use occurred.
-- Verify that no auto-renewing trial, payment method registration, plan upgrade,
-  paid overage, paid add-on, or Spend cap disablement occurred and that every
-  free-plan cost hard stop remains enabled.
-- If cost is unknown or the specific paid action was not first requested by the
-  user, keep the gate blocked and do not issue the action.
-
-If any pass finds a defect:
-
-1. reopen the affected story;
-2. implement the narrow fix;
-3. rerun the failed gate and downstream gates;
-4. update the evidence receipt.
-
-Do not use a fixed number of superficial review loops. Continue until the acceptance criteria pass or a real authority/external-state blocker remains.
-
-### 6. Preview and approval
-
-- Local preview is the default pre-release checkpoint.
-- Present the preview URL, changed files, protected-contract result, tests, and known limitations.
-- Stop when the user required preview approval before deployment.
-
-### 7. Release
-
-Enter remote release only when explicitly authorized.
-
-- Re-run the zero-spend command preflight for each service immediately before
-  its first write and after any plan/quota ambiguity. Release authorization does
-  not authorize paid use.
-- Run GitHub preflight.
-- Commit only intended files.
-- Push, create/review PR, watch CI, merge only when authorized, and verify deployment.
-- Apply migrations or deploy APIs only when explicitly in scope.
-- Verify Vercel Preview, Control API, Supabase state, GitHub Pages, and public assets as distinct gates.
-- Never create or use paid resources, metered paid APIs, auto-renewing trials,
-  payment method registration, plan upgrades, paid overage, paid add-ons, Spend
-  cap disablement, or other billing changes unless the user first requested that
-  exact paid action and its bounded scope is recorded.
-
-### 8. Complete
-
-Validate the evidence receipt:
-
-```bash
-python3 <shared>/scripts/validate_evidence.py \
-  --project-root <project-root> \
-  --manifest <project-root>/.codex/quant-project.json \
-  --goal-state <goal-state-dir>/goal-state.json \
-  <goal-state-dir>/evidence-receipt.json
-```
-
-Completion requires a schema-v2 receipt. `--allow-legacy-v1` is only for
-historical read-only inspection, exits non-zero, and can never support
+Issue a Story Envelope only for bounded delegated work. Use ordinary host
+implementation workers by default; another Quant skill may participate only
+when the current user request explicitly invoked it too. Require Delivery
+Evidence `ready_for_review`; workers never mutate Goal state or declare overall
 completion.
 
-When automated data-to-web delivery is a required outcome, add:
+For an agent team, Quant Goal is the parent workflow and review owner. Build
+one dependency graph, name one canonical integration owner, isolate concurrent
+writers, join validation-coupled stories before review, and record or accept
+structured evidence serially in the canonical Goal workspace. Do not copy a
+single-root ledger into worker worktrees or let a team runtime become canonical
+for Goal lifecycle.
 
-```bash
-  --require-automation \
-  --workflow-run-evidence <captured-provider-run.json> \
-  --source-manifest <project-data-manifest> \
-  --analysis-input <canonical-analysis-input> \
-  --analysis-request-manifest <requested-effective-input-manifest> \
-  --result-manifest <project-result-manifest> \
-  --public-pointer-before <captured-current-pointer-before.json> \
-  --public-pointer-after <captured-current-pointer-after.json> \
-  --publication-ordering-evidence <ordering-and-failure-fixture.json> \
-  --result-artifact <project-result-artifact> \
-  --public-result-body <captured-public-result-bytes> \
-  --frontend-body <captured-public-html-bytes> \
-  --frontend-binding-evidence <captured-browser-binding.json> \
-  --frontend-dom-snapshot <captured-bound-dom-fragment.html> \
-  --cost-evidence <captured-plan-and-quota.json>
-```
+Apply the shared assurance pipeline once:
 
-When remote release is required, add `--require-release`,
-`--release-run-evidence <captured-release-run.json>`,
-`--public-result-body <captured-public-result-bytes>`,
-`--frontend-body <captured-public-html-bytes>`, and
-`--cost-evidence <captured-plan-and-quota.json>`. Reuse shared body/cost capture
-arguments when automation and release are both in scope. The integration owner
-must obtain captures from the live provider and public URLs. The validator
-recomputes their bytes and identity links but does not turn locally invented
-captures into provider proof.
+- `light`: direct acceptance evidence;
+- `standard`: implementation-owner cleanup plus one surface-appropriate
+  reviewer;
+- `strict`: cleaned frozen snapshot, Architect review, adversarial QA, and one
+  terminal Critic at the Goal terminus.
 
-Mark the goal complete only when:
+For a `release` delivery, add only the separately authorized remote checkpoints
+and final observable readback required by acceptance to the selected
+light/standard/strict pipeline. Do not manufacture a Strict review stack for a
+low-risk release.
 
-- every required acceptance criterion has passing evidence;
-- no required work remains;
-- protected contracts are intact or explicitly approved changes are documented;
-- the requested release/public-readback gate is complete;
-- the final result is usable and does not rely on fabricated or silently stale data.
-- the cost gate passes with zero-spend evidence; a paid action additionally
-  requires a trusted runtime authority envelope that the local receipt, goal
-  file, repository, subagent, or validator caller cannot manufacture. Without
-  that envelope, paid execution and completion remain blocked even if locally
-  writable fields claim a prior request;
-- when automated data-to-web delivery is required, collection, coherent
-  freshness, authoritative analysis, publication, enabled schedule, and public
-  readback all pass with matching identities.
+Append a meaningful Checkpoint when an acceptance criterion or milestone
+advances, a blocker is classified, or a material decision changes the next
+action. Do not journal every command or subagent message.
 
-If blocked, report the exact repeated blocker, completed checkpoints, recoverable state, and next authority needed. Do not call partial completion success.
+At every suspension or handoff, update a Continuation Capsule with objective
+and acceptance revision, plan/context digests, host and ledger identity,
+completed/open/returned stories, last-known worker state, current and stale
+evidence, blockers, pending authority, and the next concrete action. The
+capsule is resumable evidence, not an activation lease.
 
-## Final report
+On the host-only path, keep that capsule concise in conversation. On the
+durable path, append one `continuation_capsule_recorded` event only at an actual
+suspension or handoff; include actions not to repeat so resume does not duplicate
+mutation. Do not journal a capsule after every command.
 
-Lead with the achieved outcome. Then report:
+### 4. Revise without rewriting history
 
-- project and commit/result identity;
-- what changed;
-- what stayed protected;
-- audit defects found and repaired;
-- tests and browser/runtime evidence;
-- release and public-readback evidence;
-- source-to-public automation evidence and last-good recovery evidence when in
-  scope;
-- zero-spend or explicitly requested bounded paid-scope evidence;
-- fallback/rollback status;
-- any remaining non-required follow-up.
+Refine wording or acceptance under the same Goal when the user-visible
+objective, authority, and cost boundary remain the same. Append the revision
+and its rationale without rewriting earlier evidence.
+
+When the distinction improves a durable handoff, label steering as `clarify`,
+`add`, `retire`, `split`, `merge`, `reorder`, or `replace`, and preserve its
+source and target IDs, revision rationale, and invalidated evidence. This typed
+record is optional on the light host-only path and never supplies authority for
+silent deletion or weaker acceptance.
+
+Create a new or superseding Goal only when the user-visible objective,
+authority envelope, or cost boundary changes. Cancellation or supersession is
+a normal terminal outcome, not a failed completion.
+
+Treat `completed`, `cancelled`, and `superseded` as terminal within one durable
+Goal generation. An ordinary later observation cannot reopen them; continuing
+the work requires an explicitly created new Goal generation.
+
+### 5. Complete or report the real blocker
+
+Complete only when every required acceptance ID has direct evidence, every
+required Review Verdict covers the current frozen snapshot, and no required
+work remains. A local result does not claim remote or public completion.
+
+For `strict` and legacy `assurance=release` compatibility, run the terminal
+Critic once after all other required evidence is fresh. It checks acceptance
+coverage, evidence freshness, blockers, deferrals, and authority rather than
+repeating code review.
+
+For a ledger-backed Goal, append the Completion Receipt before completing the
+host Goal. If host and ledger disagree, report and repair the binding; never
+silently force either state.
+
+Use `blocked` only after safe in-scope alternatives are exhausted. Use
+`waiting` or `paused` for their actual meanings. Distinguish an agent-resolvable
+blocker from a genuinely human-only dependency.
+
+For data uncertainty, exhaust a zero-billing fallback ladder before calling the
+Goal blocked: official or public free data, another no-billing free provider,
+issuer/exchange/filing-derived values, cross-source reconstruction, a disclosed
+proxy, then a narrower supported claim. Rights confirmation is a hard gate for
+the actual redistribution or use contract at issue, not a demand for a legal
+opinion on every local input. PIT provenance is a hard gate only for a claim
+that requires PIT correctness; otherwise label the result exploratory or
+non-PIT and preserve the limitation.
+
+## Optional local strict compatibility
+
+The automatic host companion ledger above is evidence history, not automatic
+activation of the legacy manifest-bound runtime.
+
+Use the bundled legacy durable runtime only when an existing Goal already
+depends on its manifest-bound contract, the user explicitly requests that
+legacy contract, or a selected strict Quant capability requires its manifest,
+story, workspace-drift, receipt v3, or hash semantics. Read
+`shared/references/durable-runtime.md` on that path.
+
+Existing manifest v1/v2 and receipt v2/v3 contracts remain supported and are
+not silently migrated. If the optional compatibility runtime is unavailable,
+continue with host state and the companion ledger unless that exact proof is
+an acceptance criterion.
+
+## Authority and handoff
+
+Goal state, ledger entries, plans, receipts, review verdicts, and subagents
+never broaden the request. Consult the canonical policy only when a remote,
+destructive, secret-bearing, provider, or paid action is relevant: use
+installed `../quant-research-shared/core/authority.md` or source
+`../../shared/core/authority.md`, whichever exists.
+
+Paid data is outside this skill's solution space and is never a proposed
+blocker resolution. Do not use or suggest trials, expiring credits,
+free-to-paid conversion, card or billing setup, subscriptions, pay-as-you-go,
+overage, paid tiers, or paid data add-ons. If a no-billing free source becomes
+billable, stop using that source and continue down the free fallback ladder.
+
+Lead with the achieved outcome or precise current state. Map acceptance to
+fresh evidence, report limitations and blockers, distinguish local and remote
+state, and name the next action when incomplete. Do not claim that the skill
+will continue automatically; a later turn must explicitly invoke it again.

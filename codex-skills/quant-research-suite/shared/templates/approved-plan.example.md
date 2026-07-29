@@ -1,103 +1,151 @@
-# Approved Plan: [Project and objective]
+# Approved plan: [Project and outcome]
 
-## Objective
+## Decision summary
 
 - User-visible outcome:
 - Why it matters:
-- Priority:
+- Audit conclusion:
+- Chosen approach:
+- Risk assurance (`light`/`standard`/`strict`):
+- Delivery (`local`/`release`):
+- Active capabilities:
+- Optional profiles/adapters:
 
-## Scope
+## Plan Packet binding
+
+- Plan revision:
+- Acceptance revision:
+- Content SHA-256 or stable artifact reference:
+- Critic role and review ID (`strict` or legacy `assurance=release`):
+- Exact revision/digest reviewed:
+- Exact acceptance revision reviewed:
+- Critic verdict:
+- Blocking findings:
+- Unresolved user decisions:
+
+Only the exact Plan revision/digest and acceptance revision tuple that received
+a passed or non-blocking critic verdict is the approved immutable packet for a
+Strict handoff.
+
+## Acceptance register
+
+Use lowercase portable IDs such as `a-1`; keep each ID stable across revisions.
+
+| Stable ID | Observable criterion | Planned direct evidence | Non-goal boundary |
+| --- | --- | --- | --- |
+| a-1 |  |  |  |
+
+## Scope and authority
 
 - In scope:
 - Non-goals:
-- Explicitly protected:
-- Release boundary:
-- Cost policy: zero spend unless the user first requested a specific paid action
-- Paid action requested, exact scope, ceiling, duration, and stop condition:
-- Provider-rights boundary:
+- Protected contracts:
+- Project binding and applicable version-control binding:
+- Local mutation boundary:
+- Remote/release boundary:
+- Cost policy: zero spend unless the user first requested an exact bounded paid
+  non-data action
+- Data policy: paid data is permanently ineligible, including trials, expiring
+  credits, free-to-paid conversion, payment setup, subscriptions, PAYG,
+  overage, add-ons, and paid tiers
+- Data use and claim:
+- Provider-rights boundary for that use:
+- PIT claim and evidence requirement:
+- Free fallback, proxy, or scope-reduction path:
+
+Do not repeat unused frontend, backend, data, automation, or release sections.
+Add only the capability lanes the outcome actually needs.
 
 ## Current-state evidence
 
-| Evidence | Current fact | Source | Confidence |
+| Surface | Confirmed fact | Evidence/source | Confidence |
 | --- | --- | --- | --- |
-| Repository |  |  | confirmed |
-| Runtime |  |  | confirmed |
-| Data/result |  |  | confirmed |
-| Sources/cutoff |  |  | confirmed |
-| Schedule/last-good |  |  | confirmed |
-| Cost plan/quota |  |  | confirmed |
-| Public state |  |  | confirmed |
+| Project/runtime |  |  |  |
+| User-visible behavior |  |  |  |
+| Protected contracts |  |  |  |
 
-## Research
+## Workstream assessment
 
-| Source | Finding | Decision supported | Limitation |
+| Workstream or skill | Current strength | Gap | Decision |
 | --- | --- | --- | --- |
 
-## Decision
+## Most important findings
 
-- Chosen approach:
-- Why:
-- Minimal alternative:
-- Larger alternative:
-- Rejected approaches:
+| Priority | Finding | User impact | Evidence | Confidence |
+| --- | --- | --- | --- | --- |
 
-## Project contract
+## Research and comparison
 
-- Analysis/data/result contract:
-- Inputs and authoritative mapping:
-- Frontend contract:
-- Backend/control contract:
-- Source registry and rights contract:
-- Coherent-cutoff and data-manifest contract:
-- Automation/freshness/failure contract:
-- Collect → analyze → publish → public-readback contract:
-- Deployment/fallback contract:
-- Cost-command contract:
+Include only when research or an external comparison was actually needed.
+
+| Source/approach | Finding | Limitation | Decision supported |
+| --- | --- | --- | --- |
+
+## Boundaries and choices
+
+- Immutable safety and project contracts:
+- Flexible project choices:
+- Reversible defaults:
+- Rejected alternatives and why:
+- Explicitly deferred:
+
+## Target structure
+
+Describe only active components and ownership, not a mandatory technology
+stack.
+
+| Active component/workstream | Responsibility | Boundary | Owner |
+| --- | --- | --- | --- |
 
 ## Implementation stories
 
-1. [Story]
-   - Owner:
-   - Files/modules:
-   - Protected boundaries:
+1. [Bounded story]
+   - Owner and mode:
+   - Exact surface:
    - Dependencies:
-   - Acceptance evidence:
+   - Protected boundaries:
+   - Acceptance:
+   - Evidence gates:
+
+## Traceability
+
+| Finding | Change | Verification | Acceptance |
+| --- | --- | --- | --- |
 
 ## Verification
 
-- Contract and baseline:
-- Unit/integration/E2E:
-- Input A/B and display invariance:
-- Browser/visual/accessibility:
-- Automation/freshness:
-- Required/optional source failure and last-good:
-- Schedule enablement/idempotency/concurrency/retry:
-- Versioned staging and public identity readback:
-- Zero-spend command evidence:
-- Preview:
-- Release/public readback:
+- Derived gates:
+- Contract/baseline checks:
+- Deterministic tests:
+- Product/experience checks:
+- Capability-specific checks:
+- Primary-planner self-critique (`light`/`standard`):
+- Exact Plan/acceptance-revision critic (`strict` or legacy
+  `assurance=release`):
+- Local preview:
+- Authorized remote/public checks:
 
 ## Approval gates
 
-1. Implementation authorization:
+1. Implementation:
 2. Local-preview review:
-3. Migration/backend deployment:
-4. GitHub release/merge:
+3. Remote/cloud mutation:
+4. Commit/push/PR/merge/release:
 5. Production replacement:
-6. Paid action: prohibited unless separately requested first with bounded scope
+6. Paid non-data action: separately prohibited unless a prior direct request
+   names the exact bounded action
+7. Paid data: permanently prohibited; no approval path
 
-## Rollback and fallback
+## Rollback and completion
 
 - Rollback:
-- Existing-production fallback:
+- Stable fallback, when one exists or an active capability requires it:
 - Recovery checkpoint:
 
-## Completion definition
-
-- [ ] User-visible objective achieved
-- [ ] Protected contracts verified
-- [ ] Required tests and audits passed
-- [ ] Required preview approved
-- [ ] Authorized release and public readback complete
-- [ ] Required source, freshness, analysis, publication, and schedule gates passed
-- [ ] No unapproved costs, secrets, or scope expansion
+- [ ] User-visible outcome achieved
+- [ ] Protected contracts preserved or explicitly authorized changes verified
+- [ ] Every finding maps to a verified change or an explicit deferral
+- [ ] Every derived evidence gate passed
+- [ ] Required approvals completed, and public readback completed when
+      `public-web` is active
+- [ ] No unapproved cost, secret exposure, scope expansion, or false completion
