@@ -639,6 +639,27 @@ const momentumSummaryV5 = {
 };
 assert(api.isMomentumSummaryV5(momentumSummaryV5), 'Momentum schema-v5 summary satisfies the fixed-method contract');
 assert(api.isMomentumDashboardV5(momentumDashboardV5), 'Momentum schema-v5 dashboard satisfies the 64-factor fixed-method contract');
+const momentumDashboardV5ResearchInputsV2 = {
+  ...momentumDashboardV5,
+  researchInputs: {
+    ...momentumDashboardV5.researchInputs,
+    version: 'research-inputs-v2',
+  },
+};
+assert(
+  api.isMomentumDashboardV5(momentumDashboardV5ResearchInputsV2),
+  'Momentum schema-v5 dashboard accepts the current day-based research-inputs-v2 contract',
+);
+assert(
+  !api.isMomentumDashboardV5({
+    ...momentumDashboardV5,
+    researchInputs: {
+      ...momentumDashboardV5.researchInputs,
+      version: 'research-inputs-v3',
+    },
+  }),
+  'Momentum schema-v5 dashboard rejects unknown research-input contract versions',
+);
 const validMomentumV5 = api.parseMomentum(momentumSummaryV5, momentumDashboardV5);
 assert(validMomentumV5.factor === 'selected_mom' && validMomentumV5.selectedWeightingPolicy === momentumV5Policy, 'Momentum schema-v5 parser keeps the Python best factor and fixed method aligned');
 assert(validMomentumV5.weightSource === 'dashboard.bestFactorPortfolio.weights' && validMomentumV5.rows[0].symbol === 'SEL', 'Momentum schema-v5 parser reads bestFactorPortfolio without a browser-side proxy');

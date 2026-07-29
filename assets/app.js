@@ -1432,7 +1432,7 @@
     const config = payload.config;
     if (
       !isRecord(inputs)
-      || inputs.version !== 'research-inputs-v1'
+      || !['research-inputs-v1', 'research-inputs-v2'].includes(inputs.version)
       || !isRecord(config)
       || !['absolute-factor-policy-v1', 'absolute-factor-v2'].includes(
         config.absolute_guardrail_version,
