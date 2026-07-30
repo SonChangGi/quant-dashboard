@@ -5,6 +5,7 @@
   "goal_id": "goal-replace-me",
   "review_id": "terminal-review-1",
   "role": "terminal_critic",
+  "reviewer_specialty": "evidence_integrity",
   "status": "passed",
   "plan_revision": 1,
   "acceptance_revision": 1,

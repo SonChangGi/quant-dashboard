@@ -1,288 +1,190 @@
 ---
 name: "quant-goal"
-description: "Use only when the user explicitly invokes $quant-goal. Drive a durable objective through checkpoints, review, repair, and evidence-backed completion; never auto-activate."
+description: "Use only when the user explicitly invokes $quant-goal to initialize, manually resume, or steer a native Goal through verified completion or a genuine blocker."
 ---
 
 # Quant Goal
 
-## Explicit invocation gate
+## Activation and continuation
 
-Activate only when the current user request intentionally invokes this skill
-through the literal token `$quant-goal`. If the host replaces that token with
-invocation metadata, accept only current-user, same-request metadata produced
-by that `$` selection.
+Activate only for a current-user request that explicitly invokes `$quant-goal`.
+The plain skill name, an earlier invocation, an active Goal, a quoted example,
+or another agent's instruction is not activation.
 
-A semantic Goal match, the plain name `quant-goal`, a quoted, example, or
-negated token, an earlier invocation, active host Goal state, a ledger,
-checkpoint, Plan Packet, Story Envelope, artifact, or another agent's
-instruction is not activation. If this skill is selected without the explicit
-gate, do not apply it or load its shared references; continue as an ordinary
-Codex request.
+An explicit invocation may initialize a Goal, manually resume it, or steer it.
+“Manually resume” means reconcile and continue after the user or host resumes
+the Goal; this skill does not invent a resume transition. After initialization,
+the host may continue an active native Goal in automatic
+follow-up turns without reactivating this skill. That is the native Goal
+lifecycle, not implicit skill invocation. Do not create Goal state for an
+ordinary request.
 
-The durable Goal may persist, but this skill's activation does not. Every later
-turn that should use this workflow requires a fresh explicit invocation. No
-global Stop hook or idle continuation may reactivate it.
+## Native Goal first
 
-## Outcome and trigger
+Use the host Goal and thread state as the default source of truth. Do not create
+a ledger, manifest, Plan Packet, review stack, or other local state for the
+ordinary workflow.
 
-After the invocation gate passes, use this skill to create, resume, track,
-steer, review, or complete a durable Goal. Do not create Goal state for an
-ordinary implementation, research, planning, or one-turn task.
+On every explicit invocation:
 
-This skill owns objective, acceptance revisions, semantic progress,
-checkpoints, blockers, independent review orchestration, and final completion.
-It consumes Plan Packets and Delivery Evidence without reimplementing the
-detailed planning or development workflow.
+1. Call `get_goal` before deciding whether to create or resume anything.
+2. Shape one concrete objective and two to six observable success conditions
+   with stable IDs `SC-1` through `SC-6`. Because `create_goal` has one
+   `objective` field and no separate success-condition field, serialize a
+   compact outcome, material scope boundaries, constraints, and the complete
+   `SC-*` list into that objective. Ask only about a missing choice that would
+   materially change the result.
+3. If an unfinished Goal exists, reconcile it with the latest user direction,
+   its stored `SC-*` conditions, actual deliverable, and fresh evidence, then
+   resume or steer it. Never create a duplicate Goal. For an older Goal without
+   stored IDs, restate two to six working conditions in the thread, preserve the
+   stored objective, and disclose that the binding is conversation-backed.
+4. If no unfinished Goal exists, call `create_goal` only when the current user
+   explicitly requested `$quant-goal`. Pass `token_budget` only when the user
+   explicitly supplied a positive token budget. Then call `get_goal` again and
+   verify that the stored objective contains every current `SC-*` ID; do not
+   proceed under a silently weakened binding.
+5. Act, delegate where useful, map fresh evidence to every current `SC-*`
+   condition, and keep pursuing a safe in-scope next action until the Goal is
+   genuinely complete or meets the blocked rule below.
 
-## Canonical state
+Do not silently replace an active Goal when the objective, authority boundary,
+or cost boundary materially changes. Keep the new objective pending, explain
+the conflict, and ask whether to continue the unfinished Goal; do not misuse
+`complete` or `blocked` to clear it and do not invent a cancel or supersede
+transition. Refinements that preserve those boundaries may update the working
+success conditions in conversation, but must retain stable IDs where meaning is
+unchanged, retire rather than reuse an obsolete ID, assign the next unused ID
+when meaning changes, and keep two to six current conditions. Mark evidence for
+every changed or dependent condition stale, and reverify the current set before
+reusing any conclusion.
 
-The host-native lifecycle is self-contained. Use the host application's Goal
-state as canonical for lifecycle whenever it is available. The local evidence
-ledger is canonical only for append-only
-acceptance revisions, checkpoints, evidence, reviews, blockers, authority
-evidence references, and Completion Receipts. It never stores approval itself,
-overrides host state, or grants mutation, remote, destructive, secret-bearing,
-provider, or paid authority.
+Token pressure is never a completion or blocking reason. If a budgeted Goal
+completes, report the final token usage returned by the completion transition.
 
-Keep a concise working view of objective, acceptance, non-goals, constraints,
-current revision, checkpoint, evidence, blocker, and next action.
+## Adaptive execution
 
-Distinguish these semantic states when the host supports them:
+Start non-trivial work by inspecting the available environment, tools, data,
+repository state, and safe execution surfaces. Use the smallest useful amount
+of coordination while optimizing for a complete result, not merely the
+smallest patch.
 
-- `active`: work can continue;
-- `waiting`: an external result or time-bound event is pending;
-- `paused`: the host or user intentionally stopped progress;
-- `blocked`: required progress cannot continue safely;
-- `completed`: every required acceptance criterion is achieved;
-- `cancelled`: the user ended the objective;
-- `superseded`: a materially different Goal replaced it.
+For non-trivial decomposition, delegation, free-data sourcing, or real-surface
+verification, conditionally read the shared adaptive workflow from the path
+that exists:
 
-Map them to the host lifecycle without fabricating unsupported state. A local
-ledger may record the semantic meaning, but it cannot manufacture a host
-transition.
+- installed: `../quant-research-shared/references/adaptive-workflow.md`
+- source: `../../shared/references/adaptive-workflow.md`
 
-## Shared workflow contract
+If that optional reference is unavailable, continue with this workflow rather
+than inventing a substitute runtime.
 
-Read the shared contract for Plan Packet, Story Envelope, Delivery Evidence,
-Review Verdict, Checkpoint, Completion Receipt, assurance, frozen snapshots,
-staleness, repair, reviewer ownership, parallel joins, and ledger events. Read
-the agent-orchestration contract when project context, team execution,
-role/model routing, real-surface QA, or continuation is relevant. Use the paths
-that exist:
+Use subagents proactively for independent discovery, methodology,
+implementation, or QA when they improve coverage or elapsed time. Use an agent
+team only when at least two bounded lanes can make real progress independently;
+do not impose fixed roles or a fixed team size.
 
-- installed `../quant-research-shared/references/goal-and-subagents.md`;
-- source `../../shared/references/goal-and-subagents.md`;
-- installed
-  `../quant-research-shared/references/agent-orchestration.md`;
-- source `../../shared/references/agent-orchestration.md`.
+When `quant-plan` is also selected for the current request, let its read-only
+phase finish before implementation. When `quant-developer` is also selected,
+that skill owns the bounded implementation and returns evidence; this skill
+retains integration and Goal lifecycle ownership. Workers and implementation
+owners never call Goal lifecycle tools or declare the overall Goal complete.
 
-If the shared contract is unavailable, a short `light` or `standard` host-only
-Goal continues with the minimum self-contained fields in this skill:
-objective, stable acceptance IDs, checkpoint, blocker, next action, direct
-evidence, and honest completion. Ledger-backed or structured review proof
-remains `unverified`; do not invent a replacement runtime.
+Give workers a plain-language assignment containing:
 
-Quant Goal is the only independent review coordinator while `$quant-goal` is
-explicitly active as the parent for the current request. Do not ask an
-implementation worker to run a duplicate reviewer after it returns Delivery
-Evidence. Review one frozen validation boundary, return blockers for repair,
-and rerun only stale checks or lanes.
+- objective;
+- scope;
+- constraints;
+- expected evidence.
 
-## Default lifecycle
+The parent remains the integration owner. Allow concurrent writers only when
+their workspaces or file scopes are isolated, then integrate and verify their
+results centrally. Workers do not change Goal state or declare the overall
+Goal complete.
 
-### 1. Bind or resume intent
+When external data is material, exhaust free-only paths in this order:
 
-For `light` or `standard`, consume an approved Plan Packet when one exists.
-Otherwise do only enough shaping to make the objective, stable acceptance IDs,
-non-goals, constraints, assurance, and next checkpoint clear.
+1. existing project cache or checked-in source;
+2. official free public data;
+3. another no-billing public source;
+4. reconstruction from free inputs;
+5. a clearly disclosed proxy, narrower claim, or explicit
+   `degraded`/`unavailable` result.
 
-For `strict`, and for legacy `assurance=release` compatibility, require an
-approved immutable Plan Packet with its independent plan-critic result before
-implementation or durable Goal initialization. If it is absent, pause and tell
-the user that the planning skill must be directly invoked or an approved
-packet supplied. Do not activate that skill, recreate its plan, or review it
-here. A `light` or `standard` Goal with a `release` delivery target uses the
-same Plan depth as its risk assurance; delivery alone does not create a Strict
-planning prerequisite.
+Paid and free-to-paid data are outside the solution space. Record the data
+as-of date, field meaning, material transformations, adjustment or
+point-in-time limitations, known gaps, and public-display rights in proportion
+to the claim. Never fabricate a value or silently weaken acceptance.
 
-Keep a durable `strict` or legacy `assurance=release` Plan bound to the current
-acceptance revision. A material acceptance change requires a newly reviewed
-Plan. An explicit carry-forward is allowed only when normalized acceptance is
-unchanged; record the source Plan revision instead of silently treating an
-older Plan as current.
+Local implementation, tests, and reversible non-Git task-scoped temporary
+isolation are normal execution steps. Local source-control mutation (branch,
+worktree, stage, commit, cherry-pick, or rebase); remote source-control mutation
+(push, PR, merge, tag, or release); destructive work; new authentication or
+secret handling; external production, provider, publication, deployment,
+migration, or schedule changes; and paid actions remain separate authority
+boundaries and require applicable user authorization.
 
-Route a material unresolved product decision to the user or a planning
-workflow rather than hiding it in Goal state.
+When one of those separate actions is actually in the Goal, load the canonical
+classification from the path that exists:
 
-On a directly invoked resume, reconcile the host Goal, latest ledger event when
-one exists, latest Continuation Capsule, latest user direction, in-flight
-worker state, and actual deliverable. Revalidate context and snapshot identity,
-reuse only current evidence, and continue from the last evidenced checkpoint
-without repeating completed mutation or review. Treat any resume continuation
-projection in `result.continuation` as a derived aid, not authority; its
-`authority.status` must be `not_recorded` and it cannot reactivate the skill or
-authorize an action.
+- installed: `../quant-research-shared/core/authority.md`
+- source: `../../shared/core/authority.md`
 
-### 2. Select assurance, delivery, and persistence
+If neither authority path exists, continue safe local work but fail closed on
+the affected source-control, destructive, authentication, remote, provider, or
+paid action and report its classification as unavailable.
 
-Classify risk assurance as `light`, `standard`, or `strict`, then classify
-delivery as `local` or `release` using the shared matrix. A release target adds
-authorized remote checkpoints and applicable readback to the selected proof;
-it does not raise assurance by itself. Legacy compatibility values may retain
-`assurance=release` only as Strict-plus-release. Current structured artifacts
-may carry `delivery` explicitly and infer it for older state that omits the
-field. Subagent use alone does not raise assurance.
+## Verification and terminal state
 
-Select assurance from the consequence of the promised claim, not from the mere
-presence of external, free, price, or corporate-actions data. Default ordinary
-local and exploratory work to `light` or `standard`. Escalate data work only
-when acceptance promises regulated or high-consequence use, raw-data
-redistribution rights, historical point-in-time availability, or a
-no-look-ahead/investability claim. Otherwise record provider, as-of date,
-transformations, known gaps, and any non-PIT limitation, then complete the
-supported claim without fabricating certainty.
+Verify the actual consumption surface promised by the Goal. A local test does
+not prove a remote, deployed, or public result; when such a result is in scope,
+verify the authorized release chain and observable readback separately.
 
-Automatically bind a local evidence ledger for `strict`, long-running Goals,
-explicit recovery, co-located evidence-portability, machine-audit requests,
-and legacy `assurance=release` compatibility. A release delivery overlay alone
-does not require the ledger. Long-running means continuation across sessions,
-interruptions, external waiting, or independently resumable milestones;
-persistence does not itself raise assurance.
+Call `update_goal` with `complete` only when every current `SC-*` success
+condition has fresh mapped evidence, all steering-invalidated evidence has been
+refreshed, and no required work remains. Do not mark a Goal complete because
+work is difficult, slow, partially successful, or near its token budget.
 
-Short `light` or `standard` Goals may remain host-only. If the required ledger
-writer is unavailable or damaged, safe local work may continue when scope and
-authority allow, but any completion claim that selected ledger-backed recovery,
-portability, machine audit, Strict, or legacy release proof stays `unverified`
-until repaired or acceptance changes explicitly.
+Call `update_goal` with `blocked` only when all of the following hold:
 
-### 3. Coordinate work and checkpoint progress
+- the same blocking condition has recurred for three consecutive Goal turns;
+- no meaningful progress occurred across those turns;
+- safe in-scope checks, alternatives, fallbacks, and delegation are exhausted;
+- user input or an external-state change is now required.
 
-Inventory the useful host capabilities at the start of a non-trivial Goal.
-Proactively use subagents for independent source discovery, methodology,
-implementation, or QA lanes when doing so improves coverage or elapsed time.
-Use an agent team when multiple bounded lanes can progress independently, but
-do not create fixed roles or extra review ceremony merely to use a team.
+The first and second occurrence leave the Goal active and continue with the
+next safe action. A different blocker or meaningful progress resets the count.
+When a formerly blocked Goal is resumed, start a fresh three-turn audit.
 
-Issue a Story Envelope only for bounded delegated work. Use ordinary host
-implementation workers by default; another Quant skill may participate only
-when the current user request explicitly invoked it too. Require Delivery
-Evidence `ready_for_review`; workers never mutate Goal state or declare overall
-completion.
+`update_goal` is not a steering operation; the exposed mutation accepts only
+`complete` and `blocked`.
+Never invent `waiting`, `paused`, `cancelled`, `superseded`, or `completed`
+host transitions. Use only lifecycle operations the host actually exposes.
 
-For an agent team, Quant Goal is the parent workflow and review owner. Build
-one dependency graph, name one canonical integration owner, isolate concurrent
-writers, join validation-coupled stories before review, and record or accept
-structured evidence serially in the canonical Goal workspace. Do not copy a
-single-root ledger into worker worktrees or let a team runtime become canonical
-for Goal lifecycle.
+## Legacy compatibility
 
-Apply the shared assurance pipeline once:
+Use bundled ledger, manifest, receipt, hash-bound team, or durable-runtime
+contracts only when the user explicitly requests a machine audit or an
+existing Goal already depends on that exact contract, or when the user
+explicitly requests high-risk recovery that needs it. Resolve those resources
+through `core/context-routing.md` in the installed or source shared root and
+preserve their existing version semantics.
 
-- `light`: direct acceptance evidence;
-- `standard`: implementation-owner cleanup plus one surface-appropriate
-  reviewer;
-- `strict`: cleaned frozen snapshot, Architect review, adversarial QA, and one
-  terminal Critic at the Goal terminus.
+Legacy state may add evidence requirements for that compatibility task, but it
+must not gate ordinary Goal progress or completion. Do not migrate, create, or
+repair legacy state merely because it exists in the package. A `strict` label,
+long duration, release delivery, or task complexity alone never selects a local
+ledger or durable runtime.
 
-For a `release` delivery, add only the separately authorized remote checkpoints
-and final observable readback required by acceptance to the selected
-light/standard/strict pipeline. Do not manufacture a Strict review stack for a
-low-risk release.
+## Handoff
 
-Append a meaningful Checkpoint when an acceptance criterion or milestone
-advances, a blocker is classified, or a material decision changes the next
-action. Do not journal every command or subagent message.
+For a completed Goal, keep the report short:
 
-At every suspension or handoff, update a Continuation Capsule with objective
-and acceptance revision, plan/context digests, host and ledger identity,
-completed/open/returned stories, last-known worker state, current and stale
-evidence, blockers, pending authority, and the next concrete action. The
-capsule is resumable evidence, not an activation lease.
+- achieved outcome;
+- changed or examined areas;
+- current `SC-*` to evidence mapping, checks run, and real-surface evidence;
+- limits or unverified items, if any.
 
-On the host-only path, keep that capsule concise in conversation. On the
-durable path, append one `continuation_capsule_recorded` event only at an actual
-suspension or handoff; include actions not to repeat so resume does not duplicate
-mutation. Do not journal a capsule after every command.
-
-### 4. Revise without rewriting history
-
-Refine wording or acceptance under the same Goal when the user-visible
-objective, authority, and cost boundary remain the same. Append the revision
-and its rationale without rewriting earlier evidence.
-
-When the distinction improves a durable handoff, label steering as `clarify`,
-`add`, `retire`, `split`, `merge`, `reorder`, or `replace`, and preserve its
-source and target IDs, revision rationale, and invalidated evidence. This typed
-record is optional on the light host-only path and never supplies authority for
-silent deletion or weaker acceptance.
-
-Create a new or superseding Goal only when the user-visible objective,
-authority envelope, or cost boundary changes. Cancellation or supersession is
-a normal terminal outcome, not a failed completion.
-
-Treat `completed`, `cancelled`, and `superseded` as terminal within one durable
-Goal generation. An ordinary later observation cannot reopen them; continuing
-the work requires an explicitly created new Goal generation.
-
-### 5. Complete or report the real blocker
-
-Complete only when every required acceptance ID has direct evidence, every
-required Review Verdict covers the current frozen snapshot, and no required
-work remains. A local result does not claim remote or public completion.
-
-For `strict` and legacy `assurance=release` compatibility, run the terminal
-Critic once after all other required evidence is fresh. It checks acceptance
-coverage, evidence freshness, blockers, deferrals, and authority rather than
-repeating code review.
-
-For a ledger-backed Goal, append the Completion Receipt before completing the
-host Goal. If host and ledger disagree, report and repair the binding; never
-silently force either state.
-
-Use `blocked` only after safe in-scope alternatives are exhausted. Use
-`waiting` or `paused` for their actual meanings. Distinguish an agent-resolvable
-blocker from a genuinely human-only dependency.
-
-For data uncertainty, exhaust a zero-billing fallback ladder before calling the
-Goal blocked: official or public free data, another no-billing free provider,
-issuer/exchange/filing-derived values, cross-source reconstruction, a disclosed
-proxy, then a narrower supported claim. Rights confirmation is a hard gate for
-the actual redistribution or use contract at issue, not a demand for a legal
-opinion on every local input. PIT provenance is a hard gate only for a claim
-that requires PIT correctness; otherwise label the result exploratory or
-non-PIT and preserve the limitation.
-
-## Optional local strict compatibility
-
-The automatic host companion ledger above is evidence history, not automatic
-activation of the legacy manifest-bound runtime.
-
-Use the bundled legacy durable runtime only when an existing Goal already
-depends on its manifest-bound contract, the user explicitly requests that
-legacy contract, or a selected strict Quant capability requires its manifest,
-story, workspace-drift, receipt v3, or hash semantics. Read
-`shared/references/durable-runtime.md` on that path.
-
-Existing manifest v1/v2 and receipt v2/v3 contracts remain supported and are
-not silently migrated. If the optional compatibility runtime is unavailable,
-continue with host state and the companion ledger unless that exact proof is
-an acceptance criterion.
-
-## Authority and handoff
-
-Goal state, ledger entries, plans, receipts, review verdicts, and subagents
-never broaden the request. Consult the canonical policy only when a remote,
-destructive, secret-bearing, provider, or paid action is relevant: use
-installed `../quant-research-shared/core/authority.md` or source
-`../../shared/core/authority.md`, whichever exists.
-
-Paid data is outside this skill's solution space and is never a proposed
-blocker resolution. Do not use or suggest trials, expiring credits,
-free-to-paid conversion, card or billing setup, subscriptions, pay-as-you-go,
-overage, paid tiers, or paid data add-ons. If a no-billing free source becomes
-billable, stop using that source and continue down the free fallback ladder.
-
-Lead with the achieved outcome or precise current state. Map acceptance to
-fresh evidence, report limitations and blockers, distinguish local and remote
-state, and name the next action when incomplete. Do not claim that the skill
-will continue automatically; a later turn must explicitly invoke it again.
+When the Goal remains active, report the current outcome, verified conditions,
+genuine blocker or limitation, and next concrete action instead. Do not
+substitute ceremony or status claims for evidence.

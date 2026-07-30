@@ -1,6 +1,6 @@
 interface:
   display_name: "Quant Plan"
-  short_description: "Manual $quant-plan invocation only"
-  default_prompt: "The current user explicitly invoked $quant-plan; inspect relevant facts, use bounded read-only specialists when independent lanes help, return the smallest decision-complete Plan Packet or concise audit, separate light/standard/strict assurance from local/release delivery, use only free data and never propose paid data, match rights and PIT evidence to the actual claim, bind Strict review to the exact Plan and acceptance revisions, and finish without mutating the target or activating another skill across remote, provider, destructive, secret-bearing, raw-redistribution, or paid boundaries."
+  short_description: "Manual read-only planning and audits"
+  default_prompt: "Use $quant-plan to inspect the target read-only and return an audit, quick plan, or decision-complete implementation plan with explicit assumptions and observable acceptance."
 policy:
   allow_implicit_invocation: false

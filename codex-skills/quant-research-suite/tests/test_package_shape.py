@@ -12,6 +12,7 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 import validate_suite as suite_validator
+import install as suite_installer
 
 
 class PackageShapeValidationTests(unittest.TestCase):
@@ -38,6 +39,20 @@ class PackageShapeValidationTests(unittest.TestCase):
             )
 
             self.assertEqual(self.validate_copy(root), [])
+
+    def test_installed_shared_root_contains_documented_goal_resources(
+        self,
+    ) -> None:
+        shared = suite_installer.INSTALL_ITEMS["quant-research-shared"]
+        self.assertEqual(shared.resolve(), (ROOT / "shared").resolve())
+        for relative in (
+            "core/context-routing.md",
+            "references/goal-and-subagents.md",
+            "references/durable-runtime.md",
+            "scripts/goal_ledger.py",
+        ):
+            with self.subTest(relative=relative):
+                self.assertTrue((shared / relative).is_file())
 
     def test_rejects_unexpected_and_environment_files(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

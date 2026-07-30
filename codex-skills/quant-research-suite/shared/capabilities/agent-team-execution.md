@@ -21,6 +21,11 @@ failure: inspect the host worker state before retrying or reassigning work.
 - Structured artifacts describe and prove work; they never authorize commit,
   merge, cherry-pick, push, deploy, publication, destructive action, secret
   access, or paid action.
+- A concurrent-writer topology that needs a branch, worktree, stage, commit, or
+  other local source-control mutation is available only when the current user
+  request separately authorizes each required mutation. The packet cannot
+  supply that authority. Without it, use one writer or dependency-ordered
+  `same_workspace_sequential_write` assignments in the existing workspace.
 - Existing Goal state v2, Story Envelope v1, and Story Receipt v1 contracts are
   unchanged. Team assignments are not Goal Stories and must not be written into
   the legacy single-write-story state machine.
@@ -37,7 +42,11 @@ dependencies must precede their consumers.
   reference; each later writer uses an `assignment_final` reference to its
   immediate write predecessor. Delivery resolves that reference to actual v2
   snapshot bytes, so an immutable packet never predicts a future hash.
-- Isolated writers may run concurrently only with disjoint write scopes.
+- Isolated writers may run concurrently only with disjoint write scopes and
+  the separate local source-control authority required to prepare their
+  isolated roots. Existing isolated roots may be reused only when doing so
+  requires no unauthorized mutation and their identity and baseline are
+  verified.
 - Ambiguous wildcard overlap fails closed.
 - Every changed path must be inside the assignment's write scope and outside
   its protected scope.
@@ -82,11 +91,26 @@ In a Git workspace, a selected `excluded_root` must be Git-ignored; tracked or
 visible state cannot be hidden from the snapshot. In a non-Git workspace the
 same root is excluded directly by the shared snapshot primitive.
 
+Before following any path or command below, resolve `<quant-shared-root>`
+exactly as defined by `../core/context-routing.md#shared-root-resolution` and
+confirm that `<quant-shared-root>/scripts/team_protocol.py` exists.
+
 Packet issuance can be checked against live roots before workers start:
 
 ```text
-python3 shared/scripts/team_protocol.py packet --packet <packet.json> --project-root <project-root> --workspace-root <issuance-workspace-root>
+python3 <quant-shared-root>/scripts/team_protocol.py packet \
+  --packet <packet.json> \
+  --project-root <project-root> \
+  --workspace-root <issuance-workspace-root> \
+  --worker-root <writer-assignment-id>=<writer-root> \
+  [--worker-root <writer-assignment-id>=<writer-root> ...]
 ```
+
+Live packet preflight requires one repeatable
+`--worker-root <assignment-id>=<path>` mapping for every writer assignment.
+Use the separate structural-only command below only for non-completion
+inspection; it does not prove project, issuance-workspace, or writer-root
+bindings and cannot authorize worker launch.
 
 Assignments that must be proven together share a `validation_group`. A ready
 Team Integration Receipt must accept every member of each such group and bind
@@ -129,10 +153,26 @@ evidence anchored to the post-integration frozen-snapshot hash.
 Validate artifacts with:
 
 ```text
-python3 shared/scripts/team_protocol.py packet --packet <packet.json> --project-root <project-root> --workspace-root <issuance-root>
-python3 shared/scripts/team_protocol.py packet --packet <packet.json> --structural-only
-python3 shared/scripts/team_protocol.py delivery --packet <packet.json> --delivery <delivery.json> --artifact-root <artifact-root> --worker-root <worker-root>
-python3 shared/scripts/team_protocol.py integration --packet <packet.json> --delivery <delivery.json> --integration <integration.json> --artifact-root <artifact-root> --workspace-root <canonical-root>
+python3 <quant-shared-root>/scripts/team_protocol.py packet \
+  --packet <packet.json> \
+  --project-root <project-root> \
+  --workspace-root <issuance-root> \
+  --worker-root <writer-assignment-id>=<writer-root> \
+  [--worker-root <writer-assignment-id>=<writer-root> ...]
+python3 <quant-shared-root>/scripts/team_protocol.py packet \
+  --packet <packet.json> \
+  --structural-only
+python3 <quant-shared-root>/scripts/team_protocol.py delivery \
+  --packet <packet.json> \
+  --delivery <delivery.json> \
+  --artifact-root <artifact-root> \
+  --worker-root <worker-root>
+python3 <quant-shared-root>/scripts/team_protocol.py integration \
+  --packet <packet.json> \
+  --delivery <delivery.json> \
+  --integration <integration.json> \
+  --artifact-root <artifact-root> \
+  --workspace-root <canonical-root>
 ```
 
 Ready delivery validation deliberately fails without both `--artifact-root`
@@ -145,7 +185,7 @@ ready worker root until final integration validation, then require the live
 handoff lane:
 
 ```text
-python3 shared/scripts/team_protocol.py integration \
+python3 <quant-shared-root>/scripts/team_protocol.py integration \
   --packet <packet.json> \
   --delivery <delivery.json> \
   --integration <integration.json> \

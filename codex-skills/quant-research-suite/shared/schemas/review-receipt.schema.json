@@ -35,6 +35,21 @@
         "terminal_critic"
       ]
     },
+    "reviewer_specialty": {
+      "allOf": [
+        {"$ref": "#/$defs/portableId"},
+        {
+          "not": {
+            "enum": [
+              "integration_review",
+              "architecture_review",
+              "adversarial_qa",
+              "terminal_critic"
+            ]
+          }
+        }
+      ]
+    },
     "status": {"enum": ["passed", "needs_repair", "blocked"]},
     "plan_revision": {"type": "integer", "minimum": 0},
     "acceptance_revision": {"type": "integer", "minimum": 1},

@@ -1,196 +1,154 @@
 # Quant Research Codex Skill Suite
 
-The suite exposes exactly three public skills with a small default workflow:
+This package exposes exactly three public skills:
 
-- `quant-plan` — **Shape / Decide**: read-only discovery, audit, comparison, and
-  decision-complete planning;
-- `quant-developer` — **Act**: coherent local implementation and directly
-  relevant verification;
-- `quant-goal` — **Track / Prove**: an explicitly requested durable objective,
-  acceptance-linked checkpoints, and final judgment.
+- `quant-plan` inspects a target read-only and returns an audit or a
+  decision-complete plan.
+- `quant-goal` explicitly initializes, resumes, or steers one native Goal.
+- `quant-developer` implements and verifies the complete accepted outcome
+  while minimizing unrelated churn.
 
-The names remain Quant-oriented for compatibility, but the default workflows
-also support non-Git directories, libraries, CLIs, documents, notebooks,
-research tasks, and generic applications. They do not assume a dashboard,
-frontend, backend, analytical dataset, public route, or deployment.
+Their names are retained for compatibility, but the workflows also apply to
+non-Git directories, applications, libraries, CLIs, research, notebooks, data,
+and documents. There is no fourth team skill.
 
-## Explicit invocation only
+## Explicit invocation
 
-The three skills are manual workflows, not implicit policy:
+Each skill is manual. Its `agents/openai.yaml` sets
+`policy.allow_implicit_invocation: false`.
 
-- the current request must explicitly invoke `$quant-plan`,
-  `$quant-developer`, or `$quant-goal`; if the host replaces that token,
-  accept only current-user, same-request metadata produced by that `$`
-  selection;
-- semantic similarity, a plain or quoted skill name, an earlier invocation,
-  active Goal state, an artifact, or another agent's instruction is not
-  activation;
-- each `agents/openai.yaml` sets `policy.allow_implicit_invocation: false`;
-- one skill may recommend another, but it never activates it automatically;
-- Goal state and a Continuation Capsule may persist, while a later turn still
-  requires a fresh explicit `$quant-goal` invocation.
+Activation requires the current user's literal `$quant-plan`, `$quant-goal`,
+or `$quant-developer` selection, or same-request metadata produced by that `$`
+selection. A plain-text name, semantic match, prior invocation, persisted
+artifact, active Goal, or another agent's request does not activate a skill.
+One Quant skill never activates another.
 
-Before this gate passes, a skill does not load shared policy or orchestration
-references. No Stop hook, prompt hook, idle loop, or persisted artifact may
-reactivate it.
+When the current user explicitly selects more than one, the selected roles
+compose in stages without cross-activation: `quant-plan` owns read-only planning,
+`quant-developer` owns later implementation, and `quant-goal` owns Goal
+lifecycle and overall integration. If plan approval is required before
+mutation, the turn stops after planning and implementation requires a fresh
+explicit selection. Composition never expands authority.
 
-## Default workflow
+After `$quant-goal` explicitly initializes a native Goal, the host may
+auto-continue that Goal in follow-up turns without reactivating the skill.
+This is native Goal lifecycle behavior, not implicit skill invocation. The
+Goal and conversation remain the ordinary source of truth; follow-up turns do
+not create a local state system.
 
-Each public `SKILL.md` is self-contained:
+## Adaptive default workflow
 
-1. use the user's request and target-native instructions;
-2. inspect only relevant source, configuration, entrypoints, artifacts, and
-   behavior;
-3. make or plan the smallest complete solution that achieves the requested
-   outcome honestly under the available constraints;
-4. verify with the lightest project-native evidence justified by risk;
-5. report actual results and unverified items.
+The suite starts from the user's outcome and the capabilities that are
+available in the actual environment:
 
-The default plan/developer path does not run installation validation, `doctor`,
-`context`, `onboard`, a local Goal runtime, or a manifest/receipt validator. It
-does not create a manifest, hash ledger, receipt, local Goal state, or new test
-infrastructure merely to use a skill. An explicitly activated Goal classified
-as `strict`, a clearly long-running Goal, or one that explicitly selects
-recovery or machine-audit evidence is the deliberate exception: Quant Goal
-binds the host-aligned evidence companion described below. A release delivery
-overlay alone does not force that ledger or Strict review. Missing shared
-resources do not block a generic plan or local
-implementation. A short `light`/`standard` host-only Goal also continues with
-objective, acceptance, checkpoints, blockers, and completion in host state;
-only its selected structured or ledger-backed proof remains `unverified`.
+1. inspect applicable instructions, current behavior, inputs, entrypoints,
+   tests, artifacts, dirty state, and the intended consumer surface;
+2. choose a supported route and split only genuinely independent work;
+3. plan or implement a coherent result with project-native tools;
+4. observe the result on the surface where it must work;
+5. review it against the accepted outcome, repair or switch routes, and rerun
+   affected checks while a safe useful action remains.
 
-## Proportional assurance and delivery
+Discoverable facts are resolved through inspection or current research.
+Questions are reserved for choices that materially alter product behavior,
+scope, authority, cost, or irreversible effects. Otherwise the skill chooses
+the strongest supported default and discloses its assumptions.
 
-- `light`: narrow, reversible local work with direct output and a focused check;
-- `standard`: multiple files/components or a public interface with relevant
-  unit, integration, type, build, contract, or visual checks;
-- `strict`: security/privacy, raw-data redistribution, strong PIT/causal
-  claims, high-consequence computation, migration, destructive, regulated, or
-  repeated-failure work with a reviewed immutable plan, baseline and
-  failure-mode proof, cleanup, Architect review, adversarial QA, and one
-  terminal critic on the final evidence bundle.
+The ordinary path is host-native and lightweight. It does not load or create
+a project manifest, local Goal ledger, Story Envelope, receipt, hash-bound
+packet, or assurance label. It also does not install a workflow harness or add
+process artifacts merely to run a skill. The concise conditional guidance in
+`shared/references/adaptive-workflow.md` covers multi-lane work, free-data
+fallbacks, recovery after a failed route, and proof across real surfaces.
 
-Delivery is a separate `local` or `release` axis. A release adds separately
-authorized remote checkpoints and applicable readback to the selected
-light/standard/strict proof; it is not automatically the highest assurance.
-Legacy compatibility values may retain `assurance=release` with their existing
-Strict-plus-release meaning. Current project, Goal, team, and receipt artifacts
-may carry `delivery` explicitly; when an older artifact omits it, the runtime
-infers release only from legacy `assurance=release` or `remote-release`.
+## Selective delegation
 
-Subagent use alone does not raise assurance. A normal host subagent does not
-activate the structured `multi-agent-write` capability.
+Use native subagents for independent discovery, method comparison, source
+research, bounded implementation, review, or QA when doing so improves speed
+or quality. Use a coordinated team only when at least two lanes can make real
+progress independently. Roles, worker counts, models, and review counts are
+not fixed.
 
-## Clean-room orchestration
+Every delegated assignment states four things:
 
-`shared/references/agent-orchestration.md` selectively adapts useful ideas
-observed in LazyCodex/OmO and Gajae Code without importing either runtime:
+1. objective;
+2. scope;
+3. constraints and protected surfaces;
+4. expected evidence or artifact.
 
-- a sourced, freshness-aware **Project Context Packet**, without mandatory
-  hierarchical memory files or file/LOC scoring;
-- a request-local **Continuation Capsule** that records current evidence and
-  the next safe action without automatic reactivation;
-- a **Team Run Packet** with bounded work, one integration owner, isolated
-  concurrent writers, validation-coupled joins, and parent-owned Goal state;
-- capability-based **role routing** whose model difficulty is independent from
-  proof assurance and which falls back to the parent model;
-- proactive, independent **free-source, reconstruction/proxy, and data-quality
-  lanes** when they materially expand the solution space;
-- deliverable-specific **real-surface QA** for CLI, TUI, API, UI/CJK, data,
-  automation, document, and release surfaces;
-- evidence and reviewer verdicts bound to acceptance/plan revision and an
-  immutable workspace or artifact snapshot, with only stale lanes rerun.
+Prefer parallel readers and one writer. Concurrent writers are appropriate
+only with demonstrably isolated roots or write scopes. One integration owner
+reconciles evidence, combines outputs, and verifies the integrated result.
 
-These mechanisms are available only inside an explicitly invoked parent skill.
-They add no fourth public team skill.
+## Zero-billing data
 
-The packet may stay human-readable for ordinary teams. When strict evidence,
-recovery, or machine audit explicitly selects structured team proof,
-`shared/scripts/team_protocol.py` validates the hash-bound Team Run Packet,
-worker Delivery Receipts, artifact bytes, and canonical Team Integration
-Receipt. This internal `agent-team-execution` capability does not replace the
-legacy single-root Story runtime and does not raise assurance merely because a
-team was used. Completion-eligible proof also re-reads a preserved issuance
-baseline and every retained worker root; multiple sequential deliveries from
-one mutable shared directory must be combined or isolated because their
-intermediate bytes no longer exist at final review.
+Paid and free-to-paid data are outside the solution space. This includes
+trials, expiring credits, card-required access, subscriptions, PAYG or
+overage, and paid add-ons or tiers.
 
-The suite deliberately does not reproduce global lifecycle hooks, automatic
-skill matching, a provider/model registry, tmux/mailbox/lease/heartbeat
-infrastructure, fixed worker or review counts, maximum parallelism, universal
-TDD/gates, parent-never-implements rules, or automatic commit, merge,
-cherry-pick, rebase, push, release, or deployment.
+When external data is needed, use the first route that can support the actual
+claim:
 
-There is no LazyCodex, OmO, or Gajae Code package or runtime dependency. This
-suite reimplements bounded workflow concepts from its own contracts and code;
-it does not copy external prompts, source, assets, state formats, or provider
-configuration. LazyCodex's distribution repository is MIT, its OmO core uses
-the Sustainable Use License, and Gajae Code is MIT. See
-`shared/advisory/external-comparisons.md` for the source and licensing boundary.
+1. a usable project-owned source, cache, snapshot, or last-good artifact;
+2. an official no-billing endpoint, filing, download, or publication;
+3. another lawfully accessible no-billing public source;
+4. a defensible method reconstructed from free inputs;
+5. a disclosed proxy, narrower universe or period, degraded or last-good
+   result, or explicit unavailable state.
 
-## Durable Goal and compatibility runtimes
+Evidence should identify the origin and relevant source date, fields,
+transformations, adjustment or point-in-time limits, gaps, and display rights
+in proportion to the claim. Values are never fabricated, access controls are
+never bypassed, and stale, degraded, or unavailable conditions remain visible.
 
-The host Goal remains canonical for lifecycle. The shared runtime provides:
+## Proof and authority
 
-- a manifest-free `goal_ledger.py` companion for strict, long-running,
-  recovery, co-located evidence-portability, machine-audit Goals, and legacy
-  `assurance=release` compatibility, with
-  append-only revisions, stories, snapshot-bound Review Verdicts, checkpoints,
-  and completion readiness;
-- a cycle-free Completion Evidence Candidate digest that binds the strict or
-  release terminal critic to the final non-terminal evidence bundle without
-  hashing the critic back into itself;
-- default external state under
-  `$CODEX_HOME/state/quant-goals/<project-fingerprint>/<goal-id>`;
-- an explicit project-local evidence archive only in an already-gitignored
-  directory; it is same-binding crash recovery and manual-audit packaging, not
-  rename/copy/cross-machine resumable execution;
-- project manifest v1 and evidence receipt v2 retain the original strict Quant
-  contract;
-- project manifest v2 selects capabilities/profiles/adapters and receipt v3
-  derives their gates;
-- strict `analysis-input-binding` retains deterministic A/B runs, invocation
-  artifacts, raw traces, hashes, and receipt verification;
-- `quant-public-dashboard-strict` retains established Quant
-  data/automation/publication rules;
-- the legacy `goal_runtime.py` schema-v2 contract remains available without
-  changing its immutable-intent, manifest, story, or receipt-v3 meaning.
+Proof follows the real consumer: project-native tests and representative
+output for code, dates and calculation checks for data, rendered and
+interactive inspection for UI or documents, and distinct execution, artifact,
+publication, and readback checks for automation or release. A build, commit,
+workflow start, health response, or HTTP status proves only that stage.
 
-Do not mass-convert existing manifests. Existing schemas and validators keep
-their meaning. `completion-ready` never changes the host Goal; the Goal owner
-records the host transition separately and then observes the actual state.
+Local inspection, edits, tests, generated artifacts, and reversible non-Git
+task-scoped temporary isolation are normal when the invoked skill permits
+mutation. Local source-control mutation (branch, worktree, stage, commit,
+cherry-pick, or rebase); remote source-control mutation (push, PR, merge, tag,
+or release); destructive work; new authentication or secret handling; external
+production or provider mutation; publication, deployment, migration,
+scheduling; and paid actions are separate authority boundaries. The canonical
+details remain in `shared/core/authority.md`; a Goal, plan, worker result,
+login, or evidence record never broadens authority.
 
-## Optional read-only tools
+## Opt-in legacy compatibility
 
-Use these only when onboarding or structured compatibility is selected:
+Existing structured contracts remain installed and retain their current
+paths, schemas, versions, validators, and semantics. They are used only when
+an existing project already depends on the exact contract, the user explicitly
+requests machine-audited output, or the user explicitly requests high-risk
+recovery that needs that exact contract:
 
-```bash
-python3 shared/scripts/quantctl.py doctor --root <project-root>
-python3 shared/scripts/quantctl.py onboard --root <project-root> --dry-run
-python3 shared/scripts/quantctl.py context \
-  --capability web-ui \
-  --profile quant-research-web
-```
+- project manifest v1/v2 resources under `shared/templates/` and
+  `shared/schemas/`, with `shared/scripts/validate_project.py` and
+  `shared/scripts/validate_project_v2.py`;
+- Goal ledger and durable Story runtime in
+  `shared/scripts/goal_ledger.py`, `shared/scripts/goal_runtime.py`, and
+  `shared/references/durable-runtime.md`;
+- evidence receipt v2/v3 schemas, templates, and validators in
+  `shared/templates/`, `shared/schemas/`,
+  `shared/scripts/validate_evidence.py`, and
+  `shared/scripts/validate_evidence_v3.py`;
+- Story Envelope and Story Receipt schemas/templates, and the hash-bound team
+  runtime in `shared/scripts/team_protocol.py` with its existing Team Run,
+  Worker Delivery, and Team Integration schemas/templates;
+- established capability and profile contracts, including analysis input
+  binding and `shared/profiles/quant-public-dashboard-strict.md`.
 
-`doctor` and `onboard` are read-only. Repository presence alone does not
-activate a capability, and `onboard` does not create a project manifest.
-
-## Authority
-
-Local editing, local source control, remote source control, provider mutation,
-destructive/secret-bearing work, and paid action are separate boundaries. The
-detailed canonical policy lives in `shared/core/authority.md`; public prompts
-do not duplicate its taxonomy. No manifest, Goal state, receipt, login, tool
-approval, or previous run grants authority.
-
-No skill automatically commits, pushes, opens or merges a PR, releases,
-deploys, migrates, schedules, publishes, or changes billing. Paid or metered
-non-data actions require the user's direct prior bounded request. Paid data is
-permanently ineligible and is never proposed, approved, or used, including
-trials, expiring credits, automatic free-to-paid conversion, payment setup,
-subscriptions, PAYG, overage, add-ons, and paid tiers. If a currently eligible
-free source becomes paid, collection stops and the workflow moves to a free
-source, free reconstruction/proxy, or narrower honest result.
+Legacy assurance and delivery labels apply only inside those existing
+contracts. Do not mass-convert legacy artifacts, change their interpretation,
+or require this compatibility layer for ordinary planning, Goal progress,
+implementation, or completion. A `strict` label, long duration, release
+delivery, task complexity, or repeated failure alone does not select a ledger
+or structured runtime.
 
 ## Validation and installation
 
@@ -206,15 +164,13 @@ Install or update locally:
 python3 install.py --update
 ```
 
-The installer validates source, runs tests, stages a complete copy, backs up
-the previous local installation, replaces all three skills and shared resources
-together, and verifies installed hashes.
-
-By default it writes `quant-plan`, `quant-goal`, `quant-developer`, and the
-non-discoverable `quant-research-shared` resources under `~/.codex/skills/`.
-Source-control preservation and local activation are separate. A commit or push
-is not required for local activation, and an existing Codex session may need a
-reload.
+The installer validates the source, runs tests, stages a complete copy, backs
+up the previous installation, transactionally replaces each of the three skills
+and the shared resources with rollback on a caught failure, and verifies
+installed hashes. A single directory rename is atomic, but the four-directory
+suite update is not crash-atomic across process termination or power loss. It
+installs `quant-plan`, `quant-goal`, `quant-developer`, and the non-discoverable
+`quant-research-shared` resources under `~/.codex/skills/`.
 
 For a release-grade update from committed source:
 
@@ -222,3 +178,12 @@ For a release-grade update from committed source:
 python3 install.py --update --require-clean-source
 python3 ~/.codex/skills/quant-research-shared/scripts/validate_installed.py
 ```
+
+## Design provenance
+
+The suite has no LazyCodex or Gajae Code package, runtime, provider, state, or
+installation dependency. It adapts only general principles such as
+outcome-oriented persistence, useful parallelism, evidence over status, and
+small workflow surfaces. It does not copy their prompts, source, assets,
+protocols, or fixed orchestration machinery. Source and licensing notes remain
+in `shared/advisory/external-comparisons.md`.

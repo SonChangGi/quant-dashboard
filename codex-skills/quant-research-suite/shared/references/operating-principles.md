@@ -42,12 +42,15 @@ publication, deployment, and public readback separately evidenced.
 
 ## Authority and cost
 
-The canonical policy is `shared/core/authority.md`. Remote, provider, and paid
-actions retain separate authority. Use `cost-and-authority.md` only when this
-strict path requires its machine-readable cost receipt and action inventory.
-Paid data remains permanently ineligible on this compatibility path; no
-manifest, receipt, strict profile, or user action approval can make it a
-candidate or fallback.
+The canonical policy is `<quant-shared-root>/core/authority.md`. Resolve the
+placeholder exactly as defined by
+`../core/context-routing.md#shared-root-resolution`; never infer it from the
+current working directory. Local source-control, remote source-control,
+provider, and paid actions retain separate authority. Use
+`cost-and-authority.md` only when this strict path requires its machine-readable
+cost receipt and action inventory. Paid data remains permanently ineligible on
+this compatibility path; no manifest, receipt, strict profile, or user action
+approval can make it a candidate or fallback.
 
 ## Quality and communication
 

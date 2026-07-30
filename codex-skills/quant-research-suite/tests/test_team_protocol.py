@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -1346,6 +1347,63 @@ class TeamProtocolTests(unittest.TestCase):
             )
             self.assertEqual(stale.returncode, 1)
             self.assertIn("baseline does not match", stale.stdout)
+
+    def test_installed_shared_root_command_runs_outside_suite_cwd(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            installed_skills = root / "installed-skills"
+            installed_shared = (
+                installed_skills / "quant-research-shared"
+            )
+            shutil.copytree(ROOT / "shared", installed_shared)
+            unrelated_cwd = root / "unrelated-working-directory"
+            unrelated_cwd.mkdir()
+            workspace = root / "workspace"
+            workspace.mkdir()
+            selected = assignment(
+                "inspect",
+                "inspect",
+                mode="read_only",
+            )
+            packet = make_packet(
+                [selected],
+                workspace_root=workspace,
+                assignment_roots={"inspect": workspace},
+            )
+            packet_path = root / "packet.json"
+            packet_path.write_text(
+                json.dumps(packet, sort_keys=True),
+                encoding="utf-8",
+            )
+
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    str(
+                        installed_shared
+                        / "scripts"
+                        / "team_protocol.py"
+                    ),
+                    "packet",
+                    "--packet",
+                    str(packet_path),
+                    "--structural-only",
+                ],
+                cwd=unrelated_cwd,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+
+        self.assertEqual(
+            completed.returncode,
+            0,
+            completed.stdout + completed.stderr,
+        )
+        self.assertEqual(
+            json.loads(completed.stdout)["status"],
+            "structural_only",
+        )
 
     def test_live_handoff_binds_packet_worker_and_distinct_baseline_roots(
         self,

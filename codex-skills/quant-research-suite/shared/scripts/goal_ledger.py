@@ -289,6 +289,12 @@ def is_portable_id(value: Any) -> bool:
     return isinstance(value, str) and PORTABLE_ID.fullmatch(value) is not None
 
 
+def is_json_integer(value: Any, *, minimum: int | None = None) -> bool:
+    """Accept JSON integers without treating booleans as 0 or 1."""
+
+    return type(value) is int and (minimum is None or value >= minimum)
+
+
 def parse_time(value: Any) -> datetime | None:
     if not isinstance(value, str) or not value.strip():
         return None
@@ -1468,6 +1474,8 @@ def artifact_file_issues(
         if (
             receipt.get("receipt_sha256") != review_receipt_hash(receipt)
             or receipt.get("receipt_sha256") != review.get("receipt_sha256")
+            or receipt.get("reviewer_specialty")
+            != review.get("reviewer_specialty")
             or receipt.get("review_scope") != review.get("review_scope")
             or receipt.get("carry_forward_from_receipt_sha256")
             != review.get("carry_forward_from_receipt_sha256")
@@ -1552,7 +1560,7 @@ def continuation_capsule_shape_issues(value: Any) -> list[str]:
         ("plan_revision", 0),
     ):
         field_value = value.get(field)
-        if type(field_value) is not int or field_value < minimum:
+        if not is_json_integer(field_value, minimum=minimum):
             errors.append(
                 f"goal ledger continuation capsule {field} is invalid"
             )
@@ -1642,7 +1650,9 @@ def state_shape_issues(state: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     if state.get("document_type") != "quant_goal_ledger_state":
         errors.append("goal ledger state document_type is invalid")
-    if state.get("schema_version") != 1:
+    if not is_json_integer(state.get("schema_version"), minimum=1) or state[
+        "schema_version"
+    ] != 1:
         errors.append("goal ledger state schema_version must equal 1")
     if not is_portable_id(state.get("goal_id")):
         errors.append("goal ledger state goal_id is invalid")
@@ -1657,10 +1667,8 @@ def state_shape_issues(state: dict[str, Any]) -> list[str]:
         != {"path_realpath", "device", "inode", "binding_sha256"}
         or not isinstance(state_root.get("path_realpath"), str)
         or not state_root["path_realpath"]
-        or not isinstance(state_root.get("device"), int)
-        or state_root["device"] < 0
-        or not isinstance(state_root.get("inode"), int)
-        or state_root["inode"] < 1
+        or not is_json_integer(state_root.get("device"), minimum=0)
+        or not is_json_integer(state_root.get("inode"), minimum=1)
         or not SHA256.fullmatch(
             str(state_root.get("binding_sha256", ""))
         )
@@ -1686,8 +1694,7 @@ def state_shape_issues(state: dict[str, Any]) -> list[str]:
     revision = state.get("acceptance_revision")
     revisions = state.get("acceptance_revisions")
     if (
-        not isinstance(revision, int)
-        or revision < 1
+        not is_json_integer(revision, minimum=1)
         or not isinstance(revisions, list)
         or not revisions
         or revisions[-1].get("revision") != revision
@@ -1697,7 +1704,11 @@ def state_shape_issues(state: dict[str, Any]) -> list[str]:
     else:
         previous_acceptance: list[dict[str, str]] | None = None
         for index, item in enumerate(revisions, start=1):
-            if not isinstance(item, dict) or item.get("revision") != index:
+            if (
+                not isinstance(item, dict)
+                or not is_json_integer(item.get("revision"), minimum=1)
+                or item.get("revision") != index
+            ):
                 errors.append("acceptance revisions must be contiguous")
                 break
             unsigned = {
@@ -1759,17 +1770,17 @@ def state_shape_issues(state: dict[str, Any]) -> list[str]:
                     "recorded_at",
                     "carried_forward_from_revision",
                 }
-                or type(plan.get("revision")) is not int
+                or not is_json_integer(plan.get("revision"), minimum=1)
                 or plan.get("revision") != index
-                or type(plan.get("acceptance_revision")) is not int
-                or plan["acceptance_revision"] < 1
-                or not isinstance(revision, int)
+                or not is_json_integer(
+                    plan.get("acceptance_revision"), minimum=1
+                )
+                or not is_json_integer(revision, minimum=1)
                 or plan["acceptance_revision"] > revision
                 or (
                     carried_from is not None
                     and (
-                        type(carried_from) is not int
-                        or carried_from < 1
+                        not is_json_integer(carried_from, minimum=1)
                         or carried_from >= index
                     )
                 )
@@ -1803,8 +1814,31 @@ def state_shape_issues(state: dict[str, Any]) -> list[str]:
                 or not isinstance(story, dict)
                 or story.get("status")
                 not in {"open", "returned", "accepted", "superseded"}
-                or not isinstance(story.get("plan_revision"), int)
-                or not isinstance(story.get("acceptance_revision"), int)
+                or not is_json_integer(
+                    story.get("plan_revision"), minimum=0
+                )
+                or not is_json_integer(
+                    story.get("acceptance_revision"), minimum=1
+                )
+                or (
+                    story.get("superseded_by_acceptance_revision")
+                    is not None
+                    and not is_json_integer(
+                        story.get("superseded_by_acceptance_revision"),
+                        minimum=2,
+                    )
+                )
+                or not is_json_integer(
+                    story.get("return_count"), minimum=0
+                )
+                or not isinstance(story.get("returns"), list)
+                or any(
+                    not isinstance(returned, dict)
+                    or not is_json_integer(
+                        returned.get("return_count"), minimum=1
+                    )
+                    for returned in story.get("returns", [])
+                )
                 or not isinstance(story.get("acceptance_ids"), list)
                 or not all(
                     is_portable_id(value)
@@ -1823,6 +1857,38 @@ def state_shape_issues(state: dict[str, Any]) -> list[str]:
                 )
             ):
                 errors.append("goal ledger story revision binding is invalid")
+                break
+    reviews = state.get("reviews")
+    if not isinstance(reviews, list):
+        errors.append("goal ledger reviews are invalid")
+    else:
+        for review in reviews:
+            specialty = (
+                review.get("reviewer_specialty")
+                if isinstance(review, dict)
+                else None
+            )
+            if (
+                not isinstance(review, dict)
+                or review.get("role") not in REVIEW_ROLES
+                or not is_json_integer(
+                    review.get("plan_revision"), minimum=0
+                )
+                or not is_json_integer(
+                    review.get("acceptance_revision"), minimum=1
+                )
+                or not is_json_integer(
+                    review.get("event_seq"), minimum=1
+                )
+                or (
+                    specialty is not None
+                    and (
+                        not is_portable_id(specialty)
+                        or specialty in REVIEW_ROLES
+                    )
+                )
+            ):
+                errors.append("goal ledger review binding is invalid")
                 break
     if state.get("assurance") not in ASSURANCE_LEVELS:
         errors.append("goal ledger assurance is invalid")
@@ -1877,10 +1943,9 @@ def state_shape_issues(state: dict[str, Any]) -> list[str]:
     if (
         not isinstance(review_context, dict)
         or set(review_context) != {"terminal_after_event_seq"}
-        or not isinstance(
-            review_context.get("terminal_after_event_seq"), int
+        or not is_json_integer(
+            review_context.get("terminal_after_event_seq"), minimum=1
         )
-        or review_context["terminal_after_event_seq"] < 1
     ):
         errors.append("goal ledger review context is invalid")
     completion_history = state.get("completion_history")
@@ -1894,7 +1959,15 @@ def state_shape_issues(state: dict[str, Any]) -> list[str]:
                 not isinstance(completion, dict)
                 or completion.get("receipt_path")
                 != f"receipts/final-r{index}.json"
-                or completion.get("event_seq") is None
+                or not is_json_integer(
+                    completion.get("plan_revision"), minimum=0
+                )
+                or not is_json_integer(
+                    completion.get("acceptance_revision"), minimum=1
+                )
+                or not is_json_integer(
+                    completion.get("event_seq"), minimum=1
+                )
                 or not isinstance(
                     completion.get("evidence_candidate_sha256"), str
                 )
@@ -1939,6 +2012,12 @@ def state_shape_issues(state: dict[str, Any]) -> list[str]:
             errors.append(
                 "goal ledger current completion is not history-bound"
             )
+    ledger = state.get("ledger")
+    if (
+        not isinstance(ledger, dict)
+        or not is_json_integer(ledger.get("event_count"), minimum=1)
+    ):
+        errors.append("goal ledger event count is invalid")
     return errors
 
 
@@ -2392,8 +2471,9 @@ def host_ledger_divergence(
     divergence: list[str] = []
     if host_state == "completed" and completion is None:
         divergence.append(
-            "host_completed_without_completion_ready: reopen the same host "
-            "Goal or create a new Goal before continuing"
+            "host_completed_without_completion_ready: create a new host "
+            "Goal generation or use an explicit separate import workflow "
+            "that preserves the terminal Goal history"
         )
     elif host_state != "completed" and completion is not None:
         divergence.append("completion_ready_host_not_completed")
@@ -2466,6 +2546,17 @@ def init_command(args: argparse.Namespace) -> dict[str, Any]:
             False, "blocked", issues=["host_source is required"]
         )
     host_source = args.host_source.strip()
+    if args.host_state in TERMINAL_HOST_STATES:
+        return stable_result(
+            False,
+            "blocked",
+            issues=[
+                "cannot initialize a Goal ledger from terminal host state "
+                f"{args.host_state}; create a new host Goal generation or "
+                "use an explicit separate import workflow that preserves "
+                "the terminal Goal history"
+            ],
+        )
     try:
         acceptance = acceptance_artifact(args.acceptance)
         state_dir = resolve_state_dir(
@@ -3433,7 +3524,10 @@ def story_envelope_issues(
     issues.extend(goal_runtime.story_envelope_input_issues(envelope))
     if envelope.get("document_type") != "quant_story_envelope":
         issues.append("envelope document_type is invalid")
-    if envelope.get("schema_version") != 1:
+    if (
+        not is_json_integer(envelope.get("schema_version"), minimum=1)
+        or envelope["schema_version"] != 1
+    ):
         issues.append("envelope schema_version must equal 1")
     story_id = envelope.get("story_id")
     if not is_portable_id(story_id):
@@ -3996,7 +4090,10 @@ def completion_evidence_candidate_issues(
     """Check that a terminal candidate represents the current proof bundle."""
 
     issues: list[str] = []
-    if receipt.get("schema_version") != 3:
+    if (
+        not is_json_integer(receipt.get("schema_version"), minimum=1)
+        or receipt["schema_version"] != 3
+    ):
         issues.append("evidence candidate schema_version must equal 3")
     if receipt.get("project_id") != state.get("project_id"):
         issues.append("evidence candidate project_id mismatch")
@@ -4169,9 +4266,7 @@ def completion_evidence_candidate_issues(
                 not isinstance(gate, dict)
                 or gate.get("status") != "passed"
                 or not isinstance(evidence, list)
-                or not isinstance(evidence_index, int)
-                or isinstance(evidence_index, bool)
-                or evidence_index < 0
+                or not is_json_integer(evidence_index, minimum=0)
                 or evidence_index >= len(evidence)
                 or not isinstance(evidence[evidence_index], dict)
             ):
@@ -4277,7 +4372,11 @@ def review_receipt_issues(
         "checked_at",
         "receipt_sha256",
     }
-    optional_fields = {"$schema", "evidence_candidate_sha256"}
+    optional_fields = {
+        "$schema",
+        "evidence_candidate_sha256",
+        "reviewer_specialty",
+    }
     required_fields.add("review_scope")
     optional_fields.add("carry_forward_from_receipt_sha256")
     if set(receipt) - (required_fields | optional_fields):
@@ -4286,7 +4385,10 @@ def review_receipt_issues(
         issues.append("review receipt is missing required fields")
     if receipt.get("document_type") != "quant_review_receipt":
         issues.append("review receipt document_type is invalid")
-    if receipt.get("schema_version") != 1:
+    if (
+        not is_json_integer(receipt.get("schema_version"), minimum=1)
+        or receipt["schema_version"] != 1
+    ):
         issues.append("review receipt schema_version must equal 1")
     if receipt.get("goal_id") != state.get("goal_id"):
         issues.append("review receipt goal_id mismatch")
@@ -4294,6 +4396,15 @@ def review_receipt_issues(
         issues.append("review receipt review_id is invalid")
     if receipt.get("role") not in REVIEW_ROLES:
         issues.append("review receipt role is invalid")
+    reviewer_specialty = receipt.get("reviewer_specialty")
+    if reviewer_specialty is not None and (
+        not is_portable_id(reviewer_specialty)
+        or reviewer_specialty in REVIEW_ROLES
+    ):
+        issues.append(
+            "review receipt reviewer_specialty must be a portable "
+            "specialty distinct from the gate role"
+        )
     selected_roles = state.get("proof_policy", {}).get(
         "required_review_roles",
         [],
@@ -4307,10 +4418,17 @@ def review_receipt_issues(
         )
     if receipt.get("status") not in {"passed", "needs_repair", "blocked"}:
         issues.append("review receipt status is invalid")
-    if receipt.get("plan_revision") != current_plan_revision(state):
+    if (
+        not is_json_integer(receipt.get("plan_revision"), minimum=0)
+        or receipt["plan_revision"] != current_plan_revision(state)
+    ):
         issues.append("review receipt plan revision is stale")
-    if receipt.get("acceptance_revision") != state.get(
-        "acceptance_revision"
+    if (
+        not is_json_integer(
+            receipt.get("acceptance_revision"), minimum=1
+        )
+        or receipt["acceptance_revision"]
+        != state.get("acceptance_revision")
     ):
         issues.append("review receipt acceptance revision is stale")
     expected_acceptance = {item["id"] for item in state["acceptance"]}
@@ -4527,6 +4645,7 @@ def review_receipt_issues(
             != receipt.get("acceptance_revision")
             or prior.get("acceptance_ids")
             != receipt.get("acceptance_ids")
+            or prior.get("reviewer_specialty") != reviewer_specialty
             or prior.get("review_scope") != review_scope
             or prior.get("workspace_sha256")
             == receipt.get("workspace_sha256")
@@ -4748,6 +4867,10 @@ def review_record_command(args: argparse.Namespace) -> dict[str, Any]:
                 "recorded_at": receipt["checked_at"],
                 "event_seq": state["ledger"]["event_count"] + 1,
             }
+            if receipt.get("reviewer_specialty") is not None:
+                review["reviewer_specialty"] = receipt[
+                    "reviewer_specialty"
+                ]
             if receipt["role"] == "terminal_critic":
                 review["evidence_candidate_sha256"] = receipt[
                     "evidence_candidate_sha256"

@@ -1,6 +1,6 @@
 interface:
   display_name: "Quant Developer"
-  short_description: "Manual $quant-developer invocation only"
-  default_prompt: "The current user explicitly invoked $quant-developer; implement the smallest coherent repository-native change that completes the outcome, use free-only source and method fallbacks plus bounded workers when helpful, verify the real surface in proportion to the claim, and return Delivery Evidence bound to changed paths and checks without activating another skill, allowing paid data, completing a parent Goal, or crossing remote, provider, destructive, or paid authority boundaries."
+  short_description: "Manual end-to-end Quant implementation"
+  default_prompt: "Use $quant-developer only when explicitly invoked to deliver the complete accepted outcome with minimal unrelated churn, adapt across available tools and free data sources, use independent workers selectively, verify the actual surface, and respect separate authority boundaries."
 policy:
   allow_implicit_invocation: false

@@ -1,9 +1,15 @@
 # Workflow Contract: Shape, Act, Track, and Prove
 
-This reference defines the shared workflow objects, assurance levels, review
-gates, and ownership boundaries used by Quant Plan, Quant Developer, and Quant
-Goal. Keep the detailed contract here rather than repeating it in each public
-skill.
+This reference defines optional structured compatibility workflow objects,
+assurance levels, review gates, and ownership boundaries. Load it only through
+the explicit compatibility, machine-audit, or exact high-risk-recovery routes
+defined by `core/context-routing.md`. It does not govern the ordinary native
+Quant Plan, Quant Developer, or Quant Goal path.
+
+Path notation follows `core/context-routing.md`: `<quant-shared-root>` is the
+resolved installed `quant-research-shared` directory or source `shared`
+directory. Commands and references below are relative to that root and never
+depend on the caller's current working directory.
 
 ## Contents
 
@@ -51,7 +57,7 @@ receipt, reviewer verdict, or subagent message is evidence, not permission.
 | Local implementation, project-native checks, and change cleanup | The assigned implementation owner | Explicitly invoked Quant Developer when it owns the change, or an ordinary host implementer assigned by the current Goal parent; neither completes a parent Goal |
 | Host Goal lifecycle, acceptance intake/revisions, checkpoints, blockers, review orchestration, and final completion | Explicitly invoked Quant Goal | Does not restate the implementation workflow |
 | Agent-team topology and integration | Explicitly invoked Quant Developer when standalone; explicitly invoked Quant Goal when it is the current parent | Workers implement or inspect; the current parent retains one integration and review owner |
-| Remote, destructive, secret-bearing, provider, and paid authority | The user plus the canonical authority policy | Never inferred from workflow state |
+| Local source-control, remote source-control, destructive, secret-bearing, provider, and paid authority | The user plus the canonical authority policy | Never inferred from workflow state or ordinary permission to edit files |
 
 When Quant Developer is explicitly invoked without a currently invoked Goal
 parent or a Story Envelope reserving later parent review, it owns the requested
@@ -85,8 +91,8 @@ does not raise risk assurance.
 | Level | Activate when | Planning | Implementation proof | Independent review | Persistence |
 | --- | --- | --- | --- | --- | --- |
 | `light` | Narrow, reversible local work | Decision, assumptions, focused check, and one primary-planner self-critique | Direct deliverable inspection and focused project-native check | None | Host/conversation state |
-| `standard` | Several related surfaces or a consumer-facing contract | Compatibility, affected verification, and one primary-planner self-critique | Project-native tests plus change cleanup and rerun | One surface-appropriate reviewer on a frozen snapshot | Host state; local ledger only when long-running |
-| `strict` | Security, privacy, regulated use, raw-data redistribution risk, a strong PIT/causal claim, high-consequence computation, migration, destructive work, or repeated failure | Required immutable Plan Packet with baseline, failure modes, recovery, and one independent plan critique | Applicable full verification, cleanup, and failure-path evidence | Architect review, adversarial QA, and one terminal critic | Explicit durable Goal: host lifecycle plus automatic ledger; standalone: snapshot-bound evidence only |
+| `standard` | Several related surfaces or a consumer-facing contract | Compatibility, affected verification, and one primary-planner self-critique | Project-native tests plus change cleanup and rerun | One surface-appropriate reviewer on a frozen snapshot | Host state; local ledger only when the selected compatibility contract requires it |
+| `strict` | Security, privacy, regulated use, raw-data redistribution risk, a strong PIT/causal claim, high-consequence computation, migration, destructive work, or repeated failure | Required immutable Plan Packet with baseline, failure modes, recovery, and one independent plan critique | Applicable full verification, cleanup, and failure-path evidence | Architect review, adversarial QA, and one terminal critic | Host state by default; automatic ledger only inside an explicitly selected structured contract |
 
 A `release` delivery overlay adds only the separately authorized remote
 checkpoints and observable consumer or public readback required by acceptance.
@@ -100,7 +106,8 @@ is remote.
 Long-running means that safe continuation is expected across sessions,
 interruptions, external waiting, or independently resumable milestones, or the
 user explicitly requests durable recovery. Long-running persistence does not
-by itself raise implementation assurance.
+by itself raise implementation assurance or select a local ledger. The user or
+an existing contract must explicitly select durable structured evidence.
 
 If the selected proof cannot run, keep the affected claim `unverified` and give
 the concrete reason. Do not create unrelated infrastructure merely to satisfy
@@ -326,8 +333,10 @@ Record the revision-level rationale and the Stories, evidence, or Review
 Verdicts made stale. The revision hash covers optional steering when present;
 older revisions may omit it unchanged. A Steering Record describes a change
 but is not authority to delete or weaken acceptance. If steering changes the
-user-visible objective, authority envelope, or cost boundary, create a new or
-superseding host Goal instead of revising the current one.
+user-visible objective, authority envelope, or cost boundary, leave the current
+Goal untouched and resolve it through a host lifecycle operation that is
+actually exposed before creating a new Goal; a Steering Record cannot supersede
+it.
 
 ### Continuation Projection
 
@@ -404,6 +413,13 @@ not authorize an unrelated refactor.
 An explicitly invoked standalone Quant Developer coordinates this boundary.
 When Quant Goal is the explicitly invoked current parent, Quant Goal
 coordinates it. Do not add a second generic “review everything” pass.
+
+In the structured ledger, `integration_review` is the stable Standard gate
+identifier, not the reviewer's specialty. Select the human-readable specialty
+from the dominant risk—architecture, product/UI, data/calculation, automation,
+or release—and preserve it in the Review Verdict's purpose and inspected
+surfaces. Gate identity determines required completion evidence; specialty
+determines what the one reviewer is qualified and instructed to examine.
 
 If more than one independent high-risk surface requires its own reviewer, raise
 the workflow to `strict` instead of multiplying Standard reviewers.
@@ -511,16 +527,20 @@ artifact state before cancelling or reassigning.
 
 ## Goal lifecycle and local evidence ledger
 
-The host Goal is canonical for lifecycle. When available, it owns creation,
-active/paused/blocked/completed state, resume, cancellation, and supersession.
+The host Goal is canonical for lifecycle. When available, it owns creation and
+only the lifecycle states and operations the current host actually exposes.
 Never manufacture an unsupported host state in a local file.
 
-An automatic local ledger is required for:
+Outside an explicitly selected structured compatibility or machine-audit path,
+no local ledger is created automatically. A `strict` label, long duration,
+release delivery, task complexity, or repeated failure alone is not a selection.
+Within a selected path, a local ledger is required only when:
 
-- `strict` Goals;
-- long-running Goals as defined above;
-- an explicit recovery or resumable-state request;
-- an explicit co-located evidence-portability or machine-audit request.
+- an existing Goal already depends on that exact ledger contract;
+- the user explicitly requests machine-audited or co-located portable evidence;
+- the user explicitly requests recovery or resumable state through that exact
+  contract; or
+- a preserved legacy manifest contract already requires it.
 
 A release delivery overlay alone does not require a ledger. The legacy
 manifest-bound `assurance=release` compatibility path retains its existing
@@ -559,7 +579,7 @@ If host and ledger disagree, report the divergence and repair the evidence
 binding; never let the ledger silently change host state. If the required
 ledger writer is unavailable or damaged, safe local work may continue when
 authority and scope permit, but any completion claim that selected ledger-backed
-recovery, portability, machine audit, or strict/release proof remains
+recovery, portability, machine audit, or preserved strict/release proof remains
 `unverified` until the ledger is repaired or the user explicitly changes the
 acceptance boundary.
 
@@ -569,7 +589,7 @@ contracts apply only when explicitly selected or already in use. Do not force
 that extension merely because the lightweight host companion ledger is active.
 
 The bundled companion implementation is
-`shared/scripts/goal_ledger.py`. Its default state root is
+`<quant-shared-root>/scripts/goal_ledger.py`. Its default state root is
 `$CODEX_HOME/state/quant-goals/<project-fingerprint>/<goal-id>`. A
 project-local state directory is allowed only after the user explicitly
 selects a co-located evidence archive and the directory is already ignored by
@@ -638,7 +658,8 @@ that runtime become a second Goal owner.
 
 ## Authority
 
-The detailed remote, provider, destructive, secret-bearing, and paid-action
-policy lives only in `core/authority.md`. Paid data is permanently ineligible,
-not an approval boundary or fallback. This workflow preserves those boundaries
-and records relevant decisions, but never grants them.
+The detailed local source-control, remote source-control, provider,
+destructive, secret-bearing, and paid-action policy lives only in
+`core/authority.md`. Paid data is permanently ineligible, not an approval
+boundary or fallback. This workflow preserves those boundaries and records
+relevant decisions, but never grants them.

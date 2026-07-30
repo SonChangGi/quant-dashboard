@@ -7,21 +7,27 @@
 - [State boundary](#state-boundary)
 
 The host application's Goal is always canonical for lifecycle. The suite
-contains two local runtimes with different contracts:
+contains two optional local runtimes with different contracts. Load this
+reference only through the explicit compatibility, machine-audit, or exact
+high-risk-recovery routes in `../core/context-routing.md`; `strict`,
+long-running, release, complexity, or failure alone never selects either
+runtime.
 
-1. `goal_ledger.py` is the host-aligned evidence companion for `strict`,
-   clearly long-running, explicitly recovery-, co-located
-   evidence-portability-, or machine-audit-bound Goals, and legacy
-   `assurance=release` compatibility. A generic release delivery overlay alone
-   does not require it. The companion is manifest-free by default, supports Git
-   and non-Git work, accepts revisions, and never changes host state.
+1. `goal_ledger.py` is the host-aligned evidence companion after a user or
+   existing contract explicitly selects machine audit, exact recovery,
+   co-located evidence portability, or preserved ledger compatibility. Within
+   that selected path it supports `strict`, clearly long-running, and legacy
+   `assurance=release` Goals. A generic label or release overlay alone does not
+   require it. The companion is manifest-free by default, supports Git and
+   non-Git work, accepts revisions, and never changes host state.
 2. `goal_runtime.py` is the preserved legacy manifest-bound runtime. Its
    schema-v2 state, immutable intent, single write owner, story receipts, and
    receipt-v3 completion behavior remain compatibility contracts.
 
-Planning, ordinary implementation, and short host-only Goals do not create
-either state. If the shared runtime is unavailable, generic planning and local
-implementation continue; only the selected structured proof is unavailable.
+Planning, ordinary implementation, and native host-only Goals do not create
+either state, even when they are long-running or high consequence. If the shared
+runtime is unavailable, generic planning and local implementation continue;
+only the explicitly selected structured proof is unavailable.
 
 Host and local state persist evidence, not skill activation. A later turn
 enters the Quant Goal workflow only when the user explicitly invokes
@@ -29,6 +35,11 @@ enters the Quant Goal workflow only when the user explicitly invokes
 hook, resumes a public skill automatically, or treats a saved Goal, checkpoint,
 ledger, receipt, worker message, or Continuation Capsule as invocation
 authority.
+
+Commands below use `<quant-shared-root>` as defined by
+`../core/context-routing.md#shared-root-resolution`. Resolve it from the active
+public skill location and verify the named script exists; do not infer it from
+the current working directory.
 
 ## Host-aligned evidence companion
 
@@ -54,11 +65,12 @@ relocated execution. A future relocation feature would need an explicit rebind
 protocol. Non-Git projects use a realpath-based project fingerprint and keep
 default state outside the project.
 
-Initialize from an acceptance JSON artifact and, for `strict` or legacy
-`assurance=release`, an immutable reviewed Plan Packet:
+After the companion has been explicitly selected, initialize from an acceptance
+JSON artifact and, for its `strict` or legacy `assurance=release` mode, an
+immutable reviewed Plan Packet:
 
 ```bash
-python3 <shared>/scripts/goal_ledger.py init \
+python3 <quant-shared-root>/scripts/goal_ledger.py init \
   --root <project-root> \
   --goal-id <local-goal-id> \
   --host-goal-id <host-goal-id> \
@@ -76,6 +88,13 @@ python3 <shared>/scripts/goal_ledger.py init \
 The command reports the resolved state directory. Subsequent commands take
 `--state-dir` explicitly:
 
+Initialization accepts only a non-terminal observed host state. If the host
+Goal is already `completed`, `cancelled`, or `superseded`, `init` rejects the
+request before creating the state directory or any ledger artifact. Continue
+with a new host Goal generation, or use a separately designed explicit import
+workflow that preserves the terminal Goal history; ordinary initialization
+never reopens a terminal Goal.
+
 For current release delivery, use `--delivery release` together with the
 `remote-release` capability. This adds the release gate while preserving the
 selected `light`, `standard`, or `strict` risk assurance. Omitting `--delivery`
@@ -83,26 +102,26 @@ keeps older Goal state readable by inferring the axis from its assurance and
 capabilities.
 
 ```bash
-python3 <shared>/scripts/goal_ledger.py resume ...
-python3 <shared>/scripts/goal_ledger.py revise-acceptance \
+python3 <quant-shared-root>/scripts/goal_ledger.py resume ...
+python3 <quant-shared-root>/scripts/goal_ledger.py revise-acceptance \
   --revision <revision.json> [--plan <revised-plan>]
-python3 <shared>/scripts/goal_ledger.py checkpoint \
+python3 <quant-shared-root>/scripts/goal_ledger.py checkpoint \
   --checkpoint <checkpoint.json>
-python3 <shared>/scripts/goal_ledger.py continuation-capsule \
+python3 <quant-shared-root>/scripts/goal_ledger.py continuation-capsule \
   --capsule <continuation-capsule.json>
-python3 <shared>/scripts/goal_ledger.py story-issue \
+python3 <quant-shared-root>/scripts/goal_ledger.py story-issue \
   --envelope <story-envelope.json>
-python3 <shared>/scripts/goal_ledger.py story-return \
+python3 <quant-shared-root>/scripts/goal_ledger.py story-return \
   --receipt <story-receipt.json>
-python3 <shared>/scripts/goal_ledger.py story-accept \
+python3 <quant-shared-root>/scripts/goal_ledger.py story-accept \
   --story-id <story-id>
 # Terminal critic only; omit --evidence-candidate for other reviewers.
-python3 <shared>/scripts/goal_ledger.py review-record \
+python3 <quant-shared-root>/scripts/goal_ledger.py review-record \
   --review <review-receipt.json> \
   --evidence-candidate <evidence-receipt-v3-candidate.json>
-python3 <shared>/scripts/goal_ledger.py completion-ready \
+python3 <quant-shared-root>/scripts/goal_ledger.py completion-ready \
   --receipt <evidence-receipt-v3.json>
-python3 <shared>/scripts/goal_ledger.py observe-host \
+python3 <quant-shared-root>/scripts/goal_ledger.py observe-host \
   --observation <host-observation.json>
 ```
 
@@ -134,7 +153,10 @@ When present, the companion persists the array in the acceptance revision and
 includes it in that revision's hash. Existing artifacts and revisions may omit
 it unchanged. The operation and IDs describe the accepted revision; they do
 not grant authority or by themselves justify weaker acceptance. A change to
-objective, authority, or cost requires a new or superseding host Goal.
+objective, authority, or cost is incompatible with the current active Goal.
+Preserve the ledger history, leave the host Goal untouched, and require
+resolution through a host lifecycle operation that is actually exposed before
+creating a new Goal; the local runtime cannot supersede it.
 
 When the receipt selects structured `agent-team-execution` proof, the same
 `completion-ready` call also supplies the packet, every delivery, integration
@@ -188,6 +210,15 @@ proof uses the extensible evidence `extensions.goal_ledger` object to bind every
 required gate to that same snapshot and each independent-review gate to its
 stored Review Verdict.
 
+`role` is the stable assurance-gate identity. The optional
+`reviewer_specialty` is a separate portable ID such as `implementation`,
+`data_quality`, or `release_verification`; it records the reviewer's actual
+discipline without creating or satisfying another gate. When present it is
+receipt-hashed, copied into the ledger review projection, checked during
+artifact verification, and required to match across carry-forward. Existing
+schema-v1 Review Verdicts may omit it unchanged. A specialty may not reuse a
+gate-role name.
+
 `completion-ready` requires current acceptance evidence, no open or
 review-blocked story, no unresolved required blocker, all assurance-level
 reviews on the same current snapshot, and a valid receipt v3. For Strict and
@@ -212,9 +243,11 @@ compatibility manifest.
 
 The host-aligned companion is single-root and permits one active write Story in
 its bound workspace. Concurrent writers may use isolated worktrees only under a
-host-level integration owner. They return Delivery Evidence without sharing or
-retargeting this ledger; the integration owner records accepted integrated work
-serially in the canonical workspace.
+host-level integration owner and only when separate local-SCM branch/worktree
+authority is already recorded. Without that authority, use one writer or
+serialize the work in the current workspace. Workers return Delivery Evidence
+without sharing or retargeting this ledger; the integration owner records
+accepted integrated work serially in the canonical workspace.
 
 ## Legacy compatibility contract
 
@@ -256,7 +289,7 @@ new local runtime binding instead of rewriting history.
 Initialize:
 
 ```bash
-python3 <shared>/scripts/goal_runtime.py init \
+python3 <quant-shared-root>/scripts/goal_runtime.py init \
   --root <project-root> \
   --state-dir <state-dir> \
   --goal-id <id> \
@@ -272,7 +305,7 @@ python3 <shared>/scripts/goal_runtime.py init \
 Resume before work and after interruption:
 
 ```bash
-python3 <shared>/scripts/goal_runtime.py resume \
+python3 <quant-shared-root>/scripts/goal_runtime.py resume \
   --root <project-root> \
   --state-dir <state-dir>
 ```
@@ -293,7 +326,7 @@ rejected without first normalizing or otherwise mutating the ledger.
 After an explicit recovery review:
 
 ```bash
-python3 <shared>/scripts/goal_runtime.py checkpoint \
+python3 <quant-shared-root>/scripts/goal_runtime.py checkpoint \
   --root <project-root> \
   --state-dir <state-dir> \
   --kind recovery-review \
@@ -310,12 +343,12 @@ a story envelope, then accept the worker receipt only after primary integration
 review:
 
 ```bash
-python3 <shared>/scripts/goal_runtime.py story-issue \
+python3 <quant-shared-root>/scripts/goal_runtime.py story-issue \
   --root <project-root> \
   --state-dir <state-dir> \
   --envelope <story-envelope.json>
 
-python3 <shared>/scripts/goal_runtime.py story-accept \
+python3 <quant-shared-root>/scripts/goal_runtime.py story-accept \
   --root <project-root> \
   --state-dir <state-dir> \
   --receipt <story-receipt.json>
@@ -331,23 +364,34 @@ schema-v2 project manifest whose effective capabilities include
 `repo-mutation`. `multi-agent-write` remains a ledger-derived runtime fact; it
 is not persisted in the project manifest and grants no authority by itself.
 
-## Completion
+## Legacy local runtime completion
 
 Validate the final capability receipt first, including its goal binding. Then:
 
 ```bash
-python3 <shared>/scripts/goal_runtime.py complete \
+python3 <quant-shared-root>/scripts/goal_runtime.py complete \
   --root <project-root> \
   --state-dir <state-dir> \
   --receipt <evidence-receipt-v3.json>
 ```
 
-Completion requires no open stories, exact project/objective/ledger binding, and
-all goal acceptance IDs. The runtime does not commit, push, merge, deploy,
-schedule, migrate, publish, browse, or call a provider.
+This command marks only the preserved local `goal_runtime.py` state complete.
+It does not complete, mutate, or record completion of the canonical host Goal.
+Its structured result therefore reports
+`completion_scope=legacy_runtime_only` and
+`host_goal_completion_recorded=false` while retaining the legacy local
+`status=complete` compatibility value.
+
+Local runtime completion requires no open stories, exact
+project/objective/ledger binding, and all goal acceptance IDs. The runtime does
+not commit, push, merge, deploy, schedule, migrate, publish, browse, call a
+provider, or mutate host lifecycle state.
 
 The final `status_changed` event binds `final_receipt_sha256`,
 `pre_completion_ledger_tail_sha256`, and `goal_intent_sha256`. The legacy
 `receipt_sha256` payload key is retained as an identical compatibility alias.
 Later verification checks the stored final receipt against both receipt hash
 fields and checks that its goal binding names the pre-completion ledger tail.
+New events also record `completion_scope=legacy_runtime_only` and
+`host_goal_completion_recorded=false`; their summary explicitly states that the
+host Goal was not changed.

@@ -168,6 +168,12 @@ def portable_id(value: Any) -> bool:
     )
 
 
+def is_json_integer(value: Any, *, minimum: int | None = None) -> bool:
+    """Accept JSON integers without treating booleans as 0 or 1."""
+
+    return type(value) is int and (minimum is None or value >= minimum)
+
+
 def resolved_state_dir(path_value: str) -> Path:
     """Resolve a state root without accepting a substituted symlink."""
 
@@ -699,7 +705,10 @@ def load_and_verify(
     if not isinstance(ledger, dict):
         errors.append("goal state ledger cache is invalid")
     else:
-        if ledger.get("event_count") != reduced["event_count"]:
+        if (
+            not is_json_integer(ledger.get("event_count"), minimum=0)
+            or ledger["event_count"] != reduced["event_count"]
+        ):
             errors.append("goal state ledger event_count mismatch")
         if ledger.get("tail_sha256") != reduced["tail_sha256"]:
             errors.append("goal state ledger tail mismatch")
@@ -712,11 +721,20 @@ def load_and_verify(
     cached_checkpoint = state.get("last_checkpoint")
     if not isinstance(cached_checkpoint, dict):
         errors.append("goal state checkpoint cache is invalid")
-    elif reduced["last_checkpoint"] and (
-        cached_checkpoint.get("event_seq")
-        != reduced["last_checkpoint"]["event_seq"]
-        or cached_checkpoint.get("workspace_sha256")
-        != reduced["last_checkpoint"]["workspace_sha256"]
+    elif (
+        not is_json_integer(
+            cached_checkpoint.get("event_seq"),
+            minimum=0,
+        )
+        or (
+            reduced["last_checkpoint"]
+            and (
+                cached_checkpoint["event_seq"]
+                != reduced["last_checkpoint"]["event_seq"]
+                or cached_checkpoint.get("workspace_sha256")
+                != reduced["last_checkpoint"]["workspace_sha256"]
+            )
+        )
     ):
         errors.append("goal state checkpoint does not match ledger")
     elif not verify_workspace_snapshot(cached_checkpoint.get("workspace")):
@@ -1858,7 +1876,10 @@ def issue_story_command(args: argparse.Namespace) -> dict[str, Any]:
         issues.extend(story_envelope_input_issues(envelope))
         if envelope.get("document_type") != "quant_story_envelope":
             issues.append("envelope document_type is invalid")
-        if envelope.get("schema_version") != 1:
+        if (
+            not is_json_integer(envelope.get("schema_version"), minimum=1)
+            or envelope["schema_version"] != 1
+        ):
             issues.append("envelope schema_version must equal 1")
         if envelope.get("goal_id") != state["goal_id"]:
             issues.append("envelope goal_id mismatch")
@@ -2021,7 +2042,10 @@ def validate_receipt_against_story(
         issues.append("story workspace branch or project kind changed")
     if receipt.get("document_type") != "quant_story_receipt":
         issues.append("receipt document_type is invalid")
-    if receipt.get("schema_version") != 1:
+    if (
+        not is_json_integer(receipt.get("schema_version"), minimum=1)
+        or receipt["schema_version"] != 1
+    ):
         issues.append("receipt schema_version must equal 1")
     if receipt.get("goal_id") != envelope.get("goal_id"):
         issues.append("receipt goal_id mismatch")
@@ -2375,9 +2399,14 @@ def complete_command(args: argparse.Namespace) -> dict[str, Any]:
         event = make_event(
             state,
             "status_changed",
-            summary="Goal completed",
+            summary=(
+                "Legacy local runtime completed; host Goal state was not "
+                "changed"
+            ),
             payload={
                 "status": "complete",
+                "completion_scope": "legacy_runtime_only",
+                "host_goal_completion_recorded": False,
                 "receipt_sha256": final_receipt_sha256,
                 "final_receipt_sha256": final_receipt_sha256,
                 "pre_completion_ledger_tail_sha256": (
@@ -2396,6 +2425,8 @@ def complete_command(args: argparse.Namespace) -> dict[str, Any]:
         result={
             "goal_id": state["goal_id"],
             "status": state["status"],
+            "completion_scope": "legacy_runtime_only",
+            "host_goal_completion_recorded": False,
             "ledger_tail_sha256": state["ledger"]["tail_sha256"],
         },
     )

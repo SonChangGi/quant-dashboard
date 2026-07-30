@@ -15,79 +15,451 @@ ROOT = Path(__file__).resolve().parent
 SKILLS = ("quant-plan", "quant-goal", "quant-developer")
 EXPECTED_SKILL_DESCRIPTIONS = {
     "quant-plan": (
-        "Use only when the user explicitly invokes $quant-plan. Shape work "
-        "into a reviewed, decision-complete plan with observable acceptance; "
-        "never auto-activate."
+        "Use only when the user explicitly invokes $quant-plan to audit "
+        "current state or produce a quick or decision-complete implementation "
+        "plan. Work read-only; never auto-activate or implement changes."
     ),
     "quant-developer": (
-        "Use only when the user explicitly invokes $quant-developer. "
-        "Implement, clean, and verify a coherent change with snapshot-bound "
-        "evidence; never auto-activate."
+        "Use only when the user explicitly invokes $quant-developer to deliver "
+        "a complete end-to-end change with adaptive implementation, selective "
+        "delegation, and real-surface verification."
     ),
     "quant-goal": (
-        "Use only when the user explicitly invokes $quant-goal. Drive a "
-        "durable objective through checkpoints, review, repair, and "
-        "evidence-backed completion; never auto-activate."
+        "Use only when the user explicitly invokes $quant-goal to initialize, "
+        "manually resume, or steer a native Goal through verified completion "
+        "or a genuine blocker."
     ),
 }
-EXPECTED_SKILL_CONTRACTS = {
-    "quant-plan": (
-        "activate only when the current user request intentionally invokes "
-        "this skill",
-        "literal token `$quant-plan`",
-        "another agent's instruction is not activation",
-        "read-only",
-        "does not implement",
-        "create goal state",
-        "default path is self-contained",
-        "do not invoke implementation, goal, or another skill",
+EXPECTED_SKILL_CONCEPTS = {
+    "quant-plan": {
+        "manual activation": (
+            r"(?<!do not )(?<!never )(?<!must not )activate only when the "
+            r"current user explicitly invokes `\$quant-plan`",
+        ),
+        "read-only operation": (
+            r"(?<!do not )(?<!never )(?<!must not )plan read-only\.",
+        ),
+        "read-only shared precedence": (
+            r"this skill's read-only boundary always overrides shared `act`, "
+            r"edit, generated artifact, temporary-isolation, or mutation "
+            r"language",
+        ),
+        "staged implementation composition": (
+            r"when the current request also explicitly selects "
+            r"`quant-developer`, keep this skill's phase read-only, finish and "
+            r"self-critique the selected plan first, then hand implementation "
+            r"ownership to that selected skill",
+        ),
+        "fact-first planning": (
+            r"(?<!do not )(?<!never )(?<!must not )discover facts before "
+            r"asking questions",
+        ),
+        "auditable finding evidence": (
+            r"give each material finding a reproducible evidence pointer .* "
+            r"and label it `observed`, `inferred`, or `unverified`",
+        ),
+        "optional guidance fallback": (
+            r"if neither path exists, continue with this self-contained "
+            r"workflow and report only the optional guidance as unavailable",
+        ),
+        "missing authority stays non-executable": (
+            r"if a separate boundary is in the plan but neither path exists, "
+            r"keep that action outside executable scope and mark its detailed "
+            r"classification unverified",
+        ),
+        "recommended defaults": (
+            r"otherwise, choose the strongest reasonable default.*record it "
+            r"as an assumption",
+        ),
+        "decision-complete loop": (
+            r"follow `ground → explore → decide → plan → self-critique`",
+        ),
+        "no default ledger": (
+            r"ordinary planning must not load or create .*goal ledger",
+        ),
+        "legacy opt-in triggers": (
+            r"only when the user explicitly requests machine-audited legacy "
+            r"output, an existing project requires its quant manifest "
+            r"contract, or the user explicitly requests high-risk recovery "
+            r"that needs that exact contract",
+        ),
+        "separate authority boundaries": (
+            r"planning does not authorize implementation\. mark separate "
+            r"authority boundaries for local source-control mutation \(branch, "
+            r"worktree, stage, commit, cherry-pick, or rebase\); remote "
+            r"source-control mutation \(push, pr, merge, tag, or release\)",
+        ),
+    },
+    "quant-developer": {
+        "manual activation": (
+            r"use this skill only when the current user request explicitly "
+            r"invokes the literal token `\$quant-developer`",
+        ),
+        "complete outcome": (
+            r"(?<!do not )(?<!never )(?<!must not )deliver the complete "
+            r"accepted outcome end to end while minimizing unrelated churn",
+        ),
+        "adaptive loop": (
+            r"continue this loop while a safe, relevant next action",
+        ),
+        "route switching": (
+            r"repair the implementation or switch the source, method, tool, "
+            r"or decomposition rather than repeating a failed route",
+        ),
+        "real-surface verification": (
+            r"\*\*verify the actual surface\.\*\* run relevant project-native "
+            r"checks, exercise the real consumer or rendered surface",
+        ),
+        "legacy off by default": (
+            r"they are off the default path: do not load or create them for "
+            r"ordinary implementation",
+        ),
+        "legacy opt-in triggers": (
+            r"available for an existing project contract, an explicit "
+            r"machine-audit request, or an explicitly requested high-risk "
+            r"recovery that needs that exact contract",
+        ),
+        "staged plan and goal composition": (
+            r"when `quant-plan` is also explicitly selected for the current "
+            r"request, wait for its read-only, self-critiqued plan before "
+            r"mutating anything.*when `quant-goal` is also selected, it owns "
+            r"goal lifecycle and overall integration",
+        ),
+        "missing adaptive fallback": (
+            r"if neither path exists, continue with this self-contained "
+            r"workflow instead of searching for another suite copy",
+        ),
+        "missing authority fails closed": (
+            r"if neither authority path exists, continue safe local work but "
+            r"fail closed on the affected source-control, destructive, "
+            r"authentication, remote, provider, or paid action",
+        ),
+        "legacy routing entrypoint": (
+            r"enter that optional path through `core/context-routing\.md`",
+        ),
+        "separate authority boundaries": (
+            r"safe local edits, local tests, and reversible non-git task-scoped "
+            r"temporary isolation are normal implementation actions\. local "
+            r"source-control mutation \(branch, worktree, stage, commit, "
+            r"cherry-pick, or rebase\); remote source-control mutation \(push, "
+            r"pr, merge, tag, or release\)",
+        ),
+    },
+    "quant-goal": {
+        "manual activation": (
+            r"activate only for a current-user request that explicitly "
+            r"invokes `\$quant-goal`",
+        ),
+        "goal lookup first": (
+            r"(?<!do not )(?<!never )(?<!must not )call `get_goal` before "
+            r"deciding whether to create or resume anything",
+        ),
+        "objective-bound success conditions": (
+            r"because `create_goal` has one `objective` field and no separate "
+            r"success-condition field, serialize a compact outcome, material "
+            r"scope boundaries, constraints, and the complete `sc-\*` list "
+            r"into that objective",
+        ),
+        "created binding verification": (
+            r"then call `get_goal` again and verify that the stored objective "
+            r"contains every current `sc-\*` id",
+        ),
+        "manual resume uses host lifecycle": (
+            r"“manually resume” means reconcile and continue after the user or "
+            r"host resumes the goal; this skill does not invent a resume "
+            r"transition",
+        ),
+        "steering evidence invalidation": (
+            r"retain stable ids where meaning is unchanged, retire rather than "
+            r"reuse an obsolete id, assign the next unused id when meaning "
+            r"changes, and keep two to six current conditions\. mark evidence "
+            r"for every changed or dependent condition stale, and reverify the "
+            r"current set",
+        ),
+        "active goal conflict handling": (
+            r"keep the new objective pending, explain the conflict, and ask "
+            r"whether to continue the unfinished goal; do not misuse `complete` "
+            r"or `blocked` to clear it",
+        ),
+        "duplicate prevention": (
+            r"if an unfinished goal exists, .* never create a duplicate goal",
+        ),
+        "explicit token budget": (
+            r"pass `token_budget` only when the user explicitly supplied a "
+            r"positive token budget",
+        ),
+        "native continuation": (
+            r"host may continue an active native goal .*without reactivating",
+        ),
+        "verified completion": (
+            r"call `update_goal` with `complete` only when every current "
+            r"`sc-\*` success condition has fresh mapped evidence, all "
+            r"steering-invalidated evidence has been refreshed, and no "
+            r"required work remains",
+        ),
+        "three-turn blocker": (
+            r"call `update_goal` with `blocked` only when .*same blocking "
+            r"condition has recurred for three consecutive goal turns.*no "
+            r"meaningful progress occurred",
+        ),
+        "status-only goal update": (
+            r"`update_goal` is not a steering operation; the exposed mutation "
+            r"accepts only `complete` and `blocked`",
+        ),
+        "no default ledger": (
+            r"use the host goal and thread state as the default source of "
+            r"truth\. do not create a ledger",
+        ),
+        "legacy opt-in triggers": (
+            r"only when the user explicitly requests a machine audit or an "
+            r"existing goal already depends on that exact contract, or when "
+            r"the user explicitly requests high-risk recovery that needs it",
+        ),
+        "staged role composition": (
+            r"when `quant-plan` is also selected for the current request, let "
+            r"its read-only phase finish before implementation\. when "
+            r"`quant-developer` is also selected, that skill owns the bounded "
+            r"implementation and returns evidence",
+        ),
+        "missing authority fails closed": (
+            r"if neither authority path exists, continue safe local work but "
+            r"fail closed on the affected source-control, destructive, "
+            r"authentication, remote, provider, or paid action",
+        ),
+        "legacy routing entrypoint": (
+            r"resolve those resources through `core/context-routing\.md`",
+        ),
+        "separate authority boundaries": (
+            r"local implementation, tests, and reversible non-git task-scoped "
+            r"temporary isolation are normal execution steps\. local "
+            r"source-control mutation \(branch, worktree, stage, commit, "
+            r"cherry-pick, or rebase\); remote source-control mutation \(push, "
+            r"pr, merge, tag, or release\)",
+        ),
+    },
+}
+EXPECTED_PROMPT_CONCEPTS = {
+    "quant-plan": {
+        "positive role": (
+            r"^use \$quant-plan to inspect the target read-only and return an "
+            r"audit, quick plan, or decision-complete implementation plan "
+            r"with explicit assumptions and observable acceptance\.$",
+        ),
+    },
+    "quant-developer": {
+        "positive role": (
+            r"^use \$quant-developer only when explicitly invoked to deliver "
+            r"the complete accepted outcome with minimal unrelated "
+            r"churn, .* verify the actual surface, and respect separate "
+            r"authority boundaries\.$",
+        ),
+    },
+    "quant-goal": {
+        "positive role": (
+            r"^use \$quant-goal to bind or resume one native goal, .* "
+            r"transition it only on verified completion or a genuine repeated "
+            r"blocker\.$",
+        ),
+    },
+}
+EXPECTED_ADAPTIVE_CONCEPTS = {
+    "selective parallelism": (
+        r"(?<!do not )(?<!never )(?<!must not )add parallel lanes when at "
+        r"least two independent questions or work units can make real "
+        r"progress at the same time",
     ),
-    "quant-developer": (
-        "activate only when the current user request intentionally invokes "
-        "this skill",
-        "literal token `$quant-developer`",
-        "another agent's instruction is not activation",
-        "repository-native",
-        "smallest coherent change",
-        "never declares the overall goal complete",
-        "proportional verification",
-        "do not activate another quant skill to obtain a worker",
+    "four-field assignment": (
+        r"(?<!do not )(?<!never )(?<!must not )give every delegated lane four "
+        r"things: 1\. the outcome or question; 2\. the allowed scope; 3\. "
+        r"constraints and protected surfaces; 4\. the evidence or artifact "
+        r"to return",
     ),
-    "quant-goal": (
-        "activate only when the current user request intentionally invokes "
-        "this skill",
-        "literal token `$quant-goal`",
-        "another agent's instruction is not activation",
-        "host application's goal state as canonical",
-        "do not create goal state for an ordinary",
-        "every later turn that should use this workflow requires a fresh "
-        "explicit invocation",
-        "use ordinary host implementation workers by default",
-        "another quant skill may participate only when the current user "
-        "request explicitly invoked it too",
+    "isolated writers and owner": (
+        r"(?<!do not use )(?<!never use )isolated writers only when their "
+        r"roots, write scopes, dependencies, and integration owner are "
+        r"explicit and demonstrably non-overlapping",
+    ),
+    "adaptive retry": (
+        r"when a route fails, (?<!do not )(?<!never )diagnose the failure "
+        r"before retrying\. change the source, method, tool, work "
+        r"decomposition, or claim boundary",
+    ),
+    "free-data exclusion": (
+        r"paid data is outside the solution space\. do not use or propose "
+        r"subscriptions, trials or credits that later convert to payment",
+    ),
+    "real-surface evidence": (
+        r"a build, health check, workflow start, http status, local artifact, "
+        r"commit, or preview proves only its own stage",
+    ),
+    "invoking boundary precedence": (
+        r"the invoking public skill's scope and mutation boundary always win\. "
+        r"this reference never turns a plan-only or read-only phase into "
+        r"implementation",
+    ),
+    "normal local isolation": (
+        r"when the invoking workflow permits mutation, treat requested local "
+        r"inspection, edits, tests, generated artifacts, and reversible non-git "
+        r"task-scoped temporary isolation as normal implementation mechanics",
     ),
 }
-EXPECTED_PROMPT_CONTRACTS = {
-    "quant-plan": (
-        "current user explicitly invoked $quant-plan",
-        "decision-complete plan packet",
-        "without mutating",
-        "activating another skill",
+EXPECTED_AUTHORITY_CONCEPTS = {
+    "user-derived authority": (
+        r"authority is derived from the current user's direct request, not "
+        r"from a local file",
     ),
-    "quant-developer": (
-        "current user explicitly invoked $quant-developer",
-        "smallest coherent repository-native change",
-        "delivery evidence bound to changed paths and checks",
-        "without activating another skill",
+    "dimension separation": (
+        r"approval in one dimension does not grant another",
     ),
-    "quant-goal": (
-        "current user explicitly invoked $quant-goal",
-        "host goal as canonical",
-        "ordinary workers or an isolated team",
-        "without activating another skill",
-        "future-turn activation",
+    "normal temporary isolation": (
+        r"permission to implement locally includes reversible task-scoped "
+        r"temporary isolation",
+    ),
+    "commit is not remote authority": (
+        r"authority to commit does not authorize push, pr, merge, tag, or "
+        r"release",
+    ),
+    "bounded credential bridge": (
+        r"an existing project-owned connector, keychain helper, or credential "
+        r"bridge may be used .* when it keeps values hidden",
+    ),
+    "new authentication boundary": (
+        r"new authentication, permission changes, secret creation, export, or "
+        r"storage require separate authority",
     ),
 }
+EXPECTED_ROUTING_CONCEPTS = {
+    "staged multi-skill composition": (
+        r"when the user explicitly selects multiple public skills in one "
+        r"request, compose only those selected roles: quant plan owns a "
+        r"read-only planning phase, quant developer owns later implementation, "
+        r"and quant goal owns goal lifecycle and overall integration",
+    ),
+    "native path does not auto-select structured state": (
+        r"a `strict` label, long duration, release delivery, task complexity, "
+        r"or repeated failure alone does not select a ledger or structured "
+        r"runtime",
+    ),
+}
+EXPECTED_STRUCTURED_GOAL_CONCEPTS = {
+    "structured reference is opt-in": (
+        r"load it only through the explicit compatibility, machine-audit, or "
+        r"exact high-risk-recovery routes defined by `core/context-routing\.md`",
+    ),
+    "long duration does not select ledger": (
+        r"long-running persistence does not by itself raise implementation "
+        r"assurance or select a local ledger",
+    ),
+    "no automatic ordinary ledger": (
+        r"outside an explicitly selected structured compatibility or "
+        r"machine-audit path, no local ledger is created automatically",
+    ),
+}
+EXPECTED_DURABLE_CONCEPTS = {
+    "durable reference is opt-in": (
+        r"load this reference only through the explicit compatibility, "
+        r"machine-audit, or exact high-risk-recovery routes in "
+        r"`\.\./core/context-routing\.md`",
+    ),
+    "labels do not select durable runtime": (
+        r"`strict`, long-running, release, complexity, or failure alone never "
+        r"selects either runtime",
+    ),
+    "ordinary goals create no local state": (
+        r"planning, ordinary implementation, and native host-only goals do not "
+        r"create either state, even when they are long-running or high "
+        r"consequence",
+    ),
+}
+POSITIVE_CONCEPT_ANCHORS = {
+    "read-only operation": (("plan read-only",),),
+    "read-only shared precedence": (
+        ("read-only boundary", "always overrides"),
+    ),
+    "staged implementation composition": (
+        ("phase read-only", "implementation ownership"),
+    ),
+    "staged plan and goal composition": (
+        ("read-only", "mutating", "goal lifecycle"),
+    ),
+    "staged role composition": (
+        ("read-only phase", "bounded implementation", "goal lifecycle"),
+    ),
+    "fact-first planning": (("discover facts", "before asking"),),
+    "recommended defaults": (
+        ("choose", "reasonable default", "assumption"),
+    ),
+    "complete outcome": (("deliver", "complete accepted outcome"),),
+    "adaptive loop": (("continue", "safe", "relevant next action"),),
+    "route switching": (("repair", "switch", "failed route"),),
+    "real-surface verification": (
+        ("verify", "actual surface"),
+        ("exercise", "real consumer"),
+    ),
+    "separate authority boundaries": (
+        ("local source-control mutation", "remote source-control mutation"),
+    ),
+    "goal lookup first": (("`get_goal`", "before"),),
+    "objective-bound success conditions": (
+        ("`create_goal`", "`objective`", "`sc-*`"),
+    ),
+    "created binding verification": (
+        ("`get_goal`", "stored objective", "`sc-*`"),
+    ),
+    "steering evidence invalidation": (
+        ("stable ids", "dependent condition stale", "reverify"),
+    ),
+    "active goal conflict handling": (
+        ("new objective pending", "conflict", "unfinished goal"),
+    ),
+    "explicit token budget": (("`token_budget`", "explicitly"),),
+    "native continuation": (
+        ("native goal", "without reactivating"),
+    ),
+    "verified completion": (
+        ("`update_goal`", "`complete`", "fresh evidence"),
+    ),
+    "three-turn blocker": (
+        ("`update_goal`", "`blocked`"),
+        ("three consecutive goal turns",),
+    ),
+    "selective parallelism": (("add", "parallel lanes"),),
+    "four-field assignment": (("give", "delegated lane", "four things"),),
+    "isolated writers and owner": (
+        ("isolated writers", "integration owner"),
+    ),
+    "adaptive retry": (("diagnose", "failure", "retrying"),),
+    "real-surface evidence": (("proves", "only its own stage"),),
+    "invoking boundary precedence": (
+        ("invoking public skill", "boundary always win"),
+    ),
+    "normal local isolation": (
+        ("permits mutation", "non-git", "normal implementation"),
+    ),
+    "user-derived authority": (("authority", "derived", "user"),),
+    "normal temporary isolation": (
+        ("permission", "temporary isolation", "includes"),
+    ),
+    "bounded credential bridge": (
+        ("credential bridge", "may be used", "hidden"),
+    ),
+    "staged multi-skill composition": (
+        ("compose", "read-only planning", "later implementation"),
+    ),
+    "structured reference is opt-in": (
+        ("load it only", "compatibility", "machine-audit"),
+    ),
+    "no automatic ordinary ledger": (
+        ("explicitly selected", "no local ledger", "automatically"),
+    ),
+    "durable reference is opt-in": (
+        ("load this reference only", "compatibility", "machine-audit"),
+    ),
+}
+INVERSION_MARKER = re.compile(
+    r"\b(?:do not|don't|never|must not|forbidden|prohibited|false|ignore|"
+    r"reject|avoid|exclude|excludes|excluded)\b"
+)
 EXPECTED_PACKAGE_FILES = frozenset(
     {
         ".gitignore",
@@ -124,6 +496,7 @@ EXPECTED_PACKAGE_FILES = frozenset(
         "shared/profiles/quant-public-dashboard-strict.md",
         "shared/profiles/quant-research-web.md",
         "shared/references/cost-and-authority.md",
+        "shared/references/adaptive-workflow.md",
         "shared/references/data-automation.md",
         "shared/references/developer-runbook.md",
         "shared/references/agent-orchestration.md",
@@ -132,7 +505,7 @@ EXPECTED_PACKAGE_FILES = frozenset(
         "shared/references/operating-principles.md",
         "shared/references/research-and-planning.md",
         "shared/references/web-design-source.md",
-        "shared/references/web-design-v2.4.0.md",
+        "shared/references/web-design-v2.4.1.md",
         "shared/schemas/analysis-input-binding-capture.schema.json",
         "shared/schemas/analysis-invocation.schema.json",
         "shared/schemas/evidence-receipt-v3.schema.json",
@@ -283,7 +656,7 @@ CANONICAL_PAID_DATA_GUARD = (
     "requested for approval, accessed, purchased, renewed, or used."
 )
 EXPECTED_WEB_DESIGN_SHA = (
-    "831054bf048769f335d5229c71e17e90bf9bdf7cbe899641735cc7a47f78c525"
+    "dee11da0061b943ef04a8516ffb9811735571ff464c9a81bd8950cb3b6ee516e"
 )
 AGENT_METADATA_PATTERN = re.compile(
     r"\Ainterface:\n"
@@ -516,6 +889,33 @@ def normalized_policy_text(text: str) -> str:
     return " ".join(text.lower().split())
 
 
+def missing_concepts(
+    text: str,
+    concepts: dict[str, tuple[str, ...]],
+) -> list[str]:
+    """Return absent or explicitly inverted concept labels."""
+
+    normalized = normalized_policy_text(text)
+    missing = [
+        label
+        for label, patterns in concepts.items()
+        if not any(re.search(pattern, normalized) for pattern in patterns)
+    ]
+    clauses = re.split(r"(?<=[.!?;])\s+", normalized)
+    for label in concepts:
+        if label in missing:
+            continue
+        anchor_sets = POSITIVE_CONCEPT_ANCHORS.get(label, ())
+        if any(
+            INVERSION_MARKER.search(clause)
+            and all(anchor in clause for anchor in anchors)
+            for clause in clauses
+            for anchors in anchor_sets
+        ):
+            missing.append(label)
+    return missing
+
+
 def has_canonical_zero_spend_guard(text: str) -> bool:
     return CANONICAL_ZERO_SPEND_GUARD in normalized_policy_text(text)
 
@@ -689,18 +1089,13 @@ def validate() -> list[str]:
                         f"{name}: agent prompt must not activate another skill: "
                         + ", ".join(present_other_tokens)
                     )
-                for phrase in EXPECTED_PROMPT_CONTRACTS[name]:
-                    if phrase not in prompt:
-                        errors.append(
-                            f"{name}: agent prompt missing role contract "
-                            f"{phrase!r}"
-                        )
-                for phrase in ("remote", "paid"):
-                    if phrase not in prompt:
-                        errors.append(
-                            f"{name}: agent prompt missing concise authority "
-                            f"marker {phrase!r}"
-                        )
+                for concept in missing_concepts(
+                    raw_prompt,
+                    EXPECTED_PROMPT_CONCEPTS[name],
+                ):
+                    errors.append(
+                        f"{name}: agent prompt missing concept {concept!r}"
+                    )
                 for forbidden in (
                     "validate_installed",
                     "quantctl",
@@ -724,31 +1119,54 @@ def validate() -> list[str]:
             errors.append(f"{name}: frontmatter description mismatch")
         if len(text.splitlines()) > 500:
             errors.append(f"{name}: SKILL.md exceeds 500 lines")
-        normalized_skill = normalized_policy_text(text)
-        for phrase in EXPECTED_SKILL_CONTRACTS[name]:
-            if phrase not in normalized_skill:
-                errors.append(
-                    f"{name}: missing role contract {phrase!r}"
-                )
+        for concept in missing_concepts(
+            text,
+            EXPECTED_SKILL_CONCEPTS[name],
+        ):
+            errors.append(f"{name}: missing role concept {concept!r}")
         for reference in re.findall(
             r"`((?:references|templates)/[^`]+)`",
             text,
         ):
             if not (ROOT / "shared" / reference).is_file():
                 errors.append(f"{name}: missing referenced shared/{reference}")
+        for adaptive_reference in (
+            "../quant-research-shared/references/adaptive-workflow.md",
+            "../../shared/references/adaptive-workflow.md",
+        ):
+            if adaptive_reference not in text:
+                errors.append(
+                    f"{name}: missing layout-aware adaptive reference "
+                    f"{adaptive_reference!r}"
+                )
+        source_adaptive = (
+            skill_dir / "../../shared/references/adaptive-workflow.md"
+        ).resolve()
+        expected_adaptive = (
+            ROOT / "shared/references/adaptive-workflow.md"
+        ).resolve()
+        if source_adaptive != expected_adaptive:
+            errors.append(
+                f"{name}: source adaptive reference resolves incorrectly"
+            )
+        elif not source_adaptive.is_file():
+            errors.append(
+                f"{name}: source adaptive reference is unreadable"
+            )
         for authority_reference in (
             "../quant-research-shared/core/authority.md",
             "../../shared/core/authority.md",
         ):
             if authority_reference not in text:
                 errors.append(
-                    f"{name}: missing layout-aware authority reference "
+                    f"{name}: missing conditional authority reference "
                     f"{authority_reference!r}"
                 )
         source_authority = (
             skill_dir / "../../shared/core/authority.md"
         ).resolve()
-        if source_authority != (ROOT / "shared/core/authority.md").resolve():
+        expected_authority = (ROOT / "shared/core/authority.md").resolve()
+        if source_authority != expected_authority:
             errors.append(
                 f"{name}: source authority reference resolves incorrectly"
             )
@@ -756,11 +1174,6 @@ def validate() -> list[str]:
             errors.append(
                 f"{name}: source authority reference is unreadable"
             )
-        for phrase in ("remote", "paid"):
-            if phrase not in normalized_skill:
-                errors.append(
-                    f"{name}: missing concise authority marker {phrase!r}"
-                )
         if has_canonical_zero_spend_guard(text):
             errors.append(f"{name}: duplicates canonical paid policy")
 
@@ -776,6 +1189,7 @@ def validate() -> list[str]:
         "core/context-routing.md",
         "references/operating-principles.md",
         "references/cost-and-authority.md",
+        "references/adaptive-workflow.md",
         "references/data-automation.md",
         "references/research-and-planning.md",
         "references/goal-and-subagents.md",
@@ -783,7 +1197,7 @@ def validate() -> list[str]:
         "references/agent-orchestration.md",
         "references/durable-runtime.md",
         "references/web-design-source.md",
-        "references/web-design-v2.4.0.md",
+        "references/web-design-v2.4.1.md",
         "templates/quant-project.example.json",
         "templates/quant-project.schema.json",
         "templates/quant-project-v2.example.json",
@@ -834,6 +1248,13 @@ def validate() -> list[str]:
     if authority_path.is_file():
         authority_text = authority_path.read_text(encoding="utf-8")
         normalized_authority = normalized_policy_text(authority_text)
+        for concept in missing_concepts(
+            authority_text,
+            EXPECTED_AUTHORITY_CONCEPTS,
+        ):
+            errors.append(
+                f"core/authority.md: missing authority concept {concept!r}"
+            )
         for guard in REQUIRED_PAID_ACTION_GUARDS:
             if guard not in normalized_authority:
                 errors.append(
@@ -848,12 +1269,62 @@ def validate() -> list[str]:
                 "core/authority.md: missing permanent paid-data guard"
             )
 
-    policy_surfaces = (
-        ROOT / "README.md",
-        shared / "references" / "operating-principles.md",
-        shared / "references" / "cost-and-authority.md",
+    adaptive_path = shared / "references" / "adaptive-workflow.md"
+    if adaptive_path.is_file():
+        adaptive_text = adaptive_path.read_text(encoding="utf-8")
+        for concept in missing_concepts(
+            adaptive_text,
+            EXPECTED_ADAPTIVE_CONCEPTS,
+        ):
+            errors.append(
+                "references/adaptive-workflow.md: missing adaptive concept "
+                f"{concept!r}"
+            )
+
+    routed_policy_surfaces = (
+        (
+            shared / "core" / "context-routing.md",
+            EXPECTED_ROUTING_CONCEPTS,
+        ),
+        (
+            shared / "references" / "goal-and-subagents.md",
+            EXPECTED_STRUCTURED_GOAL_CONCEPTS,
+        ),
+        (
+            shared / "references" / "durable-runtime.md",
+            EXPECTED_DURABLE_CONCEPTS,
+        ),
     )
-    for path in policy_surfaces:
+    for path, concepts in routed_policy_surfaces:
+        if not path.is_file():
+            continue
+        for concept in missing_concepts(
+            path.read_text(encoding="utf-8"),
+            concepts,
+        ):
+            errors.append(
+                f"{path.relative_to(ROOT)}: missing routed policy concept "
+                f"{concept!r}"
+            )
+
+    policy_surfaces = (
+        (
+            ROOT / "README.md",
+            "shared/core/authority.md",
+            None,
+        ),
+        (
+            shared / "references" / "operating-principles.md",
+            "<quant-shared-root>/core/authority.md",
+            "../core/context-routing.md#shared-root-resolution",
+        ),
+        (
+            shared / "references" / "cost-and-authority.md",
+            "<quant-shared-root>/core/authority.md",
+            "../core/context-routing.md#shared-root-resolution",
+        ),
+    )
+    for path, authority_reference, resolver_reference in policy_surfaces:
         if not path.is_file():
             errors.append(
                 f"missing policy surface {path.relative_to(ROOT)}"
@@ -861,9 +1332,17 @@ def validate() -> list[str]:
             continue
         raw_text = path.read_text(encoding="utf-8")
         normalized = normalized_policy_text(raw_text)
-        if "shared/core/authority.md" not in raw_text:
+        if authority_reference not in raw_text:
             errors.append(
                 f"{path.relative_to(ROOT)}: missing central authority reference"
+            )
+        if (
+            resolver_reference is not None
+            and resolver_reference not in raw_text
+        ):
+            errors.append(
+                f"{path.relative_to(ROOT)}: missing shared-root resolver "
+                "reference"
             )
         if "paid" not in normalized:
             errors.append(
@@ -883,6 +1362,23 @@ def validate() -> list[str]:
             errors.append(
                 f"{path.relative_to(ROOT)}: canonical paid policy must live "
                 "only in shared/core/authority.md"
+            )
+
+    runtime_surfaces = (
+        *sorted((ROOT / "skills").rglob("*.md")),
+        *sorted((ROOT / "skills").rglob("*.yaml")),
+        *sorted((shared / "capabilities").rglob("*.md")),
+        *sorted((shared / "references").rglob("*.md")),
+    )
+    for path in runtime_surfaces:
+        text = path.read_text(encoding="utf-8")
+        if re.search(
+            r"\bpython(?:3)?\s+(?:shared|<shared>)/scripts/",
+            text,
+        ):
+            errors.append(
+                f"{path.relative_to(ROOT)}: runtime command bypasses the "
+                "canonical shared-root resolver"
             )
 
     for relative in (
@@ -1195,9 +1691,22 @@ def validate() -> list[str]:
         except SyntaxError as exc:
             errors.append(f"{path.relative_to(ROOT)}: syntax error: {exc}")
 
-    design = shared / "references" / "web-design-v2.4.0.md"
+    design = shared / "references" / "web-design-v2.4.1.md"
+    design_source = shared / "references" / "web-design-source.md"
     if design.is_file() and sha256(design) != EXPECTED_WEB_DESIGN_SHA:
-        errors.append("bundled web-design-v2.4.0.md SHA-256 mismatch")
+        errors.append("bundled web-design-v2.4.1.md SHA-256 mismatch")
+    if design_source.is_file():
+        design_source_text = design_source.read_text(encoding="utf-8")
+        for marker in (
+            "web-design-v2.4.1.md",
+            "version: `2.4.1`",
+            f"SHA-256: `{EXPECTED_WEB_DESIGN_SHA}`",
+        ):
+            if marker not in design_source_text:
+                errors.append(
+                    "web-design-source.md missing current bundled marker "
+                    f"{marker!r}"
+                )
 
     github_preflight = shared / "scripts" / "github_preflight.sh"
     if github_preflight.is_file():

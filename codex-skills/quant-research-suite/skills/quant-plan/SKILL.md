@@ -1,295 +1,159 @@
 ---
 name: "quant-plan"
-description: "Use only when the user explicitly invokes $quant-plan. Shape work into a reviewed, decision-complete plan with observable acceptance; never auto-activate."
+description: "Use only when the user explicitly invokes $quant-plan to audit current state or produce a quick or decision-complete implementation plan. Work read-only; never auto-activate or implement changes."
 ---
 
 # Quant Plan
 
-## Explicit invocation gate
+## Activation and scope
 
-Activate only when the current user request intentionally invokes this skill
-through the literal token `$quant-plan`. If the host replaces that token with
-invocation metadata, accept only current-user, same-request metadata produced
-by that `$` selection.
+Activate only when the current user explicitly invokes `$quant-plan`. Do not
+infer activation from a semantic match, a plain-text mention, an earlier turn,
+an active Goal, or another agent's request. The invocation applies only to the
+current user request.
 
-A semantic task match, the plain name `quant-plan`, a quoted, example, or
-negated token, an earlier invocation, an active Goal, a Plan Packet, an
-artifact, or another agent's instruction is not activation. If this skill is
-selected without the explicit gate, do not apply it or load its shared
-references; continue as an ordinary Codex request.
+Plan read-only. Inspect files, repositories, configuration, data, documentation,
+and observed behavior, and run non-mutating checks when useful. Do not edit
+files, install dependencies, create or update Goal state, or mutate local,
+remote, provider, or production state.
 
-The invocation applies only to the current request. It authorizes planning,
-not implementation or activation of another Quant skill.
+When the current request also explicitly selects `quant-developer`, keep this
+skill's phase read-only, finish and self-critique the selected plan first, then
+hand implementation ownership to that selected skill. It may implement in the
+same request only when the user already authorized immediate implementation and
+did not require plan approval first. Otherwise stop after the plan; a later turn
+must explicitly select the implementation skill again. When `quant-goal` is
+also selected, that skill alone owns Goal state and overall lifecycle. Selection
+of multiple skills never widens action, source-control, remote, or cost
+authority.
 
-## Outcome and trigger
+## Workflow
 
-After the invocation gate passes, use this skill for a plan, structured audit,
-external comparison, project-context map, or greenfield project shape before
-implementation.
+Follow `Ground → Explore → Decide → Plan → Self-critique`.
 
-This skill owns discovery, the proposed decision, the proposed acceptance in
-the Plan Packet, and the packet itself. It is read-only: it does not implement,
-create Goal state, install dependencies, edit files, or perform local, remote,
-provider, destructive, or paid mutations. Do not activate it for a direct
-implementation request, simple explanation, or status check unless the user
-also asks for a plan or audit.
+### 1. Ground
 
-Choose the lightest useful mode:
+State the intended outcome, audience, observable success criteria, relevant
+constraints, and material non-goals. Identify the target environment and its
+own instructions before choosing an approach.
 
-- `quick-plan`: a narrow, reversible decision;
-- `audit`: current-state findings and prioritized recommendations;
-- `audit+comparison`: an audit plus a comparison supported by current evidence;
-- `new-project`: a decision-ready shape for a project that does not exist yet.
+### 2. Explore
 
-## Default path
+Discover facts before asking questions. Inspect the target's source,
+configuration, entrypoints, tests, generated artifacts, data paths, workflows,
+and real consumer or publication surface in proportion to the request. Verify
+unstable external facts with current primary sources, and distinguish observed
+facts from inferences.
 
-The default path is self-contained. Do not require shared tooling, a project
-manifest, a receipt, a Goal, or a suite command.
+Proactively use available read-only subagents when independent repository,
+source, method, or verification lanes would materially improve coverage or
+speed. Run independent lanes in parallel when useful, give each a bounded
+question and expected evidence, and reconcile their findings yourself. Use an
+agent team only when at least two independent lanes can make real parallel
+progress. Do not impose fixed roles, a fixed worker count, or a Team Run Packet.
 
-1. Define the user-visible outcome, audience, success criteria, constraints,
-   non-goals, and decision to settle.
-2. Inspect only current state relevant to that decision. Prefer the target's
-   own instructions, source, configuration, entrypoints, tests, artifacts, and
-   observed behavior.
-3. Discover repository or system facts before asking the user. Ask one
-   material preference at a time only when its answer changes the plan.
-4. Research current primary sources when an external product, library,
-   standard, provider, paper, price, quota, or other unstable fact affects the
-   decision. Separate fact, inference, limitation, and recommendation.
-5. When data is in scope, search the free-only source and method ladder below
-   far enough to find the best attainable route under the user's environment
-   and claims. Do not turn ideal evidence that the outcome does not claim into
-   a default blocker.
-6. Select one coherent approach and make its handoff decision-complete without
-   designing unused infrastructure.
+For multi-lane work, external-data fallback, or real-surface evidence
+selection, load the shared adaptive workflow that exists for the current
+layout:
 
-Only when a material decision or contradiction remains, add a short,
-nonnumeric `decision_readiness` section to the draft with the issue, evidence,
-decision owner, and clearing condition. Omit it when the decision is already
-ready. Do not calculate a score, set a threshold, or force a fixed interview or
-review round, and do not freeze the Plan Packet until every listed item is
-resolved or explicitly removed from the selected scope.
+- installed:
+  `../quant-research-shared/references/adaptive-workflow.md`
+- source:
+  `../../shared/references/adaptive-workflow.md`
 
-Git, a branch, a public route, automation, or deployment matters only when it
-exists and affects the decision. A non-Git directory, document, notebook,
-process, or research deliverable is a valid planning target. Greenfield
-planning does not create or scaffold the target.
+This skill's read-only boundary always overrides shared `act`, edit, generated
+artifact, temporary-isolation, or mutation language. In this planning phase,
+interpret those mechanics as inspection, comparison, simulation in memory, or
+proposed plan steps only. Do not load the reference for a narrow plan that is
+already self-contained. If neither path exists, continue with this self-contained
+workflow and report only the optional guidance as unavailable; do not search for
+another suite copy.
 
-## Context and evidence design
+### 3. Decide
 
-For a large, unfamiliar, or long-lived target, build a read-only Project
-Context Packet before deciding. Read existing instruction and context files
-first; do not create or rewrite `AGENTS.md` or another memory artifact unless
-the user separately requests that mutation through an implementation
-workflow. Map only the architecture, ownership boundaries, entrypoints,
-project-native commands, protected contracts, source references, workspace
-identity, and staleness conditions needed by the plan.
+Ask the user only about a high-impact preference or trade-off that materially
+changes the result and cannot be discovered from the environment. Otherwise,
+choose the strongest reasonable default, explain why it fits, and record it as
+an assumption. Resolve competing options into one recommended approach rather
+than handing unresolved design choices to the implementer.
 
-Already-installed local LSP, AST, or codegraph tools may supply opportunistic
-read-only evidence when they materially improve navigation or reference
-analysis. Confirm important claims with source, `rg`, a compiler, or
-project-native checks. Do not install a tool, start a daemon, register MCP,
-change global configuration, or upload source externally for this purpose.
+### 4. Plan
 
-Actively use available read-only subagent or agent-team lanes when independent
-repository, source, method, or verification questions would materially widen
-the search or shorten discovery. Useful lanes include project-contract
-inspection, multiple free-source candidates, alternative methods or proxies,
-and an independent challenge to a consequential assumption. Run independent
-lanes in parallel and give each a bounded question and return contract. A
-concise in-memory brief is the default; do not require a structured Team Run
-Packet, worktree, hash binding, or fixed role count for ordinary read-only
-planning.
+Make the selected approach complete enough for its next reader. Include the
+behavior and interfaces that change, relevant data flow, failure and degraded
+behavior, verification, observable acceptance, compatibility, and rollout or
+approval boundaries only where they matter. Preserve project-owned product,
+analysis, data, and design contracts unless the requested change explicitly
+includes them. Avoid unused infrastructure and process ceremony.
 
-The primary planner inspects and reconciles every returned claim into one
-decision and remains responsible for the result. Route work by needed role and
-capability rather than hard-coding a provider, model name, worker count, file
-count, line-count threshold, or a rule that delegation is always required.
+### 5. Self-critique
 
-Every acceptance criterion names the direct evidence channel that could prove
-it on the real target surface. The Project Context Packet, role router,
-surface-evidence selector, and continuation rules are defined once in:
+Challenge the draft for missing decisions, unsupported assumptions, ignored
+constraints, unverified external claims, and acceptance that tests only an
+intermediate artifact instead of the real consumer surface. Revise the plan
+before handoff. Add an independent read-only critique only when consequence or
+complexity makes it materially useful, not to satisfy a review count.
 
-- installed
-  `../quant-research-shared/references/agent-orchestration.md`;
-- source `../../shared/references/agent-orchestration.md`.
+## Free data and evidence guardrails
 
-## Free-only data and proportional evidence
+Use only zero-billing data routes. Prefer, in order: a usable project cache or
+snapshot; an official no-billing source; another lawfully accessible
+no-billing public source; a method reconstructed from free inputs; then a
+clearly disclosed proxy, narrower scope, degraded result, last-known-good
+result, or explicit unavailable state. Paid and free-to-paid data are outside
+the solution space. Exclude expiring trials or credits, card-required access,
+automatic free-to-paid conversion, pay-as-you-go, overages, and paid
+fallbacks.
 
-Data acquisition has a hard no-paid-data boundary. Never propose or use a paid
-dataset, feed, API, terminal, tier, or fallback. This prohibition includes:
+Match provenance to the claim. Record the data date, source, fields and
+adjustment or revision limitations needed to interpret the result. For public
+display, verify the rights that govern the exact planned display or derived
+output and avoid raw redistribution when permission is absent or unclear.
+Require point-in-time evidence only for claims of historical availability,
+look-ahead freedom, survivorship freedom, or revision safety; otherwise label
+the limitation without making the stronger claim. Never fabricate values,
+conceal staleness, bypass access controls, expose secrets, or weaken existing
+degraded or unavailable semantics.
 
-- trials or credits that expire;
-- freemium access that requires later payment for continuity;
-- automatic free-to-paid conversion;
-- card or billing-profile setup;
-- pay-as-you-go, overage, paid add-ons, or paid tiers.
+## Output modes
 
-Do not ask the user to approve paid data. If a currently no-billing source
-becomes paid or adds a billing requirement, mark that route unusable, stop
-using it in the proposed path, and move to a no-billing fallback, a transparent
-proxy, a narrower result, or an explicit unavailable state.
+Choose the smallest mode that settles the request:
 
-Match data evidence to the actual acceptance claim and planned use:
+- `audit`: confirmed current-state findings, their impact, prioritized
+  improvements, and material uncertainty or unverified claims. Give each
+  material finding a reproducible evidence pointer such as a file and line,
+  command result, URL and observation time, or inspected artifact, and label it
+  `observed`, `inferred`, or `unverified`.
+- `quick plan`: the outcome, selected approach, recommended defaults and
+  assumptions, a focused action sequence, and observable checks.
+- `implementation plan`: a decision-complete handoff covering relevant
+  behavior and interfaces, data flow, edge cases and failure modes, tests and
+  acceptance, compatibility, rollout, and approval boundaries.
 
-- Local or private research using a lawfully accessible no-billing price or
-  corporate-actions source may proceed with lightweight provenance: provider
-  and endpoint or collector, access date, source `as_of` when available,
-  fields used, adjustment or corporate-action semantics, and known
-  limitations. Do not require an exhaustive rights memorandum by default.
-- Public display or publication needs a current, proportional check of the
-  terms that govern the exact planned display or derived output. Raw or
-  substantial provider-data redistribution, an explicit restriction,
-  access-control circumvention, or unclear permission for the intended
-  redistribution remains a stop boundary; prefer derived results, a permitted
-  alternative, or no public data rather than assuming rights.
-- Require historical point-in-time provenance only when acceptance claims that
-  an input was known at the historical decision date, or that a result is
-  look-ahead-free, survivorship-free, revision-safe, or otherwise PIT-correct.
-  When those claims are not required, non-PIT data may be used if the plan
-  labels the exact limitation and avoids making the stronger claim.
-- Free-source uncertainty alone does not make work `strict`. Raise assurance
-  only when the claimed result or intended use makes the uncertainty
-  consequential.
+Planning does not authorize implementation. Mark separate authority boundaries
+for local source-control mutation (branch, worktree, stage, commit, cherry-pick,
+or rebase); remote source-control mutation (push, PR, merge, tag, or release);
+destructive actions; new authentication or secrets; external production,
+provider, publication, deployment, migration, or schedule changes; and any paid
+action.
 
-For a local/private `light` or `standard` plan, the lightweight record above is
-normally sufficient. Do not add immutable raw snapshots, per-file hashes, a
-full source registry, offline replay, a universal PIT-status taxonomy, or
-complete corporate-action reconstruction unless the accepted result actually
-depends on that proof or the project already owns it. Completeness means the
-strongest useful result requested under the available constraints, not the
-largest provenance bundle.
+When one of those boundaries is actually part of the plan, read the canonical
+classification from the path that exists:
 
-Explore source and method alternatives in this order, stopping when the
-selected route is sufficient for the claim:
+- installed: `../quant-research-shared/core/authority.md`
+- source: `../../shared/core/authority.md`
 
-1. an existing usable project-owned no-billing source, snapshot, or cache;
-2. an official no-billing endpoint, download, filing, or publication;
-3. another lawfully accessible no-billing public source with suitable fields;
-4. reconciliation across free sources or a method derived from free inputs;
-5. a disclosed proxy, reduced scope, degraded result, last-good result, or
-   explicit unavailable state.
+Do not load the detailed taxonomy for an ordinary read-only plan. If a separate
+boundary is in the plan but neither path exists, keep that action outside
+executable scope and mark its detailed classification unverified.
 
-Compare viable candidates on fitness for the claim, coverage, adjustment and
-revision behavior, quota and continuity, reproducibility, maintenance burden,
-and actual use restrictions. Never fabricate, silently fill, disguise stale
-or non-PIT data, bypass access controls, expose secrets, or weaken a project's
-missing/degraded/unavailable semantics in order to complete the plan.
-Do not spend the comparison budget cataloguing paid sources; mention an
-ineligible source only when needed to prevent accidental selection, then
-continue with free candidates.
+## Optional legacy compatibility
 
-## Proportional depth
-
-Choose two independent dimensions:
-
-- assurance: `light`, `standard`, or `strict`;
-- delivery: `local` or `release`.
-
-Assurance changes planning and review depth, not scope or authority. Delivery
-describes where the accepted outcome must be observed. A `release` delivery
-adds the applicable authorized remote checkpoints and public or consumer
-readback; it does not by itself elevate assurance to `strict`. Treat the
-shared matrix's combined `release` row as optional legacy strict compatibility,
-not the generic default. Subagent use, file count, framework choice, free-data
-use, or missing ideal provenance alone does not raise assurance.
-
-For `light` and `standard`, the primary planner performs one self-critique for
-missing decisions, acceptance gaps, and unsupported assumptions before
-handoff. Do not commission an independent critic merely to add review count.
-
-Use `strict` for actual high-consequence conditions such as security or
-privacy exposure, destructive migration, regulated or explicitly restricted
-data use, high-consequence computation, a required PIT-correct claim, or
-repeated material failure. Establish the relevant baseline, failure modes,
-recovery, and one independent plan critique, then, once decision-ready, freeze
-the reviewed Plan Packet for the Goal or implementation handoff. Add an
-independent architecture reviewer only when boundaries, data/control flow,
-migration, security, or operational topology create a material architecture
-risk. When both reviewers apply, they inspect the same immutable draft and the
-primary planner joins their findings into one revision. Do not require fixed
-three-role consensus or a fixed review-loop count.
-
-Do not duplicate later implementation review: plan reviewers evaluate the
-decision and acceptance before mutation. For every reviewed strict packet,
-bind the exact Plan revision or digest, the exact acceptance revision, and the
-critic verdict as one identity. Any change to the plan or acceptance invalidates
-that verdict until the affected revision is reviewed again. Never hand off an
-older reviewed Plan against newer acceptance, or call an unbound draft
-reviewed.
-
-The detailed assurance matrix, Plan Packet fields, reviewer ownership, and
-handoff lifecycle live in the shared workflow contract. Resolve the path that
-exists for the current layout:
-
-- installed `../quant-research-shared/references/goal-and-subagents.md`;
-- source `../../shared/references/goal-and-subagents.md`.
-
-## Existing contracts and technology choices
-
-Protect contracts established by the user, project, or inspected behavior.
-Do not assume that every project has analytical data, a frontend, backend,
-automation, public route, or deployment identity. Preserve a contract only
-when it remains outside the approved change.
-
-Recommend technology from demonstrated need, current project fit, operational
-burden, failure model, verification, and exit cost. Popularity or another
-project's choice is not sufficient.
-
-## Output and handoff
-
-Return the smallest output that settles the requested decision:
-
-- `quick-plan`: outcome, selected decision, material assumptions, focused
-  evidence or check, and the next handoff;
-- `audit`: confirmed findings, impact, prioritized recommendations, and
-  material limitations or unverified claims;
-- `audit+comparison`: the audit plus only the viable alternatives and their
-  decision-changing trade-offs;
-- `new-project` or an implementation plan: the smallest decision-complete Plan
-  Packet.
-
-Do not force a full implementation sequence, source registry, authority
-inventory, or frozen Plan Packet into a quick plan or audit unless the user
-asks for it or the decision cannot be made safely without it. When a Plan
-Packet is warranted, bind material findings to stable acceptance IDs, the
-selected change, applicable contracts, verification, the assurance and
-delivery dimensions, authority checkpoints, assumptions, and deferrals as
-defined in the shared workflow contract.
-
-The primary planner reconciles all read-only specialist evidence and authors
-one packet. Use specialists only for bounded repository inspection, current
-primary-source research, domain review, or an independent plan critique that
-improves the decision.
-
-Do not invoke implementation, Goal, or another skill. Planning approval is not
-execution approval. If a later Goal binds the packet, its owner controls
-acceptance revision history; Quant Plan remains an advisory, read-only author
-of any proposed revision.
-
-## Optional strict compatibility
-
-Use suite tooling only when the target already has a Quant manifest or profile,
-the user requests machine-validated evidence or legacy compatibility, or a
-selected strict Quant capability needs its validator.
-
-Then resolve `quant-research-shared`, use the existing manifest rather than
-creating one, and load only selected capability, profile, adapter, or advisory
-resources. Existing manifest v1/v2 and receipt v2/v3 contracts remain
-authoritative on that path. Diagnostic commands are optional, not startup
-requirements.
-
-If the shared runtime is unavailable or invalid, report that the optional
-strict check could not run and continue the generic read-only plan unless that
-check is itself an acceptance criterion.
-
-## Authority
-
-Planning never grants implementation, remote, destructive, secret-bearing,
-provider, raw-redistribution, or paid authority. The no-paid-data rule above is
-an absolute scope constraint, not an approval checkpoint: never request an
-exception or present paid data as a fallback. For all other applicable
-authority, consult only the canonical policy at installed
-`../quant-research-shared/core/authority.md` or source
-`../../shared/core/authority.md`, whichever exists, and mark the later approval
-boundary without reproducing its taxonomy.
+Ordinary planning must not load or create a manifest, Goal ledger, receipt,
+Story Envelope, or Team Run Packet. Only when the user explicitly requests
+machine-audited legacy output, an existing project requires its Quant manifest
+contract, or the user explicitly requests high-risk recovery that needs that
+exact contract, load `core/context-routing.md` and, when applicable,
+`references/goal-and-subagents.md` from the installed or source shared root.
+Keep those existing contracts authoritative on that opt-in path and report
+when the optional validator cannot run.

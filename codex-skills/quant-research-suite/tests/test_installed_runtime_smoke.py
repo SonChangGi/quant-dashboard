@@ -128,21 +128,74 @@ class InstalledRuntimeSmokeTests(unittest.TestCase):
             shared = target / "quant-research-shared"
             scripts = shared / "scripts"
             authority = (shared / "core" / "authority.md").resolve()
+            expected_shared_children = (
+                "core/context-routing.md",
+                "core/authority.md",
+                "references/goal-and-subagents.md",
+                "references/agent-orchestration.md",
+                "references/durable-runtime.md",
+                "references/web-design-source.md",
+                "references/web-design-v2.4.1.md",
+                "scripts/goal_ledger.py",
+                "scripts/team_protocol.py",
+            )
             for skill in (
                 "quant-plan",
                 "quant-goal",
                 "quant-developer",
             ):
                 skill_file = target / skill / "SKILL.md"
+                resolved_shared = (
+                    skill_file.parent / "../quant-research-shared"
+                ).resolve()
                 reference = (
                     skill_file.parent
                     / "../quant-research-shared/core/authority.md"
                 ).resolve()
                 with self.subTest(skill=skill):
+                    self.assertEqual(resolved_shared, shared.resolve())
                     self.assertEqual(reference, authority)
                     self.assertTrue(reference.is_file())
+                    for child in expected_shared_children:
+                        self.assertTrue(
+                            (resolved_shared / child).is_file(),
+                            f"{skill}: missing installed shared child {child}",
+                        )
+            runtime_documents = (
+                *sorted(target.glob("quant-*/SKILL.md")),
+                *sorted((shared / "capabilities").glob("*.md")),
+                *sorted((shared / "references").glob("*.md")),
+            )
+            for document in runtime_documents:
+                with self.subTest(document=document):
+                    document_text = document.read_text(encoding="utf-8")
+                    self.assertNotIn(
+                        "python3 shared/scripts/",
+                        document_text,
+                    )
+                    self.assertNotIn(
+                        "python3 <shared>/scripts/",
+                        document_text,
+                    )
+
             project = base / "project"
             project.mkdir()
+            team_help = subprocess.run(
+                [
+                    sys.executable,
+                    str(scripts / "team_protocol.py"),
+                    "--help",
+                ],
+                cwd=project,
+                capture_output=True,
+                check=False,
+                text=True,
+            )
+            self.assertEqual(
+                team_help.returncode,
+                0,
+                team_help.stdout + team_help.stderr,
+            )
             manifest = project / "manifest.json"
             manifest.write_text(
                 json.dumps(local_manifest()), encoding="utf-8"

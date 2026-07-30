@@ -276,8 +276,12 @@ The parent workflow owner performs this closure loop:
 4. Name one integration owner before spawning a writer.
 5. Issue self-contained Story Envelopes or equivalent work packets.
 6. Run independent read-only workers concurrently.
-7. For concurrent writers, create isolated worktrees or equivalent isolated
-   roots and bind every worker to its exact baseline and write scope.
+7. Use concurrent writers only when the current user request separately
+   authorizes every required branch, worktree, or other local source-control
+   mutation. Then create the authorized isolated worktrees or equivalent
+   already-available isolated roots and bind every worker to its exact baseline
+   and write scope. Without that separate authority, collapse the work to one
+   writer or dependency-ordered sequential writers in the existing workspace.
 8. Observe worker results and artifacts; a status string is not acceptance
    evidence.
 9. Inspect timed-out or interrupted worker state before cancelling or replacing
@@ -303,14 +307,23 @@ parallelism.
 
 - Read-only workers may share a workspace.
 - One writer may work directly in the canonical workspace.
-- Concurrent writers require isolated worktrees or equivalent isolated roots.
+- Concurrent writers require isolated worktrees or equivalent isolated roots
+  and separate authority in the current user request for every branch,
+  worktree, or other local source-control mutation needed to create or prepare
+  them. A plan, packet, Goal, subagent instruction, or general permission to
+  edit files does not grant that authority.
+- If the required local source-control authority is absent, use one writer or
+  dependency-ordered sequential writers in the existing workspace. Do not
+  create a branch or worktree merely to preserve concurrency.
 - Overlapping writes are sequenced under one owner even when workers are
   isolated.
 - Each writer starts from a recorded baseline and returns the resulting
   identity.
-- A worker may not commit, merge, cherry-pick, rebase, push, deploy, or mutate
-  provider state unless that exact action is separately in scope and
-  authorized.
+- A worker may not branch, create a worktree, stage, commit, merge,
+  cherry-pick, rebase, push, deploy, or mutate provider state unless that exact
+  action is separately in scope and authorized. Branch, worktree, stage,
+  commit, cherry-pick, and rebase are local source-control mutations; push, PR,
+  merge, tag, and release are remote source-control mutations.
 - Dirty worker state is evidence to inspect, not permission to auto-checkpoint
   or auto-merge.
 - The integration owner recomputes changed paths and reruns integration proof;
@@ -405,8 +418,8 @@ This contract does not introduce:
 - per-story full audit when stories share the final validation boundary;
 - paid data, trials, expiring credits, free-to-paid plans, or paid data
   fallbacks;
-- automatic commit, branch, merge, cherry-pick, rebase, push, release, or
-  deployment.
+- automatic branch, worktree, stage, commit, merge, cherry-pick, rebase, push,
+  tag, release, or deployment.
 
-Remote, destructive, secret-bearing, provider, and paid actions remain governed
-by `../core/authority.md`.
+Local source-control, remote, destructive, secret-bearing, provider, and paid
+actions remain governed by `../core/authority.md`.

@@ -129,12 +129,15 @@ stack.
 
 1. Implementation:
 2. Local-preview review:
-3. Remote/cloud mutation:
-4. Commit/push/PR/merge/release:
-5. Production replacement:
-6. Paid non-data action: separately prohibited unless a prior direct request
+3. Local source-control actions (name each selected branch/worktree/stage/
+   commit/cherry-pick/rebase action):
+4. Remote source-control actions (name each selected push/PR/merge/tag/release
+   action):
+5. Provider/cloud/deployment actions:
+6. Production replacement:
+7. Paid non-data action: separately prohibited unless a prior direct request
    names the exact bounded action
-7. Paid data: permanently prohibited; no approval path
+8. Paid data: permanently prohibited; no approval path
 
 ## Rollback and completion
 

@@ -124,7 +124,10 @@ The frontend may adopt a result only when the expected identity matches the arti
 - Run the zero-spend command preflight before remote/provider actions. If cost is
   unknown, stop before issuing it. Paid data remains ineligible even when a
   non-data paid action could otherwise be separately authorized.
-- Create a focused branch and diff.
+- Create a focused branch only when the current user request separately
+  authorizes that local source-control mutation. Otherwise keep one writer in
+  the current workspace and produce a bounded focused diff without creating a
+  branch or worktree.
 - Run tests before push and observe CI after push.
 - Keep migration, API, worker, preview, Pages, and public readback separate.
 - Save non-secret checkpoints for recovery.

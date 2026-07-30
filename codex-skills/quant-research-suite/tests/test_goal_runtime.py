@@ -705,6 +705,7 @@ class GoalRuntimeTests(unittest.TestCase):
             pending_name = "pending.json"
             event = goal_primitives.seal_hash_chain_event(
                 {
+                    "schema_version": 1,
                     "seq": 1,
                     "type": "created",
                     "payload": {},
@@ -755,6 +756,194 @@ class GoalRuntimeTests(unittest.TestCase):
         self.assertEqual(events, [event])
         self.assertEqual(recovered_state, updated_state)
         self.assertFalse(pending_exists)
+
+    def test_pending_recovery_rejects_boolean_event_sequence(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            state_dir = Path(directory)
+            event = goal_primitives.seal_hash_chain_event(
+                {
+                    "schema_version": 1,
+                    "seq": True,
+                    "type": "created",
+                    "payload": {},
+                    "workspace": {},
+                    "previous_sha256": goal_primitives.GENESIS,
+                }
+            )
+            updated_state = {
+                "ledger": {
+                    "event_count": True,
+                    "tail_sha256": event["event_sha256"],
+                }
+            }
+            goal_primitives.atomic_json(
+                state_dir / "pending.json",
+                goal_primitives.pending_transaction(
+                    event,
+                    updated_state,
+                    document_type="test_pending_event",
+                ),
+            )
+
+            with self.assertRaisesRegex(
+                ValueError, "pending goal event sequence is invalid"
+            ):
+                goal_primitives.recover_pending_transaction(
+                    state_dir,
+                    allowed_event_types={"created"},
+                    state_name="state.json",
+                    ledger_name="events.jsonl",
+                    pending_name="pending.json",
+                    pending_document_type="test_pending_event",
+                    artifact_names=(
+                        ".lock",
+                        "state.json",
+                        "events.jsonl",
+                        "pending.json",
+                    ),
+                )
+            parsed, errors = goal_primitives.parse_hash_chain_text(
+                goal_primitives.canonical_bytes(event).decode("utf-8"),
+                allowed_event_types={"created"},
+            )
+
+        self.assertEqual(parsed, [event])
+        self.assertIn("ledger line 1 has invalid sequence", errors)
+        self.assertFalse((state_dir / "events.jsonl").exists())
+        self.assertFalse((state_dir / "state.json").exists())
+
+    def test_legacy_state_rejects_boolean_cache_counters(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            root = make_repo(base)
+            state_dir = base / "state"
+            original = initialize(root, state_dir)
+            state_path = state_dir / "goal-state.json"
+            mutations = (
+                (
+                    "ledger event count",
+                    lambda value: value["ledger"].__setitem__(
+                        "event_count", True
+                    ),
+                    "goal state ledger event_count mismatch",
+                ),
+                (
+                    "checkpoint event sequence",
+                    lambda value: value["last_checkpoint"].__setitem__(
+                        "event_seq", True
+                    ),
+                    "goal state checkpoint does not match ledger",
+                ),
+            )
+            for label, mutate, expected_issue in mutations:
+                with self.subTest(field=label):
+                    candidate = json.loads(json.dumps(original))
+                    mutate(candidate)
+                    state_path.write_text(
+                        json.dumps(candidate),
+                        encoding="utf-8",
+                    )
+                    verified = command(
+                        "verify",
+                        "--root",
+                        str(root),
+                        "--state-dir",
+                        str(state_dir),
+                    )
+                    self.assertNotEqual(verified.returncode, 0)
+                    self.assertIn(expected_issue, verified.stdout)
+
+    def test_legacy_story_artifacts_reject_boolean_schema_version(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            root = make_repo(base)
+            state_dir = base / "state"
+            initialize(root, state_dir)
+            envelope_path = base / "envelope.json"
+            envelope = issue_envelope(
+                root,
+                state_dir,
+                envelope_path,
+                write_scope=[],
+                protected_scope=[],
+                mode="read_only",
+            )
+            envelope["schema_version"] = True
+            envelope["envelope_sha256"] = goal_runtime.envelope_hash(
+                envelope
+            )
+            envelope_path.write_text(
+                json.dumps(envelope),
+                encoding="utf-8",
+            )
+            rejected_envelope = command(
+                "story-issue",
+                "--root",
+                str(root),
+                "--state-dir",
+                str(state_dir),
+                "--envelope",
+                str(envelope_path),
+            )
+            self.assertNotEqual(rejected_envelope.returncode, 0)
+            self.assertIn(
+                "envelope schema_version must equal 1",
+                rejected_envelope.stdout,
+            )
+
+            envelope["schema_version"] = 1
+            envelope["envelope_sha256"] = goal_runtime.envelope_hash(
+                envelope
+            )
+            envelope_path.write_text(
+                json.dumps(envelope),
+                encoding="utf-8",
+            )
+            issued = command(
+                "story-issue",
+                "--root",
+                str(root),
+                "--state-dir",
+                str(state_dir),
+                "--envelope",
+                str(envelope_path),
+            )
+            self.assertEqual(
+                issued.returncode,
+                0,
+                issued.stdout + issued.stderr,
+            )
+
+            receipt_path = base / "receipt.json"
+            receipt = write_story_receipt(
+                root,
+                state_dir,
+                receipt_path,
+                envelope,
+            )
+            receipt["schema_version"] = True
+            receipt["receipt_sha256"] = goal_runtime.receipt_hash(receipt)
+            receipt_path.write_text(
+                json.dumps(receipt),
+                encoding="utf-8",
+            )
+            rejected_receipt = command(
+                "story-accept",
+                "--root",
+                str(root),
+                "--state-dir",
+                str(state_dir),
+                "--receipt",
+                str(receipt_path),
+            )
+
+        self.assertNotEqual(rejected_receipt.returncode, 0)
+        self.assertIn(
+            "receipt schema_version must equal 1",
+            rejected_receipt.stdout,
+        )
 
     def test_init_and_verify_hash_linked_state(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -1955,10 +2144,32 @@ class GoalRuntimeTests(unittest.TestCase):
             )["intent_sha256"]
         self.assertEqual(completed.returncode, 0, completed.stdout)
         self.assertEqual(verified.returncode, 0, verified.stdout)
+        completed_result = json.loads(completed.stdout)["result"]
+        self.assertEqual(
+            completed_result["completion_scope"],
+            "legacy_runtime_only",
+        )
+        self.assertIs(
+            completed_result["host_goal_completion_recorded"],
+            False,
+        )
         self.assertEqual(
             json.loads(verified.stdout)["result"]["status"], "complete"
         )
         completion = ledger[-1]
+        self.assertEqual(
+            completion["summary"],
+            "Legacy local runtime completed; host Goal state was not "
+            "changed",
+        )
+        self.assertEqual(
+            completion["payload"]["completion_scope"],
+            "legacy_runtime_only",
+        )
+        self.assertIs(
+            completion["payload"]["host_goal_completion_recorded"],
+            False,
+        )
         self.assertEqual(
             completion["payload"]["final_receipt_sha256"],
             goal_runtime.digest(receipt),

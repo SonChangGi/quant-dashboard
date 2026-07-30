@@ -1,6 +1,6 @@
 interface:
   display_name: "Quant Goal"
-  short_description: "Manual $quant-goal invocation only"
-  default_prompt: "The current user explicitly invoked $quant-goal; keep the host Goal as canonical, use ordinary workers or an isolated team when independent lanes help, exhaust free-only source and method fallbacks, separate light/standard/strict assurance from local/release delivery, persist only meaningful durable checkpoints, and complete against fresh acceptance evidence without activating another skill, allowing paid data, or crossing remote, provider, destructive, paid, or future-turn activation boundaries."
+  short_description: "Start or steer a native Goal with $quant-goal"
+  default_prompt: "Use $quant-goal to bind or resume one native Goal, pursue it with selective delegation and free-only fallbacks, and transition it only on verified completion or a genuine repeated blocker."
 policy:
   allow_implicit_invocation: false

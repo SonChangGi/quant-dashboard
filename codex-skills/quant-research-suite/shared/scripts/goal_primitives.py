@@ -787,8 +787,15 @@ def parse_hash_chain_text(
         unsigned = dict(event)
         unsigned.pop("event_sha256", None)
         expected_hash = digest(unsigned)
-        if event.get("seq") != number:
+        if type(event.get("seq")) is not int or event["seq"] != number:
             errors.append(f"{label} line {number} has invalid sequence")
+        if (
+            type(event.get("schema_version")) is not int
+            or event["schema_version"] != 1
+        ):
+            errors.append(
+                f"{label} line {number} has invalid schema version"
+            )
         if event.get("previous_sha256") != previous:
             errors.append(f"{label} line {number} has a broken previous hash")
         if recorded_hash != expected_hash:
@@ -888,7 +895,8 @@ def recover_pending_transaction(
     transaction_hash = unsigned.pop("transaction_sha256", None)
     if (
         pending.get("document_type") != pending_document_type
-        or pending.get("schema_version") != pending_schema_version
+        or type(pending.get("schema_version")) is not int
+        or pending["schema_version"] != pending_schema_version
         or transaction_hash != digest(unsigned)
     ):
         raise ValueError("pending goal transaction is invalid")
@@ -905,7 +913,7 @@ def recover_pending_transaction(
     if recorded_event_hash != digest(unsigned_event):
         raise ValueError("pending goal event hash is invalid")
     sequence = event.get("seq")
-    if not isinstance(sequence, int) or sequence < 1:
+    if type(sequence) is not int or sequence < 1:
         raise ValueError("pending goal event sequence is invalid")
     ledger_path = state_dir / ledger_name
     missing_separator = False
@@ -996,7 +1004,8 @@ def recover_pending_transaction(
     ledger = updated_state.get("ledger")
     if (
         not isinstance(ledger, dict)
-        or ledger.get("event_count") != sequence
+        or type(ledger.get("event_count")) is not int
+        or ledger["event_count"] != sequence
         or ledger.get("tail_sha256") != recorded_event_hash
     ):
         raise ValueError("pending goal state ledger cache is invalid")

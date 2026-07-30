@@ -179,6 +179,7 @@ def review_receipt(
     evidence_candidate_sha256: str | None = None,
     review_scope: dict[str, object] | None = None,
     carry_forward_from_receipt_sha256: str | None = None,
+    reviewer_specialty: str | None = None,
     findings: list[dict[str, object]] | None = None,
     checked_at: str = "2026-07-27T00:10:00Z",
 ) -> dict[str, object]:
@@ -219,6 +220,8 @@ def review_receipt(
         value["carry_forward_from_receipt_sha256"] = (
             carry_forward_from_receipt_sha256
         )
+    if reviewer_specialty is not None:
+        value["reviewer_specialty"] = reviewer_specialty
     value["receipt_sha256"] = goal_ledger.review_receipt_hash(value)
     return value
 
@@ -234,6 +237,7 @@ def record_review(
     status: str = "passed",
     scope_patterns: list[str] | None = None,
     carry_forward_from_receipt_sha256: str | None = None,
+    reviewer_specialty: str | None = None,
     findings: list[dict[str, object]] | None = None,
 ) -> subprocess.CompletedProcess[str]:
     state = json.loads(
@@ -282,6 +286,7 @@ def record_review(
             carry_forward_from_receipt_sha256=(
                 carry_forward_from_receipt_sha256
             ),
+            reviewer_specialty=reviewer_specialty,
             findings=findings,
             checked_at=(
                 "2026-07-27T00:27:00Z"
@@ -519,6 +524,243 @@ class GoalLedgerTests(unittest.TestCase):
             "independent_reaudit",
             state["proof_policy"]["required_gates"],
         )
+
+    def test_standard_gate_preserves_distinct_reviewer_specialty(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            root = make_project(base)
+            state_dir, state = initialize(base, root)
+            snapshot = current_snapshot(root, state_dir)
+            scope = goal_ledger.review_scope_binding(
+                root, state_dir, ["src/**"]
+            )
+            legacy = review_receipt(
+                state,
+                snapshot["sha256"],
+                "integration_review",
+                "legacy-review",
+                review_scope=scope,
+            )
+            self.assertEqual(
+                goal_ledger.review_receipt_issues(
+                    legacy, state, snapshot
+                ),
+                [],
+            )
+
+            invalid = dict(legacy)
+            invalid["review_id"] = "invalid-specialty"
+            invalid["reviewer_specialty"] = "integration_review"
+            invalid["receipt_sha256"] = goal_ledger.review_receipt_hash(
+                invalid
+            )
+            self.assertIn(
+                "review receipt reviewer_specialty must be a portable "
+                "specialty distinct from the gate role",
+                goal_ledger.review_receipt_issues(
+                    invalid, state, snapshot
+                ),
+            )
+
+            recorded = record_review(
+                base,
+                root,
+                state_dir,
+                "integration_review",
+                "implementation-review",
+                reviewer_specialty="implementation",
+            )
+            self.assertEqual(
+                recorded.returncode,
+                0,
+                recorded.stdout + recorded.stderr,
+            )
+            verified = command(
+                "resume",
+                "--root",
+                str(root),
+                "--state-dir",
+                str(state_dir),
+            )
+            stored_state = json.loads(
+                (state_dir / goal_ledger.STATE_NAME).read_text(
+                    encoding="utf-8"
+                )
+            )
+            stored_receipt = json.loads(
+                (
+                    state_dir
+                    / "reviews"
+                    / "implementation-review.json"
+                ).read_text(encoding="utf-8")
+            )
+
+        self.assertEqual(
+            verified.returncode,
+            0,
+            verified.stdout + verified.stderr,
+        )
+        self.assertEqual(
+            stored_state["reviews"][0]["role"],
+            "integration_review",
+        )
+        self.assertEqual(
+            stored_state["reviews"][0]["reviewer_specialty"],
+            "implementation",
+        )
+        self.assertEqual(
+            stored_receipt["reviewer_specialty"],
+            "implementation",
+        )
+
+    def test_boolean_values_never_satisfy_json_integer_contracts(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            root = make_project(base)
+            state_dir, state = initialize(base, root)
+            snapshot = current_snapshot(root, state_dir)
+
+            state_mutations = {
+                "schema version": (
+                    lambda value: value.__setitem__("schema_version", True),
+                    "schema_version must equal 1",
+                ),
+                "state-root device": (
+                    lambda value: value["state_root"].__setitem__(
+                        "device", True
+                    ),
+                    "state-root binding is invalid",
+                ),
+                "acceptance revision": (
+                    lambda value: value.__setitem__(
+                        "acceptance_revision", True
+                    ),
+                    "acceptance revision cache is invalid",
+                ),
+                "story plan revision": (
+                    lambda value: value["stories"].__setitem__(
+                        "story-bool",
+                        {
+                            "status": "open",
+                            "plan_revision": True,
+                            "acceptance_revision": 1,
+                            "superseded_by_acceptance_revision": None,
+                            "return_count": 0,
+                            "returns": [],
+                            "acceptance_ids": ["a1"],
+                            "write_scope": [],
+                            "protected_scope": [],
+                        },
+                    ),
+                    "story revision binding is invalid",
+                ),
+                "review event sequence": (
+                    lambda value: value["reviews"].append(
+                        {
+                            "role": "integration_review",
+                            "plan_revision": 0,
+                            "acceptance_revision": 1,
+                            "event_seq": True,
+                        }
+                    ),
+                    "review binding is invalid",
+                ),
+                "review context sequence": (
+                    lambda value: value["review_context"].__setitem__(
+                        "terminal_after_event_seq", True
+                    ),
+                    "review context is invalid",
+                ),
+                "completion event sequence": (
+                    lambda value: value["completion_history"].append(
+                        {
+                            "receipt_path": "receipts/final-r1.json",
+                            "receipt_sha256": "a" * 64,
+                            "pre_ledger_tail_sha256": "b" * 64,
+                            "evidence_candidate_sha256": "c" * 64,
+                            "terminal_review_receipt_sha256": None,
+                            "workspace_sha256": "d" * 64,
+                            "plan_revision": 0,
+                            "acceptance_revision": 1,
+                            "recorded_at": "2026-07-27T00:30:00Z",
+                            "event_seq": True,
+                        }
+                    ),
+                    "completion history is not contiguous",
+                ),
+                "ledger event count": (
+                    lambda value: value["ledger"].__setitem__(
+                        "event_count", True
+                    ),
+                    "event count is invalid",
+                ),
+            }
+            for label, (mutate, expected_issue) in state_mutations.items():
+                with self.subTest(state_field=label):
+                    candidate_state = json.loads(json.dumps(state))
+                    mutate(candidate_state)
+                    self.assertTrue(
+                        any(
+                            expected_issue in issue
+                            for issue in goal_ledger.state_shape_issues(
+                                candidate_state
+                            )
+                        ),
+                        goal_ledger.state_shape_issues(candidate_state),
+                    )
+
+            scope = goal_ledger.review_scope_binding(
+                root, state_dir, ["src/**"]
+            )
+            valid_review = review_receipt(
+                state,
+                snapshot["sha256"],
+                "integration_review",
+                "integer-review",
+                review_scope=scope,
+            )
+            for field, expected_issue in (
+                ("schema_version", "schema_version must equal 1"),
+                ("plan_revision", "plan revision is stale"),
+                ("acceptance_revision", "acceptance revision is stale"),
+            ):
+                with self.subTest(review_field=field):
+                    invalid_review = dict(valid_review)
+                    invalid_review[field] = True
+                    invalid_review["receipt_sha256"] = (
+                        goal_ledger.review_receipt_hash(invalid_review)
+                    )
+                    self.assertTrue(
+                        any(
+                            expected_issue in issue
+                            for issue in goal_ledger.review_receipt_issues(
+                                invalid_review, state, snapshot
+                            )
+                        )
+                    )
+
+            candidate = evidence_receipt(root, state_dir)
+            candidate["schema_version"] = True
+            self.assertIn(
+                "evidence candidate schema_version must equal 3",
+                goal_ledger.completion_evidence_candidate_issues(
+                    candidate, state, snapshot
+                ),
+            )
+            candidate = evidence_receipt(root, state_dir)
+            candidate["goal_binding"]["acceptance_claims"]["a1"][0][
+                "evidence_index"
+            ] = False
+            self.assertTrue(
+                any(
+                    "references invalid evidence" in issue
+                    for issue in (
+                        goal_ledger.completion_evidence_candidate_issues(
+                            candidate, state, snapshot
+                        )
+                    )
+                )
+            )
 
     def test_plan_artifact_policy_blocks_secret_paid_and_binary_copy(
         self,
@@ -4034,37 +4276,43 @@ class GoalLedgerTests(unittest.TestCase):
                 "waiting",
             )
 
-            completed_state_dir = base / "completed-state"
-            completed = command(
-                "init",
-                "--state-dir",
-                str(completed_state_dir),
-                "--goal-id",
-                "goal-completed",
-                "--host-goal-id",
-                "host-completed",
-                "--host-state",
+            for terminal_state in (
                 "completed",
-                *common,
-            )
-            completed_state = json.loads(
-                (completed_state_dir / goal_ledger.STATE_NAME).read_text(
-                    encoding="utf-8"
-                )
-            )
-        self.assertNotEqual(completed.returncode, 0)
-        self.assertEqual(
-            json.loads(completed.stdout)["status"],
-            "review_required",
-        )
-        self.assertIn(
-            "host_completed_without_completion_ready",
-            completed.stdout,
-        )
-        self.assertEqual(
-            completed_state["host"]["last_observed_state"],
-            "completed",
-        )
+                "cancelled",
+                "superseded",
+            ):
+                with self.subTest(terminal_state=terminal_state):
+                    terminal_state_dir = base / f"{terminal_state}-state"
+                    terminal = command(
+                        "init",
+                        "--state-dir",
+                        str(terminal_state_dir),
+                        "--goal-id",
+                        f"goal-{terminal_state}",
+                        "--host-goal-id",
+                        f"host-{terminal_state}",
+                        "--host-state",
+                        terminal_state,
+                        *common,
+                    )
+                    self.assertNotEqual(terminal.returncode, 0)
+                    self.assertEqual(
+                        json.loads(terminal.stdout)["status"],
+                        "blocked",
+                    )
+                    self.assertIn(
+                        "create a new host Goal generation",
+                        terminal.stdout,
+                    )
+                    self.assertIn(
+                        "explicit separate import workflow",
+                        terminal.stdout,
+                    )
+                    self.assertNotIn(
+                        "reopen the same host Goal",
+                        terminal.stdout,
+                    )
+                    self.assertFalse(terminal_state_dir.exists())
 
     def test_host_divergence_is_reported_without_overwrite(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -4099,9 +4347,11 @@ class GoalLedgerTests(unittest.TestCase):
             "host_completed_without_completion_ready", observed.stdout
         )
         self.assertIn(
-            "reopen the same host Goal or create a new Goal",
+            "create a new host Goal generation",
             observed.stdout,
         )
+        self.assertIn("explicit separate import workflow", observed.stdout)
+        self.assertNotIn("reopen the same host Goal", observed.stdout)
         self.assertEqual(state["host"]["last_observed_state"], "completed")
         self.assertIsNone(state["completion_ready"])
 

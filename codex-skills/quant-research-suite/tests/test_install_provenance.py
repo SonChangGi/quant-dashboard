@@ -50,6 +50,19 @@ def unavailable_provenance() -> dict[str, object]:
 
 
 class InstallProvenanceTests(unittest.TestCase):
+    def test_readme_describes_transactional_but_not_suite_atomic_update(
+        self,
+    ) -> None:
+        readme = " ".join(
+            (ROOT / "README.md").read_text(encoding="utf-8").lower().split()
+        )
+        self.assertIn("transactionally replaces each", readme)
+        self.assertIn("four-directory suite update is not crash-atomic", readme)
+        self.assertNotIn(
+            "atomically replaces the three skills and shared resources",
+            readme,
+        )
+
     def install_to(
         self,
         target: Path,
