@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -50,16 +51,20 @@ def unavailable_provenance() -> dict[str, object]:
 
 
 class InstallProvenanceTests(unittest.TestCase):
-    def test_readme_describes_transactional_but_not_suite_atomic_update(
+    def test_readme_describes_staged_update_with_rollback(
         self,
     ) -> None:
         readme = " ".join(
             (ROOT / "README.md").read_text(encoding="utf-8").lower().split()
         )
-        self.assertIn("transactionally replaces each", readme)
-        self.assertIn("four-directory suite update is not crash-atomic", readme)
+        self.assertIn("backs up the previous installation", readme)
+        self.assertIn("with rollback on a caught failure", readme)
         self.assertNotIn(
             "atomically replaces the three skills and shared resources",
+            readme,
+        )
+        self.assertIn(
+            "install.py --update --require-clean-source",
             readme,
         )
 
@@ -67,7 +72,15 @@ class InstallProvenanceTests(unittest.TestCase):
         self,
         target: Path,
         provenance: dict[str, object],
+        *,
+        include_legacy: bool = False,
+        require_clean: bool = False,
     ) -> None:
+        argv = ["install.py", "--target", str(target)]
+        if include_legacy:
+            argv.append("--include-legacy")
+        if require_clean:
+            argv.append("--require-clean-source")
         with mock.patch.object(
             suite_installer,
             "validate_source",
@@ -80,10 +93,13 @@ class InstallProvenanceTests(unittest.TestCase):
                 with mock.patch.object(
                     sys,
                     "argv",
-                    ["install.py", "--target", str(target)],
+                    argv,
                 ):
                     self.assertEqual(suite_installer.main(), 0)
-            validate_source.assert_called_once_with(run_tests=True)
+            validate_source.assert_called_once_with(
+                run_tests=True,
+                include_legacy=include_legacy,
+            )
 
     def test_origin_sanitization_removes_credentials_and_query(self) -> None:
         cases = {
@@ -225,16 +241,25 @@ class InstallProvenanceTests(unittest.TestCase):
                             suite_installer.main()
             self.assertFalse(target.exists())
 
-    def test_schema_v2_manifest_hash_and_provenance_are_validated(self) -> None:
+    def test_schema_v3_profile_hash_and_provenance_are_validated(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             target = Path(directory) / "skills"
-            self.install_to(target, clean_provenance())
+            self.install_to(
+                target,
+                clean_provenance(),
+                require_clean=True,
+            )
             shared = target / "quant-research-shared"
             manifest_path = shared / "install-manifest.json"
             validator = shared / "scripts" / "validate_installed.py"
             manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
 
-            self.assertEqual(manifest["schema_version"], 2)
+            self.assertEqual(manifest["schema_version"], 3)
+            self.assertEqual(manifest["install_profile"], "base")
+            self.assertEqual(
+                set(manifest["items"]["quant-research-shared"]),
+                set(suite_installer.BASE_SHARED_FILES),
+            )
             self.assertEqual(
                 manifest["canonicalization"],
                 "canonical-json-v1",
@@ -244,6 +269,7 @@ class InstallProvenanceTests(unittest.TestCase):
                 suite_installer.suite_content_sha256(manifest["items"]),
             )
             self.assertEqual(manifest["source_git"], clean_provenance())
+            self.assertIs(manifest["source_git"]["dirty"], False)
             valid = run(sys.executable, str(validator))
             self.assertEqual(
                 valid.returncode,
@@ -260,27 +286,97 @@ class InstallProvenanceTests(unittest.TestCase):
             linked_skill.unlink()
 
             original = json.loads(json.dumps(manifest))
-            manifest["suite_content_sha256"] = "0" * 64
+            extra_field = json.loads(json.dumps(original))
+            extra_field["unexpected_top_level"] = {
+                "paid_action_authority": True,
+            }
             manifest_path.write_text(
-                json.dumps(manifest),
+                json.dumps(extra_field),
+                encoding="utf-8",
+            )
+            extra_invalid = run(sys.executable, str(validator))
+            self.assertNotEqual(extra_invalid.returncode, 0)
+            self.assertIn(
+                "install-manifest fields mismatch",
+                extra_invalid.stdout,
+            )
+            self.assertIn("unexpected_top_level", extra_invalid.stdout)
+
+            unknown_profile = json.loads(json.dumps(original))
+            unknown_profile["install_profile"] = "unknown"
+            manifest_path.write_text(
+                json.dumps(unknown_profile),
+                encoding="utf-8",
+            )
+            profile_invalid = run(sys.executable, str(validator))
+            self.assertNotEqual(profile_invalid.returncode, 0)
+            self.assertIn(
+                "install_profile must be base or compat",
+                profile_invalid.stdout,
+            )
+
+            compat_without_overlay = json.loads(json.dumps(original))
+            compat_without_overlay["install_profile"] = "compat"
+            manifest_path.write_text(
+                json.dumps(compat_without_overlay),
+                encoding="utf-8",
+            )
+            compat_incomplete = run(sys.executable, str(validator))
+            self.assertNotEqual(compat_incomplete.returncode, 0)
+            self.assertIn(
+                "compat profile shared files mismatch",
+                compat_incomplete.stdout,
+            )
+
+            legacy_path = shared / "scripts" / "goal_ledger.py"
+            shutil.copy2(
+                ROOT / "shared" / "scripts" / "goal_ledger.py",
+                legacy_path,
+            )
+            base_with_legacy = json.loads(json.dumps(original))
+            base_with_legacy["items"]["quant-research-shared"] = (
+                suite_installer.tree_hashes(shared)
+            )
+            base_with_legacy["suite_content_sha256"] = (
+                suite_installer.suite_content_sha256(
+                    base_with_legacy["items"]
+                )
+            )
+            manifest_path.write_text(
+                json.dumps(base_with_legacy),
+                encoding="utf-8",
+            )
+            base_not_lean = run(sys.executable, str(validator))
+            self.assertNotEqual(base_not_lean.returncode, 0)
+            self.assertIn(
+                "base profile shared files mismatch",
+                base_not_lean.stdout,
+            )
+            legacy_path.unlink()
+
+            wrong_suite_hash = json.loads(json.dumps(original))
+            wrong_suite_hash["suite_content_sha256"] = "0" * 64
+            manifest_path.write_text(
+                json.dumps(wrong_suite_hash),
                 encoding="utf-8",
             )
             wrong_hash = run(sys.executable, str(validator))
             self.assertNotEqual(wrong_hash.returncode, 0)
             self.assertIn("suite_content_sha256", wrong_hash.stdout)
 
-            original["source_git"]["origin"] = (
+            credentialed_manifest = json.loads(json.dumps(original))
+            credentialed_manifest["source_git"]["origin"] = (
                 "https://alice:secret@example.com/org/repository.git"
             )
             manifest_path.write_text(
-                json.dumps(original),
+                json.dumps(credentialed_manifest),
                 encoding="utf-8",
             )
             credentialed = run(sys.executable, str(validator))
             self.assertNotEqual(credentialed.returncode, 0)
             self.assertIn("origin is not sanitized", credentialed.stdout)
 
-            malformed = json.loads(json.dumps(manifest))
+            malformed = json.loads(json.dumps(original))
             first_item = next(iter(malformed["items"].values()))
             first_path = next(iter(first_item))
             first_item[first_path] = float("nan")
@@ -290,8 +386,45 @@ class InstallProvenanceTests(unittest.TestCase):
             )
             invalid_item = run(sys.executable, str(validator))
             self.assertNotEqual(invalid_item.returncode, 0)
-            self.assertIn("invalid or missing manifest item", invalid_item.stdout)
+            self.assertIn(
+                "invalid or missing manifest item",
+                invalid_item.stdout,
+            )
             self.assertNotIn("Traceback", invalid_item.stderr)
+
+    def test_same_clean_source_and_profile_have_same_content_identity(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            targets = (root / "first", root / "second")
+            manifests: list[dict[str, object]] = []
+            for target in targets:
+                self.install_to(
+                    target,
+                    clean_provenance(),
+                    require_clean=True,
+                )
+                manifests.append(
+                    json.loads(
+                        (
+                            target
+                            / "quant-research-shared/install-manifest.json"
+                        ).read_text(encoding="utf-8")
+                    )
+                )
+
+            first, second = manifests
+            self.assertEqual(
+                first["install_profile"],
+                second["install_profile"],
+            )
+            self.assertEqual(first["items"], second["items"])
+            self.assertEqual(
+                first["suite_content_sha256"],
+                second["suite_content_sha256"],
+            )
+            self.assertEqual(first["source_git"], second["source_git"])
 
     def test_archive_source_provenance_remains_portable(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

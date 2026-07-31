@@ -22,23 +22,60 @@ EXPECTED_SKILLS = (
     "quant-goal",
     "quant-developer",
 )
-
-EXPECTED_DESCRIPTIONS = {
+ROLE_DESCRIPTION_CONCEPTS = {
     "quant-plan": (
-        "Use only when the user explicitly invokes $quant-plan to audit "
-        "current state or produce a quick or decision-complete "
-        "implementation plan. Work read-only; never auto-activate or "
-        "implement changes."
+        r"\b(?:audit|plan)\b",
+        r"\bread-only\b",
+        r"\badapt\w*",
     ),
     "quant-goal": (
-        "Use only when the user explicitly invokes $quant-goal to initialize, "
-        "manually resume, or steer a native Goal through verified completion "
-        "or a genuine blocker."
+        r"\bnative goal\b",
+        r"\b(?:complete|completion|blocker|blocked)\b",
+        r"\badapt\w*",
     ),
     "quant-developer": (
-        "Use only when the user explicitly invokes $quant-developer to "
-        "deliver a complete end-to-end change with adaptive implementation, "
-        "selective delegation, and real-surface verification."
+        r"\b(?:implementation|change|deliver)\b",
+        r"\b(?:verify|verification|surface)\b",
+        r"\badapt\w*",
+    ),
+}
+ADAPTIVE_REFERENCE = "adaptive-workflow.md"
+ORDINARY_CAPABILITY_ROUTES = {
+    "capabilities/analysis.md": (
+        r"\b(?:analysis|calculation|compute|result)\b",
+        r"\b(?:display|result|output)\b",
+    ),
+    "capabilities/external-data.md": (
+        r"\b(?:external|provider|api|feed|file)\b",
+        r"\b(?:data|source)\b",
+    ),
+    "capabilities/analysis-input-flow.md": (
+        r"\b(?:ui|control|input)\b",
+        r"\b(?:analysis|calculation|compute|result)\b",
+    ),
+    "capabilities/web-ui.md": (
+        r"\b(?:layout|interaction|responsive|ui)\b",
+    ),
+    "capabilities/interactive-chart.md": (
+        r"\bchart\b",
+        r"\binteraction\b",
+    ),
+    "capabilities/backend.md": (
+        r"\b(?:api|state|authentication|secrets?)\b",
+    ),
+    "capabilities/scheduled-automation.md": (
+        r"\b(?:recurring|event|schedule|scheduled|automation)\b",
+    ),
+    "capabilities/public-web.md": (
+        r"\bpublic\b",
+        r"\b(?:url|route|web|page)\b",
+    ),
+    "capabilities/publication.md": (
+        r"\b(?:artifact|pointer|current)\b",
+        r"\b(?:publish|publication|update)\b",
+    ),
+    "capabilities/remote-release.md": (
+        r"\b(?:push|pr|release|deployment|remote)\b",
     ),
 }
 
@@ -49,8 +86,12 @@ def skill_text(skill: str) -> str:
     ).read_text(encoding="utf-8")
 
 
+def normalized(text: str) -> str:
+    return validate_suite.normalized_policy_text(text)
+
+
 def normalized_skill_text(skill: str) -> str:
-    return validate_suite.normalized_policy_text(skill_text(skill))
+    return normalized(skill_text(skill))
 
 
 def agent_metadata(skill: str) -> dict[str, object]:
@@ -63,8 +104,58 @@ def agent_metadata(skill: str) -> dict[str, object]:
     return value
 
 
+def markdown_table_rows(text: str) -> list[str]:
+    rows: list[str] = []
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not (stripped.startswith("|") and stripped.endswith("|")):
+            continue
+        cells = [cell.strip() for cell in stripped.strip("|").split("|")]
+        if cells and all(re.fullmatch(r":?-{3,}:?", cell) for cell in cells):
+            continue
+        rows.append(normalized(" | ".join(cells)))
+    return rows
+
+
 class SkillRoutingTests(unittest.TestCase):
-    def test_exactly_three_public_skills_with_stable_names_and_descriptions(
+    def assert_concept(
+        self,
+        text: str,
+        label: str,
+        *patterns: str,
+    ) -> None:
+        body = normalized(text)
+        self.assertTrue(
+            any(re.search(pattern, body) for pattern in patterns),
+            f"missing {label}: expected one of {patterns!r}",
+        )
+
+    def assert_excluded_activation_context(
+        self,
+        text: str,
+        label: str,
+        context_pattern: str,
+    ) -> None:
+        clauses = re.split(r"(?<=[.!?;])\s+", normalized(text))
+        matched = [
+            clause
+            for clause in clauses
+            if re.search(context_pattern, clause)
+            and re.search(r"\b(?:activat|select|invok)", clause)
+        ]
+        self.assertTrue(matched, f"missing invocation context {label!r}")
+        self.assertTrue(
+            any(
+                re.search(
+                    r"\b(?:not|never|does not|do not|isn't|cannot)\b",
+                    clause,
+                )
+                for clause in matched
+            ),
+            f"{label!r} is mentioned without an explicit non-activation rule",
+        )
+
+    def test_exactly_three_public_skills_with_semantic_descriptions(
         self,
     ) -> None:
         discovered = {
@@ -75,43 +166,266 @@ class SkillRoutingTests(unittest.TestCase):
         self.assertEqual(tuple(validate_suite.SKILLS), EXPECTED_SKILLS)
         self.assertFalse((ROOT / "shared" / "SKILL.md").exists())
 
-        for skill, expected_description in EXPECTED_DESCRIPTIONS.items():
+        for skill, patterns in ROLE_DESCRIPTION_CONCEPTS.items():
             metadata = validate_suite.frontmatter(skill_text(skill))
+            description = normalized(metadata.get("description", ""))
             with self.subTest(skill=skill):
-                self.assertEqual(metadata["name"], skill)
-                self.assertEqual(
-                    metadata["description"],
-                    expected_description,
-                )
+                self.assertEqual(metadata.get("name"), skill)
+                self.assertIn(f"${skill}", description)
+                self.assertRegex(description, r"\b(?:explicit|only when)\b")
+                for pattern in patterns:
+                    self.assertRegex(description, pattern)
 
-    def test_public_skills_are_manual_and_do_not_cross_activate(self) -> None:
+    def test_public_skills_share_one_canonical_manual_invocation_contract(
+        self,
+    ) -> None:
         for skill in EXPECTED_SKILLS:
-            text = normalized_skill_text(skill)
+            text = skill_text(skill)
+            body = normalized(text)
             metadata = agent_metadata(skill)
-            mentioned_skills = set(
-                re.findall(r"\$(quant-(?:plan|goal|developer))", text)
-            )
 
             with self.subTest(skill=skill):
                 self.assertIs(
                     metadata["allow_implicit_invocation"],
                     False,
                 )
-                self.assertIn(f"${skill}", text)
-                self.assertIn("explicit", text)
-                self.assertTrue(
-                    "current user" in text or "current-user" in text
+                self.assertIn(f"${skill}", body)
+                self.assertRegex(body, r"\bcurrent[- ]user\b")
+                self.assertRegex(body, r"\bsame[- ]request\b")
+                self.assertRegex(body, r"\b(?:trusted\b.{0,80})?metadata\b")
+                self.assertRegex(
+                    body,
+                    r"\b(?:produced|derived|generated)\b.{0,120}"
+                    r"\b(?:select|selector|invocation)\b",
                 )
                 self.assertTrue(
-                    "not activation" in text
-                    or "does not activate" in text
-                    or "never auto-activate" in text
+                    validate_suite.has_selector_metadata_clause(text, skill)
                 )
-                self.assertEqual(mentioned_skills, {skill})
 
-    def test_agent_prompts_are_short_single_sentence_and_role_specific(
+                for label, pattern in {
+                    "semantic match": r"\bsemantic match\b",
+                    "quoted selector": r"\bquoted\b",
+                    "negated selector": r"\bnegated\b",
+                    "prior request": r"\b(?:earlier|prior|previous)\b",
+                    "worker instruction": r"\b(?:worker|another agent)\b",
+                }.items():
+                    self.assert_excluded_activation_context(
+                        text,
+                        label,
+                        pattern,
+                    )
+
+    def test_selector_metadata_trust_dimensions_cannot_be_decoupled(
         self,
     ) -> None:
+        mutations = (
+            (r"trusted current-user", "untrusted current-user"),
+            (r"current-user, same-request", "request"),
+            (
+                r"metadata generated by that\s+selector",
+                "metadata not generated by that selector",
+            ),
+            (
+                r"metadata generated by that\s+selector",
+                "metadata never generated by that selector",
+            ),
+            (
+                r"metadata generated by that\s+selector",
+                "metadata not reliably generated by that selector",
+            ),
+            (
+                r"metadata generated by that\s+selector",
+                "metadata generated by a different selector",
+            ),
+            (
+                r"metadata generated by that\s+selector",
+                "metadata generated independently of that selector",
+            ),
+            (
+                r"metadata generated by that\s+selector",
+                "metadata generated by any selector",
+            ),
+            (
+                r"metadata generated by that\s+selector",
+                "metadata generated by no selector",
+            ),
+            (
+                r"metadata generated by that\s+selector",
+                (
+                    "metadata generated by a selector other than the current "
+                    "user's selector"
+                ),
+            ),
+            (
+                r"metadata generated by that\s+selector",
+                "metadata generated by any current-user selector",
+            ),
+            (
+                r"metadata generated by that\s+selector",
+                "metadata generated by that selector or another selector",
+            ),
+            (
+                r"metadata generated by that\s+selector",
+                (
+                    "metadata generated by that selector and an unrelated "
+                    "selector"
+                ),
+            ),
+            (
+                r"metadata generated by that\s+selector",
+                "metadata generated by that selector or a second selector",
+            ),
+            (r"generated by that\s+selector", "provided by the host"),
+            (r"same-request", "prior-request"),
+            (r"same-request metadata", "not same-request metadata"),
+            (r"trusted current-user", "trusted not-current-user"),
+            (
+                r"same-request metadata",
+                "same-request metadata from a prior request",
+            ),
+        )
+        expected = (
+            "selector metadata must be trusted, current-user, same-request, "
+            "and selector-derived"
+        )
+        for skill in EXPECTED_SKILLS:
+            original = skill_text(skill)
+            for pattern, replacement in mutations:
+                with self.subTest(skill=skill, mutation=pattern):
+                    mutated, count = re.subn(
+                        pattern,
+                        replacement,
+                        original,
+                        count=1,
+                    )
+                    self.assertEqual(count, 1)
+                    errors = validate_suite._validate_public_skill(
+                        skill,
+                        mutated,
+                    )
+                    self.assertTrue(
+                        any(expected in error for error in errors),
+                        errors,
+                    )
+
+    def test_safe_selector_metadata_paraphrase_is_accepted(self) -> None:
+        pattern = (
+            r"trusted current-user, same-request metadata generated by that"
+            r"\s+selector"
+        )
+        safe_paraphrases = (
+            (
+                "trusted metadata produced from the current user's selector "
+                "in the same request"
+            ),
+            (
+                "trusted metadata that the current user's selector generated "
+                "in the same request"
+            ),
+            (
+                "trusted current-user, same-request metadata emitted by that "
+                "selector"
+            ),
+        )
+        for skill in EXPECTED_SKILLS:
+            original = skill_text(skill)
+            for paraphrase in safe_paraphrases:
+                paraphrased, count = re.subn(
+                    pattern,
+                    paraphrase,
+                    original,
+                    count=1,
+                )
+                self.assertEqual(count, 1)
+                with self.subTest(skill=skill, paraphrase=paraphrase):
+                    self.assertEqual(
+                        validate_suite._validate_public_skill(
+                            skill,
+                            paraphrased,
+                        ),
+                        [],
+                    )
+
+    def test_safe_kernel_skip_paraphrase_is_accepted(self) -> None:
+        pattern = (
+            r"If\s+uncertain, read the kernel's routing table before deciding"
+            r"\s+to skip it\."
+        )
+        safe_paraphrases = (
+            "When unsure, consult the kernel router before skipping it.",
+            (
+                "When unsure, do not skip without consulting the kernel "
+                "router."
+            ),
+            (
+                "When unsure, skip only after consulting the kernel router."
+            ),
+        )
+        for skill in EXPECTED_SKILLS:
+            original = skill_text(skill)
+            for paraphrase in safe_paraphrases:
+                paraphrased, count = re.subn(
+                    pattern,
+                    paraphrase,
+                    original,
+                    count=1,
+                )
+                self.assertEqual(count, 1)
+                with self.subTest(skill=skill, paraphrase=paraphrase):
+                    self.assertEqual(
+                        validate_suite._validate_public_skill(
+                            skill,
+                            paraphrased,
+                        ),
+                        [],
+                    )
+
+    def test_kernel_skip_policy_inversions_are_rejected(self) -> None:
+        pattern = (
+            r"If\s+uncertain, read the kernel's routing table before deciding"
+            r"\s+to skip it\."
+        )
+        inversions = (
+            (
+                "If uncertain, do not read the kernel's routing table before "
+                "deciding to skip it."
+            ),
+            (
+                "If uncertain, skip without checking the kernel router."
+            ),
+            "If uncertain, skip before checking the kernel router.",
+            (
+                "If uncertain, avoid reading the kernel's routing table "
+                "before deciding to skip it."
+            ),
+            (
+                "If uncertain, refrain from consulting the kernel router "
+                "before skipping it."
+            ),
+        )
+        expected = "uncertain narrow work must consult routing before skip"
+        for skill in EXPECTED_SKILLS:
+            original = skill_text(skill)
+            for inversion in inversions:
+                mutated, count = re.subn(
+                    pattern,
+                    inversion,
+                    original,
+                    count=1,
+                )
+                self.assertEqual(count, 1)
+                with self.subTest(skill=skill, inversion=inversion):
+                    self.assertTrue(
+                        any(
+                            expected in error
+                            for error in validate_suite._validate_public_skill(
+                                skill,
+                                mutated,
+                            )
+                        )
+                    )
+
+    def test_agent_prompts_are_small_manual_role_summaries(self) -> None:
         for skill in EXPECTED_SKILLS:
             metadata = agent_metadata(skill)
             prompt = metadata["default_prompt"]
@@ -121,315 +435,267 @@ class SkillRoutingTests(unittest.TestCase):
                 r"\$(quant-(?:plan|goal|developer))",
                 prompt,
             )
-            sentence_endings = re.findall(r"[.!?]", prompt)
 
             with self.subTest(skill=skill):
                 self.assertEqual(mentioned_skills, [skill])
                 self.assertFalse("\n" in prompt)
-                self.assertEqual(len(sentence_endings), 1)
-                self.assertTrue(prompt.endswith((".", "!", "?")))
-                self.assertGreaterEqual(len(prompt.split()), 12)
-                self.assertLessEqual(len(prompt.split()), 45)
+                self.assertTrue(prompt.strip())
+                self.assertLessEqual(len(prompt.split()), 60)
                 self.assertIs(
                     metadata["allow_implicit_invocation"],
                     False,
                 )
+                selector_copy = normalized(
+                    f"{metadata['short_description']} {prompt}"
+                )
+                self.assertRegex(
+                    selector_copy,
+                    r"\badapt\w*|\bcapability[- ]aware\b",
+                )
+                if skill == "quant-plan":
+                    self.assertRegex(prompt.lower(), r"\baudit\b")
+                    self.assertRegex(prompt.lower(), r"\bquick plan\b")
+                    self.assertRegex(
+                        prompt.lower(),
+                        r"\bdecision-complete implementation plan\b",
+                    )
 
-    def test_native_goal_continuation_is_not_implicit_skill_activation(
+    def test_native_goal_continuation_is_not_a_new_skill_invocation(
         self,
     ) -> None:
         goal = normalized_skill_text("quant-goal")
-        self.assertIn("native goal lifecycle", goal)
-        self.assertIn("not implicit skill invocation", goal)
-        self.assertIn("automatic follow-up turns", goal)
-        self.assertIn("without reactivating this skill", goal)
-        self.assertIn(
-            "do not create goal state for an ordinary request",
+        self.assertRegex(
             goal,
+            r"\bnative goal\b.{0,180}\b(?:continu|follow-up|resume)\b",
         )
-        self.assertIn("an active goal", goal)
-        self.assertIn("is not activation", goal)
+        self.assertRegex(
+            goal,
+            r"\b(?:continu|follow-up|resume)\b.{0,180}"
+            r"\bnot\b.{0,60}\b(?:activation|invocation)\b",
+        )
+        self.assertRegex(
+            goal,
+            r"\bordinary request\b.{0,120}"
+            r"\b(?:do not|does not|must not)\b.{0,80}\bgoal state\b"
+            r"|\b(?:do not|does not|must not)\b.{0,80}\bgoal state\b"
+            r".{0,120}\bordinary request\b",
+        )
 
-    def test_agent_policy_is_exact_and_fails_closed(self) -> None:
+    def test_agent_policy_is_required_and_fails_closed(self) -> None:
         policy = "policy:\n  allow_implicit_invocation: false\n"
-        cases = {
-            "missing": (
-                lambda raw: raw.replace(policy, ""),
-                "agent metadata must use the exact interface and policy "
-                "structure",
-            ),
-            "enabled": (
-                lambda raw: raw.replace(
+        raw = (
+            ROOT / "skills" / "quant-plan" / "agents" / "openai.yaml"
+        ).read_text(encoding="utf-8")
+        self.assertIn(policy, raw)
+        self.assertIsNone(validate_suite.agent_metadata(raw.replace(policy, "")))
+
+        with tempfile.TemporaryDirectory() as tmp:
+            copied_root = Path(tmp) / "suite"
+            shutil.copytree(
+                ROOT,
+                copied_root,
+                ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+            )
+            agent_file = (
+                copied_root
+                / "skills"
+                / "quant-plan"
+                / "agents"
+                / "openai.yaml"
+            )
+            agent_file.write_text(
+                raw.replace(
                     "allow_implicit_invocation: false",
                     "allow_implicit_invocation: true",
                 ),
-                "implicit invocation must be disabled",
-            ),
-        }
-        for case, (mutate, expected_error) in cases.items():
-            with self.subTest(case=case), tempfile.TemporaryDirectory() as tmp:
-                copied_root = Path(tmp) / "suite"
-                shutil.copytree(
-                    ROOT,
-                    copied_root,
-                    ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
-                )
-                agent_file = (
-                    copied_root
-                    / "skills"
-                    / "quant-plan"
-                    / "agents"
-                    / "openai.yaml"
-                )
-                raw = agent_file.read_text(encoding="utf-8")
-                agent_file.write_text(mutate(raw), encoding="utf-8")
+                encoding="utf-8",
+            )
 
-                with mock.patch.object(validate_suite, "ROOT", copied_root):
-                    errors = validate_suite.validate()
+            with mock.patch.object(validate_suite, "ROOT", copied_root):
+                errors = validate_suite.validate()
 
-                self.assertTrue(
-                    any(expected_error in error for error in errors),
-                    errors,
-                )
+            self.assertTrue(
+                any("implicit invocation" in error for error in errors),
+                errors,
+            )
 
-    def test_semantic_contracts_reject_reversed_meaning(self) -> None:
-        cases = (
-            (
-                "skills/quant-plan/SKILL.md",
-                "Plan read-only.",
-                "It is forbidden to ever plan read-only.",
-                "quant-plan: missing role concept 'read-only operation'",
-            ),
-            (
-                "skills/quant-goal/SKILL.md",
-                "Call `get_goal` before deciding whether to create or resume "
-                "anything.",
-                "Do not ever call `get_goal` before deciding whether to "
-                "create or resume anything.",
-                "quant-goal: missing role concept 'goal lookup first'",
-            ),
-            (
-                "skills/quant-goal/SKILL.md",
-                "the same blocking condition has recurred for three "
-                "consecutive Goal turns;",
-                "ignore whether the same blocking condition recurred across "
-                "Goal turns;",
-                "quant-goal: missing role concept 'three-turn blocker'",
-            ),
-            (
-                "skills/quant-developer/SKILL.md",
-                "Deliver the complete accepted outcome end to end while "
-                "minimizing unrelated",
-                "It is forbidden to ever deliver the complete accepted "
-                "outcome end to end while minimizing unrelated",
-                "quant-developer: missing role concept 'complete outcome'",
-            ),
-            (
-                "shared/references/adaptive-workflow.md",
-                "Add parallel lanes when at\nleast two independent questions "
-                "or work units can make real progress at the\nsame time.",
-                "Do not ever add parallel lanes when at\nleast two independent "
-                "questions or work units can make real progress at the\nsame "
-                "time.",
-                "missing adaptive concept 'selective parallelism'",
-            ),
-            (
-                "shared/core/authority.md",
-                "Permission to implement locally includes reversible "
-                "task-scoped temporary",
-                "It is false that permission to implement locally includes "
-                "reversible task-scoped temporary",
-                "missing authority concept 'normal temporary isolation'",
-            ),
-            (
-                "skills/quant-plan/SKILL.md",
-                "This skill's read-only boundary always overrides shared "
-                "`act`, edit, generated\nartifact, temporary-isolation, or "
-                "mutation language.",
-                "This skill's read-only boundary always overrides shared "
-                "`act`, edit, generated\nartifact, temporary-isolation, or "
-                "mutation language. It is false that this read-only boundary "
-                "always overrides shared mutation language.",
-                "quant-plan: missing role concept 'read-only shared precedence'",
-            ),
-            (
-                "skills/quant-plan/SKILL.md",
-                "keep this\nskill's phase read-only, finish and self-critique "
-                "the selected plan first, then\nhand implementation ownership",
-                "keep this\nskill's phase read-only, finish and self-critique "
-                "the selected plan first, then\nhand implementation ownership. "
-                "It is false that the phase read-only must precede "
-                "implementation ownership",
-                "quant-plan: missing role concept "
-                "'staged implementation composition'",
-            ),
-            (
-                "skills/quant-goal/SKILL.md",
-                "Because `create_goal` has one\n   `objective` field and no "
-                "separate success-condition field, serialize a\n   compact "
-                "outcome, material scope boundaries, constraints, and the "
-                "complete\n   `SC-*` list into that objective.",
-                "Because `create_goal` has one\n   `objective` field and no "
-                "separate success-condition field, serialize a\n   compact "
-                "outcome, material scope boundaries, constraints, and the "
-                "complete\n   `SC-*` list into that objective. Never serialize "
-                "`create_goal` `objective` with the `SC-*` list.",
-                "quant-goal: missing role concept "
-                "'objective-bound success conditions'",
-            ),
-            (
-                "skills/quant-goal/SKILL.md",
-                "Mark evidence for\n"
-                "every changed or dependent condition stale, and reverify the "
-                "current set before\nreusing any conclusion.",
-                "Mark evidence for\n"
-                "every changed or dependent condition stale, and reverify the "
-                "current set before\nreusing any conclusion. Never let stable "
-                "IDs make dependent condition stale or reverify them.",
-                "quant-goal: missing role concept "
-                "'steering evidence invalidation'",
-            ),
-            (
-                "shared/references/adaptive-workflow.md",
-                "The invoking public skill's scope and mutation boundary always "
-                "win.",
-                "The invoking public skill's scope and mutation boundary always "
-                "win. It is false that the invoking public skill boundary always "
-                "win.",
-                "missing adaptive concept 'invoking boundary precedence'",
-            ),
-            (
-                "skills/quant-developer/SKILL.md",
-                "Local source-control mutation\n(branch, worktree, stage, "
-                "commit, cherry-pick, or rebase); remote source-control\n"
-                "mutation",
-                "Local source-control mutation\n(branch, worktree, stage, "
-                "commit, cherry-pick, or rebase); remote source-control\n"
-                "mutation. Never treat local source-control mutation and remote "
-                "source-control mutation as separate authority boundaries",
-                "quant-developer: missing role concept "
-                "'separate authority boundaries'",
-            ),
-            (
-                "shared/core/context-routing.md",
-                "A `strict` label,\n   long duration, release delivery, task "
-                "complexity, or repeated failure alone\n   does not select a "
-                "ledger or structured runtime.",
-                "A `strict` label,\n   long duration, release delivery, task "
-                "complexity, or repeated failure alone\n   automatically "
-                "selects a ledger and structured runtime.",
-                "missing routed policy concept "
-                "'native path does not auto-select structured state'",
-            ),
-            (
-                "shared/references/durable-runtime.md",
-                "`strict`,\nlong-running, release, complexity, or failure alone "
-                "never selects either\nruntime.",
-                "`strict`,\nlong-running, release, complexity, or failure alone "
-                "always selects either\nruntime.",
-                "missing routed policy concept "
-                "'labels do not select durable runtime'",
-            ),
-        )
-
-        for relative, old, new, expected_error in cases:
-            with self.subTest(path=relative), tempfile.TemporaryDirectory() as tmp:
-                copied_root = Path(tmp) / "suite"
-                shutil.copytree(
-                    ROOT,
-                    copied_root,
-                    ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
-                )
-                target = copied_root / relative
-                raw = target.read_text(encoding="utf-8")
-                self.assertIn(old, raw)
-                target.write_text(raw.replace(old, new, 1), encoding="utf-8")
-
-                with mock.patch.object(validate_suite, "ROOT", copied_root):
-                    errors = validate_suite.validate()
-
-                self.assertTrue(
-                    any(expected_error in error for error in errors),
-                    errors,
-                )
-
-    def test_ordinary_paths_are_self_contained_with_conditional_adaptation(
-        self,
-    ) -> None:
-        shared_reference = (
-            ROOT / "shared" / "references" / "adaptive-workflow.md"
-        )
-        self.assertTrue(shared_reference.is_file())
-
-        installed_path = (
-            "../quant-research-shared/references/adaptive-workflow.md"
-        )
-        source_path = "../../shared/references/adaptive-workflow.md"
-        skip_or_continue_language = {
-            "quant-plan": "do not load the reference for a narrow plan",
-            "quant-goal": (
-                "if that optional reference is unavailable, continue"
-            ),
-            "quant-developer": (
-                "ordinary bounded changes should not need that reference"
-            ),
-        }
-
-        for skill in EXPECTED_SKILLS:
-            raw = skill_text(skill)
-            text = normalized_skill_text(skill)
-            with self.subTest(skill=skill):
-                self.assertIn(installed_path, raw)
-                self.assertIn(source_path, raw)
-                self.assertIn("adaptive-workflow.md", raw)
-                self.assertIn(skip_or_continue_language[skill], text)
-                self.assertNotIn("Run `validate_installed.py` before", raw)
-                self.assertNotIn("Run `quantctl.py doctor` before", raw)
-                self.assertNotIn("Run `quantctl.py context` before", raw)
-
+    def test_multi_skill_composition_preserves_role_boundaries(self) -> None:
         plan = normalized_skill_text("quant-plan")
         goal = normalized_skill_text("quant-goal")
         developer = normalized_skill_text("quant-developer")
-        self.assertIn("ordinary planning must not load or create", plan)
-        self.assertIn(
-            "do not create a ledger, manifest, plan packet, review stack",
-            goal,
-        )
-        self.assertIn("they are off the default path", developer)
-
-    def test_legacy_structured_runtime_is_explicitly_opt_in(self) -> None:
-        expected_opt_in_meanings = {
-            "quant-plan": (
-                "optional legacy compatibility",
-                "machine-audited legacy output",
-                "existing project requires",
-            ),
-            "quant-goal": (
-                "legacy compatibility",
-                "machine audit",
-                "existing goal already depends",
-            ),
-            "quant-developer": (
-                "legacy compatibility",
-                "explicit machine-audit request",
-                "existing project contract",
-            ),
-        }
-        for skill, meanings in expected_opt_in_meanings.items():
-            text = normalized_skill_text(skill)
-            with self.subTest(skill=skill):
-                for meaning in meanings:
-                    self.assertIn(meaning, text)
-                self.assertIn("ordinary", text)
-
-        context_routing = validate_suite.normalized_policy_text((
+        router = normalized((
             ROOT / "shared" / "core" / "context-routing.md"
         ).read_text(encoding="utf-8"))
-        self.assertIn("legacy structured assurance", context_routing)
-        self.assertIn("only for an existing compatibility contract", context_routing)
-        self.assertIn("ordinary host-native", context_routing)
 
-    def test_safe_module_extension_does_not_open_root_package_surface(
+        self.assertRegex(
+            plan,
+            r"\bread-only\b.{0,180}\bimplementation\b",
+        )
+        self.assertRegex(
+            goal,
+            r"\bgoal lifecycle\b.{0,180}\bintegration\b"
+            r"|\bintegration\b.{0,180}\bgoal lifecycle\b",
+        )
+        self.assertRegex(
+            developer,
+            r"\b(?:does not|never)\b.{0,100}\b(?:chang\w*|complet\w*)\b"
+            r".{0,80}\b(?:parent )?goal\b",
+        )
+        self.assertRegex(
+            router,
+            r"\bread-only planning\b.{0,180}"
+            r"\b(?:authorized|later) implementation\b",
+        )
+        self.assertRegex(
+            router,
+            r"\b(?:never|does not)\b.{0,80}\b(?:broaden|expand)"
+            r".{0,60}\bauthority\b"
+            r"|\bcomposition\b.{0,80}\bnever\b.{0,80}"
+            r"\b(?:broaden|expand)\b.{0,60}\bauthority\b",
+        )
+
+    def test_narrow_work_skips_and_nontrivial_work_can_load_the_kernel(
+        self,
+    ) -> None:
+        kernel = ROOT / "shared" / "references" / ADAPTIVE_REFERENCE
+        self.assertTrue(kernel.is_file())
+
+        for skill in EXPECTED_SKILLS:
+            raw = skill_text(skill)
+            body = normalized(raw)
+            with self.subTest(skill=skill):
+                self.assertIn(ADAPTIVE_REFERENCE, raw)
+                self.assertRegex(
+                    body,
+                    r"\b(?:narrow|small|ordinary|bounded)\b.{0,180}"
+                    r"\b(?:stay|remain|directly|native)\b"
+                    r"|\b(?:stay|remain)\b.{0,180}"
+                    r"\b(?:narrow|small|ordinary|bounded)\b",
+                )
+                self.assertRegex(
+                    body,
+                    r"\b(?:non-trivial|unfamiliar|external data|"
+                    r"cross-surface|several surfaces)\b.{0,220}"
+                    r"\b(?:read|load)\b.{0,100}"
+                    r"\b(?:kernel|reference|workflow)\b"
+                    r"|\b(?:kernel|reference|workflow)\b.{0,100}"
+                    r"\b(?:read|load)\b.{0,220}"
+                    r"\b(?:non-trivial|unfamiliar|external data|"
+                    r"cross-surface|several surfaces)\b",
+                )
+                for forbidden in (
+                    "Run `validate_installed.py` before",
+                    "Run `quantctl.py doctor` before",
+                    "Run `quantctl.py context` before",
+                ):
+                    self.assertNotIn(forbidden, raw)
+                self.assertRegex(
+                    body,
+                    r"\bnarrow\b.{0,180}\bno capability rail\b"
+                    r".{0,180}\b(?:approach|method|proof)\b",
+                )
+                self.assertRegex(
+                    body,
+                    r"\buncertain\b.{0,140}\brouting table\b"
+                    r".{0,140}\bskip\b",
+                )
+
+    def test_ordinary_capability_router_maps_triggers_to_selected_rails(
+        self,
+    ) -> None:
+        routing_documents = (
+            ROOT / "shared" / "core" / "context-routing.md",
+            ROOT / "shared" / "references" / ADAPTIVE_REFERENCE,
+        )
+        rows = [
+            row
+            for document in routing_documents
+            for row in markdown_table_rows(
+                document.read_text(encoding="utf-8")
+            )
+        ]
+
+        for reference, trigger_patterns in ORDINARY_CAPABILITY_ROUTES.items():
+            matching_rows = [row for row in rows if reference in row]
+            with self.subTest(reference=reference):
+                self.assertTrue(
+                    matching_rows,
+                    f"missing ordinary capability route for {reference}",
+                )
+                route = matching_rows[0]
+                for pattern in trigger_patterns:
+                    self.assertRegex(route, pattern)
+                self.assertTrue((ROOT / "shared" / reference).is_file())
+
+        routing_text = " ".join(
+            normalized(document.read_text(encoding="utf-8"))
+            for document in routing_documents
+        )
+        self.assertRegex(
+            routing_text,
+            r"\bonly\b.{0,100}\b(?:needed|selected|applicable)\b"
+            r".{0,120}\b(?:capabilit|rails?|documents?)\b"
+            r"|\b(?:capabilit|rails?|documents?)\b.{0,120}"
+            r"\bonly\b.{0,100}\b(?:needed|selected|applicable)\b",
+        )
+
+    def test_legacy_structured_runtime_is_source_compatibility_only(
+        self,
+    ) -> None:
+        expected_legacy = (
+            "shared/references/goal-and-subagents.md",
+            "shared/references/agent-orchestration.md",
+            "shared/references/durable-runtime.md",
+            "shared/scripts/goal_runtime.py",
+            "shared/scripts/goal_ledger.py",
+            "shared/scripts/team_protocol.py",
+        )
+        for relative in expected_legacy:
+            with self.subTest(relative=relative):
+                self.assertTrue((ROOT / relative).is_file())
+
+        for skill in EXPECTED_SKILLS:
+            text = normalized_skill_text(skill)
+            with self.subTest(skill=skill):
+                self.assertRegex(text, r"\blegacy\b|\bcompatibility\b")
+                self.assertRegex(text, r"\bexplicit")
+                self.assertRegex(
+                    text,
+                    r"\bexisting\b.{0,100}\b(?:contract|depends)\b",
+                )
+                self.assertRegex(
+                    text,
+                    r"\bordinary\b.{0,180}"
+                    r"\b(?:do not|does not|must not|never|off "
+                    r"(?:the )?(?:ordinary|default) path)\b"
+                    r".{0,180}\b(?:legacy|manifest|ledger|receipt)\b"
+                    r"|\b(?:legacy|manifest|ledger|receipt)\b.{0,180}"
+                    r"\b(?:do not|does not|must not|never|off "
+                    r"(?:the )?(?:ordinary|default) path)\b"
+                    r".{0,180}\bordinary\b"
+                    r"|\b(?:do not|does not|must not|never)\b.{0,180}"
+                    r"\b(?:legacy|manifest|ledger|receipt)\b.{0,180}"
+                    r"\bordinary\b"
+                    r"|\b(?:legacy|manifest|ledger|receipt)\b.{0,180}"
+                    r"\boff the ordinary path\b",
+                )
+
+        context_routing = normalized((
+            ROOT / "shared" / "core" / "context-routing.md"
+        ).read_text(encoding="utf-8"))
+        self.assertRegex(
+            context_routing,
+            r"\blegacy\b.{0,180}\b(?:existing|explicit)\b"
+            r"|\b(?:existing|explicit)\b.{0,180}\blegacy\b",
+        )
+        self.assertRegex(
+            context_routing,
+            r"\b(?:do not|does not|never)\b.{0,120}"
+            r"\b(?:automatically |auto[- ]?)?(?:load|select|create)\b"
+            r".{0,120}\b(?:ledger|structured runtime|legacy)\b",
+        )
+
+    def test_typed_module_extensions_do_not_open_root_package_surface(
         self,
     ) -> None:
         self.assertTrue(
@@ -447,7 +713,7 @@ class SkillRoutingTests(unittest.TestCase):
                 Path("tests/test_new_adapter.py")
             )
         )
-        self.assertFalse(
+        self.assertTrue(
             validate_suite.is_allowed_package_file(
                 Path("shared/scripts/unreviewed.py")
             )

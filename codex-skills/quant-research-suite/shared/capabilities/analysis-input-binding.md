@@ -1,24 +1,18 @@
 # Capability: analysis input binding
 
-This capability is the opt-in strict provenance contract. Do not activate it
-for an ordinary application merely because a visible input changes
-computation.
-
-## Default repository-native check
-
-On the public skill's default path, use a representative integration or E2E
-check to follow the input through validation or serialization, the invoked
-calculation boundary, the effective parameter, the produced result, and the
-displayed or consumed result. Use a fixture where a variant has an observable
-effect. This basic check does not require a manifest, A/B capture bundle, raw
-trace, artifact hashes, or receipt.
+This capability is the preserved opt-in strict provenance contract, not an
+ordinary-path rail. Enter it through `../core/context-routing.md` only when an
+existing schema-v2 manifest declares `analysis-input-binding` or the user
+explicitly requests its machine-validated provenance. A visible input changing
+computation does not select this contract by itself.
 
 ## Strict compatibility contract
 
-Activate `analysis-input-binding` only when a schema-v2 manifest declares it or
-the user explicitly requests its machine-validated provenance. Its strict
-assurance floor, `input_binding` gate, capture schemas, and validator behavior
-remain unchanged.
+Its strict assurance floor, `input_binding` gate, capture schemas, and
+validator behavior remain unchanged. Continue only when the installed profile
+is `compat` and the exact children exist. An installed `base` profile or
+missing child makes this strict compatibility path unavailable; do not
+recreate it.
 
 Classify each control:
 
@@ -92,7 +86,7 @@ The observed dispatch projection must also bind the manifest's frontend field,
 canonical field, structured execution locator, and the run's entrypoint hash.
 For each baseline, repeat, and variant run, capture a separate
 `invocation_artifact` using
-`schemas/analysis-invocation.schema.json`. Its entrypoint, input, result,
+`../schemas/analysis-invocation.schema.json`. Its entrypoint, input, result,
 run identity, hashes, exit status, and causal timestamps must match the
 authoritative run. `execution_binding.kind` is one of `argv-option`,
 `json-payload`, or `config-json`: argv options are derived from the captured
@@ -117,8 +111,8 @@ runtime phase but no later than capture generation. `command_argv[0]` must
 directly execute the declared executable `runner_path`; interpreters and
 framework CLIs belong inside that project-owned wrapper. An unrelated successful
 command cannot attest to the trace.
-Use `templates/analysis-input-binding-capture.example.json` and
-`templates/analysis-invocation.example.json`.
+Use `../templates/analysis-input-binding-capture.example.json` and
+`../templates/analysis-invocation.example.json`.
 
 This evidence contract is UI-runtime-neutral; it does not force React,
 Playwright, a browser, an API, or any other framework. It is required only when

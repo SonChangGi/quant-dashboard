@@ -3636,7 +3636,10 @@ class ToolTests(unittest.TestCase):
                     ["install.py", "--target", str(target)],
                 ):
                     self.assertEqual(suite_installer.main(), 0)
-                validate_source.assert_called_once_with(run_tests=True)
+                validate_source.assert_called_once_with(
+                    run_tests=True,
+                    include_legacy=False,
+                )
             integrity = (
                 target
                 / "quant-research-shared"
@@ -3664,7 +3667,10 @@ class ToolTests(unittest.TestCase):
                     ["install.py", "--target", str(target), "--update"],
                 ):
                     self.assertEqual(suite_installer.main(), 0)
-                validate_source.assert_called_once_with(run_tests=True)
+                validate_source.assert_called_once_with(
+                    run_tests=True,
+                    include_legacy=False,
+                )
             source_skill = ROOT / "skills" / "quant-plan" / "SKILL.md"
             self.assertEqual(
                 installed_skill.read_bytes(),

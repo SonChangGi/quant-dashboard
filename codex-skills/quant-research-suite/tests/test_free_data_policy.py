@@ -18,18 +18,17 @@ def normalized(relative: str) -> str:
 
 
 class FreeDataPolicyTests(unittest.TestCase):
-    def test_paid_data_and_free_to_paid_paths_are_ineligible(self) -> None:
+    def test_selected_route_cannot_reach_billing(self) -> None:
         authority = normalized("shared/core/authority.md")
         for phrase in (
-            "paid data is ineligible",
-            "time-limited free trial",
-            "expiring credit",
-            "automatic free-to-paid conversion",
-            "card, billing account",
-            "payg",
-            "overage",
-            "paid tier",
-            "no approval escape hatch",
+            "required scope at zero charge",
+            "no card, billing account, subscription, trial, or expiring credit",
+            "no payg, paid overage, automatic upgrade",
+            "hard-stop before any charge",
+            "no chargeable fallback",
+            "optional paid tiers",
+            "chosen route cannot enroll in, depend on, or fall through",
+            "no action-approval escape hatch",
         ):
             self.assertIn(phrase, authority)
 
@@ -52,10 +51,32 @@ class FreeDataPolicyTests(unittest.TestCase):
                     capability_model.paid_action_text_reasons(command)
                 )
 
-    def test_external_data_evidence_tracks_use_and_claim(self) -> None:
-        contract = normalized(
-            "shared/capabilities/external-data.md"
+    def test_discovery_order_is_distinct_from_route_selection(self) -> None:
+        kernel = normalized("shared/references/adaptive-workflow.md")
+        discovery = kernel.split("explore candidates in this order", 1)[1]
+        candidates = (
+            "project source",
+            "official no-billing",
+            "another lawfully accessible no-billing",
+            "reconstruction or reconciliation",
+            "disclosed proxy",
         )
+        positions = [discovery.index(item) for item in candidates]
+        self.assertEqual(positions, sorted(positions))
+        self.assertIn("select on fitness rather than position", kernel)
+        for factor in (
+            "claim fitness",
+            "freshness",
+            "coverage",
+            "point-in-time",
+            "rights",
+            "reliability",
+            "reproducibility",
+        ):
+            self.assertIn(factor, kernel)
+
+    def test_external_data_evidence_tracks_use_and_claim(self) -> None:
+        contract = normalized("shared/capabilities/external-data.md")
         for phrase in (
             "`private_analysis`",
             "`derived_output`",
@@ -68,43 +89,20 @@ class FreeDataPolicyTests(unittest.TestCase):
         ):
             self.assertIn(phrase, contract)
 
-    def test_free_fallbacks_precede_blocked_state(self) -> None:
-        external = normalized(
-            "shared/capabilities/external-data.md"
-        )
-        workflow = normalized(
-            "shared/references/goal-and-subagents.md"
-        )
-        for phrase in (
-            "official, regulator, exchange, or public-sector",
-            "another eligible free provider",
-            "free public filings",
-            "defensible free proxy",
-            "narrower period/universe/method",
-        ):
-            self.assertIn(phrase, external)
+    def test_external_data_rail_distinguishes_provider_from_selected_path(
+        self,
+    ) -> None:
+        contract = normalized("shared/capabilities/external-data.md")
+        self.assertIn("selected access path", contract)
         self.assertIn(
-            "use `blocked` only after safe in-scope free alternatives",
-            workflow,
-        )
-
-    def test_release_delivery_is_separate_from_risk_assurance(self) -> None:
-        workflow = normalized(
-            "shared/references/goal-and-subagents.md"
+            "provider may offer separate optional paid tiers",
+            contract,
         )
         self.assertIn(
-            "risk assurance is `light`, `standard`, or `strict`; delivery is "
-            "`local` or `release`",
-            workflow,
+            "cannot enroll in, depend on, or fall through",
+            contract,
         )
-        self.assertIn(
-            "it uses the selected `light`, `standard`, or `strict` local proof",
-            workflow,
-        )
-        self.assertIn(
-            "it does not automatically import the strict review stack",
-            workflow,
-        )
+        self.assertIn("hard-stops before any charge", contract)
 
 
 if __name__ == "__main__":

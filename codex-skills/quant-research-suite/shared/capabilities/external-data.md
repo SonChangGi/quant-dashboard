@@ -5,22 +5,25 @@ source outside its authoritative codebase.
 
 ## Free-only eligibility
 
-Use only a source that supplies the required data at zero charge without a
-trial, expiring credit, automatic paid conversion, card or billing setup,
-subscription, PAYG, overage, paid add-on, or paid tier. Do not present paid
-data as an alternative or ask for approval to use it. If an eligible source
-later becomes paid for the required use, stop new collection and move to an
-eligible free source, a free reconstruction or proxy, or a narrower honest
-claim. Follow `../core/authority.md`.
+Use only a selected access path that supplies the required data at zero charge
+without a trial, expiring credit, automatic paid conversion, card or billing
+setup, subscription, PAYG, overage, paid add-on, or paid tier for the required
+scope. A provider may offer separate optional paid tiers only when the selected
+path cannot enroll in, depend on, or fall through to them and hard-stops before
+any charge. Do not present paid data as an alternative or ask for approval to
+use it. If an eligible path later becomes paid for the required use, stop new
+collection and move to an eligible free source, a free reconstruction or
+proxy, or a narrower honest claim. Follow `../core/authority.md`.
 
-For every schema-v2 `external-data` source, record
-`access_eligibility: permanently-free-no-billing`. This is a closed execution
-eligibility assertion: the selected access path has zero price, no payment
-method or billing setup, no trial or expiring credit, no subscription, and no
-automatic paid conversion. It does not replace the separate `rights_policy`
-or claim-specific rights check. Recheck it when provider terms or the access
-path change; an ineligible source must be replaced, reconstructed, proxied, or
-removed from the claim.
+Only after the legacy router selects an existing schema-v2 `external-data`
+contract, record `access_eligibility: permanently-free-no-billing`. This is a
+closed execution eligibility assertion: the selected access path has zero
+price, no payment method or billing setup, no trial or expiring credit, no
+subscription, and no automatic paid conversion. It does not replace the
+separate `rights_policy` or claim-specific rights check. Recheck it when
+provider terms or the access path change; an ineligible source must be
+replaced, reconstructed, proxied, or removed from the claim. Ordinary work
+does not create schema state merely because it uses external data.
 
 ## Match evidence to use and claim
 
@@ -71,17 +74,23 @@ before declaring a blocker:
 Never fabricate a value, conceal a gap, bypass access controls, silently weaken
 a filter, or describe a proxy or non-PIT result as stronger evidence.
 
-## Escalated automation contract
+## Automation and compatibility
 
 Separate collection, normalization, coherent cutoff, analysis, result
 validation, and publication whenever those stages exist. Preserve source
 revisions and last-good state; do not rewrite historical values to zero, empty,
 stale, or unrelated substitutes.
 
-Load `../references/data-automation.md` only for scheduled collection, public
-publication, raw redistribution, or an explicitly selected strict
-reproducibility contract. Its full registry, immutable snapshots, hashes,
-calendar/lag, and publication gates are not default requirements for a local
-or exploratory analysis.
+For ordinary scheduled collection, combine this rail with
+`scheduled-automation.md`; add `publication.md` and `public-web.md` only when
+their triggers apply. Scheduling, publication, raw redistribution, complexity,
+or a `strict` label alone does not select a legacy registry, immutable snapshot,
+hash, or receipt contract.
+
+When an existing exact data-automation contract, explicit machine audit, or
+contract-specific recovery actually requires that legacy payload, enter it
+through `../core/context-routing.md`. If the installed profile or exact child
+is absent, report that compatibility path as unavailable; do not search for,
+reconstruct, or install another suite copy.
 
 Evidence gates when acceptance selects them: `collection`, `freshness`.

@@ -1,182 +1,146 @@
-# Adaptive Workflow: Capabilities, Delegation, Data, and Proof
+# Adaptive workflow kernel
 
-Use this reference only when the task benefits from multiple independent lanes,
-external data or documentation, recovery after a failed route, or verification
-across more than one real surface. A small, well-understood task does not need
-to load it.
+Use this kernel for a non-trivial Quant task: an unfamiliar target, multiple
+independent lanes, external data, a specialized consumer surface, recovery
+after a failed route, or proof across several stages. A small, well-understood
+task should stay in its public skill.
 
-The invoking public skill's scope and mutation boundary always win. This
-reference never turns a plan-only or read-only phase into implementation,
-source-control mutation, artifact creation, or provider action. For a read-only
-parent, interpret `act` below as inspect, compare, calculate without persistence,
-or propose; ignore edit and temporary-isolation mechanics.
+The invoking public skill's role, read/write boundary, and the current user's
+authority always win. This kernel cannot activate a skill, turn planning into
+implementation, or grant source-control, provider, destructive, remote, or paid
+authority.
 
-## Start from the actual environment
+## Ground in the actual environment
 
-Inspect the target before choosing a workflow:
+Inspect applicable instructions, current behavior, source, configuration,
+entrypoints, tests, data paths, artifacts, dirty state, available tools, and the
+surface where the outcome must work. Prefer target-native commands and existing
+architecture. Preserve unrelated user changes and project-owned purpose, data
+meaning, calculations, design, interfaces, and publication behavior.
 
-- read applicable instructions, source, configuration, entrypoints, tests, and
-  current artifacts;
-- identify the tools and host capabilities that are actually available now;
-- distinguish repository facts from assumptions and current external facts;
-- preserve unrelated user changes and project-owned purpose, data, analysis,
-  design, interfaces, and publication behavior outside the requested change;
-- identify the direct surface on which the requested outcome must work.
+Resolve discoverable facts through inspection or current primary sources. Ask
+only when a user-owned choice materially changes product behavior, accepted
+scope, authority, cost, or irreversible effects. Otherwise choose and disclose
+the strongest supported default.
 
-Prefer the target's native commands and existing architecture. Add a tool,
-service, dependency, memory artifact, or runtime only when it solves a named
-need better than the available path. Do not install LazyCodex, Gajae Code, or
-another harness merely to imitate its workflow.
+## Load only the needed capability rail
 
-Resolve discoverable facts with inspection or research. Ask the user only when
-the answer changes the product, accepted scope, authority, cost, irreversible
-behavior, or another material preference. Otherwise choose the best supported
-default, state the assumption, and continue.
+Resolve `<quant-shared-root>` as the `shared` directory beside source `skills`,
+or the installed `quant-research-shared` sibling. Read only rows that match the
+task:
 
-## Delegate for useful parallelism
+| Trigger | Capability rail |
+| --- | --- |
+| calculation, ranking, backtest, or displayed analytical result | `capabilities/analysis.md` |
+| provider, API, filing, feed, dataset, freshness, or rights | `capabilities/external-data.md` |
+| a UI control changes an analysis input | `capabilities/analysis-input-flow.md`; check the repository-native path first |
+| layout, interaction, responsive UI, or chart | `capabilities/web-ui.md` and, for chart interaction, `capabilities/interactive-chart.md` |
+| API boundary, state, authentication, or secrets | `capabilities/backend.md` |
+| recurring or event-driven collection or refresh | `capabilities/scheduled-automation.md` |
+| versioned artifact, candidate/current pointer, or last-good promotion | `capabilities/publication.md` |
+| a public URL or hosted consumer outcome | `capabilities/public-web.md` |
+| authorized push, PR, release, deployment, or remote checkpoint | `capabilities/remote-release.md` |
 
-Use one owner when the work is tightly coupled. Add parallel lanes when at
-least two independent questions or work units can make real progress at the
-same time.
+Several rails may compose. Do not infer a manifest, schema, receipt, ledger, or
+legacy runtime merely because a rail is useful. Framework and provider adapters
+are optional hints only when that exact technology is already selected.
 
-Prefer:
+For ordinary external-data automation, compose the external-data,
+scheduled-automation, publication, and public-web rails only when each trigger
+applies. A schedule, publication, raw redistribution, task duration, or
+`strict` label does not select legacy data-automation machinery; only the
+compatibility triggers in `core/context-routing.md` can do that.
 
-- read-only subagents for repository discovery, current documentation, free
-  data-source research, method comparison, and independent review;
-- a native agent team when work units need ongoing coordination or can deliver
-  independently before one integration boundary;
-- one canonical writer when changes overlap or the environment does not
-  provide safe writer isolation;
-- isolated writers only when their roots, write scopes, dependencies, and
-  integration owner are explicit and demonstrably non-overlapping.
+## Coordinate by capability
 
-Give every delegated lane four things:
+Keep tightly coupled work with one owner. Use subagents when at least two
+bounded, independent questions or work units can progress in parallel. Use a
+native agent team only when available and the lanes require ongoing
+coordination, mutual discovery, or a shared worker lifecycle; otherwise use
+ordinary subagents or sequential work.
 
-1. the outcome or question;
-2. the allowed scope;
+Each delegated assignment states:
+
+1. outcome or question;
+2. allowed scope;
 3. constraints and protected surfaces;
-4. the evidence or artifact to return.
+4. evidence or artifact to return.
 
-Do not require fixed roles, models, worker counts, Team Run Packets, hashes,
-heartbeats, worktrees, or receipts for ordinary host-native delegation. Route
-by the needed capability. The primary owner reconciles claims against source
-or observable output and integrates results serially when they share a
-validation boundary.
+Prefer parallel readers and one canonical writer. Concurrent writers require
+demonstrably disjoint roots or write sets and one integration owner. Treat a
+timeout or silent worker as unknown state; inspect status and artifacts before
+replacing it. The parent reconciles claims, integrates results, and owns final
+verification.
 
-Treat a timeout or silent worker as unknown state, not immediate failure.
-Inspect available status and artifacts before replacing work. Do not duplicate
-completed mutation merely because a worker or turn ended.
+Do not require fixed roles, models, worker counts, review counts, worktrees,
+packets, ledgers, hashes, or receipts for ordinary host-native work.
 
-## Keep working through adaptable constraints
+## Adapt until acceptance, then stop
 
-Use a completion loop:
+Use this completion loop:
 
 ```text
-inspect
-→ choose a supported route
-→ act within the invoking skill's mutation boundary
-→ observe the real result
-→ review against the requested outcome
-→ repair or switch route
-→ rerun affected checks
+inspect → choose → act within scope → observe the real result
+→ review against acceptance → repair or switch route → rerun affected proof
 ```
 
-When a route fails, diagnose the failure before retrying. Change the source,
-method, tool, work decomposition, or claim boundary when new evidence shows
-the current route is unsuitable. Do not repeat the same failing action without
-new evidence or a changed condition.
+Continue while an acceptance condition is unmet or a material risk could
+invalidate the result. Diagnose before retrying, and change the source, method,
+tool, decomposition, or claim when evidence shows the route is unsuitable.
 
 Classify what remains:
 
-- a **hard blocker** is missing required authority, an unsafe destructive
-  conflict, a false or fabricated claim, or the absence of any method that can
-  deliver a meaningful accepted result;
-- an **adaptable constraint** can be handled with another source or method,
-  a narrower scope, a disclosed proxy, a last-good artifact, or an explicit
-  degraded or unavailable state;
-- **quality debt** is a non-required improvement that does not invalidate the
-  delivered result or its stated limitations.
+- **blocker:** no safe in-scope path can meet a required condition without user
+  input, external-state change, fabrication, destructive conflict, or missing
+  authority;
+- **adaptable constraint:** another source or method, narrower scope, disclosed
+  proxy, last-good artifact, or explicit degraded/unavailable result can still
+  produce an honest accepted outcome;
+- **quality debt:** optional improvement that does not invalidate acceptance or
+  the stated limits.
 
-Continue through safe, useful alternatives before reporting a blocker. Do not
-turn an unavailable ideal into a blocker after the accepted claim has been
-honestly narrowed.
+Exhaust safe useful alternatives before declaring a blocker. Stop once
+acceptance is verified and remaining items are only quality debt.
 
-## Use only zero-billing data
+## Discover broadly; select a zero-billing data route
 
-Paid data is outside the solution space. Do not use or propose subscriptions,
-trials or credits that later convert to payment, payment-card setup,
-pay-as-you-go or overage, paid add-ons, or paid tiers. Do not ask the user to
-approve paid data.
+Explore candidates in this order, but select on fitness rather than position:
 
-Explore data routes in this order, stopping when the selected route supports
-the actual claim:
-
-1. a usable project-owned source, snapshot, cache, or last-good artifact;
-2. an official no-billing endpoint, download, filing, or publication;
+1. usable project source, cache, snapshot, or last-good artifact;
+2. official no-billing endpoint, filing, download, or publication;
 3. another lawfully accessible no-billing public source;
-4. reconciliation or a defensible method derived from free inputs;
-5. a disclosed proxy, reduced universe or period, degraded result, last-good
-   result, or explicit unavailable state.
+4. defensible reconstruction or reconciliation from free inputs;
+5. disclosed proxy, narrower universe or period, degraded/last-good result, or
+   explicit unavailable state.
 
-When external data is central, consider independent lanes for source
-discovery, reconstruction or proxy methods, and quality or rights review.
-Select only lanes that answer distinct questions.
+Compare claim fitness, freshness, coverage, field semantics, adjustment and
+point-in-time behavior, rights, reliability, and reproducibility. The selected
+route must be usable for the required scope at zero charge, require no payment
+method, avoid trials or automatic conversion, have no PAYG or overage, and
+hard-stop with no chargeable fallback. A provider may offer optional paid
+tiers only when the selected route cannot enroll in or fall through to them.
+Paid data has no approval path inside this suite.
 
-Record the provider or origin, access and source dates when available, fields
-used, material transformations, adjustment or corporate-action semantics, and
-known coverage or revision limits. Require point-in-time evidence only for a
-claim that depends on historical availability, survivorship control, or
-look-ahead freedom. For public display, verify the terms that govern the exact
-planned display or redistribution; prefer derived results, a permitted
-alternative, or no public data when raw redistribution is restricted or
-unclear.
+Record origin, source and access dates when useful, fields, material
+transformations, coverage and revision limits, and exact display or
+redistribution rights in proportion to the claim. Require point-in-time proof
+only when the claim depends on historical availability, survivorship control,
+or look-ahead freedom. Never fabricate, silently fill gaps, bypass access
+controls, hide staleness, or weaken degraded/unavailable semantics.
 
-Never fabricate values, silently fill gaps, disguise stale or non-PIT data,
-bypass access controls, or weaken missing, degraded, or unavailable semantics.
+## Prove the real outcome
 
-## Prove the requested outcome
+Match proof to the consumer: native tests and representative output for code;
+dates, coverage, and calculation checks for data; rendered and interactive
+inspection for UI or documents; and distinct configuration, execution,
+artifact, publication, and readback facts for automation or release.
 
-Match proof to the real consumer surface:
+A build, test, health check, workflow start, HTTP status, local artifact,
+commit, or preview proves only its own stage. Use an independent reviewer when
+consequence, uncertainty, or specialized judgment warrants it—not to satisfy a
+count.
 
-- code or computation: project-native tests plus representative output;
-- data work: artifact inspection, dates, coverage, and calculation checks;
-- UI or chart: the renderer and input method actually used, including relevant
-  responsive, interaction, empty, loading, and error behavior;
-- document or configuration: source inspection and rendered or consumer
-  readback where applicable;
-- automation: configuration, execution, produced artifact, publication, and
-  readback as separate facts;
-- release: separately authorized remote checkpoints and the final public or
-  consumer-visible result.
-
-A build, health check, workflow start, HTTP status, local artifact, commit, or
-preview proves only its own stage. Do not use it as evidence for a downstream
-result.
-
-Use a targeted independent reviewer when consequence, uncertainty, or a
-specialized surface warrants it. Do not add reviewers merely to reach a fixed
-count. Complete with a concise account of the achieved result, changed or
-examined surfaces, checks actually run, and remaining limitations or
-unverified items.
-
-## Respect authority without stopping useful local work
-
-When the invoking workflow permits mutation, treat requested local inspection,
-edits, tests, generated artifacts, and reversible non-Git task-scoped temporary
-isolation as normal implementation mechanics. Preserve unrelated changes and
-clean temporary resources. A read-only parent permits inspection and research
-only.
-
-An existing project-owned connector, keychain helper, or credential bridge may
-be used for an already requested data operation when secret values remain
-hidden. Do not pass secrets to subagents, artifacts, receipts, logs, or final
-reports.
-
-Require separate authority for local source-control mutation (branch, worktree,
-stage, commit, cherry-pick, or rebase); remote source-control mutation (push,
-PR, merge, tag, or release); destructive or irreversible actions; new login or
-credential creation; permission or scope changes; secret export or storage;
-external production or provider mutation; deployment, publication, schedule
-activation, migration; or paid action when the current request did not already
-grant that exact action. A plan, Goal, worker result, or evidence record never
-broadens authority.
+For separate authority or cost decisions, read
+`<quant-shared-root>/core/authority.md`. Existing hidden credential bridges may
+support an already requested operation, but never expose secret values to
+workers, commands, logs, artifacts, or reports.
