@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 import re
+import runpy
 import shutil
 import subprocess
 import sys
@@ -16,30 +17,17 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit, urlunsplit
 
-
 ROOT = Path(__file__).resolve().parent
+CANONICAL_BASE_SHARED_FILES = runpy.run_path(
+    str(ROOT / "shared" / "scripts" / "validate_installed.py")
+)["BASE_SHARED_FILES"]
 INSTALL_ITEMS = {
     "quant-plan": ROOT / "skills" / "quant-plan",
     "quant-goal": ROOT / "skills" / "quant-goal",
     "quant-developer": ROOT / "skills" / "quant-developer",
     "quant-research-shared": ROOT / "shared",
 }
-BASE_SHARED_FILES = (
-    "capabilities/analysis-input-flow.md",
-    "capabilities/analysis.md",
-    "capabilities/backend.md",
-    "capabilities/external-data.md",
-    "capabilities/interactive-chart.md",
-    "capabilities/public-web.md",
-    "capabilities/publication.md",
-    "capabilities/remote-release.md",
-    "capabilities/scheduled-automation.md",
-    "capabilities/web-ui.md",
-    "core/authority.md",
-    "core/context-routing.md",
-    "references/adaptive-workflow.md",
-    "scripts/validate_installed.py",
-)
+BASE_SHARED_FILES = tuple(sorted(CANONICAL_BASE_SHARED_FILES))
 INSTALL_MANIFEST_SCHEMA_VERSION = 3
 CANONICALIZATION = "canonical-json-v1"
 FULL_GIT_SHA = re.compile(r"^[0-9a-f]{40}$")

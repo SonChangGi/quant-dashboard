@@ -12,11 +12,15 @@ import hashlib
 import json
 import os
 import re
+import runpy
 import sys
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent
+BASE_SHARED_FILES = runpy.run_path(
+    str(ROOT / "shared" / "scripts" / "validate_installed.py")
+)["BASE_SHARED_FILES"]
 SKILLS = ("quant-plan", "quant-goal", "quant-developer")
 EXPECTED_DESCRIPTIONS = {
     "quant-plan": (
@@ -33,10 +37,16 @@ EXPECTED_DESCRIPTIONS = {
     ),
     "quant-developer": (
         "Use only when the user explicitly invokes $quant-developer to deliver "
-        "the accepted end-to-end outcome with adaptive implementation, "
+        "the requested end-to-end outcome with adaptive implementation, "
         "capability-aware delegation, and actual consumer-surface verification."
     ),
 }
+
+ORDINARY_CAPABILITY_FILES = tuple(
+    Path(relative).name
+    for relative in sorted(BASE_SHARED_FILES)
+    if Path(relative).parent == Path("capabilities")
+)
 
 EXPECTED_WEB_DESIGN_SHA = (
     "dee11da0061b943ef04a8516ffb9811735571ff464c9a81bd8950cb3b6ee516e"
@@ -242,6 +252,98 @@ def has_selector_metadata_clause(text: str, name: str) -> bool:
         ):
             continue
         return True
+    return False
+
+
+def has_trusted_same_task_continuation(text: str) -> bool:
+    clauses = re.split(r"(?<=[.!?;])\s+", normalized_policy_text(text))
+    for clause in clauses:
+        if not (
+            re.search(r"\bcontinu\w*\b", clause)
+            and re.search(r"\bwithout\b.{0,40}\bselector\b", clause)
+            and re.search(r"\bonly when\b", clause)
+            and re.search(r"\btrusted host metadata\b", clause)
+            and re.search(r"\bcurrent[- ]user(?:'s)?\b", clause)
+            and re.search(r"\b(?:clarification|steering)\b", clause)
+            and re.search(
+                r"\bsame\b.{0,40}\bunfinished\b.{0,40}"
+                r"\balready[- ]active\b.{0,40}\btask\b",
+                clause,
+            )
+        ):
+            continue
+        if re.search(
+            r"\buntrusted\b|\bwithout trusted\b|\beven without\b"
+            r"|\bany (?:prior )?task\b|\bcompleted task\b"
+            r"|\bnot unfinished\b",
+            clause,
+        ):
+            continue
+        return True
+    return False
+
+
+def has_bounded_continuation_exclusion(text: str) -> bool:
+    clauses = re.split(r"(?<=[.!?;])\s+", normalized_policy_text(text))
+    for clause in clauses:
+        if not all(term in clause for term in ("completed", "unrelated", "worker")):
+            continue
+        if (
+            re.search(r"\bdoes not activate or continue\b", clause)
+            or re.search(r"\bnever creates goal state\b", clause)
+        ):
+            return True
+    return False
+
+
+def has_unsafe_continuation_expansion(text: str) -> bool:
+    clauses = re.split(r"(?<=[.!?;])\s+", normalized_policy_text(text))
+    for clause in clauses:
+        if not (
+            re.search(r"\bcontinu\w*\b", clause)
+            and re.search(
+                r"\b(?:any prior|completed|unrelated|worker) task\b",
+                clause,
+            )
+            and re.search(
+                r"\b(?:may|can|allow\w*|permit\w*)\b"
+                r"|\bwithout\b.{0,40}\bselector\b",
+                clause,
+            )
+        ):
+            continue
+        if re.search(
+            r"\b(?:not|never|does not|do not|cannot|must not)\b",
+            clause,
+        ):
+            continue
+        return True
+    return False
+
+
+def has_unsafe_plan_probe_expansion(text: str) -> bool:
+    clauses = re.split(r"(?<=[.!?;])\s+", normalized_policy_text(text))
+    for clause in clauses:
+        negative = re.search(
+            r"\b(?:not|never|no|cannot|must not|only inside)\b",
+            clause,
+        )
+        provider_write = (
+            re.search(r"\b(?:provider|remote)\b", clause)
+            and re.search(r"\bwrites?\b", clause)
+            and re.search(r"\b(?:may|can|allow\w*|permit\w*)\b", clause)
+        )
+        unsafe_dependency = (
+            re.search(r"\bdependenc(?:y|ies)\b", clause)
+            and re.search(r"\binstall\w*\b", clause)
+            and re.search(
+                r"\b(?:unlocked|target environment|global environment)\b",
+                clause,
+            )
+            and re.search(r"\b(?:may|can|allow\w*|permit\w*)\b", clause)
+        )
+        if (provider_write or unsafe_dependency) and not negative:
+            return True
     return False
 
 
@@ -712,6 +814,22 @@ def _validate_public_skill(name: str, text: str) -> list[str]:
             f"{name}: selector metadata must be trusted, current-user, "
             "same-request, and selector-derived"
         )
+    if not has_trusted_same_task_continuation(text):
+        errors.append(
+            f"{name}: continuation must require trusted host metadata for "
+            "current-user clarification or steering in the same unfinished "
+            "already-active task"
+        )
+    if not has_bounded_continuation_exclusion(text):
+        errors.append(
+            f"{name}: continuation must exclude completed, unrelated, and "
+            "worker tasks"
+        )
+    if has_unsafe_continuation_expansion(text):
+        errors.append(
+            f"{name}: permissive continuation of prior, completed, unrelated, "
+            "or worker tasks is prohibited"
+        )
     if "automatically activate" in normalized or "semantic match activates" in normalized:
         errors.append(f"{name}: implicit activation is prohibited")
 
@@ -796,6 +914,11 @@ def _validate_public_skill(name: str, text: str) -> list[str]:
         errors.append(
             "quant-goal: universal completion-condition IDs are prohibited"
         )
+    if name == "quant-plan" and has_unsafe_plan_probe_expansion(text):
+        errors.append(
+            "quant-plan: probe must not permit provider writes or unsafe "
+            "dependency installation"
+        )
     if name == "quant-developer" and (
         "while a safe, relevant next action can improve" in normalized
         or "while any improvement" in normalized
@@ -823,17 +946,27 @@ def _validate_kernel(text: str) -> list[str]:
         "data automation stays compatibility-only": (
             "does not select legacy data-automation machinery",
         ),
-        "bounded delegation": ("bounded, independent",),
-        "team threshold": ("ongoing coordination",),
+        "available capability": (
+            "collaboration and continuation surfaces the host actually exposes",
+        ),
+        "bounded delegation": ("bounded subagents",),
+        "team threshold": ("ongoing mutual coordination",),
+        "serial fallback": ("otherwise serial work",),
+        "one-off lifecycle": (
+            "one-off wait for time, event, thread, ci, or external status",
+        ),
         "parent integration": ("parent reconciles claims",),
+        "parent evidence review": ("re-inspects returned evidence",),
+        "worker claim is not proof": ("worker completion claim is not proof",),
         "acceptance continuation": ("acceptance condition is unmet",),
         "quality-debt stop": (
             "remaining items are only quality debt",
         ),
-        "fitness selection": ("select on fitness rather than position",),
-        "zero charge": ("zero charge",),
-        "no chargeable fallback": ("no chargeable fallback",),
-        "optional provider tiers": ("provider may offer optional paid tiers",),
+        "data policy routing": (
+            "read both `capabilities/external-data.md` and "
+            "`core/authority.md`",
+        ),
+        "zero-billing summary": ("selected route remains zero-billing",),
         "actual proof": ("prove the real outcome",),
         "authority owner": ("core/authority.md",),
     }
@@ -842,6 +975,24 @@ def _validate_kernel(text: str) -> list[str]:
     normalized = normalized_policy_text(text)
     if "always use a team" in normalized or "fixed worker count" in normalized:
         errors.append("adaptive kernel: fixed orchestration is prohibited")
+    for label, pattern in (
+        ("payment method", r"\bpayment method\b"),
+        ("PAYG and overage", r"\bpayg\b.{0,30}\boverage\b"),
+        ("chargeable fallback", r"\bchargeable fallback\b"),
+        (
+            "optional paid tiers",
+            r"\bprovider\b.{0,80}\boptional paid tiers\b",
+        ),
+        (
+            "display or redistribution rights",
+            r"\bdisplay\b.{0,30}\bredistribution rights\b",
+        ),
+    ):
+        if re.search(pattern, normalized):
+            errors.append(
+                "adaptive kernel: detailed data policy belongs in its "
+                f"selected rails, found {label!r}"
+            )
     return errors
 
 
@@ -874,6 +1025,13 @@ def _validate_router(text: str) -> list[str]:
         "installed root": ("installed: the `quant-research-shared`",),
         "ordinary kernel": ("load `references/adaptive-workflow.md`",),
         "single capability router": ("single ordinary-path router",),
+        "same-task continuation": ("same unfinished",),
+        "active Goal continuation": ("already-active quant goal",),
+        "native Goal lifecycle continuation": ("native lifecycle work",),
+        "one-off lifecycle": (
+            "host-lifecycle continuation follows a time, event, thread, ci, "
+            "or external-status dependency",
+        ),
         "no auto legacy": ("do not auto-load a manifest",),
         "legacy trigger": ("existing project depends on the exact contract",),
         "compat profile verification": ("`install_profile: compat`",),
@@ -899,19 +1057,53 @@ def _validate_external_data(text: str) -> list[str]:
                 "ordinary schedule rail": ("`scheduled-automation.md`",),
                 "ordinary publication rail": ("`publication.md`",),
                 "compat router": ("`../core/context-routing.md`",),
-                "schema state stays conditional": (
-                    "only after the legacy router selects",
-                ),
                 "missing compatibility is unavailable": (
                     "compatibility path as unavailable",
                 ),
             },
         )
     ]
+    if "access_eligibility" in text:
+        errors.append(
+            "external data: legacy schema fields must stay off the ordinary rail"
+        )
     if "`../references/data-automation.md`" in text:
         errors.append(
             "external data: ordinary base rail must not directly load "
             "compat-only data-automation.md"
+        )
+    return errors
+
+
+def _validate_ordinary_capability_rail(
+    relative: str,
+    text: str,
+) -> list[str]:
+    errors: list[str] = []
+    if re.search(r"(?m)^Activate\b", text):
+        errors.append(
+            f"ordinary capability {relative}: use apply/read language, not "
+            "skill activation language"
+        )
+    if re.search(r"(?m)^Evidence gates?:", text):
+        errors.append(
+            f"ordinary capability {relative}: undefined evidence-gate labels "
+            "are prohibited"
+        )
+    if relative == "analysis.md":
+        for field in ("result_identity_fields", "result_identity_pointers"):
+            if field in text:
+                errors.append(
+                    "ordinary capability analysis.md: legacy schema field "
+                    f"{field!r} is prohibited"
+                )
+    if (
+        relative == "remote-release.md"
+        and "selection adds gates" in normalized_policy_text(text)
+    ):
+        errors.append(
+            "ordinary capability remote-release.md: legacy gate wording is "
+            "prohibited"
         )
     return errors
 
@@ -1117,6 +1309,15 @@ def validate() -> list[str]:
                 input_binding.read_text(encoding="utf-8")
             )
         )
+    for relative in ORDINARY_CAPABILITY_FILES:
+        path = shared / "capabilities" / relative
+        if path.is_file():
+            errors.extend(
+                _validate_ordinary_capability_rail(
+                    relative,
+                    path.read_text(encoding="utf-8"),
+                )
+            )
 
     for path in sorted(shared.rglob("*.json")):
         try:

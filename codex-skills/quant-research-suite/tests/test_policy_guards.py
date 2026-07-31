@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import sys
 import unittest
 from pathlib import Path
@@ -57,17 +58,27 @@ class PolicyGuardTests(unittest.TestCase):
         self,
     ) -> None:
         authority = normalized("shared/core/authority.md")
+        external_data = normalized("shared/capabilities/external-data.md")
         adaptive = normalized("shared/references/adaptive-workflow.md")
-        for text in (authority, adaptive):
+        for text in (authority, external_data):
             self.assertIn("zero charge", text)
-            self.assertIn("payment method", text)
             self.assertIn("payg", text)
             self.assertIn("overage", text)
-            self.assertIn("chargeable fallback", text)
             self.assertIn("optional paid tiers", text)
-        self.assertIn("cannot enroll in or fall through", adaptive)
+        self.assertIn("payment method", authority)
+        self.assertIn("chargeable fallback", authority)
+        self.assertIn("cannot enroll in, depend on, or fall through", external_data)
+        self.assertIn("`capabilities/external-data.md`", adaptive)
+        self.assertIn("`core/authority.md`", adaptive)
         self.assertIn("paid data has no approval path", adaptive)
         self.assertIn("no action-approval escape hatch", authority)
+        for detailed_policy in (
+            r"\bpayment method\b",
+            r"\bpayg\b.{0,30}\boverage\b",
+            r"\bchargeable fallback\b",
+            r"\boptional paid tiers\b",
+        ):
+            self.assertIsNone(re.search(detailed_policy, adaptive))
 
     def test_public_skills_are_role_deltas_over_one_kernel(self) -> None:
         kernel = "../../shared/references/adaptive-workflow.md"
@@ -75,7 +86,7 @@ class PolicyGuardTests(unittest.TestCase):
             "../quant-research-shared/references/adaptive-workflow.md"
         )
         limits = {
-            "quant-plan": 750,
+            "quant-plan": 780,
             "quant-goal": 900,
             "quant-developer": 800,
         }

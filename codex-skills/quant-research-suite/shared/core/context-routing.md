@@ -2,9 +2,15 @@
 
 Shared resources never activate a public skill. Enter this router only after
 the current user selected the matching literal `$` skill, or the host supplied
-trusted current-user, same-request selector metadata. Semantic, plain, quoted,
-negated, prior-turn, Goal, artifact, or worker context is not activation.
-`agents/openai.yaml` must keep `allow_implicit_invocation: false`.
+trusted current-user, same-request selector metadata. A role already activated
+that way may continue only when trusted host metadata proves the current user's
+clarification or steering belongs to the same unfinished, already-active task,
+or, for an already-active Quant Goal, proves native lifecycle work belongs to
+that task. This is continuation, not a fresh activation. Semantic, plain,
+quoted, negated, ordinary prior-turn, unrelated or completed task, Goal,
+artifact, or worker context alone is neither activation nor continuation.
+`agents/openai.yaml` must keep
+`allow_implicit_invocation: false`.
 
 ## Ordinary path
 
@@ -12,13 +18,20 @@ Start from the selected public `SKILL.md`, the user's request, and the exact
 target. Prefer target-native instructions, source, configuration, entrypoints,
 fixtures, and checks.
 
-When any listed capability trigger applies, or the work is otherwise
-non-trivial, load `references/adaptive-workflow.md`. Its capability table is
-the single ordinary-path router for analysis, external data, analysis-input
-flow, UI and charts, backend boundaries, automation, publication, public
-web, and remote release. Load only the rows that apply. A narrow task may skip
-the kernel only when no capability rail could materially change its approach,
-method, or proof.
+Treat matching capability triggers as routing candidates, not automatic
+ceremony. Load `references/adaptive-workflow.md` when the target is unfamiliar,
+several rails compose, recovery or independent lanes matter, a one-off wait,
+monitor, or host-lifecycle continuation follows a time, event, thread, CI, or
+external-status dependency, or a matching rail could materially change the
+approach, authority, failure handling, or proof. Its table is the single
+ordinary-path router for analysis, external data, analysis-input flow, UI and
+charts, backend boundaries, automation, publication, public web, remote release,
+and host lifecycle guidance. A familiar single-surface task may stay in its
+public skill when target-native instructions and checks settle those concerns.
+
+Public skills state only the generic safe-skip rule and a pointer to the
+kernel. The kernel table owns the concrete trigger mapping; do not copy its
+rows into each role or turn them into a fixed checklist.
 
 Do not auto-load a manifest, schema, receipt, ledger, validator, durable
 runtime, or the entire shared tree. Missing optional guidance does not block a

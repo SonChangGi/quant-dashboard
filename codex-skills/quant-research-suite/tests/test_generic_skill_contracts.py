@@ -169,8 +169,8 @@ class GenericSkillContractTests(unittest.TestCase):
                     r"\ba duplicate\b",
                 ),
                 "no ordinary ledger": (
-                    r"\b(?:do not|must not|never)\b.{0,80}\b(?:create|use|load)\b"
-                    r".{0,60}\bledger\b",
+                    r"\b(?:do not|does not|must not|never)\b.{0,80}"
+                    r"\b(?:create|use|load)\b.{0,60}\bledger\b",
                     r"\bledger\b.{0,100}\boff (?:the )?default path\b",
                 ),
             },
@@ -318,15 +318,13 @@ class GenericSkillContractTests(unittest.TestCase):
             1,
         )
         before_map = (
-            "When IDs\nare active, add a compact live condition-to-evidence "
-            "map only when multiple\nconditions, partial evidence "
-            "invalidation, or machine-audit proof would\notherwise be "
-            "ambiguous."
+            "When useful, keep a compact\ncondition-to-evidence map in "
+            "conversation rather than a separate ledger."
         )
         after_map = (
-            "When IDs are active, add a small current mapping from conditions "
-            "to evidence only if several conditions, partial invalidation, or "
-            "machine audit would otherwise cause ambiguity."
+            "When ambiguity, partial invalidation, or machine audit makes it "
+            "useful, keep a small mapping from conditions to evidence in "
+            "conversation."
         )
         self.assertIn(before_map, paraphrased)
         paraphrased = paraphrased.replace(before_map, after_map, 1)
@@ -477,9 +475,9 @@ class GenericSkillContractTests(unittest.TestCase):
         self.assert_concepts(
             developer,
             {
-                "complete accepted outcome": (
-                    r"\bcomplete\b.{0,50}\baccepted outcome\b",
-                    r"\baccepted outcome\b.{0,50}\bcomplete\b",
+                "complete requested outcome": (
+                    r"\bcomplete\b.{0,50}\brequested outcome\b",
+                    r"\brequested outcome\b.{0,50}\bcomplete\b",
                 ),
                 "continue for unmet acceptance": (
                     r"\bunmet\b.{0,50}\bacceptance conditions?\b",
@@ -504,46 +502,286 @@ class GenericSkillContractTests(unittest.TestCase):
             body,
         )
 
-    def test_kernel_separates_free_route_discovery_from_final_selection(
-        self,
-    ) -> None:
+    def test_flexible_recovery_and_authority_additions_are_bounded(self) -> None:
+        plan = skill("quant-plan")
+        goal = skill("quant-goal")
+        developer = skill("quant-developer")
         kernel = read("shared/references/adaptive-workflow.md")
+
         self.assert_concepts(
-            kernel,
+            plan,
             {
-                "free route discovery": (
-                    r"\b(?:explore|discover)\b.{0,100}"
-                    r"\b(?:candidates?|routes?|sources?)\b",
+                "isolated probe output": (
+                    r"\btask-scoped temporary\b",
                 ),
-                "zero-billing eligibility": (
-                    r"\bzero[- ]billing\b",
-                    r"\bno[- ]billing\b",
+                "existing authenticated read-only access": (
+                    r"\bexisting project-scoped\b.{0,180}"
+                    r"\bauthenticated read-only\b",
                 ),
-                "claim-fit selection": (
-                    r"\b(?:select|choose)\b.{0,160}\b(?:claim|fitness|fit)\b",
-                    r"\b(?:claim|fitness|fit)\b.{0,160}\b(?:select|choose)\b",
+                "secret-hiding unchanged authentication": (
+                    r"\bsecrets stay hidden\b.{0,120}"
+                    r"\b(?:login|scope|stored credentials)\b.{0,120}"
+                    r"\bunchanged\b",
                 ),
-                "freshness and coverage": (
-                    r"\b(?:freshness|as-of)\b",
-                    r"\bcoverage\b",
+                "isolated lockfile dependencies": (
+                    r"\blockfile\b.{0,100}\bdependencies\b.{0,100}"
+                    r"\bisolation\b",
                 ),
-                "field and revision meaning": (
-                    r"\bfield meaning\b",
-                    r"\b(?:revision|point-in-time|pit)\b",
+                "reversible output is cleaned": (
+                    r"\bignored, reversible target output\b.{0,100}"
+                    r"\bremove\b",
                 ),
-                "rights and reproducibility": (
-                    r"\b(?:display|redistribution) rights\b",
-                    r"\breproducib",
+                "target stays unchanged and remote writes stay absent": (
+                    r"\bconfirm tracked target state\b.{0,80}\bunchanged\b"
+                    r".{0,120}\bno remote mutation\b.{0,80}"
+                    r"\brequested or succeeded\b",
+                ),
+                "no provider or remote writes": (
+                    r"\bpermit no provider or remote writes\b",
+                ),
+                "unsafe probe is skipped": (
+                    r"\botherwise skip the probe\b",
                 ),
             },
         )
-        self.assert_concept(
-            kernel,
-            "paid and free-to-paid data excluded",
-            r"\bpaid data\b.{0,100}\b(?:outside|ineligible|prohibited)\b",
-            r"\b(?:outside|ineligible|prohibited)\b.{0,100}\bpaid data\b",
-            r"\bpaid data\b.{0,100}\bno approval path\b",
+        for unsafe_probe_expansion in (
+            "Provider and remote writes are permitted during the probe.",
+            (
+                "Unlocked dependencies may be installed into the target "
+                "environment during the probe."
+            ),
+        ):
+            with self.subTest(unsafe_probe_expansion=unsafe_probe_expansion):
+                errors = validate_suite._validate_public_skill(
+                    "quant-plan",
+                    plan + f"\n{unsafe_probe_expansion}\n",
+                )
+                self.assertIn(
+                    "quant-plan: probe must not permit provider writes or "
+                    "unsafe dependency installation",
+                    errors,
+                )
+        self.assert_concepts(
+            goal,
+            {
+                "recovery after context loss": (
+                    r"\b(?:long external wait|context compaction)\b.{0,180}"
+                    r"\b(?:restate|recover)\b",
+                ),
+                "retained evidence is rechecked": (
+                    r"\bretained evidence\b.{0,100}\bavailable\b.{0,60}\bfresh\b",
+                ),
+                "no fixed recovery schema": (
+                    r"\bdo not\b.{0,60}\bfixed snapshot schema\b",
+                ),
+            },
         )
+        self.assert_concepts(
+            developer,
+            {
+                "remote execution needs explicit target authority": (
+                    r"\bexplicit current-user request\b.{0,120}"
+                    r"\bexecute\b.{0,120}\bidentified target\b"
+                    r".{0,120}\bonly\b",
+                ),
+                "local preparation is not remote authority": (
+                    r"\b(?:design\w*|implement\w*|prepar\w*)\b"
+                    r".{0,160}\blocally\b"
+                    r".{0,100}\bdoes not authorize\b.{0,80}\bremote\b",
+                ),
+                "paid data remains unavailable": (
+                    r"\bpaid data\b.{0,60}\bno approval path\b",
+                ),
+            },
+        )
+        self.assert_concepts(
+            kernel,
+            {
+                "worker reuse is context-dependent": (
+                    r"\bsame role and domain\b.{0,120}\bcontext\b"
+                    r".{0,120}\b(?:delta|changed scope|changed evidence)\b",
+                ),
+                "stale worker is replaced": (
+                    r"\bfresh worker\b.{0,120}"
+                    r"\b(?:cancellation|drift|off-track|unavailable context)\b",
+                ),
+                "one-off waits use host lifecycle": (
+                    r"\bone-off\b.{0,100}\bwait\b.{0,120}"
+                    r"\b(?:monitor|continuation)\b",
+                ),
+                "available host surfaces are negotiated": (
+                    r"\bsurfaces the host actually exposes\b",
+                ),
+                "serial fallback": (
+                    r"\botherwise serial work\b",
+                ),
+                "worker claim needs parent proof": (
+                    r"\bworker completion claim is not proof\b",
+                ),
+                "persistent automation needs separate authority": (
+                    r"\bpersistent automation\b.{0,120}\bseparate\b"
+                    r".{0,120}\bmutation\b.{0,180}\bcurrent user requested\b",
+                ),
+            },
+        )
+
+    def test_ordinary_base_rails_have_no_legacy_runtime_labels(self) -> None:
+        for relative in validate_suite.ORDINARY_CAPABILITY_FILES:
+            text = read(f"shared/capabilities/{relative}")
+            with self.subTest(relative=relative):
+                self.assertIsNone(
+                    re.search(r"(?m)^Activate\b", text)
+                )
+                self.assertIsNone(
+                    re.search(r"(?m)^Evidence gates?:", text)
+                )
+
+        analysis = read("shared/capabilities/analysis.md")
+        external_data = read("shared/capabilities/external-data.md")
+        self.assertNotIn("result_identity_fields", analysis)
+        self.assertNotIn("result_identity_pointers", analysis)
+        self.assertNotIn("access_eligibility", external_data)
+
+        compatibility_source = (
+            read("shared/templates/quant-project.schema.json")
+            + read("shared/schemas/quant-project-v2.schema.json")
+        )
+        self.assertIn("result_identity_fields", compatibility_source)
+        self.assertIn("access_eligibility", compatibility_source)
+
+        self.assert_concepts(
+            analysis,
+            {
+                "claim-proportional quant validity": (
+                    r"\bempirical investment claim\b.{0,160}"
+                    r"\bonly\b.{0,80}\bmaterial\b",
+                ),
+                "timing and universe validity": (
+                    r"\b(?:timing|leakage)\b.{0,160}"
+                    r"\b(?:universe|survivorship)\b",
+                ),
+                "cost and stability validity": (
+                    r"\b(?:fees|slippage|turnover)\b.{0,180}"
+                    r"\b(?:out-of-sample|overfitting|multiple-testing)\b",
+                ),
+                "no universal quant checklist": (
+                    r"\bdo not\b.{0,60}\buniversal checklist\b",
+                ),
+            },
+        )
+
+        scheduled = read("shared/capabilities/scheduled-automation.md")
+        publication = read("shared/capabilities/publication.md")
+        chart = read("shared/capabilities/interactive-chart.md")
+        public_web = read("shared/capabilities/public-web.md")
+        remote_release = read("shared/capabilities/remote-release.md")
+        self.assertRegex(
+            normalized(scheduled),
+            r"\bselect only\b.{0,80}\bmaterial\b.{0,100}\bactual runner\b",
+        )
+        self.assertRegex(
+            normalized(publication),
+            r"\bproject's native promotion model\b.{0,220}"
+            r"\bwithout introducing pointer architecture\b",
+        )
+        chart_body = normalized(chart)
+        self.assertIn("examples, not a universal checklist", chart_body)
+        self.assertIn("when both states exist", chart_body)
+        self.assertIn("adds no duplicate approval boundary", normalized(public_web))
+        self.assertIn("only affected or applicable", normalized(public_web))
+        release_body = normalized(remote_release)
+        self.assertIn("relevant preflight and proof", release_body)
+        self.assertIn("relevant target identities", release_body)
+        self.assertIn("applicable authentication", release_body)
+        self.assertNotIn("selection adds gates", release_body)
+
+    def test_kernel_routes_data_policy_without_duplicating_details(
+        self,
+    ) -> None:
+        kernel = read("shared/references/adaptive-workflow.md")
+        external_data = read("shared/capabilities/external-data.md")
+        authority = read("shared/core/authority.md")
+        self.assert_concepts(
+            kernel,
+            {
+                "external data owner": (
+                    r"`capabilities/external-data\.md`",
+                ),
+                "authority owner": (
+                    r"`core/authority\.md`",
+                ),
+                "selective loading": (
+                    r"\bdo not\b.{0,100}\bload\b.{0,100}\bnon-data work\b",
+                ),
+            },
+        )
+        self.assert_concepts(
+            external_data,
+            {
+                "claim-fit source selection": (
+                    r"\bselect on\b.{0,120}\bclaim fitness\b",
+                ),
+                "freshness coverage and semantics": (
+                    r"\bfreshness\b.{0,80}\bcoverage\b.{0,80}"
+                    r"\bfield semantics\b",
+                ),
+                "rights and reproducibility": (
+                    r"\brights\b.{0,100}\breliability\b.{0,80}"
+                    r"\breproducibility\b",
+                ),
+                "degraded fallback": (
+                    r"\bdegraded or unavailable\b",
+                ),
+            },
+        )
+        self.assertIn("hard-stop before any charge", normalized(authority))
+        for duplicated_detail in (
+            r"\bpayment method\b",
+            r"\bpayg\b.{0,30}\boverage\b",
+            r"\bchargeable fallback\b",
+            r"\boptional paid tiers\b",
+        ):
+            self.assertIsNone(re.search(duplicated_detail, normalized(kernel)))
+
+        duplicated_kernel = kernel + "\nPAYG, including overage charges.\n"
+        self.assertTrue(
+            any(
+                "detailed data policy belongs in its selected rails"
+                in error
+                for error in validate_suite._validate_kernel(
+                    duplicated_kernel
+                )
+            )
+        )
+
+    def test_developer_is_default_entry_and_names_the_base_input_flow(
+        self,
+    ) -> None:
+        developer = normalized(skill("quant-developer"))
+        self.assertIn("ordinary public entry", developer)
+        self.assertIn("analysis-input flow", developer)
+        self.assertNotIn("analysis-input binding", developer)
+
+    def test_kernel_does_not_hard_code_product_or_scale_thresholds(
+        self,
+    ) -> None:
+        kernel = normalized(read("shared/references/adaptive-workflow.md"))
+        for token in (
+            "multiagentv2",
+            "multi_agent_v1",
+            "multi_agent_v2",
+            "gpt-5",
+            "claude-",
+            "spawn_agent",
+            "create_thread",
+            "wait_threads",
+            "send_message_to_thread",
+            "three workers",
+            "3+ files",
+            "200 loc",
+        ):
+            with self.subTest(token=token):
+                self.assertNotIn(token, kernel)
 
     def test_real_surface_proof_keeps_delivery_stages_distinct(self) -> None:
         kernel = read("shared/references/adaptive-workflow.md")

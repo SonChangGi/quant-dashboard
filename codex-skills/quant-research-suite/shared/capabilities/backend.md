@@ -1,6 +1,6 @@
 # Capability: backend or control plane
 
-Activate only when server-side validation, authorization, persistence,
+Apply this rail only when server-side validation, authorization, persistence,
 orchestration, or long-running execution is needed.
 
 - Preserve the project's authoritative computation boundary. Introduce a
@@ -15,5 +15,3 @@ orchestration, or long-running execution is needed.
   schema, data date, and artifact identities that the project uses.
 - Preserve an existing fallback when it is an evidenced project contract.
   Do not invent a static fallback for every backend or new project.
-
-Evidence gates: `integration`, `security`.

@@ -1,9 +1,11 @@
 # Adaptive workflow kernel
 
-Use this kernel for a non-trivial Quant task: an unfamiliar target, multiple
-independent lanes, external data, a specialized consumer surface, recovery
-after a failed route, or proof across several stages. A small, well-understood
-task should stay in its public skill.
+Use this kernel when a matching capability rail could materially change the
+approach, authority, failure handling, or proof, or when the task has an
+unfamiliar target, independent lanes, failed-route recovery, a one-off wait,
+monitor, or host-lifecycle continuation after a time, event, thread, CI, or
+external-status dependency, or proof across several stages. A small,
+well-understood task should stay in its public skill.
 
 The invoking public skill's role, read/write boundary, and the current user's
 authority always win. This kernel cannot activate a skill, turn planning into
@@ -40,6 +42,7 @@ task:
 | versioned artifact, candidate/current pointer, or last-good promotion | `capabilities/publication.md` |
 | a public URL or hosted consumer outcome | `capabilities/public-web.md` |
 | authorized push, PR, release, deployment, or remote checkpoint | `capabilities/remote-release.md` |
+| one-off wait for time, event, thread, CI, or external status | use the host lifecycle guidance below; do not select scheduled automation unless the user requested creation or enablement of a persistent recurring or provider-triggered operation on an identified target |
 
 Several rails may compose. Do not infer a manifest, schema, receipt, ledger, or
 legacy runtime merely because a rail is useful. Framework and provider adapters
@@ -51,26 +54,42 @@ applies. A schedule, publication, raw redistribution, task duration, or
 `strict` label does not select legacy data-automation machinery; only the
 compatibility triggers in `core/context-routing.md` can do that.
 
-## Coordinate by capability
+## Coordinate by available capability
 
-Keep tightly coupled work with one owner. Use subagents when at least two
-bounded, independent questions or work units can progress in parallel. Use a
-native agent team only when available and the lanes require ongoing
-coordination, mutual discovery, or a shared worker lifecycle; otherwise use
-ordinary subagents or sequential work.
+Inspect the collaboration and continuation surfaces the host actually exposes.
+Choose by work shape and authority: bounded subagents for independent lanes; a
+native coordinated team only for ongoing mutual coordination or a shared
+worker lifecycle; an existing or explicitly user-authorized task or thread for
+user-owned continuation; host-native wait, monitor, or continuation for
+one-off dependencies; otherwise serial work. Do not assume a surface exists,
+combine partial controls from incompatible surfaces, or hard-code tool names,
+models, worker counts, or a fixed hierarchy.
 
-Each delegated assignment states:
-
-1. outcome or question;
-2. allowed scope;
-3. constraints and protected surfaces;
-4. evidence or artifact to return.
+Keep tightly coupled work with one owner. Give each delegated assignment a
+bounded outcome or question, allowed scope, protected constraints, and expected
+evidence or artifact. Use parallel work only when it materially improves
+coverage, quality, or elapsed time.
 
 Prefer parallel readers and one canonical writer. Concurrent writers require
 demonstrably disjoint roots or write sets and one integration owner. Treat a
 timeout or silent worker as unknown state; inspect status and artifacts before
-replacing it. The parent reconciles claims, integrates results, and owns final
-verification.
+replacing it. The parent reconciles claims, re-inspects returned evidence and
+artifacts, integrates results, and owns final verification. A worker completion
+claim is not proof.
+
+For a later slice in the same role and domain, reuse a retained worker only
+when its context remains an asset, and send the changed scope, evidence, or
+acceptance delta instead of the full history. Use a fresh worker after
+cancellation, material drift, an off-track result, or unavailable context.
+
+For a one-off time- or event-dependent wait, prefer the host's wait, monitor, or
+continuation capability instead of busy polling. Creating or enabling a
+persistent automation for recurring or provider-triggered operation is a
+separate provider or production mutation; use the scheduled automation rail
+only when the current user requested it on an identified target. Do not invent
+persistence or a background lifecycle the host does not provide. If no wait
+surface exists, use bounded serial status checks only while they can make
+progress; never busy poll.
 
 Do not require fixed roles, models, worker counts, review counts, worktrees,
 packets, ledgers, hashes, or receipts for ordinary host-native work.
@@ -102,31 +121,14 @@ Classify what remains:
 Exhaust safe useful alternatives before declaring a blocker. Stop once
 acceptance is verified and remaining items are only quality debt.
 
-## Discover broadly; select a zero-billing data route
+## Route data policy only when data is in scope
 
-Explore candidates in this order, but select on fitness rather than position:
-
-1. usable project source, cache, snapshot, or last-good artifact;
-2. official no-billing endpoint, filing, download, or publication;
-3. another lawfully accessible no-billing public source;
-4. defensible reconstruction or reconciliation from free inputs;
-5. disclosed proxy, narrower universe or period, degraded/last-good result, or
-   explicit unavailable state.
-
-Compare claim fitness, freshness, coverage, field semantics, adjustment and
-point-in-time behavior, rights, reliability, and reproducibility. The selected
-route must be usable for the required scope at zero charge, require no payment
-method, avoid trials or automatic conversion, have no PAYG or overage, and
-hard-stop with no chargeable fallback. A provider may offer optional paid
-tiers only when the selected route cannot enroll in or fall through to them.
-Paid data has no approval path inside this suite.
-
-Record origin, source and access dates when useful, fields, material
-transformations, coverage and revision limits, and exact display or
-redistribution rights in proportion to the claim. Require point-in-time proof
-only when the claim depends on historical availability, survivorship control,
-or look-ahead freedom. Never fabricate, silently fill gaps, bypass access
-controls, hide staleness, or weaken degraded/unavailable semantics.
+When external data is required, read both `capabilities/external-data.md` and
+`core/authority.md` before selecting a source. The data rail owns source
+fitness, provenance, rights, fallback, and degraded behavior; authority owns
+the permanent zero-billing, credential, and cost boundaries. Do not duplicate
+those details here or load them for non-data work. The selected route remains
+zero-billing, and paid data has no approval path.
 
 ## Prove the real outcome
 
@@ -140,7 +142,6 @@ commit, or preview proves only its own stage. Use an independent reviewer when
 consequence, uncertainty, or specialized judgment warrants it—not to satisfy a
 count.
 
-For separate authority or cost decisions, read
-`<quant-shared-root>/core/authority.md`. Existing hidden credential bridges may
-support an already requested operation, but never expose secret values to
-workers, commands, logs, artifacts, or reports.
+For authority, cost, or credential decisions, read
+`<quant-shared-root>/core/authority.md`; it owns those rules. Never expose
+secret values to workers, commands, logs, artifacts, or reports.

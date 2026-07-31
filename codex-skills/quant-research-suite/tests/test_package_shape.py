@@ -47,6 +47,10 @@ class PackageShapeValidationTests(unittest.TestCase):
     ) -> None:
         shared = suite_installer.INSTALL_ITEMS["quant-research-shared"]
         self.assertEqual(shared.resolve(), (ROOT / "shared").resolve())
+        self.assertEqual(
+            frozenset(suite_installer.BASE_SHARED_FILES),
+            installed_validator.BASE_SHARED_FILES,
+        )
         self.assertIn(
             "scripts/validate_installed.py",
             suite_installer.BASE_SHARED_FILES,

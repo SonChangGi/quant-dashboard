@@ -1,7 +1,7 @@
 # Capability: external data
 
-Activate when the project reads a provider, file feed, API, database, or other
-source outside its authoritative codebase.
+Apply this rail when the project reads a provider, file feed, API, database, or
+other source outside its authoritative codebase.
 
 ## Free-only eligibility
 
@@ -14,16 +14,6 @@ any charge. Do not present paid data as an alternative or ask for approval to
 use it. If an eligible path later becomes paid for the required use, stop new
 collection and move to an eligible free source, a free reconstruction or
 proxy, or a narrower honest claim. Follow `../core/authority.md`.
-
-Only after the legacy router selects an existing schema-v2 `external-data`
-contract, record `access_eligibility: permanently-free-no-billing`. This is a
-closed execution eligibility assertion: the selected access path has zero
-price, no payment method or billing setup, no trial or expiring credit, no
-subscription, and no automatic paid conversion. It does not replace the
-separate `rights_policy` or claim-specific rights check. Recheck it when
-provider terms or the access path change; an ineligible source must be
-replaced, reconstructed, proxied, or removed from the claim. Ordinary work
-does not create schema state merely because it uses external data.
 
 ## Match evidence to use and claim
 
@@ -61,14 +51,19 @@ depends on dividends, reinvestment, splits, total return, or an event study.
 ## Best-attainable path
 
 When a source is missing, incomplete, stale, ineligible, or unsuitable, search
-before declaring a blocker:
+before declaring a blocker. Treat this order as a discovery aid and select on
+claim fitness, freshness, coverage, field semantics, adjustment and
+point-in-time behavior, rights, reliability, and reproducibility rather than
+position:
 
-1. official, regulator, exchange, or public-sector zero-charge sources;
-2. another eligible free provider or a multi-source cross-check;
-3. free public filings, bulk files, project caches, or reproducible derivation;
-4. a defensible free proxy, forward-only collection, or narrower
+1. usable project source, cache, snapshot, or last-good artifact;
+2. official, regulator, exchange, or public-sector zero-charge source;
+3. another eligible free provider, multi-source cross-check, filing, or bulk
+   file;
+4. reproducible free derivation, reconstruction, or reconciliation;
+5. a defensible free proxy, forward-only collection, or narrower
    period/universe/method;
-5. an explicit degraded or unavailable result with the claim reduced to what
+6. an explicit degraded or unavailable result with the claim reduced to what
    the evidence supports.
 
 Never fabricate a value, conceal a gap, bypass access controls, silently weaken
@@ -92,5 +87,3 @@ contract-specific recovery actually requires that legacy payload, enter it
 through `../core/context-routing.md`. If the installed profile or exact child
 is absent, report that compatibility path as unavailable; do not search for,
 reconstruct, or install another suite copy.
-
-Evidence gates when acceptance selects them: `collection`, `freshness`.

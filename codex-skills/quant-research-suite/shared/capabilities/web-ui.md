@@ -1,8 +1,8 @@
 # Capability: web UI
 
-Activate for pages, components, navigation, tables, charts, copy, or visual
-states. Use the project's own design contract. Generic web work must not inherit
-the Quant research profile unless selected.
+Apply this rail for pages, components, navigation, tables, charts, copy, or
+visual states. Use the project's own design contract. Generic web work must not
+inherit the Quant research profile unless selected.
 
 - Make hierarchy, interaction, content, and states serve the product's actual
   purpose and audience.
@@ -13,5 +13,3 @@ the Quant research profile unless selected.
   browsers the project supports or the request adds.
 - TypeScript, React, component libraries, and hosting platforms are choices, not
   requirements.
-
-Evidence gate: `product`.

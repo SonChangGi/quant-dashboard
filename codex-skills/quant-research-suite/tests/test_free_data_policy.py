@@ -52,18 +52,21 @@ class FreeDataPolicyTests(unittest.TestCase):
                 )
 
     def test_discovery_order_is_distinct_from_route_selection(self) -> None:
-        kernel = normalized("shared/references/adaptive-workflow.md")
-        discovery = kernel.split("explore candidates in this order", 1)[1]
+        external_data = normalized("shared/capabilities/external-data.md")
+        discovery = external_data.split(
+            "treat this order as a discovery aid", 1
+        )[1]
         candidates = (
-            "project source",
-            "official no-billing",
-            "another lawfully accessible no-billing",
-            "reconstruction or reconciliation",
-            "disclosed proxy",
+            "usable project source",
+            "official, regulator",
+            "another eligible free provider",
+            "reproducible free derivation",
+            "defensible free proxy",
+            "explicit degraded or unavailable",
         )
         positions = [discovery.index(item) for item in candidates]
         self.assertEqual(positions, sorted(positions))
-        self.assertIn("select on fitness rather than position", kernel)
+        self.assertIn("select on claim fitness", external_data)
         for factor in (
             "claim fitness",
             "freshness",
@@ -73,7 +76,12 @@ class FreeDataPolicyTests(unittest.TestCase):
             "reliability",
             "reproducibility",
         ):
-            self.assertIn(factor, kernel)
+            self.assertIn(factor, external_data)
+
+        kernel = normalized("shared/references/adaptive-workflow.md")
+        self.assertIn("`capabilities/external-data.md`", kernel)
+        self.assertIn("`core/authority.md`", kernel)
+        self.assertNotIn("treat this order as a discovery aid", kernel)
 
     def test_external_data_evidence_tracks_use_and_claim(self) -> None:
         contract = normalized("shared/capabilities/external-data.md")
