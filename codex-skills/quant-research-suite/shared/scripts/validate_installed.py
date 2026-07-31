@@ -12,7 +12,8 @@ from typing import Any
 from urllib.parse import urlsplit
 
 
-SHARED = Path(__file__).resolve().parents[1]
+SCRIPT = Path(__file__).absolute()
+SHARED = SCRIPT.parents[1]
 INSTALL_ROOT = SHARED.parent
 MANIFEST = SHARED / "install-manifest.json"
 INSTALL_ITEMS = (
@@ -21,7 +22,127 @@ INSTALL_ITEMS = (
     "quant-developer",
     "quant-research-shared",
 )
-INSTALL_MANIFEST_SCHEMA_VERSION = 2
+PUBLIC_SKILLS = INSTALL_ITEMS[:3]
+PUBLIC_ITEM_FILES = frozenset({"SKILL.md", "agents/openai.yaml"})
+BASE_SHARED_FILES = frozenset(
+    {
+        "capabilities/analysis-input-flow.md",
+        "capabilities/analysis.md",
+        "capabilities/backend.md",
+        "capabilities/external-data.md",
+        "capabilities/interactive-chart.md",
+        "capabilities/public-web.md",
+        "capabilities/publication.md",
+        "capabilities/remote-release.md",
+        "capabilities/scheduled-automation.md",
+        "capabilities/web-ui.md",
+        "core/authority.md",
+        "core/context-routing.md",
+        "references/adaptive-workflow.md",
+        "scripts/validate_installed.py",
+    }
+)
+COMPAT_SHARED_FILES = frozenset(
+    {
+        "adapters/fastapi.md",
+        "adapters/github-actions.md",
+        "adapters/github-pages.md",
+        "adapters/github.md",
+        "adapters/supabase.md",
+        "adapters/vercel.md",
+        "advisory/architecture-options.md",
+        "advisory/external-comparisons.md",
+        "advisory/research-method.md",
+        "advisory/technology-examples.md",
+        "capabilities/agent-team-execution.md",
+        "capabilities/analysis-input-binding.md",
+        "capabilities/analysis-input-flow.md",
+        "capabilities/analysis.md",
+        "capabilities/backend.md",
+        "capabilities/external-data.md",
+        "capabilities/interactive-chart.md",
+        "capabilities/multi-agent-write.md",
+        "capabilities/public-web.md",
+        "capabilities/publication.md",
+        "capabilities/remote-release.md",
+        "capabilities/repo-mutation.md",
+        "capabilities/scheduled-automation.md",
+        "capabilities/web-ui.md",
+        "core/authority.md",
+        "core/context-routing.md",
+        "core/evidence-semantics.md",
+        "core/invariants.md",
+        "profiles/quant-public-dashboard-strict.md",
+        "profiles/quant-research-web.md",
+        "references/adaptive-workflow.md",
+        "references/agent-orchestration.md",
+        "references/cost-and-authority.md",
+        "references/data-automation.md",
+        "references/developer-runbook.md",
+        "references/durable-runtime.md",
+        "references/goal-and-subagents.md",
+        "references/operating-principles.md",
+        "references/research-and-planning.md",
+        "references/web-design-source.md",
+        "references/web-design-v2.4.1.md",
+        "schemas/analysis-input-binding-capture.schema.json",
+        "schemas/analysis-invocation.schema.json",
+        "schemas/evidence-receipt-v3.schema.json",
+        "schemas/goal-ledger-state.schema.json",
+        "schemas/goal-state-v2.schema.json",
+        "schemas/quant-project-v2.schema.json",
+        "schemas/review-receipt.schema.json",
+        "schemas/story-envelope.schema.json",
+        "schemas/story-receipt.schema.json",
+        "schemas/team-integration-receipt.schema.json",
+        "schemas/team-run-packet.schema.json",
+        "schemas/worker-delivery-receipt.schema.json",
+        "scripts/capability_model.py",
+        "scripts/contract_guard.py",
+        "scripts/github_preflight.sh",
+        "scripts/goal_ledger.py",
+        "scripts/goal_primitives.py",
+        "scripts/goal_runtime.py",
+        "scripts/project_inventory.py",
+        "scripts/quantctl.py",
+        "scripts/team_protocol.py",
+        "scripts/validate_evidence.py",
+        "scripts/validate_evidence_v3.py",
+        "scripts/validate_installed.py",
+        "scripts/validate_project.py",
+        "scripts/validate_project_v2.py",
+        "templates/analysis-input-binding-capture.example.json",
+        "templates/analysis-invocation.example.json",
+        "templates/approved-plan.example.md",
+        "templates/audit-report.example.md",
+        "templates/evidence-receipt-v3.example.json",
+        "templates/evidence-receipt.example.json",
+        "templates/goal-ledger-state.example.json",
+        "templates/goal-state-v2.example.json",
+        "templates/goal-state.example.json",
+        "templates/quant-project-v2.example.json",
+        "templates/quant-project.example.json",
+        "templates/quant-project.schema.json",
+        "templates/review-receipt.example.json",
+        "templates/story-envelope.example.json",
+        "templates/story-receipt.example.json",
+        "templates/team-integration-receipt.example.json",
+        "templates/team-run-packet.example.json",
+        "templates/worker-delivery-receipt.example.json",
+    }
+)
+INSTALL_PROFILES = frozenset({"base", "compat"})
+INSTALL_MANIFEST_SCHEMA_VERSION = 3
+INSTALL_MANIFEST_FIELDS = frozenset(
+    {
+        "schema_version",
+        "install_profile",
+        "canonicalization",
+        "suite_content_sha256",
+        "source_git",
+        "items",
+    }
+)
 CANONICALIZATION = "canonical-json-v1"
 FULL_GIT_SHA = re.compile(r"^[0-9a-f]{40}$")
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
@@ -154,6 +275,35 @@ def valid_item_hashes(value: Any) -> bool:
     return True
 
 
+def validate_profile_shared_files(
+    profile: Any,
+    shared_hashes: Any,
+) -> list[str]:
+    if not isinstance(profile, str) or profile not in INSTALL_PROFILES:
+        return ["install_profile must be base or compat"]
+    if not valid_item_hashes(shared_hashes):
+        return []
+    paths = frozenset(shared_hashes)
+    if profile == "base":
+        missing = sorted(BASE_SHARED_FILES - paths)
+        unexpected = sorted(paths - BASE_SHARED_FILES)
+        if missing or unexpected:
+            return [
+                "base profile shared files mismatch "
+                f"missing={missing} unexpected={unexpected}"
+            ]
+        return []
+
+    missing = sorted(COMPAT_SHARED_FILES - paths)
+    unexpected = sorted(paths - COMPAT_SHARED_FILES)
+    if missing or unexpected:
+        return [
+            "compat profile shared files mismatch "
+            f"missing={missing} unexpected={unexpected}"
+        ]
+    return []
+
+
 def main() -> int:
     try:
         value: Any = json.loads(MANIFEST.read_text(encoding="utf-8"))
@@ -167,8 +317,16 @@ def main() -> int:
         print("INSTALLED SUITE INVALID: unsupported install manifest")
         return 1
     errors: list[str] = []
+    manifest_fields = frozenset(value)
+    if manifest_fields != INSTALL_MANIFEST_FIELDS:
+        errors.append(
+            "install-manifest fields mismatch "
+            f"missing={sorted(INSTALL_MANIFEST_FIELDS - manifest_fields)} "
+            f"unexpected={sorted(manifest_fields - INSTALL_MANIFEST_FIELDS)}"
+        )
     if value.get("canonicalization") != CANONICALIZATION:
         errors.append("unsupported install-manifest canonicalization")
+    install_profile = value.get("install_profile")
     errors.extend(validate_source_git(value.get("source_git")))
     expected = value.get("items")
     if not isinstance(expected, dict):
@@ -180,6 +338,24 @@ def main() -> int:
     item_shapes_valid = item_names_valid and all(
         valid_item_hashes(expected.get(name))
         for name in INSTALL_ITEMS
+    )
+    for name in PUBLIC_SKILLS:
+        item = expected.get(name)
+        if not valid_item_hashes(item):
+            continue
+        paths = frozenset(item)
+        missing = sorted(PUBLIC_ITEM_FILES - paths)
+        unexpected = sorted(paths - PUBLIC_ITEM_FILES)
+        if missing or unexpected:
+            errors.append(
+                f"{name} manifest files mismatch "
+                f"missing={missing} unexpected={unexpected}"
+            )
+    errors.extend(
+        validate_profile_shared_files(
+            install_profile,
+            expected.get("quant-research-shared"),
+        )
     )
     manifest_suite_hash = value.get("suite_content_sha256")
     if (
@@ -199,6 +375,9 @@ def main() -> int:
             errors.append(f"invalid or missing manifest item {name}")
             continue
         destination = INSTALL_ROOT / name
+        if destination.is_symlink():
+            errors.append(f"{name} installed item is a symlink")
+            continue
         if not destination.is_dir():
             errors.append(f"missing installed item {name}")
             continue

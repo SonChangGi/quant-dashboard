@@ -1,8 +1,8 @@
 # Quant Research Web Design Prompt
 
-> 버전: `2.4.0`
+> 버전: `2.4.1`
 >
-> 기준일: `2026-07-24`
+> 기준일: `2026-07-29`
 >
 > 상태: 앞으로의 기존 페이지 개선과 신규 프로젝트에 사용하는 최우선 웹 디자인 프롬프트
 > 적용 범위: Quant Research Hub와 연결되는 모든 공개 웹페이지
@@ -751,7 +751,10 @@ node scripts/copy-audit.mjs --config path/to/copy-audit.config.json
 ## 13. 기존 페이지 개선 절차
 
 1. 최신 `origin/main`, 공개 URL, Pages 상태, 실제 데이터 기준일을 확인한다.
-2. 기존 worktree의 사용자 변경을 확인하고 최신 main 기반 전용 branch/worktree를 사용한다.
+2. 기존 worktree의 사용자 변경을 확인한다. 현재 사용자 요청이
+   branch/worktree 생성을 별도 승인한 경우에만 최신 main 기반 격리
+   workspace를 만들고, 그렇지 않으면 현재 workspace의 한 writer로
+   순차 작업한다.
 3. 수정 금지 파일·함수·schema·결과 snapshot을 먼저 기록한다.
 4. 공개 화면과 source에서 다음 inventory를 만든다.
    - 9개 메뉴
@@ -776,7 +779,10 @@ node scripts/copy-audit.mjs --config path/to/copy-audit.config.json
 11. 분석·데이터 테스트와 디자인 회귀 테스트를 실행한다.
 12. desktop/tablet/mobile의 light/dark를 확인한다.
 13. 사용자에게 local preview를 먼저 제공한다.
-14. 배포가 승인되면 commit·PR·CI·Pages·공개 readback까지 확인한다.
+14. 현재 사용자 요청이 필요한 local SCM, remote SCM, CI/provider,
+    Pages 배포, 공개 readback action을 각각 명시적으로 승인한 범위에서만
+    실행하고 확인한다. 일반적인 “배포 승인”을 commit·push·PR·merge·tag·
+    release 또는 provider mutation 전체 권한으로 해석하지 않는다.
 
 기존 페이지를 공통 디자인에 맞춘다는 이유로 한 번에 전체 markup과 CSS를 다시 작성하지 않는다.
 
@@ -799,7 +805,9 @@ node scripts/copy-audit.mjs --config path/to/copy-audit.config.json
 11. duplicate renderer가 있으면 하나를 canonical로 정하거나 동일 fixture behavior parity를 증명한다.
 12. desktop/tablet/mobile의 light/dark와 loading·empty·degraded 상태를 확인한다.
 13. 사용자에게 local preview와 변경 파일 목록을 제공하고 승인 전에는 배포하지 않는다.
-14. 배포가 승인되면 commit·PR·CI·Pages와 공개 asset·데이터 readback을 확인한다.
+14. 현재 사용자 요청이 각각 명시적으로 승인한 local SCM, remote SCM,
+    CI/provider, Pages 배포, 공개 readback action만 실행하고 확인한다.
+    한 action의 승인을 다른 권한 차원으로 확장하지 않는다.
 
 ## 15. 검증 게이트
 
@@ -863,7 +871,8 @@ node scripts/copy-audit.mjs --config path/to/copy-audit.config.json
 - local test와 preview 통과
 - Vercel Preview는 UI 검수 환경이며 운영 snapshot·분석 성공의 증거로 취급하지 않는다.
 - Preview는 검증된 GitHub Pages data origin을 read-only로 사용하고 production 데이터·current pointer를 덮어쓰지 않는다.
-- 승인 후 commit·push·PR·CI·Pages 성공
+- 현재 요청에서 각각 승인된 local SCM, remote SCM, CI/provider,
+  Pages 배포 action만 성공
 - 공개 HTML·CSS·JS가 배포 대상 main의 UI commit과 일치
 - 공개 JSON은 현재 원격 main의 검증된 data commit·schema·기준일과 일치
 - 공개 화면에서 기준일·핵심값·interaction을 다시 확인
@@ -968,7 +977,10 @@ https://sonchanggi.github.io/quant-dashboard/docs/web-design.md
 11. 1440×900, 1024×768, 390×844의 light/dark를 확인해.
 
 배포 전에는 local preview URL과 변경 파일 목록을 먼저 제공하고 멈춰.
-사용자가 배포를 승인한 경우에만 commit·push·PR·CI·Pages·공개 readback까지 진행해.
+사용자가 현재 요청에서 local SCM, remote SCM, CI/provider, Pages 배포,
+공개 readback action을 각각 명시적으로 승인한 경우에만 그 정확한
+action까지 진행해. “배포 승인” 하나로 commit·push·PR·merge·tag·release나
+provider mutation 권한을 묶어서 추론하지 마.
 
 완료 보고에는 다음을 분리해서 적어.
 - 통일한 디자인

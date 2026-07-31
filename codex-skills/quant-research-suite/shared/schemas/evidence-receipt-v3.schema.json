@@ -1,0 +1,400 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/quant-research-suite/evidence-receipt-v3.schema.json",
+  "title": "Capability evidence receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "project_id",
+    "objective",
+    "scope",
+    "required_gates",
+    "gates",
+    "cost_authority",
+    "context",
+    "goal_binding",
+    "completed_at"
+  ],
+  "properties": {
+    "$schema": {"type": "string"},
+    "schema_version": {"const": 3},
+    "project_id": {"type": "string", "minLength": 1},
+    "objective": {"type": "string", "minLength": 1},
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "capabilities",
+        "assurance",
+        "remote_actions",
+        "analysis_control_ids"
+      ],
+      "properties": {
+        "capabilities": {"$ref": "#/$defs/uniqueStrings"},
+        "assurance": {
+          "enum": ["light", "standard", "strict", "release"]
+        },
+        "delivery": {
+          "enum": ["local", "release"]
+        },
+        "remote_actions": {"type": "boolean"},
+        "analysis_control_ids": {"$ref": "#/$defs/uniqueStrings"}
+      }
+    },
+    "required_gates": {"$ref": "#/$defs/uniqueStrings"},
+    "gates": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9]*(?:[-_][a-z0-9]+)*$"
+      },
+      "additionalProperties": {"$ref": "#/$defs/gate"}
+    },
+    "cost_authority": {"$ref": "#/$defs/costAuthority"},
+    "context": {"$ref": "#/$defs/context"},
+    "goal_binding": {
+      "oneOf": [
+        {"type": "null"},
+        {"$ref": "#/$defs/goalBinding"}
+      ]
+    },
+    "completed_at": {"type": "string", "format": "date-time"}
+  },
+  "$defs": {
+    "uniqueStrings": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "optionalSha256": {
+      "type": "string",
+      "pattern": "^(?:[0-9a-f]{64})?$"
+    },
+    "gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "evidence"],
+      "properties": {
+        "status": {"const": "passed"},
+        "evidence": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/evidence"}
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "status", "summary", "source", "checked_at"],
+      "properties": {
+        "kind": {"enum": ["command", "inspection", "artifact"]},
+        "status": {"enum": ["passed", "verified"]},
+        "summary": {"type": "string", "minLength": 1},
+        "source": {"type": "string", "minLength": 1},
+        "checked_at": {"type": "string", "format": "date-time"},
+        "command": {"type": "string", "minLength": 1},
+        "command_argv": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "exit_code": {"type": "integer"},
+        "capture_sha256": {"$ref": "#/$defs/sha256"},
+        "artifact_path": {"type": "string", "minLength": 1},
+        "artifact_sha256": {"$ref": "#/$defs/sha256"},
+        "release_identity": {"$ref": "#/$defs/releaseIdentity"},
+        "public_readback": {"$ref": "#/$defs/publicReadback"},
+        "schedule_identity": {"$ref": "#/$defs/scheduleIdentity"},
+        "publication_identity": {"$ref": "#/$defs/publicationIdentity"},
+        "data_identity": {"$ref": "#/$defs/dataIdentity"},
+        "extensions": {"type": "object"}
+      }
+    },
+    "releaseIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider",
+        "target",
+        "action",
+        "account_or_project",
+        "before_identity",
+        "after_identity",
+        "operation_id",
+        "remote",
+        "status"
+      ],
+      "properties": {
+        "provider": {"type": "string", "minLength": 1},
+        "target": {"type": "string", "minLength": 1},
+        "action": {"type": "string", "minLength": 1},
+        "account_or_project": {"type": "string", "minLength": 1},
+        "before_identity": {"type": "string", "minLength": 1},
+        "after_identity": {"type": "string", "minLength": 1},
+        "operation_id": {"type": "string", "minLength": 1},
+        "remote": {"const": true},
+        "status": {"const": "succeeded"}
+      }
+    },
+    "publicReadback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "url",
+        "response_sha256",
+        "response_size",
+        "result_identity"
+      ],
+      "properties": {
+        "url": {"type": "string", "format": "uri"},
+        "response_sha256": {"$ref": "#/$defs/sha256"},
+        "response_size": {"type": "integer", "minimum": 1},
+        "result_identity": {"type": "string", "minLength": 1}
+      }
+    },
+    "scheduleIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schedule_id",
+        "entrypoint_sha256",
+        "declared_schedule",
+        "timezone",
+        "active_revision",
+        "enabled",
+        "cost_preflight_verified"
+      ],
+      "properties": {
+        "schedule_id": {"type": "string", "minLength": 1},
+        "entrypoint_sha256": {"$ref": "#/$defs/sha256"},
+        "declared_schedule": {"type": "string", "minLength": 1},
+        "timezone": {"type": "string", "minLength": 1},
+        "active_revision": {"type": "string", "minLength": 1},
+        "enabled": {"const": true},
+        "cost_preflight_verified": {"const": true}
+      }
+    },
+    "publicationIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "target_id",
+        "artifact_sha256",
+        "published_identity",
+        "ordering_verified",
+        "last_good_preserved"
+      ],
+      "properties": {
+        "target_id": {"type": "string", "minLength": 1},
+        "artifact_sha256": {"$ref": "#/$defs/sha256"},
+        "published_identity": {"type": "string", "minLength": 1},
+        "ordering_verified": {"const": true},
+        "last_good_preserved": {"const": true}
+      }
+    },
+    "dataIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_ids",
+        "artifact_sha256",
+        "rights_checked",
+        "collected_at",
+        "source_as_of",
+        "freshness_status"
+      ],
+      "properties": {
+        "source_ids": {
+          "allOf": [
+            {"$ref": "#/$defs/uniqueStrings"},
+            {"minItems": 1}
+          ]
+        },
+        "artifact_sha256": {"$ref": "#/$defs/sha256"},
+        "rights_checked": {"const": true},
+        "collected_at": {"type": "string", "format": "date-time"},
+        "source_as_of": {"type": "string", "format": "date-time"},
+        "freshness_status": {
+          "enum": ["current", "explicit-degraded", "unavailable"]
+        }
+      }
+    },
+    "costAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy",
+        "classification",
+        "decision",
+        "paid_action_requested",
+        "actions"
+      ],
+      "properties": {
+        "policy": {
+          "const": "zero-spend-unless-user-first-requests-specific-paid-action"
+        },
+        "classification": {
+          "enum": ["no_billable_action", "verified_zero_charge"]
+        },
+        "decision": {"const": "allow"},
+        "paid_action_requested": {"const": false},
+        "actions": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/costAction"}
+        }
+      }
+    },
+    "costAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "action_id",
+        "provider",
+        "account_or_project",
+        "resource_or_sku",
+        "evidence_source",
+        "evidence_checked_at",
+        "classification",
+        "decision",
+        "billing_mode",
+        "remaining_free_quota",
+        "planned_usage",
+        "hard_stop_enabled",
+        "maximum_cost",
+        "auto_renewing_trial_active",
+        "auto_renewing_trial_enabled",
+        "payment_method_registration_required",
+        "payment_method_change_required",
+        "automatic_upgrade_possible",
+        "automatic_upgrade_enabled",
+        "plan_upgrade_required",
+        "plan_upgrade_enabled",
+        "overage_possible",
+        "overage_enabled",
+        "pay_as_you_go_enabled",
+        "payg_enabled",
+        "free_quota_exceedance_allowed",
+        "free_quota_exceedance_possible",
+        "paid_add_on_active",
+        "paid_add_on_enabled",
+        "paid_addon_active",
+        "paid_addon_enabled",
+        "spend_cap_disabled",
+        "spend_cap_disablement_enabled",
+        "paid_fallback_enabled",
+        "billing_enabled",
+        "charges_enabled",
+        "allow_charges"
+      ],
+      "properties": {
+        "action_id": {"type": "string", "minLength": 1},
+        "provider": {"type": "string", "minLength": 1},
+        "account_or_project": {"type": "string", "minLength": 1},
+        "resource_or_sku": {"type": "string", "minLength": 1},
+        "evidence_source": {"type": "string", "minLength": 1},
+        "evidence_checked_at": {"type": "string", "format": "date-time"},
+        "classification": {"const": "verified_zero_charge"},
+        "decision": {"const": "allow"},
+        "billing_mode": {"const": "hard-free-no-overage"},
+        "remaining_free_quota": {"type": "number", "minimum": 0},
+        "planned_usage": {"type": "number", "minimum": 0},
+        "hard_stop_enabled": {"const": true},
+        "maximum_cost": {"const": 0},
+        "auto_renewing_trial_active": {"const": false},
+        "auto_renewing_trial_enabled": {"const": false},
+        "payment_method_registration_required": {"const": false},
+        "payment_method_change_required": {"const": false},
+        "automatic_upgrade_possible": {"const": false},
+        "automatic_upgrade_enabled": {"const": false},
+        "plan_upgrade_required": {"const": false},
+        "plan_upgrade_enabled": {"const": false},
+        "overage_possible": {"const": false},
+        "overage_enabled": {"const": false},
+        "pay_as_you_go_enabled": {"const": false},
+        "payg_enabled": {"const": false},
+        "free_quota_exceedance_allowed": {"const": false},
+        "free_quota_exceedance_possible": {"const": false},
+        "paid_add_on_active": {"const": false},
+        "paid_add_on_enabled": {"const": false},
+        "paid_addon_active": {"const": false},
+        "paid_addon_enabled": {"const": false},
+        "spend_cap_disabled": {"const": false},
+        "spend_cap_disablement_enabled": {"const": false},
+        "paid_fallback_enabled": {"const": false},
+        "billing_enabled": {"const": false},
+        "charges_enabled": {"const": false},
+        "allow_charges": {"const": false}
+      }
+    },
+    "context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "manifest_sha256",
+        "plan_sha256",
+        "base_commit",
+        "head_commit"
+      ],
+      "properties": {
+        "manifest_sha256": {"$ref": "#/$defs/optionalSha256"},
+        "plan_sha256": {"$ref": "#/$defs/optionalSha256"},
+        "base_commit": {
+          "type": "string",
+          "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})?$"
+        },
+        "head_commit": {
+          "type": "string",
+          "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})?$"
+        }
+      }
+    },
+    "goalBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "goal_id",
+        "objective_sha256",
+        "ledger_tail_sha256",
+        "acceptance_ids",
+        "acceptance_claims"
+      ],
+      "properties": {
+        "goal_id": {"type": "string", "minLength": 1},
+        "objective_sha256": {"$ref": "#/$defs/sha256"},
+        "ledger_tail_sha256": {"$ref": "#/$defs/sha256"},
+        "acceptance_ids": {
+          "allOf": [
+            {"$ref": "#/$defs/uniqueStrings"},
+            {"minItems": 1}
+          ]
+        },
+        "acceptance_claims": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "minItems": 1,
+            "items": {"$ref": "#/$defs/acceptanceClaim"}
+          }
+        }
+      }
+    },
+    "acceptanceClaim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["gate", "evidence_index", "evidence_sha256"],
+      "properties": {
+        "gate": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[-_][a-z0-9]+)*$"
+        },
+        "evidence_index": {"type": "integer", "minimum": 0},
+        "evidence_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    }
+  }
+}

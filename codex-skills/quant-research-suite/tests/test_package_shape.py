@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+import re
 import shutil
 import sys
 import tempfile
@@ -11,6 +13,8 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 import validate_suite as suite_validator
+import install as suite_installer
+from shared.scripts import validate_installed as installed_validator
 
 
 class PackageShapeValidationTests(unittest.TestCase):
@@ -37,6 +41,90 @@ class PackageShapeValidationTests(unittest.TestCase):
             )
 
             self.assertEqual(self.validate_copy(root), [])
+
+    def test_base_shared_selection_is_source_backed_and_lean(
+        self,
+    ) -> None:
+        shared = suite_installer.INSTALL_ITEMS["quant-research-shared"]
+        self.assertEqual(shared.resolve(), (ROOT / "shared").resolve())
+        self.assertEqual(
+            frozenset(suite_installer.BASE_SHARED_FILES),
+            installed_validator.BASE_SHARED_FILES,
+        )
+        self.assertIn(
+            "scripts/validate_installed.py",
+            suite_installer.BASE_SHARED_FILES,
+        )
+        self.assertNotIn(
+            "scripts/goal_ledger.py",
+            suite_installer.BASE_SHARED_FILES,
+        )
+        self.assertNotIn(
+            "scripts/quantctl.py",
+            suite_installer.BASE_SHARED_FILES,
+        )
+        self.assertNotIn(
+            "schemas/quant-project-v2.schema.json",
+            suite_installer.BASE_SHARED_FILES,
+        )
+        self.assertIn(
+            "capabilities/analysis-input-flow.md",
+            suite_installer.BASE_SHARED_FILES,
+        )
+        self.assertNotIn(
+            "capabilities/analysis-input-binding.md",
+            suite_installer.BASE_SHARED_FILES,
+        )
+        for relative in suite_installer.BASE_SHARED_FILES:
+            with self.subTest(relative=relative):
+                self.assertTrue((shared / relative).is_file())
+
+    def test_base_profile_contains_every_ordinary_kernel_reference(
+        self,
+    ) -> None:
+        kernel = (
+            ROOT / "shared/references/adaptive-workflow.md"
+        ).read_text(encoding="utf-8")
+        ordinary_references = set(
+            re.findall(
+                r"`((?:capabilities|core)/[^`]+\.md)`",
+                kernel,
+            )
+        )
+        self.assertLessEqual(
+            ordinary_references,
+            set(suite_installer.BASE_SHARED_FILES),
+        )
+
+    def test_compat_profile_inventory_matches_complete_shared_source(
+        self,
+    ) -> None:
+        shared = suite_installer.INSTALL_ITEMS["quant-research-shared"]
+        self.assertEqual(
+            installed_validator.COMPAT_SHARED_FILES,
+            frozenset(suite_installer.tree_hashes(shared)),
+        )
+
+    def test_source_preserves_optional_compatibility_resources(self) -> None:
+        shared = suite_installer.INSTALL_ITEMS["quant-research-shared"]
+        for relative in (
+            "core/context-routing.md",
+            "references/data-automation.md",
+            "references/goal-and-subagents.md",
+            "references/durable-runtime.md",
+            "schemas/analysis-input-binding-capture.schema.json",
+            "schemas/analysis-invocation.schema.json",
+            "scripts/goal_ledger.py",
+            "scripts/quantctl.py",
+            "scripts/validate_project.py",
+            "schemas/quant-project-v2.schema.json",
+            "schemas/evidence-receipt-v3.schema.json",
+            "schemas/team-run-packet.schema.json",
+            "templates/analysis-input-binding-capture.example.json",
+            "templates/analysis-invocation.example.json",
+        ):
+            with self.subTest(relative=relative):
+                self.assertTrue((shared / relative).is_file())
 
     def test_rejects_unexpected_and_environment_files(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -87,6 +175,26 @@ class PackageShapeValidationTests(unittest.TestCase):
                 "obvious private key block content is prohibited: README.md",
                 errors,
             )
+
+    def test_rejects_unsealed_team_protocol_example(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = self.copy_suite(directory)
+            packet = (
+                root
+                / "shared"
+                / "templates"
+                / "team-run-packet.example.json"
+            )
+            value = json.loads(packet.read_text(encoding="utf-8"))
+            value["activation_reason"] = "Mutated after the packet was sealed."
+            packet.write_text(
+                json.dumps(value, indent=2) + "\n",
+                encoding="utf-8",
+            )
+
+            errors = self.validate_copy(root)
+
+            self.assertIn("team packet example self-hash is invalid", errors)
 
 
 if __name__ == "__main__":

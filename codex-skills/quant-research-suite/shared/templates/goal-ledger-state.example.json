@@ -1,0 +1,87 @@
+{
+  "$schema": "../schemas/goal-ledger-state.schema.json",
+  "document_type": "quant_goal_ledger_state",
+  "schema_version": 1,
+  "goal_id": "goal-replace-me",
+  "project_id": "replace-me",
+  "project_binding": {
+    "root_realpath": "/replace/project",
+    "git_common_dir_realpath": null,
+    "origin_fingerprint_sha256": null,
+    "identity_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "state_root": {
+    "path_realpath": "/replace/codex-state/quant-goals/fingerprint/goal-replace-me",
+    "device": 1,
+    "inode": 1,
+    "binding_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+  },
+  "host": {
+    "goal_id": "host-goal-replace-me",
+    "last_observed_state": "active",
+    "observed_at": "2026-07-27T00:00:00Z",
+    "source": "codex-host"
+  },
+  "objective": "Deliver the accepted objective.",
+  "objective_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "acceptance": [
+    {
+      "id": "a1",
+      "text": "The requested behavior is directly verified."
+    }
+  ],
+  "acceptance_revision": 1,
+  "acceptance_revisions": [
+    {
+      "revision": 1,
+      "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "reason": "Initial accepted objective.",
+      "recorded_at": "2026-07-27T00:00:00Z",
+      "acceptance": [
+        {
+          "id": "a1",
+          "text": "The requested behavior is directly verified."
+        }
+      ]
+    }
+  ],
+  "plan": null,
+  "plan_revisions": [],
+  "assurance": "light",
+  "delivery": "local",
+  "proof_policy": {
+    "activation_reasons": [
+      "recovery"
+    ],
+    "required_capabilities": [],
+    "required_review_roles": [],
+    "required_gates": [
+      "contract",
+      "self_review",
+      "verification"
+    ],
+    "manifest": null
+  },
+  "checkpoint": null,
+  "continuation_capsule": null,
+  "blockers": {},
+  "next_action": null,
+  "stories": {},
+  "reviews": [],
+  "review_context": {
+    "terminal_after_event_seq": 1
+  },
+  "completion_ready": null,
+  "completion_history": [],
+  "ledger": {
+    "path": "goal-ledger.jsonl",
+    "event_count": 1,
+    "tail_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+  },
+  "workspace": {
+    "project_fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "last_event_workspace_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+  },
+  "created_at": "2026-07-27T00:00:00Z",
+  "updated_at": "2026-07-27T00:00:00Z"
+}

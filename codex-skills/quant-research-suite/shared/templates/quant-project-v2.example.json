@@ -1,0 +1,24 @@
+{
+  "$schema": "../schemas/quant-project-v2.schema.json",
+  "schema_version": 2,
+  "project": {
+    "id": "replace-me",
+    "purpose": "Describe the user-visible result this project exists to produce."
+  },
+  "assurance": "standard",
+  "delivery": "local",
+  "profiles": [],
+  "capabilities": [],
+  "adapters": {},
+  "contracts": {
+    "protected_paths": [],
+    "test_commands": []
+  },
+  "capability_config": {},
+  "authority": {
+    "cost_policy": "zero-spend-unless-user-first-requests-specific-paid-action",
+    "paid_action_authority": null,
+    "paid_fallback_enabled": false
+  },
+  "extensions": {}
+}

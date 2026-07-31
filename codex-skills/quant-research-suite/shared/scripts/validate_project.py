@@ -1332,7 +1332,10 @@ def ordered_contains(values: list[str], expected: tuple[str, ...]) -> bool:
     return cursor == len(expected)
 
 
-def validate(root: Path, manifest: dict[str, Any]) -> tuple[list[str], list[str]]:
+def validate_v1(
+    root: Path,
+    manifest: dict[str, Any],
+) -> tuple[list[str], list[str]]:
     errors: list[str] = []
     warnings: list[str] = []
     if not isinstance(manifest, dict):
@@ -1996,12 +1999,45 @@ def validate(root: Path, manifest: dict[str, Any]) -> tuple[list[str], list[str]
     return errors, warnings
 
 
+def validate(
+    root: Path,
+    manifest: dict[str, Any],
+) -> tuple[list[str], list[str]]:
+    """Dispatch to the immutable v1 contract or progressive v2 contract."""
+
+    if manifest.get("schema_version") == 2:
+        from validate_project_v2 import validate as validate_v2
+
+        return validate_v2(root, manifest)
+    return validate_v1(root, manifest)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", required=True)
     parser.add_argument(
         "--manifest",
         default=".codex/quant-project.json",
+    )
+    parser.add_argument(
+        "--require-capability",
+        action="append",
+        default=[],
+        help="Require an effective v2 capability; repeatable",
+    )
+    parser.add_argument(
+        "--minimum-assurance",
+        choices=("light", "standard", "strict", "release"),
+    )
+    parser.add_argument(
+        "--draft",
+        action="store_true",
+        help="For v2 onboarding, report incomplete capability config as warnings",
+    )
+    parser.add_argument(
+        "--explain",
+        action="store_true",
+        help="Include resolved v2 gates and progressive references",
     )
     args = parser.parse_args()
     root = Path(args.root).expanduser().resolve()
@@ -2017,14 +2053,75 @@ def main() -> int:
         parser.error("Manifest must stay within project root")
     manifest = load_object(manifest_path)
     errors, warnings = validate(root, manifest)
+    resolved: dict[str, Any] | None = None
+    if manifest.get("schema_version") == 2:
+        from capability_model import (
+            ASSURANCE_RANK,
+            CapabilityError,
+            resolve,
+        )
+
+        try:
+            resolved = resolve(manifest)
+        except CapabilityError as exc:
+            if str(exc) not in errors:
+                errors.append(str(exc))
+        if resolved is not None:
+            effective = set(resolved["effective_capabilities"])
+            for capability in args.require_capability:
+                if capability not in effective:
+                    errors.append(
+                        "required capability is not active: " + capability
+                    )
+            if (
+                args.minimum_assurance
+                and ASSURANCE_RANK[resolved["assurance"]]
+                < ASSURANCE_RANK[args.minimum_assurance]
+            ):
+                errors.append(
+                    "resolved assurance is below required minimum: "
+                    + args.minimum_assurance
+                )
+        if args.draft:
+            retained: list[str] = []
+            for message in errors:
+                draftable = (
+                    " is required" in message
+                    or " requires " in message
+                    or "does not exist" in message
+                )
+                hard = any(
+                    token in message
+                    for token in (
+                        "outside project root",
+                        "portable project-relative",
+                        "secret",
+                        "paid",
+                        "cost_policy",
+                        "unknown",
+                        "runtime-only",
+                    )
+                )
+                if draftable and not hard:
+                    warnings.append("draft: " + message)
+                else:
+                    retained.append(message)
+            errors = retained
+    elif args.require_capability or args.minimum_assurance:
+        errors.append(
+            "capability and assurance CLI requirements require manifest "
+            "schema_version 2"
+        )
     result = {
-        "schema_version": 1,
+        "schema_version": manifest.get("schema_version"),
         "valid": not errors,
         "manifest": str(manifest_path),
         "project_id": manifest.get("project", {}).get("id", ""),
         "errors": errors,
         "warnings": warnings,
     }
+    if args.explain and resolved is not None:
+        result["resolved"] = resolved
     print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0 if not errors else 1
 

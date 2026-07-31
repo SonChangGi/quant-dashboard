@@ -1,0 +1,33 @@
+{
+  "$schema": "../schemas/story-receipt.schema.json",
+  "document_type": "quant_story_receipt",
+  "schema_version": 1,
+  "goal_id": "goal-replace-me",
+  "story_id": "story-ui-audit",
+  "envelope_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "status": "ready_for_review",
+  "summary": "Responsive behavior was inspected.",
+  "changed_paths": [],
+  "claims": [
+    {
+      "acceptance_id": "s1",
+      "status": "passed",
+      "evidence_ids": [
+        "e1"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "id": "e1",
+      "kind": "inspection",
+      "status": "passed",
+      "summary": "Desktop and mobile preview inspected.",
+      "ref": "artifacts/ui-audit.json",
+      "sha256": null
+    }
+  ],
+  "workspace_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "completed_at": "2026-07-26T00:00:00Z",
+  "receipt_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+}

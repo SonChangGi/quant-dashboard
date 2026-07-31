@@ -1,0 +1,189 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/quant-research-suite/team-integration-receipt.schema.json",
+  "title": "Hash-bound team integration receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "document_type",
+    "schema_version",
+    "team_run_id",
+    "packet_sha256",
+    "integration_owner",
+    "status",
+    "delivery_results",
+    "canonical_snapshot",
+    "acceptance_claims",
+    "evidence",
+    "conflicts",
+    "unverified",
+    "blockers",
+    "completed_at",
+    "receipt_sha256"
+  ],
+  "properties": {
+    "$schema": {"type": "string"},
+    "document_type": {"const": "quant_team_integration_receipt"},
+    "schema_version": {"const": 1},
+    "team_run_id": {"$ref": "#/$defs/portableId"},
+    "packet_sha256": {"$ref": "#/$defs/sha256"},
+    "integration_owner": {"$ref": "#/$defs/portableId"},
+    "status": {"enum": ["ready_for_review", "blocked", "failed"]},
+    "delivery_results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "assignment_id",
+          "delivery_receipt_sha256",
+          "disposition",
+          "reason",
+          "integrated_paths",
+          "evidence_ids"
+        ],
+        "properties": {
+          "assignment_id": {"$ref": "#/$defs/portableId"},
+          "delivery_receipt_sha256": {"$ref": "#/$defs/sha256"},
+          "disposition": {
+            "enum": [
+              "integrated",
+              "accepted_read_only",
+              "rejected",
+              "superseded"
+            ]
+          },
+          "reason": {"type": "string", "minLength": 1},
+          "integrated_paths": {"$ref": "#/$defs/pathArray"},
+          "evidence_ids": {"$ref": "#/$defs/portableIdArray"}
+        }
+      }
+    },
+    "canonical_snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pre_workspace_sha256",
+        "post_workspace_sha256",
+        "changed_paths"
+      ],
+      "properties": {
+        "pre_workspace_sha256": {"$ref": "#/$defs/sha256"},
+        "post_workspace_sha256": {"$ref": "#/$defs/sha256"},
+        "changed_paths": {"$ref": "#/$defs/pathArray"}
+      }
+    },
+    "acceptance_claims": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/claim"}
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "kind",
+          "status",
+          "summary",
+          "source_sha256"
+        ],
+        "properties": {
+          "id": {"$ref": "#/$defs/portableId"},
+          "kind": {"enum": ["integration", "verification", "inspection"]},
+          "status": {"enum": ["passed", "failed", "unverified"]},
+          "summary": {"type": "string", "minLength": 1},
+          "source_sha256": {"$ref": "#/$defs/sha256"}
+        }
+      }
+    },
+    "conflicts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "status", "summary", "evidence_ids"],
+        "properties": {
+          "id": {"$ref": "#/$defs/portableId"},
+          "status": {"enum": ["resolved", "open"]},
+          "summary": {"type": "string", "minLength": 1},
+          "evidence_ids": {"$ref": "#/$defs/nonEmptyPortableIdArray"}
+        }
+      }
+    },
+    "unverified": {"$ref": "#/$defs/stringArray"},
+    "blockers": {"$ref": "#/$defs/stringArray"},
+    "completed_at": {"type": "string", "format": "date-time"},
+    "receipt_sha256": {"$ref": "#/$defs/sha256"}
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {"status": {"const": "ready_for_review"}},
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "delivery_results": {"minItems": 1},
+          "acceptance_claims": {"minItems": 1},
+          "evidence": {"minItems": 1},
+          "unverified": {"maxItems": 0},
+          "blockers": {"maxItems": 0}
+        }
+      },
+      "else": {
+        "properties": {
+          "blockers": {"minItems": 1}
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "portableId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[a-z0-9][a-z0-9_-]{0,127}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "portableIdArray": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/portableId"}
+    },
+    "nonEmptyPortableIdArray": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/portableId"}
+    },
+    "stringArray": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "pathArray": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "^(?![A-Za-z]:)(?!//)(?!.*\\\\).+$"
+      }
+    },
+    "claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["acceptance_id", "status", "evidence_ids"],
+      "properties": {
+        "acceptance_id": {"$ref": "#/$defs/portableId"},
+        "status": {"enum": ["passed", "failed", "unverified"]},
+        "evidence_ids": {"$ref": "#/$defs/nonEmptyPortableIdArray"}
+      }
+    }
+  }
+}

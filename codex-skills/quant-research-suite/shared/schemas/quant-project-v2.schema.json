@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/quant-research-suite/quant-project-v2.schema.json",
+  "title": "Capability-based project manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "project",
+    "assurance",
+    "profiles",
+    "capabilities",
+    "adapters",
+    "contracts",
+    "capability_config",
+    "authority"
+  ],
+  "properties": {
+    "$schema": {"type": "string"},
+    "schema_version": {"const": 2},
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "purpose"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*$"
+        },
+        "purpose": {"type": "string", "minLength": 1},
+        "repository": {
+          "type": "string",
+          "pattern": "^[^/\\s]+/[^/\\s]+$"
+        }
+      }
+    },
+    "assurance": {
+      "enum": ["light", "standard", "strict", "release"]
+    },
+    "delivery": {
+      "enum": ["local", "release"]
+    },
+    "profiles": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "capabilities": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "adapters": {
+      "type": "object",
+      "additionalProperties": {
+        "oneOf": [
+          {"type": "string", "minLength": 1},
+          {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {"type": "string", "minLength": 1}
+          }
+        ]
+      }
+    },
+    "contracts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["protected_paths", "test_commands"],
+      "properties": {
+        "protected_paths": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "test_commands": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "capability_config": {
+      "type": "object",
+      "properties": {
+        "external-data": {
+          "$ref": "#/$defs/externalDataConfig"
+        }
+      },
+      "additionalProperties": {"type": "object"}
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cost_policy",
+        "paid_action_authority",
+        "paid_fallback_enabled"
+      ],
+      "properties": {
+        "cost_policy": {
+          "const": "zero-spend-unless-user-first-requests-specific-paid-action"
+        },
+        "paid_action_authority": {"type": "null"},
+        "paid_fallback_enabled": {"const": false}
+      }
+    },
+    "extensions": {"type": "object"}
+  },
+  "$defs": {
+    "externalDataConfig": {
+      "type": "object",
+      "required": ["sources"],
+      "properties": {
+        "sources": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/externalDataSource"}
+        }
+      }
+    },
+    "externalDataSource": {
+      "type": "object",
+      "required": [
+        "id",
+        "provider",
+        "role",
+        "rights_policy",
+        "access_eligibility"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+        },
+        "provider": {"type": "string", "minLength": 1},
+        "role": {
+          "enum": ["required", "optional", "benchmark", "fallback"]
+        },
+        "rights_policy": {"type": "string", "minLength": 1},
+        "access_eligibility": {
+          "const": "permanently-free-no-billing"
+        },
+        "collector": {"type": "string", "minLength": 1},
+        "paid_fallback_enabled": {"const": false}
+      }
+    }
+  }
+}

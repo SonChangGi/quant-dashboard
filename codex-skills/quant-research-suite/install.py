@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 import re
+import runpy
 import shutil
 import subprocess
 import sys
@@ -16,17 +17,36 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit, urlunsplit
 
-
 ROOT = Path(__file__).resolve().parent
+CANONICAL_BASE_SHARED_FILES = runpy.run_path(
+    str(ROOT / "shared" / "scripts" / "validate_installed.py")
+)["BASE_SHARED_FILES"]
 INSTALL_ITEMS = {
     "quant-plan": ROOT / "skills" / "quant-plan",
     "quant-goal": ROOT / "skills" / "quant-goal",
     "quant-developer": ROOT / "skills" / "quant-developer",
     "quant-research-shared": ROOT / "shared",
 }
-INSTALL_MANIFEST_SCHEMA_VERSION = 2
+BASE_SHARED_FILES = tuple(sorted(CANONICAL_BASE_SHARED_FILES))
+INSTALL_MANIFEST_SCHEMA_VERSION = 3
 CANONICALIZATION = "canonical-json-v1"
 FULL_GIT_SHA = re.compile(r"^[0-9a-f]{40}$")
+BASE_TEST_TARGETS = (
+    "tests.test_free_data_policy",
+    "tests.test_generic_skill_contracts",
+    "tests.test_install_provenance",
+    (
+        "tests.test_installed_runtime_smoke.InstalledRuntimeSmokeTests."
+        "test_default_install_contains_only_lean_shared_runtime"
+    ),
+    (
+        "tests.test_installed_runtime_smoke.InstalledRuntimeSmokeTests."
+        "test_base_update_removes_previous_compatibility_overlay"
+    ),
+    "tests.test_package_shape",
+    "tests.test_policy_guards",
+    "tests.test_skill_routing",
+)
 
 
 def tree_hashes(root: Path) -> dict[str, str]:
@@ -174,6 +194,7 @@ def require_clean_source(provenance: dict[str, Any]) -> None:
 def install_manifest(
     staging_root: Path,
     source_git: dict[str, Any],
+    install_profile: str,
 ) -> dict[str, Any]:
     items = {
         name: tree_hashes(staging_root / name)
@@ -181,6 +202,7 @@ def install_manifest(
     }
     return {
         "schema_version": INSTALL_MANIFEST_SCHEMA_VERSION,
+        "install_profile": install_profile,
         "canonicalization": CANONICALIZATION,
         "suite_content_sha256": suite_content_sha256(items),
         "source_git": source_git,
@@ -188,11 +210,44 @@ def install_manifest(
     }
 
 
-def verify_installed(target: Path) -> None:
+def stage_shared(
+    staging_root: Path,
+    *,
+    include_legacy: bool,
+) -> None:
+    source = INSTALL_ITEMS["quant-research-shared"]
+    destination = staging_root / "quant-research-shared"
+    if include_legacy:
+        shutil.copytree(
+            source,
+            destination,
+            ignore=shutil.ignore_patterns(
+                "__pycache__",
+                "*.pyc",
+                "install-manifest.json",
+            ),
+        )
+        return
+
+    destination.mkdir(parents=True)
+    for relative_value in BASE_SHARED_FILES:
+        relative = Path(relative_value)
+        source_file = source / relative
+        if not source_file.is_file():
+            raise RuntimeError(f"Missing base shared resource: {relative_value}")
+        destination_file = destination / relative
+        destination_file.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source_file, destination_file)
+
+
+def verify_installed(
+    target: Path,
+    expected_items: dict[str, dict[str, str]],
+) -> None:
     mismatches = [
         name
-        for name, source in INSTALL_ITEMS.items()
-        if tree_hashes(source) != tree_hashes(target / name)
+        for name in INSTALL_ITEMS
+        if expected_items.get(name) != tree_hashes(target / name)
     ]
     if mismatches:
         raise RuntimeError(
@@ -214,7 +269,7 @@ def verify_installed(target: Path) -> None:
         raise RuntimeError("Installed runtime integrity validation failed")
 
 
-def validate_source(*, run_tests: bool) -> None:
+def validate_source(*, run_tests: bool, include_legacy: bool) -> None:
     result = subprocess.run(
         [sys.executable, str(ROOT / "validate_suite.py")],
         check=False,
@@ -222,7 +277,7 @@ def validate_source(*, run_tests: bool) -> None:
     if result.returncode:
         raise SystemExit("Refusing to install an invalid skill suite")
     if run_tests:
-        result = subprocess.run(
+        test_command = (
             [
                 sys.executable,
                 "-m",
@@ -231,8 +286,20 @@ def validate_source(*, run_tests: bool) -> None:
                 "-s",
                 str(ROOT / "tests"),
                 "-v",
-            ],
+            ]
+            if include_legacy
+            else [
+                sys.executable,
+                "-m",
+                "unittest",
+                *BASE_TEST_TARGETS,
+                "-v",
+            ]
+        )
+        result = subprocess.run(
+            test_command,
             check=False,
+            cwd=ROOT,
         )
         if result.returncode:
             raise SystemExit("Refusing to install a skill suite with failed tests")
@@ -264,11 +331,23 @@ def main() -> int:
             "repository is clean"
         ),
     )
+    parser.add_argument(
+        "--include-legacy",
+        action="store_true",
+        help=(
+            "Overlay the preserved manifest, ledger, receipt, schema, and "
+            "team compatibility resources at their established shared paths"
+        ),
+    )
     args = parser.parse_args()
 
     if args.skip_tests and not args.dry_run:
         raise SystemExit("--skip-tests is permitted only with --dry-run")
-    validate_source(run_tests=not args.skip_tests)
+    install_profile = "compat" if args.include_legacy else "base"
+    validate_source(
+        run_tests=not args.skip_tests,
+        include_legacy=args.include_legacy,
+    )
     source_git = capture_source_git_provenance(ROOT)
     if args.require_clean_source:
         require_clean_source(source_git)
@@ -281,8 +360,14 @@ def main() -> int:
         )
 
     if args.dry_run:
+        print(f"would install profile {install_profile}")
         for name, source in INSTALL_ITEMS.items():
-            print(f"would install {source} -> {target / name}")
+            suffix = (
+                " (lean shared selection)"
+                if name == "quant-research-shared" and not args.include_legacy
+                else ""
+            )
+            print(f"would install {source} -> {target / name}{suffix}")
         return 0
 
     target.mkdir(parents=True, exist_ok=True)
@@ -294,12 +379,19 @@ def main() -> int:
 
     try:
         for name, source in INSTALL_ITEMS.items():
+            if name == "quant-research-shared":
+                continue
             shutil.copytree(
                 source,
                 staging_root / name,
                 ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
             )
-        manifest_value = install_manifest(staging_root, source_git)
+        stage_shared(staging_root, include_legacy=args.include_legacy)
+        manifest_value = install_manifest(
+            staging_root,
+            source_git,
+            install_profile,
+        )
         (
             staging_root
             / "quant-research-shared"
@@ -336,7 +428,7 @@ def main() -> int:
             staged.rename(destination)
             installed.append(destination)
             print(f"installed {destination}")
-        verify_installed(target)
+        verify_installed(target, manifest_value["items"])
     except Exception as exc:
         rollback_errors: list[str] = []
         for destination in reversed(installed):

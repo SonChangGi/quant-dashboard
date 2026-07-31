@@ -1,0 +1,25 @@
+{
+  "$schema": "../schemas/review-receipt.schema.json",
+  "document_type": "quant_review_receipt",
+  "schema_version": 1,
+  "goal_id": "goal-replace-me",
+  "review_id": "terminal-review-1",
+  "role": "terminal_critic",
+  "reviewer_specialty": "evidence_integrity",
+  "status": "passed",
+  "plan_revision": 1,
+  "acceptance_revision": 1,
+  "acceptance_ids": [
+    "a1"
+  ],
+  "workspace_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+  "review_scope": {
+    "patterns": [],
+    "sha256": "44d74aa306140d5eebe1935bc21478b26adfaa3473e3d20d33dfd98b69257ebf"
+  },
+  "evidence_candidate_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+  "summary": "The cycle-free completion evidence candidate satisfies every current acceptance criterion.",
+  "findings": [],
+  "checked_at": "2026-07-27T00:10:00Z",
+  "receipt_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+}

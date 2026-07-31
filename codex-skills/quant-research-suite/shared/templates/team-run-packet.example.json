@@ -1,0 +1,73 @@
+{
+  "$schema": "../schemas/team-run-packet.schema.json",
+  "document_type": "quant_team_run_packet",
+  "schema_version": 2,
+  "team_run_id": "team-example",
+  "owner": "goal",
+  "goal_binding": {
+    "goal_id": "goal-example",
+    "plan_revision": 1,
+    "acceptance_revision": 1
+  },
+  "objective_sha256": "af38337548dc58b9813a504a9fae44d414d8c48cac2d14794c27f3cbeb3a80a0",
+  "project_binding_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "baseline": {
+    "workspace_sha256": "ccc7c4191e67a2b32157255105f341f4d3c2af33878372b67edf897e67605372",
+    "head": null,
+    "branch": null
+  },
+  "baseline_snapshot": {
+    "kind": "directory",
+    "head": null,
+    "branch": null,
+    "diff_sha256": null,
+    "paths": {},
+    "snapshot_version": 2,
+    "protected_patterns": ["src/analysis/**"],
+    "protected_paths": {},
+    "sha256": "ccc7c4191e67a2b32157255105f341f4d3c2af33878372b67edf897e67605372"
+  },
+  "snapshot_policy": {
+    "snapshot_version": 2,
+    "excluded_root": null,
+    "protected_patterns": ["src/analysis/**"]
+  },
+  "assurance": "standard",
+  "delivery": "local",
+  "activation_reason": "The UI change is independently implementable in an isolated workspace.",
+  "integration_owner": "primary",
+  "assignments": [
+    {
+      "id": "implement-ui",
+      "role": "ui-developer",
+      "objective": "Implement the bounded UI acceptance criterion.",
+      "non_goals": [
+        "Do not change the protected analysis implementation."
+      ],
+      "required": true,
+      "acceptance_ids": ["a-ui"],
+      "depends_on": [],
+      "validation_group": "ui-contract",
+      "workspace_binding_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "baseline_binding": {
+        "kind": "packet",
+        "assignment_id": null
+      },
+      "mode": "isolated_write",
+      "write_scope": ["src/ui/**"],
+      "protected_scope": ["src/analysis/**"],
+      "expected_checks": ["unit"],
+      "expected_evidence": ["focused-check"],
+      "stop_conditions": [
+        "Stop if the requested change requires a protected-scope edit."
+      ]
+    }
+  ],
+  "join": {
+    "integration_order": ["implement-ui"],
+    "verification": ["integration-check"],
+    "review_boundary": "integrated_frozen_snapshot"
+  },
+  "created_at": "2026-07-27T00:00:00Z",
+  "packet_sha256": "4092da3a888ba5f88da3f9c2fd9d294512c8f1e3c4479fa406c68e2ef52f7c73"
+}

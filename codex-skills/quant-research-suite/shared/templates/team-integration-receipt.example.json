@@ -1,0 +1,45 @@
+{
+  "$schema": "../schemas/team-integration-receipt.schema.json",
+  "document_type": "quant_team_integration_receipt",
+  "schema_version": 1,
+  "team_run_id": "team-example",
+  "packet_sha256": "4092da3a888ba5f88da3f9c2fd9d294512c8f1e3c4479fa406c68e2ef52f7c73",
+  "integration_owner": "primary",
+  "status": "ready_for_review",
+  "delivery_results": [
+    {
+      "assignment_id": "implement-ui",
+      "delivery_receipt_sha256": "a45a06e0a2b361d719b820d991ea50816c3cb7453b2c38cb51369240a3490147",
+      "disposition": "integrated",
+      "reason": "The bounded patch integrated cleanly and passed joined verification.",
+      "integrated_paths": ["src/ui/panel.ts"],
+      "evidence_ids": ["integration-check"]
+    }
+  ],
+  "canonical_snapshot": {
+    "pre_workspace_sha256": "ccc7c4191e67a2b32157255105f341f4d3c2af33878372b67edf897e67605372",
+    "post_workspace_sha256": "73d6a4224c8d24ed2dfacd6b2f4c2b9f21400b83634078ec2654938b11accbb8",
+    "changed_paths": ["src/ui/panel.ts"]
+  },
+  "acceptance_claims": [
+    {
+      "acceptance_id": "a-ui",
+      "status": "passed",
+      "evidence_ids": ["integration-check"]
+    }
+  ],
+  "evidence": [
+    {
+      "id": "integration-check",
+      "kind": "verification",
+      "status": "passed",
+      "summary": "The project-native focused test passed on the integrated snapshot.",
+      "source_sha256": "73d6a4224c8d24ed2dfacd6b2f4c2b9f21400b83634078ec2654938b11accbb8"
+    }
+  ],
+  "conflicts": [],
+  "unverified": [],
+  "blockers": [],
+  "completed_at": "2026-07-27T00:20:00Z",
+  "receipt_sha256": "5e9046cdcceef9193d5ecf962e651b98ff9011e871b1a2845fd7e0b6163cf44a"
+}

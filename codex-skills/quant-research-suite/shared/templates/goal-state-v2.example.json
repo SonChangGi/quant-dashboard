@@ -1,0 +1,49 @@
+{
+  "$schema": "../schemas/goal-state-v2.schema.json",
+  "document_type": "quant_goal_state",
+  "schema_version": 2,
+  "goal_id": "goal-replace-me",
+  "project_id": "replace-me",
+  "objective": "Deliver the explicitly requested outcome.",
+  "objective_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "intent_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+  "acceptance": [
+    {
+      "id": "a1",
+      "text": "The requested behavior is verified."
+    }
+  ],
+  "required_outcomes": [
+    "implementation",
+    "local-preview"
+  ],
+  "status": "active",
+  "project_binding": {
+    "root_realpath": "/absolute/project/worktree",
+    "identity_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "git_common_dir_realpath": "/absolute/repository/.git",
+    "origin_fingerprint_sha256": null
+  },
+  "plan": null,
+  "manifest": null,
+  "assurance": "standard",
+  "profiles": [],
+  "required_capabilities": [],
+  "runtime_capabilities": [],
+  "runtime_facts": {
+    "multi_agent_write_used": false,
+    "write_story_ids": []
+  },
+  "open_story_ids": [],
+  "ledger": {
+    "path": "ledger.jsonl",
+    "event_count": 1,
+    "tail_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  },
+  "last_checkpoint": {
+    "event_seq": 1,
+    "workspace_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+  },
+  "created_at": "2026-07-26T00:00:00Z",
+  "updated_at": "2026-07-26T00:00:00Z"
+}

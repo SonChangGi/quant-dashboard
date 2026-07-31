@@ -1,5 +1,15 @@
 # Developer Runbook
 
+## Contents
+
+- [Full-stack ownership without architectural mixing](#full-stack-ownership-without-architectural-mixing)
+- [Control taxonomy](#control-taxonomy)
+- [Result binding](#result-binding)
+- [Web quality](#web-quality)
+- [Backend quality](#backend-quality)
+- [Automation quality](#automation-quality)
+- [Release quality](#release-quality)
+
 ## Full-stack ownership without architectural mixing
 
 The integration owner may implement frontend, backend, automation, and release, but each layer keeps a separate contract.
@@ -81,8 +91,12 @@ The frontend may adopt a result only when the expected identity matches the arti
 
 ## Automation quality
 
-- Maintain a project-owned registry for every required, optional, benchmark, and
-  fallback source; never share source semantics or credentials across projects.
+- For scheduled or publicly published pipelines, maintain a project-owned
+  registry for every required, optional, benchmark, and fallback source; do not
+  impose the full registry on a local exploratory analysis.
+- Use only data that remains zero-charge without trials, expiring credits,
+  automatic paid conversion, payment setup, subscriptions, PAYG, overage, paid
+  add-ons, or paid tiers. Paid data is never a fallback.
 - Use the real provider timezone, release lag, and market/session calendar.
 - Snapshot and validate raw source artifacts before normalization or analysis.
 - Derive a coherent cutoff across required sources; latest fetch time alone is
@@ -93,7 +107,10 @@ The frontend may adopt a result only when the expected identity matches the arti
 - Validate result schema, identity, finite values, dates and artifact bytes before
   staging.
 - Publish a versioned candidate before changing the public/current pointer.
-- Gate publication on source rights, freshness, schema, result, and identity.
+- Gate publication on the rights needed for the fields and output actually
+  exposed, plus freshness, schema, result, and identity. Rights uncertainty
+  blocks unsupported publication or raw redistribution, not a permitted private
+  analysis or free-source fallback search.
 - Keep last-good data when collection, analysis, publication, or readback fails.
 - Record degraded/unavailable honestly and never invent replacement values.
 - Bound schedules with idempotency, concurrency, timeout, retry, retention and
@@ -105,9 +122,12 @@ The frontend may adopt a result only when the expected identity matches the arti
 
 - Authenticate and verify repository access just before remote actions.
 - Run the zero-spend command preflight before remote/provider actions. If cost is
-  unknown or the specific paid action was not first requested by the user, stop
-  before issuing it.
-- Create a focused branch and diff.
+  unknown, stop before issuing it. Paid data remains ineligible even when a
+  non-data paid action could otherwise be separately authorized.
+- Create a focused branch only when the current user request separately
+  authorizes that local source-control mutation. Otherwise keep one writer in
+  the current workspace and produce a bounded focused diff without creating a
+  branch or worktree.
 - Run tests before push and observe CI after push.
 - Keep migration, API, worker, preview, Pages, and public readback separate.
 - Save non-secret checkpoints for recovery.

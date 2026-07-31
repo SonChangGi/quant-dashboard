@@ -1,0 +1,58 @@
+{
+  "$schema": "../schemas/evidence-receipt-v3.schema.json",
+  "schema_version": 3,
+  "project_id": "replace-me",
+  "objective": "Verify the bounded local deliverable.",
+  "scope": {
+    "capabilities": [],
+    "assurance": "light",
+    "delivery": "local",
+    "remote_actions": false,
+    "analysis_control_ids": []
+  },
+  "required_gates": [
+    "contract",
+    "cost"
+  ],
+  "gates": {
+    "contract": {
+      "status": "passed",
+      "evidence": [
+        {
+          "kind": "inspection",
+          "status": "verified",
+          "summary": "Project identity and protected scope were checked.",
+          "source": "local project inspection",
+          "checked_at": "2026-07-26T00:00:00Z"
+        }
+      ]
+    },
+    "cost": {
+      "status": "passed",
+      "evidence": [
+        {
+          "kind": "inspection",
+          "status": "verified",
+          "summary": "The bounded work used no remote or billable action.",
+          "source": "local action inventory",
+          "checked_at": "2026-07-26T00:00:00Z"
+        }
+      ]
+    }
+  },
+  "cost_authority": {
+    "policy": "zero-spend-unless-user-first-requests-specific-paid-action",
+    "classification": "no_billable_action",
+    "decision": "allow",
+    "paid_action_requested": false,
+    "actions": []
+  },
+  "context": {
+    "manifest_sha256": "",
+    "plan_sha256": "",
+    "base_commit": "",
+    "head_commit": ""
+  },
+  "goal_binding": null,
+  "completed_at": "2026-07-26T00:00:00Z"
+}

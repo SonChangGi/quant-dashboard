@@ -344,6 +344,8 @@
                   "code_version",
                   "data_manifest_sha256",
                   "analysis_input_sha256",
+                  "analysis_input_validation_sha256",
+                  "analysis_entrypoint_sha256",
                   "config_hash",
                   "effective_config_hash",
                   "input_schema_version",
@@ -386,7 +388,7 @@
         },
         "result_identity_fields": {
           "type": "array",
-          "minItems": 12,
+          "minItems": 14,
           "uniqueItems": true,
           "items": {
             "type": "string",
@@ -421,6 +423,16 @@
             {
               "contains": {
                 "const": "analysis_input_sha256"
+              }
+            },
+            {
+              "contains": {
+                "const": "analysis_input_validation_sha256"
+              }
+            },
+            {
+              "contains": {
+                "const": "analysis_entrypoint_sha256"
               }
             },
             {
