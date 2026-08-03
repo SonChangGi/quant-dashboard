@@ -87,7 +87,7 @@ class PolicyGuardTests(unittest.TestCase):
         )
         limits = {
             "quant-plan": 780,
-            "quant-goal": 900,
+            "quant-goal": 860,
             "quant-developer": 800,
         }
         for skill in validate_suite.SKILLS:

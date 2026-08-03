@@ -495,8 +495,8 @@ class InstallProvenanceTests(unittest.TestCase):
             (
                 "goal terminal replacement",
                 "quant-goal/SKILL.md",
-                "never misuse `complete` or\n`blocked` to clear the slot",
-                "use `complete` or\n`blocked` to clear the slot",
+                "Never misuse `complete` or\n`blocked` to clear the slot",
+                "Use `complete` or\n`blocked` to clear the slot",
                 "quant-goal: body must prohibit fake terminal replacement",
             ),
             (

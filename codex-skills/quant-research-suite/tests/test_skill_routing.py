@@ -846,6 +846,19 @@ name: quant-plan
                 for body in public_bodies:
                     self.assertNotIn(route, body)
 
+    def test_quant_plan_keeps_single_surface_scope_proportional(self) -> None:
+        plan = normalized_skill_text("quant-plan")
+        self.assertRegex(
+            plan,
+            r"\bsingle-surface work\b.{0,80}\bomit\b.{0,120}"
+            r"\b(?:refactors?|abstractions?|test scaffolding|adjacent work)\b",
+        )
+        self.assertRegex(
+            plan,
+            r"\bomit\b.{0,180}\bunless\b.{0,80}"
+            r"\b(?:acceptance|target evidence)\b.{0,80}\brequires?\b",
+        )
+
     def test_ordinary_capability_router_maps_triggers_to_selected_rails(
         self,
     ) -> None:
