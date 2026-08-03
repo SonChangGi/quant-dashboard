@@ -56,6 +56,10 @@ working on its actual surface, material risks are resolved or honestly bounded,
 and no required work remains. Non-required polish is quality debt, not a
 blocker or a reason for indefinite improvement.
 
+Prefer the smallest coherent change that satisfies acceptance. Add new meaning,
+copy, states, abstractions, dependencies, or redesign only when the request or
+target evidence requires them, not merely because they could be useful.
+
 ## Adaptive kernel
 
 A familiar, single-surface change can remain in this file only after target

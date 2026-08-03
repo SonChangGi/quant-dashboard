@@ -117,12 +117,13 @@ The installer validates and stages the three public skills plus the adaptive
 kernel, canonical policy, selected capability rails, and installed validator.
 It records `install_profile: base|compat`, backs up the previous installation,
 replaces each directory with rollback on a caught failure, and verifies
-installed hashes. A base install runs the focused public/kernel/installer
-contract lane; `--include-legacy` runs the full compatibility regression. The
-full unittest command above remains the source-release check. An intentional
-development or archive install may omit `--require-clean-source`; its manifest
-records dirty or unavailable Git provenance and must not be described as
-commit-reproducible.
+installed hashes plus stable public metadata and routing invariants without
+enforcing prose templates. A base install runs the focused
+public/kernel/installer contract lane; `--include-legacy` runs the full
+compatibility regression. The full unittest command above remains the
+source-release check. An intentional development or archive install may omit
+`--require-clean-source`; its manifest records dirty or unavailable Git
+provenance and must not be described as commit-reproducible.
 
 ## Provenance
 
