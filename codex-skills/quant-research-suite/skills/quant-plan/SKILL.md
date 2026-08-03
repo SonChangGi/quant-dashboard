@@ -51,9 +51,11 @@ Use `Ground → Explore → Decide → Plan → Self-critique`.
    about a user-owned choice that materially changes the product, scope,
    authority, cost, or irreversible effect. Otherwise select and disclose the
    strongest supported default.
-4. **Plan.** Commit to one coherent route. Cover changed behavior and
-   interfaces, relevant data flow, failure or degraded behavior, compatibility,
-   verification, rollout, and approval boundaries only where they matter.
+4. **Plan.** Choose a coherent route covering material behavior, interfaces,
+   data flow, failure modes, compatibility, verification, rollout, and approval
+   boundaries. For single-surface work, omit refactors, abstractions, test
+   scaffolding, and adjacent work unless acceptance or target evidence requires
+   them.
 5. **Self-critique.** Challenge unsupported assumptions, missing decisions,
    hidden contract changes, and acceptance that proves only an intermediate
    stage. Revise before handoff.
