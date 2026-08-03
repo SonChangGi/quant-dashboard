@@ -47,18 +47,18 @@ Preserve an ID while its meaning is stable, assign a new one only for a
 materially changed condition, and refresh only affected evidence. Do not add an
 ID retirement ceremony to ordinary work.
 
-After steering, partial evidence invalidation, a long external wait, automatic
-continuation, or context compaction, restate only the changed or unresolved
-objective and conditions, stale proof, and next action. Reuse retained evidence
-only after confirming it is still available and fresh; otherwise mark it
-unresolved or stale. Do not introduce a fixed snapshot schema or repeat
-unaffected proof.
+After steering or partial invalidation, restate changed conditions, stale
+proof, and next action. After a long wait or context compaction, rebuild the
+smallest complete view needed to judge completion. Reuse retained
+evidence only after confirming it is available and fresh; otherwise mark
+it stale. Avoid a fixed snapshot schema.
 
-Do not silently replace a materially different active Goal. If the objective,
-authority, or cost boundary changes, keep the proposed work pending and ask the
-user which Goal to pursue. A compatible refinement may update the working
-completion conditions in conversation while preserving the stored objective's
-intent.
+Do not silently replace a different active Goal. If the request is ambiguous,
+ask which Goal to pursue; keep new work pending. After the user
+clearly chooses a new Goal, call `create_goal` only when fresh `get_goal` shows
+a host lifecycle action left no unfinished Goal; never misuse `complete` or
+`blocked` to clear the slot. Otherwise report the limit. A compatible
+refinement may update working conditions while preserving stored intent.
 
 ## Pursue the outcome
 

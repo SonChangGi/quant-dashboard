@@ -146,6 +146,547 @@ INSTALL_MANIFEST_FIELDS = frozenset(
 CANONICALIZATION = "canonical-json-v1"
 FULL_GIT_SHA = re.compile(r"^[0-9a-f]{40}$")
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
+FRONTMATTER_BLOCK = re.compile(
+    r"\A---\n(?P<body>.*?)\n---(?:\n|\Z)",
+    re.DOTALL,
+)
+PUBLIC_ROUTE = re.compile(
+    r"`(?P<prefix>\.\./\.\./shared|\.\./quant-research-shared)/"
+    r"(?P<suffix>[^`]+\.md)`"
+)
+REQUIRED_PUBLIC_ROUTES = frozenset(
+    {
+        "core/context-routing.md",
+        "references/adaptive-workflow.md",
+    }
+)
+ROLE_DESCRIPTION_PATTERNS = {
+    "quant-plan": (r"\b(?:audit|plan)\b", r"\bread-only\b", r"\badapt\w*"),
+    "quant-goal": (
+        r"\bnative goal\b",
+        r"\b(?:complete|completion|blocker|blocked)\b",
+        r"\badapt\w*",
+    ),
+    "quant-developer": (
+        r"\b(?:implementation|change|deliver)\b",
+        r"\b(?:verify|verification|surface)\b",
+        r"\badapt\w*",
+    ),
+}
+ROLE_PROMPT_PATTERNS = {
+    "quant-plan": (
+        r"\b(?:audit|inspect|plan)\b",
+        r"\b(?:read-only|non-mutating|without changing)\b",
+    ),
+    "quant-goal": (
+        r"\b(?:one|single)\b.{0,30}\bnative goal\b",
+        r"\bnative goal\b",
+        r"\b(?:evidence|blocker|complete|transition)\b",
+    ),
+    "quant-developer": (
+        r"\b(?:implementation|deliver)\b",
+        r"\brequested (?:outcome|change|result)\b",
+        r"\b(?:verify|verification|surface)\b",
+    ),
+}
+
+
+def _strip_yaml_comment(value: str) -> str:
+    quote: str | None = None
+    index = 0
+    while index < len(value):
+        character = value[index]
+        if quote == '"' and character == "\\":
+            index += 2
+            continue
+        if quote == "'" and character == "'":
+            if index + 1 < len(value) and value[index + 1] == "'":
+                index += 2
+                continue
+            quote = None
+        elif quote == '"' and character == '"':
+            quote = None
+        elif quote is None and character in {'"', "'"}:
+            quote = character
+        elif (
+            quote is None
+            and character == "#"
+            and (index == 0 or value[index - 1].isspace())
+        ):
+            return value[:index].rstrip()
+        index += 1
+    return value.strip()
+
+
+def _yaml_scalar(value: str) -> str | bool | int | float | None:
+    candidate = _strip_yaml_comment(value)
+    if not candidate:
+        return None
+    if candidate.startswith('"'):
+        try:
+            parsed: Any = json.loads(candidate)
+        except json.JSONDecodeError:
+            return None
+        return parsed if isinstance(parsed, (str, bool, int, float)) else None
+    if candidate.startswith("'"):
+        if len(candidate) < 2 or not candidate.endswith("'"):
+            return None
+        return candidate[1:-1].replace("''", "'")
+    if candidate in {"true", "false"}:
+        return candidate == "true"
+    if re.fullmatch(r"-?(?:0|[1-9]\d*)(?:\.\d+)?", candidate):
+        return float(candidate) if "." in candidate else int(candidate)
+    unsupported = ("!", "&", "*", "|", ">", "[", "]", "{", "}")
+    if any(token in candidate for token in unsupported):
+        return None
+    return candidate
+
+
+def normalized_policy_text(text: str) -> str:
+    return " ".join(text.lower().split())
+
+
+def policy_segments(text: str) -> list[str]:
+    normalized = normalized_policy_text(text)
+    return [
+        segment.strip()
+        for segment in re.split(
+            r"(?<=[.!?;])\s+|\b(?:but|however|although|though|whereas)\b",
+            normalized,
+        )
+        if segment.strip()
+    ]
+
+
+def _prohibits_write(clause: str) -> bool:
+    action = r"(?:allow\w*|permit\w*|edit\w*|mutat\w*|writ\w*)"
+    return bool(
+        re.search(
+            rf"\b(?:do not|never|must not|cannot)\b.{{0,35}}\b{action}\b",
+            clause,
+        )
+        or re.search(r"\bno\b.{0,40}\b(?:writes?|edits?|mutations?)\b", clause)
+        or re.search(
+            r"\b(?:writes?|edits?|mutations?)\b.{0,35}"
+            r"\b(?:not allowed|not permitted|prohibited)\b",
+            clause,
+        )
+        or re.search(
+            r"\b(?:may|can|should|must) not (?:be )?"
+            r"(?:allowed|permitted|written|edited)\b",
+            clause,
+        )
+    )
+
+
+def has_unsafe_plan_probe_expansion(text: str) -> bool:
+    for clause in policy_segments(text):
+        provider_write = (
+            re.search(r"\b(?:provider|remote)\b", clause)
+            and re.search(r"\bwrit\w*\b", clause)
+            and re.search(r"\b(?:may|can|allow\w*|permit\w*)\b", clause)
+        )
+        unsafe_dependency = (
+            re.search(r"\bdependenc(?:y|ies)\b", clause)
+            and re.search(r"\binstall\w*\b", clause)
+            and re.search(
+                r"\b(?:unlocked|target environment|global environment)\b",
+                clause,
+            )
+            and re.search(r"\b(?:may|can|allow\w*|permit\w*)\b", clause)
+        )
+        target_write = (
+            re.search(
+                r"\b(?:project|target(?:[- ]tree| directory| files?| state)?)\b",
+                clause,
+            )
+            and re.search(r"\b(?:edit|mutat\w*|writ(?:e|es|ten|ing))\b", clause)
+            and re.search(r"\b(?:may|can|allow\w*|permit\w*)\b", clause)
+        )
+        if (provider_write or unsafe_dependency or target_write) and not (
+            _prohibits_write(clause)
+            or re.search(r"\bonly inside\b", clause)
+        ):
+            return True
+    return False
+
+
+def has_unsafe_developer_expansion(text: str) -> bool:
+    clauses = policy_segments(text)
+    for index, clause in enumerate(clauses):
+        if not re.search(r"\bcontinu\w*\b", clause):
+            continue
+        continuation_prohibited = re.search(
+            r"\b(?:do not|never|must not|cannot)\s+continu\w*\b"
+            r"|\bcontinu\w*\b.{0,35}"
+            r"\b(?:not allowed|not permitted|prohibited)\b",
+            clause,
+        )
+        if continuation_prohibited:
+            continue
+        after_acceptance = re.search(r"\bafter acceptance\b", clause) and not (
+            re.search(r"\bmaterial risks?\b|\binvalidat\w*\b", clause)
+        )
+        open_ended = re.search(
+            r"\bwhile\b.{0,80}"
+            r"\b(?:any improvement|optional (?:polish|improvement))s?\b"
+            r"|\b(?:hypothetical risks?|non-required polish)\b",
+            clause,
+        )
+        if after_acceptance or open_ended:
+            return True
+        if (
+            index > 0
+            and re.search(r"\bafter acceptance\b", clauses[index - 1])
+            and not re.search(
+                r"\bmaterial risks?\b|\binvalidat\w*\b",
+                f"{clauses[index - 1]} {clause}",
+            )
+            and not re.search(
+                r"\b(?:do not|never|must not|cannot)\s+continu\w*\b",
+                f"{clauses[index - 1]} {clause}",
+            )
+        ):
+            return True
+    return False
+
+
+def has_unsafe_goal_terminal_expansion(text: str) -> bool:
+    for clause in policy_segments(text):
+        if _has_goal_terminal_guard(clause):
+            continue
+        terminal = re.search(r"\b(?:complete|blocked)\b", clause)
+        replacement = re.search(
+            r"\b(?:clear|free|release|replace)\w*\b",
+            clause,
+        )
+        action = re.search(
+            r"\b(?:mark|use|may|can|allow\w*|permit\w*)\b",
+            clause,
+        )
+        if terminal and replacement and action:
+            return True
+    return False
+
+
+def parse_skill_frontmatter(text: str) -> dict[str, str] | None:
+    match = FRONTMATTER_BLOCK.match(text.replace("\r\n", "\n"))
+    if not match:
+        return None
+    values: dict[str, str] = {}
+    for line in match.group("body").splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        if line != stripped or ":" not in line:
+            return None
+        key, raw_value = line.split(":", 1)
+        key = key.strip()
+        if not re.fullmatch(r"[a-z][a-z0-9-]*", key) or key in values:
+            return None
+        value = _yaml_scalar(raw_value)
+        if not isinstance(value, str):
+            return None
+        values[key] = value
+    return values
+
+
+def parse_agent_metadata(text: str) -> dict[str, str | bool] | None:
+    sections: dict[str, dict[str, str | bool | int | float]] = {}
+    current: str | None = None
+    for raw_line in text.replace("\r\n", "\n").splitlines():
+        if not raw_line.strip() or raw_line.lstrip().startswith("#"):
+            continue
+        top = re.fullmatch(r"([a-z][a-z0-9_-]*):", raw_line)
+        if top:
+            current = top.group(1)
+            if current in sections:
+                return None
+            sections[current] = {}
+            continue
+        field = re.fullmatch(
+            r" {2,}([a-z][a-z0-9_-]*):\s*(.+)",
+            raw_line,
+        )
+        if field and current is not None:
+            key = field.group(1)
+            if key in sections[current]:
+                return None
+            value = _yaml_scalar(field.group(2))
+            if value is None:
+                return None
+            sections[current][key] = value
+            continue
+        if current in {"interface", "policy"}:
+            return None
+
+    interface = sections.get("interface", {})
+    policy = sections.get("policy", {})
+    required_strings = ("display_name", "short_description", "default_prompt")
+    if not all(
+        isinstance(interface.get(key), str) and str(interface[key]).strip()
+        for key in required_strings
+    ):
+        return None
+    if not isinstance(policy.get("allow_implicit_invocation"), bool):
+        return None
+    return {
+        **{key: str(interface[key]) for key in required_strings},
+        "allow_implicit_invocation": bool(
+            policy["allow_implicit_invocation"]
+        ),
+    }
+
+
+def _has_all_patterns(text: str, patterns: tuple[str, ...]) -> bool:
+    return all(re.search(pattern, text) for pattern in patterns)
+
+
+def has_relation(
+    text: str,
+    *concept_groups: tuple[str, ...],
+    span: int = 2,
+) -> bool:
+    units = policy_segments(text)
+    for index in range(len(units)):
+        candidate = " ".join(units[index : index + span])
+        if all(
+            any(re.search(pattern, candidate) for pattern in group)
+            for group in concept_groups
+        ):
+            return True
+    return False
+
+
+def _has_goal_terminal_guard(text: str) -> bool:
+    for clause in policy_segments(text):
+        if re.search(
+            r"\b(?:never|do not|must not|cannot)\s+"
+            r"(?:mark|use|misuse)\w*\b.{0,70}\bcomplete\b"
+            r".{0,50}\bblocked\b.{0,70}"
+            r"\b(?:clear|free|release)\w*\b.{0,40}\bslot\b",
+            clause,
+        ):
+            return True
+    return False
+
+
+def validate_public_body(name: str, skill_text: str) -> list[str]:
+    match = FRONTMATTER_BLOCK.match(skill_text.replace("\r\n", "\n"))
+    if not match:
+        return []
+    body = normalized_policy_text(skill_text[match.end() :])
+    errors: list[str] = []
+    if name == "quant-plan":
+        read_only = has_relation(
+            body,
+            (r"\b(?:target|project)\b",),
+            (r"\b(?:remote|provider)\b",),
+            (r"\b(?:read-only|non-mutating|unchanged|untouched)\b",),
+            span=3,
+        )
+        direct_check = has_relation(
+            body,
+            (r"\b(?:check|probe)\b",),
+            (r"\b(?:known|proven|verified)\b",),
+            (r"\b(?:non-writing|non-mutating)\b",),
+        )
+        write_isolation = has_relation(
+            body,
+            (
+                r"\b(?:may write|writing|cache|dependenc(?:y|ies)|build|"
+                r"snapshot|output)\b",
+            ),
+            (
+                r"\b(?:isolat\w*|sandbox\w*|disposable|redirect\w*|"
+                r"temporary)\b",
+            ),
+            span=3,
+        )
+        if not (read_only and direct_check and write_isolation):
+            errors.append(f"{name}: body must preserve the read-only probe boundary")
+        if re.search(
+            r"\b(?:target|project|role)\b.{0,50}\bnot read-only\b",
+            body,
+        ):
+            errors.append(f"{name}: body contradicts the read-only boundary")
+        if re.search(r"\bdisposable copy\b.{0,30}\bor\b.{0,30}\bredirect\b", body):
+            errors.append(f"{name}: disposable copies must isolate external writes")
+        if has_unsafe_plan_probe_expansion(body):
+            errors.append(f"{name}: body permits unsafe target or remote writes")
+    elif name == "quant-goal":
+        tools = (
+            r"\bnative goal\b",
+            r"`create_goal`",
+            r"`get_goal`",
+            r"`update_goal`",
+        )
+        empty_slot = has_relation(
+            body,
+            (r"`get_goal`",),
+            (r"\bfresh\b",),
+            (r"\b(?:no unfinished goal|empty (?:native )?slot)\b",),
+            span=3,
+        )
+        if not (_has_all_patterns(body, tools) and empty_slot):
+            errors.append(f"{name}: body must preserve the native Goal lifecycle")
+        if not _has_goal_terminal_guard(body):
+            errors.append(f"{name}: body must prohibit fake terminal replacement")
+        if has_unsafe_goal_terminal_expansion(body):
+            errors.append(f"{name}: body permits fake terminal replacement")
+    elif name == "quant-developer":
+        bounded_change = has_relation(
+            body,
+            (r"\b(?:smallest|minimal|bounded)\b",),
+            (r"\b(?:change|implementation|scope)\b",),
+        )
+        bounded_continuation = has_relation(
+            body,
+            (r"\bcontinu\w*\b",),
+            (
+                r"\bacceptance\b.{0,60}\bunmet\b",
+                r"\bunmet\b.{0,60}\bacceptance\b",
+                r"\bmaterial risk\b.{0,80}\binvalidat\w*\b",
+            ),
+            span=3,
+        )
+        finish_condition = has_relation(
+            body,
+            (r"\b(?:finish|stop|end)\w*\b",),
+            (r"\brequested (?:outcome|change|result)\b",),
+            (r"\b(?:no required work|working|acceptance (?:is )?met)\b",),
+            span=3,
+        )
+        evidence_gated_scope = has_relation(
+            body,
+            (r"\b(?:new|extra|optional|expansion|redesign)\w*\b",),
+            (r"\b(?:request(?:ed)?|target evidence)\b",),
+            (r"\b(?:only|unless|require\w*)\b",),
+            span=3,
+        )
+        if not all(
+            (
+                bounded_change,
+                bounded_continuation,
+                finish_condition,
+                evidence_gated_scope,
+            )
+        ):
+            errors.append(f"{name}: body must preserve proportional delivery")
+        if re.search(
+            r"\b(?:do not|never|must not|cannot)\b.{0,35}"
+            r"\b(?:prefer|make|use)\b.{0,60}"
+            r"\b(?:smallest|minimal|bounded)\b",
+            body,
+        ):
+            errors.append(f"{name}: body contradicts proportional delivery")
+        if has_unsafe_developer_expansion(body):
+            errors.append(f"{name}: body permits open-ended improvement")
+    return errors
+
+
+def validate_public_metadata(
+    name: str,
+    skill_text: str,
+    agent_text: str,
+) -> list[str]:
+    errors: list[str] = []
+    metadata = parse_skill_frontmatter(skill_text)
+    if metadata is None:
+        errors.append(f"{name}: invalid SKILL.md frontmatter")
+    else:
+        if set(metadata) != {"name", "description"}:
+            errors.append(
+                f"{name}: frontmatter must contain only name and description"
+            )
+        if metadata.get("name") != name:
+            errors.append(f"{name}: frontmatter name mismatch")
+        description = metadata.get("description", "")
+        if (
+            not description
+            or len(description) > 1024
+            or re.search(r"[<>]", description)
+        ):
+            errors.append(f"{name}: invalid frontmatter description")
+        normalized = " ".join(description.lower().split())
+        selectors = set(re.findall(r"\$(quant-[a-z0-9-]+)", normalized))
+        if selectors != {name}:
+            errors.append(f"{name}: description must name only ${name}")
+        if not re.search(r"\b(?:explicit|only when|use only)\b", normalized):
+            errors.append(f"{name}: description must require explicit selection")
+        for pattern in ROLE_DESCRIPTION_PATTERNS[name]:
+            if not re.search(pattern, normalized):
+                errors.append(f"{name}: description is missing a role concept")
+                break
+
+    agent = parse_agent_metadata(agent_text)
+    if agent is None:
+        errors.append(f"{name}: invalid agents/openai.yaml")
+        return errors
+    if agent["allow_implicit_invocation"] is not False:
+        errors.append(f"{name}: implicit invocation must be false")
+    short_description = str(agent["short_description"])
+    if not 25 <= len(short_description) <= 64:
+        errors.append(f"{name}: short_description must be 25-64 characters")
+    prompt = str(agent["default_prompt"])
+    prompt_selectors = set(re.findall(r"\$(quant-[a-z0-9-]+)", prompt))
+    if prompt_selectors != {name}:
+        errors.append(f"{name}: default prompt must name only ${name}")
+    normalized_prompt = normalized_policy_text(prompt)
+    if not _has_all_patterns(normalized_prompt, ROLE_PROMPT_PATTERNS[name]):
+        errors.append(f"{name}: default prompt is missing a role concept")
+    prompt_contradictions = {
+        "quant-plan": r"\bnot read-only\b",
+        "quant-goal": r"\bnot (?:one|a|single) native goal\b",
+        "quant-developer": (
+            r"\b(?:do not|never|must not|cannot)\b.{0,35}"
+            r"\b(?:implement|deliver|verify)\w*\b"
+        ),
+    }
+    if re.search(prompt_contradictions[name], normalized_prompt):
+        errors.append(f"{name}: default prompt contradicts its role")
+    return errors
+
+
+def extract_public_shared_routes(
+    text: str,
+) -> tuple[frozenset[str], frozenset[str]]:
+    source: set[str] = set()
+    installed: set[str] = set()
+    for match in PUBLIC_ROUTE.finditer(text):
+        destination = (
+            source
+            if match.group("prefix") == "../../shared"
+            else installed
+        )
+        destination.add(match.group("suffix"))
+    return frozenset(source), frozenset(installed)
+
+
+def validate_public_routes(
+    name: str,
+    skill_text: str,
+    shared_root: Path,
+    available_files: frozenset[str],
+) -> list[str]:
+    errors: list[str] = []
+    source, installed = extract_public_shared_routes(skill_text)
+    if source != installed:
+        errors.append(f"{name}: source and installed shared routes must match")
+    routes = source | installed
+    missing_required = REQUIRED_PUBLIC_ROUTES - routes
+    if missing_required:
+        errors.append(
+            f"{name}: missing required shared routes {sorted(missing_required)}"
+        )
+    for suffix in sorted(routes):
+        relative = PurePosixPath(suffix)
+        if relative.is_absolute() or ".." in relative.parts:
+            errors.append(f"{name}: unsafe shared route {suffix}")
+            continue
+        if suffix not in available_files or not (shared_root / suffix).is_file():
+            errors.append(f"{name}: unavailable shared route {suffix}")
+    return errors
 
 
 def tree_hashes(root: Path) -> dict[str, str]:
@@ -398,6 +939,31 @@ def main() -> int:
             errors.append(
                 f"{name} mismatch "
                 f"missing={missing} unexpected={unexpected} changed={changed}"
+            )
+    shared_files = frozenset(actual_items.get("quant-research-shared", {}))
+    shared_root = INSTALL_ROOT / "quant-research-shared"
+    if shared_files:
+        for name in PUBLIC_SKILLS:
+            skill_root = INSTALL_ROOT / name
+            try:
+                skill_text = (skill_root / "SKILL.md").read_text(
+                    encoding="utf-8"
+                )
+                agent_text = (skill_root / "agents/openai.yaml").read_text(
+                    encoding="utf-8"
+                )
+            except OSError as exc:
+                errors.append(f"{name}: cannot read public metadata: {exc}")
+                continue
+            errors.extend(validate_public_metadata(name, skill_text, agent_text))
+            errors.extend(validate_public_body(name, skill_text))
+            errors.extend(
+                validate_public_routes(
+                    name,
+                    skill_text,
+                    shared_root,
+                    shared_files,
+                )
             )
     if (
         len(actual_items) == len(INSTALL_ITEMS)

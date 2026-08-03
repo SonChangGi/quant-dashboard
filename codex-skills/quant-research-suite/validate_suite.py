@@ -18,29 +18,23 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent
-BASE_SHARED_FILES = runpy.run_path(
+INSTALLED_VALIDATOR = runpy.run_path(
     str(ROOT / "shared" / "scripts" / "validate_installed.py")
-)["BASE_SHARED_FILES"]
+)
+BASE_SHARED_FILES = INSTALLED_VALIDATOR["BASE_SHARED_FILES"]
+parse_skill_frontmatter = INSTALLED_VALIDATOR["parse_skill_frontmatter"]
+parse_agent_metadata = INSTALLED_VALIDATOR["parse_agent_metadata"]
+validate_public_metadata = INSTALLED_VALIDATOR["validate_public_metadata"]
+validate_public_body = INSTALLED_VALIDATOR["validate_public_body"]
+validate_public_routes = INSTALLED_VALIDATOR["validate_public_routes"]
+policy_segments = INSTALLED_VALIDATOR["policy_segments"]
+has_unsafe_plan_probe_expansion = INSTALLED_VALIDATOR[
+    "has_unsafe_plan_probe_expansion"
+]
+has_unsafe_developer_expansion = INSTALLED_VALIDATOR[
+    "has_unsafe_developer_expansion"
+]
 SKILLS = ("quant-plan", "quant-goal", "quant-developer")
-EXPECTED_DESCRIPTIONS = {
-    "quant-plan": (
-        "Use only when the user explicitly invokes $quant-plan to audit "
-        "current state or produce a quick or decision-complete implementation "
-        "plan with adaptive, capability-aware depth. Work read-only; never "
-        "auto-activate or implement changes."
-    ),
-    "quant-goal": (
-        "Use only when the user explicitly invokes $quant-goal to initialize, "
-        "manually resume, or steer one native Goal adaptively through "
-        "observable completion conditions to verified completion or a genuine "
-        "blocker."
-    ),
-    "quant-developer": (
-        "Use only when the user explicitly invokes $quant-developer to deliver "
-        "the requested end-to-end outcome with adaptive implementation, "
-        "capability-aware delegation, and actual consumer-surface verification."
-    ),
-}
 
 ORDINARY_CAPABILITY_FILES = tuple(
     Path(relative).name
@@ -61,17 +55,6 @@ CANONICAL_ZERO_SPEND_GUARD = (
 CANONICAL_PAID_DATA_GUARD = (
     "paid data must not be proposed as a fallback, requested for approval, "
     "accessed, purchased, renewed, or used."
-)
-
-AGENT_METADATA_PATTERN = re.compile(
-    r"\Ainterface:\n"
-    r'  display_name: (?P<display_name>"(?:[^"\\\n]|\\.)*")\n'
-    r'  short_description: (?P<short_description>"(?:[^"\\\n]|\\.)*")\n'
-    r'  default_prompt: (?P<default_prompt>"(?:[^"\\\n]|\\.)*")\n'
-    r"policy:\n"
-    r"  allow_implicit_invocation: "
-    r"(?P<allow_implicit_invocation>true|false)\n?"
-    r"\Z"
 )
 
 REQUIRED_SOURCE_FILES = frozenset(
@@ -170,42 +153,11 @@ def normalized_policy_text(text: str) -> str:
 
 
 def frontmatter(text: str) -> dict[str, str]:
-    match = re.match(r"^---\n(.*?)\n---\n", text, flags=re.DOTALL)
-    if not match:
-        return {}
-    values: dict[str, str] = {}
-    for line in match.group(1).splitlines():
-        if ":" not in line:
-            continue
-        key, value = line.split(":", 1)
-        values[key.strip()] = value.strip().strip('"')
-    return values
+    return parse_skill_frontmatter(text) or {}
 
 
 def agent_metadata(text: str) -> dict[str, str | bool] | None:
-    match = AGENT_METADATA_PATTERN.fullmatch(text.replace("\r\n", "\n"))
-    if not match:
-        return None
-    try:
-        values: dict[str, str | bool] = {
-            key: json.loads(match.group(key))
-            for key in (
-                "display_name",
-                "short_description",
-                "default_prompt",
-            )
-        }
-        values["allow_implicit_invocation"] = json.loads(
-            match.group("allow_implicit_invocation")
-        )
-    except json.JSONDecodeError:
-        return None
-    if not all(
-        isinstance(values[key], str) and values[key].strip()
-        for key in ("display_name", "short_description", "default_prompt")
-    ):
-        return None
-    return values
+    return parse_agent_metadata(text)
 
 
 def has_selector_metadata_clause(text: str, name: str) -> bool:
@@ -297,7 +249,7 @@ def has_bounded_continuation_exclusion(text: str) -> bool:
 
 
 def has_unsafe_continuation_expansion(text: str) -> bool:
-    clauses = re.split(r"(?<=[.!?;])\s+", normalized_policy_text(text))
+    clauses = policy_segments(text)
     for clause in clauses:
         if not (
             re.search(r"\bcontinu\w*\b", clause)
@@ -318,32 +270,6 @@ def has_unsafe_continuation_expansion(text: str) -> bool:
         ):
             continue
         return True
-    return False
-
-
-def has_unsafe_plan_probe_expansion(text: str) -> bool:
-    clauses = re.split(r"(?<=[.!?;])\s+", normalized_policy_text(text))
-    for clause in clauses:
-        negative = re.search(
-            r"\b(?:not|never|no|cannot|must not|only inside)\b",
-            clause,
-        )
-        provider_write = (
-            re.search(r"\b(?:provider|remote)\b", clause)
-            and re.search(r"\bwrites?\b", clause)
-            and re.search(r"\b(?:may|can|allow\w*|permit\w*)\b", clause)
-        )
-        unsafe_dependency = (
-            re.search(r"\bdependenc(?:y|ies)\b", clause)
-            and re.search(r"\binstall\w*\b", clause)
-            and re.search(
-                r"\b(?:unlocked|target environment|global environment)\b",
-                clause,
-            )
-            and re.search(r"\b(?:may|can|allow\w*|permit\w*)\b", clause)
-        )
-        if (provider_write or unsafe_dependency) and not negative:
-            return True
     return False
 
 
@@ -781,13 +707,6 @@ def _missing_terms(
 def _validate_public_skill(name: str, text: str) -> list[str]:
     errors: list[str] = []
     normalized = normalized_policy_text(text)
-    metadata = frontmatter(text)
-    if set(metadata) != {"name", "description"}:
-        errors.append(f"{name}: frontmatter must contain only name and description")
-    if metadata.get("name") != name:
-        errors.append(f"{name}: frontmatter name mismatch")
-    if metadata.get("description") != EXPECTED_DESCRIPTIONS[name]:
-        errors.append(f"{name}: description mismatch")
     if len(text.splitlines()) > 220:
         errors.append(f"{name}: SKILL.md is no longer concise")
 
@@ -919,10 +838,7 @@ def _validate_public_skill(name: str, text: str) -> list[str]:
             "quant-plan: probe must not permit provider writes or unsafe "
             "dependency installation"
         )
-    if name == "quant-developer" and (
-        "while a safe, relevant next action can improve" in normalized
-        or "while any improvement" in normalized
-    ):
+    if name == "quant-developer" and has_unsafe_developer_expansion(text):
         errors.append("quant-developer: open-ended improvement loop is prohibited")
     return errors
 
@@ -1215,6 +1131,7 @@ def validate_team_template_examples(shared: Path) -> list[str]:
 def validate() -> list[str]:
     errors = validate_package_shape()
     skills_root = ROOT / "skills"
+    shared = ROOT / "shared"
     discovered = (
         {path.name for path in skills_root.iterdir() if path.is_dir()}
         if skills_root.is_dir()
@@ -1228,15 +1145,33 @@ def validate() -> list[str]:
     for name in SKILLS:
         skill_path = skills_root / name / "SKILL.md"
         agent_path = skills_root / name / "agents/openai.yaml"
-        if skill_path.is_file():
+        skill_text = (
+            skill_path.read_text(encoding="utf-8")
+            if skill_path.is_file()
+            else None
+        )
+        agent_text = (
+            agent_path.read_text(encoding="utf-8")
+            if agent_path.is_file()
+            else None
+        )
+        if skill_text is not None and agent_text is not None:
+            errors.extend(validate_public_metadata(name, skill_text, agent_text))
+            errors.extend(validate_public_body(name, skill_text))
             errors.extend(
-                _validate_public_skill(
+                validate_public_routes(
                     name,
-                    skill_path.read_text(encoding="utf-8"),
+                    skill_text,
+                    shared,
+                    BASE_SHARED_FILES,
                 )
             )
+        if skill_path.is_file():
+            assert skill_text is not None
+            errors.extend(_validate_public_skill(name, skill_text))
         if agent_path.is_file():
-            metadata = agent_metadata(agent_path.read_text(encoding="utf-8"))
+            assert agent_text is not None
+            metadata = agent_metadata(agent_text)
             if metadata is None:
                 errors.append(f"{name}: invalid agents/openai.yaml")
             else:
@@ -1264,7 +1199,6 @@ def validate() -> list[str]:
                         f"{name}: selector copy must expose adaptive behavior"
                     )
 
-    shared = ROOT / "shared"
     if (shared / "SKILL.md").exists():
         errors.append("shared/SKILL.md is prohibited")
 

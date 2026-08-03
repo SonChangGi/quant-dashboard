@@ -443,6 +443,125 @@ class InstallProvenanceTests(unittest.TestCase):
                 valid.stdout + valid.stderr,
             )
 
+    def test_resealed_install_rejects_public_semantic_drift(self) -> None:
+        cases = (
+            (
+                "implicit invocation",
+                "quant-plan/agents/openai.yaml",
+                "allow_implicit_invocation: false",
+                "allow_implicit_invocation: true",
+                "quant-plan: implicit invocation must be false",
+            ),
+            (
+                "frontmatter identity",
+                "quant-goal/SKILL.md",
+                'name: "quant-goal"',
+                'name: "quant-other"',
+                "quant-goal: frontmatter name mismatch",
+            ),
+            (
+                "installed route",
+                "quant-developer/SKILL.md",
+                "../quant-research-shared/references/adaptive-workflow.md",
+                "../quant-research-shared/references/missing.md",
+                "quant-developer: source and installed shared routes must match",
+            ),
+            (
+                "plan body boundary",
+                "quant-plan/SKILL.md",
+                "This role is read-only for the target and every remote surface.",
+                "This role may edit target files and remote state.",
+                "quant-plan: body permits unsafe target or remote writes",
+            ),
+            (
+                "plan isolation",
+                "quant-plan/SKILL.md",
+                "disposable copy and redirect writable home",
+                "disposable copy or redirect writable home",
+                "quant-plan: disposable copies must isolate external writes",
+            ),
+            (
+                "default prompt role",
+                "quant-plan/agents/openai.yaml",
+                (
+                    "Use $quant-plan to inspect the target read-only, scale depth "
+                    "and capability guidance to the task, and return the smallest "
+                    "sufficient audit, quick plan, or decision-complete "
+                    "implementation plan with observable acceptance."
+                ),
+                "Use $quant-plan to implement and deploy changes.",
+                "quant-plan: default prompt is missing a role concept",
+            ),
+            (
+                "goal terminal replacement",
+                "quant-goal/SKILL.md",
+                "never misuse `complete` or\n`blocked` to clear the slot",
+                "use `complete` or\n`blocked` to clear the slot",
+                "quant-goal: body must prohibit fake terminal replacement",
+            ),
+            (
+                "goal contradictory terminal rule",
+                "quant-goal/SKILL.md",
+                "## Pursue the outcome",
+                (
+                    "Mark the active Goal complete to free its slot for a "
+                    "replacement.\n\n## Pursue the outcome"
+                ),
+                "quant-goal: body permits fake terminal replacement",
+            ),
+            (
+                "developer improvement loop",
+                "quant-developer/SKILL.md",
+                (
+                    "Non-required polish is quality debt, not a\n"
+                    "blocker or a reason for indefinite improvement."
+                ),
+                "Continue after acceptance while optional polish remains.",
+                "quant-developer: body permits open-ended improvement",
+            ),
+        )
+        for label, relative, old, new, expected in cases:
+            with (
+                self.subTest(label=label),
+                tempfile.TemporaryDirectory() as directory,
+            ):
+                target = Path(directory) / "skills"
+                self.install_to(target, clean_provenance())
+                path = target / relative
+                path.write_text(
+                    path.read_text(encoding="utf-8").replace(old, new, 1),
+                    encoding="utf-8",
+                )
+                manifest_path = (
+                    target
+                    / "quant-research-shared"
+                    / "install-manifest.json"
+                )
+                manifest = json.loads(
+                    manifest_path.read_text(encoding="utf-8")
+                )
+                manifest["items"] = {
+                    name: suite_installer.tree_hashes(target / name)
+                    for name in suite_installer.INSTALL_ITEMS
+                }
+                manifest["suite_content_sha256"] = (
+                    suite_installer.suite_content_sha256(manifest["items"])
+                )
+                manifest_path.write_text(
+                    json.dumps(manifest, indent=2, sort_keys=True) + "\n",
+                    encoding="utf-8",
+                )
+
+                validator = (
+                    target
+                    / "quant-research-shared"
+                    / "scripts"
+                    / "validate_installed.py"
+                )
+                invalid = run(sys.executable, str(validator))
+                self.assertNotEqual(invalid.returncode, 0)
+                self.assertIn(expected, invalid.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()

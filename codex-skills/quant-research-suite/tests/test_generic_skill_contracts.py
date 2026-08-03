@@ -458,6 +458,18 @@ class GenericSkillContractTests(unittest.TestCase):
                 "status-only update": (
                     r"`?update_goal\b.{0,180}\b(?:complete|blocked)\b",
                 ),
+                "replacement observes an empty native slot": (
+                    r"\bfresh\b.{0,40}`get_goal`.{0,120}"
+                    r"\bno unfinished goal\b",
+                ),
+                "replacement asks only when ambiguous": (
+                    r"\bif the request is ambiguous\b.{0,80}"
+                    r"\bask which goal\b",
+                ),
+                "replacement never fakes a terminal state": (
+                    r"\bnever misuse\b.{0,60}`complete`.{0,40}"
+                    r"`blocked`.{0,60}\bclear the slot\b",
+                ),
             },
         )
         for state in ("waiting", "paused", "cancelled", "superseded"):
@@ -490,6 +502,14 @@ class GenericSkillContractTests(unittest.TestCase):
                 "non-required work is quality debt": (
                     r"\bquality debt\b",
                 ),
+                "smallest acceptance-satisfying change": (
+                    r"\bsmallest coherent change\b.{0,80}"
+                    r"\bsatisfies acceptance\b",
+                ),
+                "extra scope needs request or target evidence": (
+                    r"\badd new\b.{0,180}\bonly when\b.{0,80}"
+                    r"\brequest or target evidence\b",
+                ),
                 "route switching": (
                     r"\b(?:repair|switch|change)\b.{0,120}"
                     r"\b(?:route|source|method|tool|decomposition)\b",
@@ -501,6 +521,21 @@ class GenericSkillContractTests(unittest.TestCase):
             "the result",
             body,
         )
+        for unsafe_expansion in (
+            "Continue after acceptance while optional polish remains.",
+            "Continue while any improvement could still be useful.",
+            "Continue for hypothetical risks after the requested result works.",
+            "Continue after acceptance, but do not skip tests.",
+        ):
+            with self.subTest(unsafe_expansion=unsafe_expansion):
+                errors = validate_suite._validate_public_skill(
+                    "quant-developer",
+                    developer + f"\n{unsafe_expansion}\n",
+                )
+                self.assertIn(
+                    "quant-developer: open-ended improvement loop is prohibited",
+                    errors,
+                )
 
     def test_flexible_recovery_and_authority_additions_are_bounded(self) -> None:
         plan = skill("quant-plan")
@@ -527,20 +562,30 @@ class GenericSkillContractTests(unittest.TestCase):
                     r"\blockfile\b.{0,100}\bdependencies\b.{0,100}"
                     r"\bisolation\b",
                 ),
-                "reversible output is cleaned": (
-                    r"\bignored, reversible target output\b.{0,100}"
-                    r"\bremove\b",
+                "direct checks are known non-writing": (
+                    r"\brun a check directly\b.{0,80}\bknown\b"
+                    r".{0,40}\bnon-writing\b",
+                ),
+                "possible writes stay isolated": (
+                    r"\bmay write\b.{0,120}\b(?:disposable copy|redirect)\b",
+                ),
+                "copy isolates external writable state": (
+                    r"\bdisposable copy\b.{0,100}"
+                    r"\bredirect writable home\b",
+                ),
+                "non-writing checks avoid isolation ceremony": (
+                    r"\bskip isolation\b.{0,80}\bproven non-writing\b",
                 ),
                 "target stays unchanged and remote writes stay absent": (
-                    r"\bconfirm tracked target state\b.{0,80}\bunchanged\b"
+                    r"\bconfirm target state\b.{0,80}\bunchanged\b"
                     r".{0,120}\bno remote mutation\b.{0,80}"
-                    r"\brequested or succeeded\b",
+                    r"\b(?:occurred|requested or succeeded)\b",
                 ),
                 "no provider or remote writes": (
                     r"\bpermit no provider or remote writes\b",
                 ),
                 "unsafe probe is skipped": (
-                    r"\botherwise skip the probe\b",
+                    r"\bskip the probe\b",
                 ),
             },
         )
@@ -550,6 +595,11 @@ class GenericSkillContractTests(unittest.TestCase):
                 "Unlocked dependencies may be installed into the target "
                 "environment during the probe."
             ),
+            (
+                "Ignored target-tree output may be written and cleaned after "
+                "the probe."
+            ),
+            "Provider writes may be permitted, but do not log secrets.",
         ):
             with self.subTest(unsafe_probe_expansion=unsafe_probe_expansion):
                 errors = validate_suite._validate_public_skill(
@@ -566,13 +616,14 @@ class GenericSkillContractTests(unittest.TestCase):
             {
                 "recovery after context loss": (
                     r"\b(?:long external wait|context compaction)\b.{0,180}"
-                    r"\b(?:restate|recover)\b",
+                    r"\b(?:restate|recover|rebuild)\b",
                 ),
                 "retained evidence is rechecked": (
                     r"\bretained evidence\b.{0,100}\bavailable\b.{0,60}\bfresh\b",
                 ),
                 "no fixed recovery schema": (
-                    r"\bdo not\b.{0,60}\bfixed snapshot schema\b",
+                    r"\b(?:avoid|do not (?:introduce|require))\b.{0,60}"
+                    r"\bfixed snapshot schema\b",
                 ),
             },
         )

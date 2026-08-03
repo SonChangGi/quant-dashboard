@@ -600,6 +600,163 @@ class SkillRoutingTests(unittest.TestCase):
                 errors,
             )
 
+    def test_metadata_parsers_allow_harmless_variation_not_semantic_drift(
+        self,
+    ) -> None:
+        agent = """# UI metadata
+interface:
+    default_prompt: 'Use $quant-plan for an adaptive read-only audit.'
+    brand_color: "#123456"
+    short_description: 'Adaptive manual read-only planning'
+    display_name: 'Quant Plan'
+policy:
+    allow_implicit_invocation: false # manual selection only
+"""
+        parsed_agent = validate_suite.agent_metadata(agent)
+        self.assertIsNotNone(parsed_agent)
+        assert parsed_agent is not None
+        self.assertIs(parsed_agent["allow_implicit_invocation"], False)
+
+        frontmatter = """---
+description: Use only when $quant-plan is selected for adaptive read-only planning.
+name: quant-plan
+---
+"""
+        parsed_frontmatter = validate_suite.frontmatter(frontmatter)
+        self.assertEqual(parsed_frontmatter["name"], "quant-plan")
+        self.assertIsNone(
+            validate_suite.parse_skill_frontmatter(
+                frontmatter.replace(
+                    "name: quant-plan",
+                    "name: quant-plan\nname: quant-plan",
+                )
+            )
+        )
+
+        original = skill_text("quant-plan")
+        body_start = original.index("---\n", 4) + 4
+        paraphrased = frontmatter + original[body_start:]
+        errors = validate_suite.validate_public_metadata(
+            "quant-plan",
+            paraphrased,
+            agent,
+        )
+        self.assertEqual(errors, [])
+        contradictory_agent = agent.replace(
+            "Use $quant-plan for an adaptive read-only audit.",
+            "Use $quant-plan to audit the target; it is not read-only.",
+        )
+        self.assertIn(
+            "quant-plan: default prompt contradicts its role",
+            validate_suite.validate_public_metadata(
+                "quant-plan",
+                paraphrased,
+                contradictory_agent,
+            ),
+        )
+
+    def test_role_semantics_accept_paraphrases_and_reject_contradictions(
+        self,
+    ) -> None:
+        bodies = {
+            "quant-plan": (
+                "Project and remote surfaces remain untouched and read-only. "
+                "Run a check only when verified non-writing. If a probe could "
+                "write cache or output, use a temporary sandbox and redirect "
+                "produced state."
+            ),
+            "quant-goal": (
+                "Use one native Goal. Call `get_goal` before `create_goal`, and "
+                "use `update_goal` only for native terminal states. After a "
+                "clear replacement choice, fresh `get_goal` must show an empty "
+                "native slot before `create_goal`. Never use `complete` or "
+                "`blocked` to free the slot."
+            ),
+            "quant-developer": (
+                "Continue only while acceptance is unmet or material risk "
+                "could invalidate the result. Stop when the requested outcome "
+                "is working and no required work remains. Prefer a minimal "
+                "implementation scope. Omit optional expansion unless "
+                "requested or target evidence requires it."
+            ),
+        }
+        for name, body in bodies.items():
+            with self.subTest(name=name):
+                skill = f"---\nname: {name}\ndescription: test\n---\n{body}\n"
+                self.assertEqual(
+                    validate_suite.validate_public_body(name, skill),
+                    [],
+                )
+
+        contradictions = {
+            "quant-plan": (
+                "A writing check may run directly in the target when cleanup "
+                "is easy.",
+                "quant-plan: body permits unsafe target or remote writes",
+            ),
+            "quant-goal": (
+                "Mark the active Goal complete to free its slot for a "
+                "replacement.",
+                "quant-goal: body permits fake terminal replacement",
+            ),
+            "quant-developer": (
+                "After acceptance, continue while optional improvements remain.",
+                "quant-developer: body permits open-ended improvement",
+            ),
+        }
+        for name, (addition, expected) in contradictions.items():
+            with self.subTest(contradiction=name):
+                errors = validate_suite.validate_public_body(
+                    name,
+                    skill_text(name) + f"\n{addition}\n",
+                )
+                self.assertIn(expected, errors)
+
+        negated_anchors = (
+            (
+                "quant-plan",
+                "This role is not read-only for the target.",
+                "quant-plan: body contradicts the read-only boundary",
+            ),
+            (
+                "quant-goal",
+                (
+                    "Never refuse to use complete or blocked to clear the "
+                    "slot."
+                ),
+                "quant-goal: body permits fake terminal replacement",
+            ),
+            (
+                "quant-developer",
+                "Do not prefer the smallest coherent change.",
+                "quant-developer: body contradicts proportional delivery",
+            ),
+        )
+        for name, addition, expected in negated_anchors:
+            with self.subTest(negated_anchor=name):
+                errors = validate_suite.validate_public_body(
+                    name,
+                    skill_text(name) + f"\n{addition}\n",
+                )
+                self.assertIn(expected, errors)
+
+        for unsafe in (
+            "Provider writes may be permitted and do not expose secrets.",
+            "Target files, including snapshots, may be written.",
+        ):
+            with self.subTest(plan_unsafe=unsafe):
+                self.assertTrue(
+                    validate_suite.has_unsafe_plan_probe_expansion(unsafe)
+                )
+        for unsafe in (
+            "Continue after acceptance and do not skip tests.",
+            "Continue, after acceptance, while optional polish remains.",
+        ):
+            with self.subTest(developer_unsafe=unsafe):
+                self.assertTrue(
+                    validate_suite.has_unsafe_developer_expansion(unsafe)
+                )
+
     def test_multi_skill_composition_preserves_role_boundaries(self) -> None:
         plan = normalized_skill_text("quant-plan")
         goal = normalized_skill_text("quant-goal")

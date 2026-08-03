@@ -29,14 +29,14 @@ read-only inspection when secrets stay hidden and login, scope, and stored
 credentials remain unchanged. Never expose or change secrets or authentication,
 and permit no provider or remote writes.
 
-Use the target lockfile's exact dependencies only inside the isolation, with
-writable home, cache, dependency, and output state redirected there when
-supported. If a native check creates ignored, reversible target output, record
-pre-existing state, remove only output created by the probe, and verify that
-pre-existing ignored state is unchanged. Do not change tracked files, project
-dependencies, Git, or the global environment. Confirm tracked target state is
-unchanged and no remote mutation was requested or succeeded; otherwise skip the
-probe and state the evidence limit.
+Run a check directly only when known to be non-writing. If it may write, use a
+task-scoped disposable copy and redirect writable home, cache, dependency,
+build, snapshot, and output paths into it. When a proven tool writes only named
+paths, redirecting all of them is enough without copying the target. Use exact
+lockfile dependencies only inside that isolation. Skip isolation for proven
+non-writing checks. If safe isolation invalidates the evidence, skip the probe
+and state the limit. Confirm target state is unchanged and no remote mutation
+occurred.
 
 ## Plan from evidence
 
