@@ -8,9 +8,10 @@ external-status dependency, or proof across several stages. A small,
 well-understood task should stay in its public skill.
 
 The invoking public skill's role, read/write boundary, and the current user's
-authority always win. This kernel cannot activate a skill, turn planning into
-implementation, or grant source-control, provider, destructive, remote, or paid
-authority.
+authority always win. An isolated root or worktree separates writes but is not
+by itself a security sandbox and never expands that authority. This kernel
+cannot activate a skill, turn planning into implementation, or grant
+source-control, provider, destructive, remote, or paid authority.
 
 ## Ground in the actual environment
 
@@ -67,8 +68,10 @@ models, worker counts, or a fixed hierarchy.
 
 Keep tightly coupled work with one owner. Give each delegated assignment a
 bounded outcome or question, allowed scope, protected constraints, and expected
-evidence or artifact. Use parallel work only when it materially improves
-coverage, quality, or elapsed time.
+evidence or artifact. For a writer in an existing isolated root, also bind the
+assignment to the exact root, verified baseline, integration target, and
+acceptance. Use parallel work only when it materially improves coverage,
+quality, or elapsed time.
 
 Prefer parallel readers and one canonical writer. Concurrent writers require
 demonstrably disjoint roots or write sets and one integration owner. Treat a
@@ -76,6 +79,11 @@ timeout or silent worker as unknown state; inspect status and artifacts before
 replacing it. The parent reconciles claims, re-inspects returned evidence and
 artifacts, integrates results, and owns final verification. A worker completion
 claim is not proof.
+
+Duplicate implementation only for an explicit comparison or material
+uncertainty that justifies the extra work. Start alternatives from the same
+verified baseline, integrate one coherent evidence-backed candidate without
+blending unverified fragments, and rerun affected proof.
 
 For a later slice in the same role and domain, reuse a retained worker only
 when its context remains an asset, and send the changed scope, evidence, or

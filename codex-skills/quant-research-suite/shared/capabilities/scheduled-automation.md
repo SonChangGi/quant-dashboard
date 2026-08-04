@@ -3,6 +3,11 @@
 Apply this rail for recurring or event-driven work. It does not imply analysis,
 data collection, or publication; use those rails separately when present.
 
+When the runner does not inherit the current conversation, make the job
+self-contained through its prompt or project-owned configuration. Do not rely
+on memory, a prior chat, or "as discussed" shorthand for context required to run
+or verify it.
+
 - Select only controls material to the actual runner and requested outcome. For
   a calendar trigger, verify its active host or branch when applicable,
   timezone, calendar, and source-availability lag.
