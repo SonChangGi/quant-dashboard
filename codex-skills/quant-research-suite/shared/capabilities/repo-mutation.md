@@ -1,6 +1,6 @@
 # Capability: repository mutation
 
-Activate when files in a project will change.
+Use when project files or local source-control state may change.
 
 - Record root, project instructions, protected paths, and current changed
   surfaces before editing. When Git exists, also record its common directory,
@@ -13,9 +13,8 @@ Activate when files in a project will change.
   overlapping, or dirty in the target surface only when worktree creation is
   separately authorized. Otherwise preserve one writer and sequence the edits
   in the existing workspace.
-- Make the smallest coherent patch and preserve unrelated changes.
+- Make a bounded coherent patch with the least unrelated churn, not the least
+  work needed for the requested quality bar.
 - Verify protected contracts and targeted tests after editing.
 - Commit remains a separate local source-control action. Push, PR, merge, tag,
   and release are separate remote source-control actions.
-
-Evidence gates: `contract`, plus the assurance-level gates.

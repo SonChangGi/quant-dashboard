@@ -1,6 +1,6 @@
 interface:
   display_name: "Quant Developer"
   short_description: "Explicit adaptive end-to-end Quant delivery"
-  default_prompt: "Use $quant-developer as the ordinary end-to-end implementation entry to deliver the requested outcome with capability-aware delegation, zero-billing data routes when needed, and verification on the actual consumer surface."
+  default_prompt: "Use $quant-developer as the ordinary end-to-end implementation entry to deliver the strongest complete requested outcome within scope, with capability-aware delegation, zero-billing data routes when needed, and verification on the actual consumer surface."
 policy:
   allow_implicit_invocation: false

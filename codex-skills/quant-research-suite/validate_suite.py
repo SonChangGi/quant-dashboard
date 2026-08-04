@@ -34,6 +34,25 @@ has_unsafe_plan_probe_expansion = INSTALLED_VALIDATOR[
 has_unsafe_developer_expansion = INSTALLED_VALIDATOR[
     "has_unsafe_developer_expansion"
 ]
+has_self_expanding_quality_loop = INSTALLED_VALIDATOR[
+    "has_self_expanding_quality_loop"
+]
+has_unsafe_plan_target_cleanup = INSTALLED_VALIDATOR[
+    "has_unsafe_plan_target_cleanup"
+]
+has_unsafe_remote_authority_expansion = INSTALLED_VALIDATOR[
+    "has_unsafe_remote_authority_expansion"
+]
+has_goal_scope_steering_contract = INSTALLED_VALIDATOR[
+    "has_goal_scope_steering_contract"
+]
+validate_kernel_body = INSTALLED_VALIDATOR["validate_kernel_body"]
+has_unsafe_local_scm_authority_expansion = INSTALLED_VALIDATOR[
+    "has_unsafe_local_scm_authority_expansion"
+]
+validate_repo_mutation_body = INSTALLED_VALIDATOR[
+    "validate_repo_mutation_body"
+]
 SKILLS = ("quant-plan", "quant-goal", "quant-developer")
 
 ORDINARY_CAPABILITY_FILES = tuple(
@@ -763,7 +782,10 @@ def _validate_public_skill(name: str, text: str) -> list[str]:
             "planning authority": (
                 "planning does not authorize implementation",
             ),
-            "adaptive output": ("choose the smallest form",),
+            "adaptive output": (
+                "choose the leanest communication form",
+                "choose the smallest form",
+            ),
         },
         "quant-goal": {
             "inspect native goal first": ("call `get_goal` before",),
@@ -838,8 +860,20 @@ def _validate_public_skill(name: str, text: str) -> list[str]:
             "quant-plan: probe must not permit provider writes or unsafe "
             "dependency installation"
         )
+    if name == "quant-plan" and has_unsafe_plan_target_cleanup(text):
+        errors.append("quant-plan: target residue cleanup is prohibited")
+    if name == "quant-goal" and not has_goal_scope_steering_contract(text):
+        errors.append(
+            "quant-goal: material scope and steering boundaries are required"
+        )
     if name == "quant-developer" and has_unsafe_developer_expansion(text):
         errors.append("quant-developer: open-ended improvement loop is prohibited")
+    if name in {"quant-goal", "quant-developer"} and (
+        has_self_expanding_quality_loop(text)
+    ):
+        errors.append(f"{name}: self-expanding quality loop is prohibited")
+    if has_unsafe_remote_authority_expansion(text):
+        errors.append(f"{name}: merge without separate authority is prohibited")
     return errors
 
 
@@ -855,6 +889,7 @@ def _validate_kernel(text: str) -> list[str]:
         "automation rail": ("`capabilities/scheduled-automation.md`",),
         "publication rail": ("`capabilities/publication.md`",),
         "public rail": ("`capabilities/public-web.md`",),
+        "repository-mutation rail": ("`capabilities/repo-mutation.md`",),
         "ordinary data automation": (
             "compose the external-data, scheduled-automation, publication, "
             "and public-web rails",
@@ -874,6 +909,18 @@ def _validate_kernel(text: str) -> list[str]:
         "parent integration": ("parent reconciles claims",),
         "parent evidence review": ("re-inspects returned evidence",),
         "worker claim is not proof": ("worker completion claim is not proof",),
+        "quality frontier": ("strongest complete result",),
+        "least churn is not least effort": ("not least effort",),
+        "early useful delegation": ("early enough to influence the route",),
+        "visible native coordination": ("host-native plan or status",),
+        "single integrated state": ("one integrated state",),
+        "conflicting findings are resolved": ("test the competing claims",),
+        "safe retry classification": ("safe to repeat",),
+        "established quality gap": (
+            "material gap against the established quality bar",
+        ),
+        "proportional quality stop": ("proportional quality bar",),
+        "fresh independent review": ("fresh independent reviewer",),
         "acceptance continuation": ("acceptance condition is unmet",),
         "quality-debt stop": (
             "remaining items are only quality debt",
@@ -891,6 +938,7 @@ def _validate_kernel(text: str) -> list[str]:
     normalized = normalized_policy_text(text)
     if "always use a team" in normalized or "fixed worker count" in normalized:
         errors.append("adaptive kernel: fixed orchestration is prohibited")
+    errors.extend(validate_kernel_body(text))
     for label, pattern in (
         ("payment method", r"\bpayment method\b"),
         ("PAYG and overage", r"\bpayg\b.{0,30}\boverage\b"),
@@ -1021,6 +1069,8 @@ def _validate_ordinary_capability_rail(
             "ordinary capability remote-release.md: legacy gate wording is "
             "prohibited"
         )
+    if relative == "repo-mutation.md":
+        errors.extend(validate_repo_mutation_body(text))
     return errors
 
 

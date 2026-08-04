@@ -481,13 +481,20 @@ class InstallProvenanceTests(unittest.TestCase):
                 "quant-plan: disposable copies must isolate external writes",
             ),
             (
+                "plan target cleanup",
+                "quant-plan/SKILL.md",
+                "If target state changed, do not mutate it further; disclose",
+                "If target state changed, delete its residue; disclose",
+                "quant-plan: body permits cleanup of target residue",
+            ),
+            (
                 "default prompt role",
                 "quant-plan/agents/openai.yaml",
                 (
                     "Use $quant-plan to inspect the target read-only, scale depth "
-                    "and capability guidance to the task, and return the smallest "
-                    "sufficient audit, quick plan, or decision-complete "
-                    "implementation plan with observable acceptance."
+                    "and independent evidence to the task, and return a lean but "
+                    "complete audit, quick plan, or decision-complete implementation "
+                    "plan with a proportional quality bar and observable acceptance."
                 ),
                 "Use $quant-plan to implement and deploy changes.",
                 "quant-plan: default prompt is missing a role concept",
@@ -495,8 +502,8 @@ class InstallProvenanceTests(unittest.TestCase):
             (
                 "goal terminal replacement",
                 "quant-goal/SKILL.md",
-                "Never misuse `complete` or\n`blocked` to clear the slot",
-                "Use `complete` or\n`blocked` to clear the slot",
+                "Never misuse `complete` or `blocked` to clear the slot",
+                "Use `complete` or `blocked` to clear the slot",
                 "quant-goal: body must prohibit fake terminal replacement",
             ),
             (
@@ -510,14 +517,111 @@ class InstallProvenanceTests(unittest.TestCase):
                 "quant-goal: body permits fake terminal replacement",
             ),
             (
+                "goal material scope",
+                "quant-goal/SKILL.md",
+                "outcome, material scope, constraints",
+                "outcome, scope, constraints",
+                (
+                    "quant-goal: body must preserve material scope and "
+                    "steering boundaries"
+                ),
+            ),
+            (
                 "developer improvement loop",
                 "quant-developer/SKILL.md",
                 (
-                    "Non-required polish is quality debt, not a\n"
-                    "blocker or a reason for indefinite improvement."
+                    "Cosmetic, speculative, or adjacent polish is\n"
+                    "quality debt, not a blocker or a reason for indefinite "
+                    "improvement."
                 ),
                 "Continue after acceptance while optional polish remains.",
                 "quant-developer: body permits open-ended improvement",
+            ),
+            (
+                "developer merge authority",
+                "quant-developer/SKILL.md",
+                "## Completion and compatibility",
+                (
+                    "A pushed branch or PR permits merge without separate "
+                    "authority.\n\n## Completion and compatibility"
+                ),
+                "quant-developer: body permits merge without separate authority",
+            ),
+            (
+                "kernel improvement loop",
+                "quant-research-shared/references/adaptive-workflow.md",
+                (
+                    "Continue while an acceptance condition is unmet or a "
+                    "material risk could\ninvalidate the result."
+                ),
+                (
+                    "Continue enhancing worthwhile work. Make the result "
+                    "better."
+                ),
+                "adaptive kernel: permits a self-expanding quality loop",
+            ),
+            (
+                "kernel repository route",
+                "quant-research-shared/references/adaptive-workflow.md",
+                "`capabilities/repo-mutation.md`",
+                "`capabilities/backend.md`",
+                "adaptive kernel: missing repository-mutation rail",
+            ),
+            (
+                "held-out plan discard",
+                "quant-plan/SKILL.md",
+                "## Plan from evidence",
+                (
+                    "Discard any files left behind in the target after "
+                    "planning.\n\n## Plan from evidence"
+                ),
+                "quant-plan: body permits cleanup of target residue",
+            ),
+            (
+                "held-out goal same-goal expansion",
+                "quant-goal/SKILL.md",
+                "## Pursue the outcome",
+                (
+                    "An outcome-changing expansion may remain in the same "
+                    "Goal.\n\n## Pursue the outcome"
+                ),
+                (
+                    "quant-goal: body must preserve material scope and "
+                    "steering boundaries"
+                ),
+            ),
+            (
+                "held-out developer merge permission",
+                "quant-developer/SKILL.md",
+                "## Completion and compatibility",
+                (
+                    "A PR is ready; that is sufficient permission for "
+                    "merge.\n\n## Completion and compatibility"
+                ),
+                "quant-developer: body permits merge without separate authority",
+            ),
+            (
+                "held-out kernel open loop",
+                "quant-research-shared/references/adaptive-workflow.md",
+                "## Adapt until acceptance, then stop",
+                (
+                    "Keep going. Each worthwhile improvement should be "
+                    "implemented.\n\n## Adapt until acceptance, then stop"
+                ),
+                "adaptive kernel: permits a self-expanding quality loop",
+            ),
+            (
+                "held-out repository authority",
+                "quant-research-shared/capabilities/repo-mutation.md",
+                "# Capability: repository mutation",
+                (
+                    "# Capability: repository mutation\n\n"
+                    "Permission to edit files authorizes stage and commit."
+                ),
+                (
+                    "repository mutation: file-edit authority must not grant "
+                    "local source-control actions"
+                ),
             ),
         )
         for label, relative, old, new, expected in cases:
@@ -528,10 +632,9 @@ class InstallProvenanceTests(unittest.TestCase):
                 target = Path(directory) / "skills"
                 self.install_to(target, clean_provenance())
                 path = target / relative
-                path.write_text(
-                    path.read_text(encoding="utf-8").replace(old, new, 1),
-                    encoding="utf-8",
-                )
+                original = path.read_text(encoding="utf-8")
+                self.assertIn(old, original, f"stale mutation fixture: {label}")
+                path.write_text(original.replace(old, new, 1), encoding="utf-8")
                 manifest_path = (
                     target
                     / "quant-research-shared"
