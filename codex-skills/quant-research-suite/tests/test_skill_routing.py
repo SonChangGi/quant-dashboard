@@ -63,6 +63,9 @@ ORDINARY_CAPABILITY_ROUTES = {
     "capabilities/backend.md": (
         r"\b(?:api|state|authentication|secrets?)\b",
     ),
+    "capabilities/repo-mutation.md": (
+        r"\b(?:file edits?|branch|worktree|stage|commit|rebase)\b",
+    ),
     "capabilities/scheduled-automation.md": (
         r"\b(?:recurring|event|schedule|scheduled|automation)\b",
     ),
@@ -666,11 +669,16 @@ name: quant-plan
                 "produced state."
             ),
             "quant-goal": (
-                "Use one native Goal. Call `get_goal` before `create_goal`, and "
-                "use `update_goal` only for native terminal states. After a "
-                "clear replacement choice, fresh `get_goal` must show an empty "
-                "native slot before `create_goal`. Never use `complete` or "
-                "`blocked` to free the slot."
+                "Use one native Goal. Record material scope, observable "
+                "completion conditions, and a proportional quality bar. Call "
+                "`get_goal` before `create_goal`, and use `update_goal` only "
+                "for native terminal states. After a clear replacement choice, "
+                "fresh `get_goal` must show an empty native slot before "
+                "`create_goal`. Never use `complete` or `blocked` to free the "
+                "slot. After steering, report scope, condition, quality-bar "
+                "changes, and stale proof. Within the stored outcome, scope may "
+                "add conditions and invalidate proof; an outcome-changing "
+                "expansion is a different Goal."
             ),
             "quant-developer": (
                 "Continue only while acceptance is unmet or material risk "
@@ -711,6 +719,19 @@ name: quant-plan
                     skill_text(name) + f"\n{addition}\n",
                 )
                 self.assertIn(expected, errors)
+
+        for name in ("quant-goal", "quant-developer"):
+            with self.subTest(self_expanding_quality=name):
+                errors = validate_suite.validate_public_body(
+                    name,
+                    skill_text(name)
+                    + "\nContinue while an in-scope material quality "
+                    + "opportunity still outweighs its cost.\n",
+                )
+                self.assertIn(
+                    f"{name}: body permits a self-expanding quality loop",
+                    errors,
+                )
 
         negated_anchors = (
             (
@@ -755,6 +776,316 @@ name: quant-plan
             with self.subTest(developer_unsafe=unsafe):
                 self.assertTrue(
                     validate_suite.has_unsafe_developer_expansion(unsafe)
+                )
+
+        for unsafe in (
+            "Continue enhancing worthwhile work. Make the result better.",
+            "Keep improving while any opportunity remains.",
+        ):
+            with self.subTest(self_expanding_synonym=unsafe):
+                self.assertTrue(
+                    validate_suite.has_self_expanding_quality_loop(unsafe)
+                )
+        self.assertFalse(
+            validate_suite.has_self_expanding_quality_loop(
+                "Continue only for improvement required by the established "
+                "quality bar."
+            )
+        )
+
+        for unsafe in (
+            "If target state changed, delete the generated residue.",
+            "Clean target-tree outputs after inspection.",
+            "Restore project state after a writing probe.",
+            "Revert target files to their baseline.",
+        ):
+            with self.subTest(plan_target_cleanup=unsafe):
+                self.assertTrue(
+                    validate_suite.has_unsafe_plan_target_cleanup(unsafe)
+                )
+                errors = validate_suite.validate_public_body(
+                    "quant-plan",
+                    skill_text("quant-plan") + f"\n{unsafe}\n",
+                )
+                self.assertIn(
+                    "quant-plan: body permits cleanup of target residue",
+                    errors,
+                )
+        self.assertFalse(
+            validate_suite.has_unsafe_plan_target_cleanup(
+                "Never remove target residue; report it."
+            )
+        )
+
+        for unsafe in (
+            "A pushed branch or PR permits merge without separate authority.",
+            "A completed review can authorize the merge.",
+        ):
+            with self.subTest(remote_authority_bootstrap=unsafe):
+                self.assertTrue(
+                    validate_suite.has_unsafe_remote_authority_expansion(unsafe)
+                )
+        self.assertFalse(
+            validate_suite.has_unsafe_remote_authority_expansion(
+                "A pushed branch or PR does not authorize merge; merge needs "
+                "separate authority."
+            )
+        )
+
+    def test_semantic_policy_red_team_matrix(self) -> None:
+        open_loops = (
+            (
+                "Improve the result whenever another worthwhile opportunity "
+                "appears. Repeat the cycle until none remain."
+            ),
+            (
+                "Work should carry on. Each pass should seek another quality "
+                "gain. Stop only when no worthwhile enhancement is left."
+            ),
+            (
+                "Keep working. The standard can still rise. Seek every "
+                "worthwhile enhancement before stopping."
+            ),
+            (
+                "As long as further polish has positive value, make another "
+                "pass."
+            ),
+            "Keep going. Each worthwhile improvement should be implemented.",
+            "Iterate while any valuable refinements remain.",
+        )
+        bounded_loops = (
+            "Keep improving until the acceptance tests pass.",
+            (
+                "Continue refining the documented defect list and stop when "
+                "each item is resolved."
+            ),
+            (
+                "Pursue quality improvements required by the agreed release "
+                "checklist."
+            ),
+            (
+                "Continue polishing until the previously set quality bar is "
+                "met."
+            ),
+            (
+                "Continue improving solely to satisfy the established quality "
+                "bar."
+            ),
+            (
+                "Pursue every improvement required by the agreed release "
+                "checklist."
+            ),
+        )
+        for policy in open_loops:
+            with self.subTest(open_loop=policy):
+                self.assertTrue(
+                    validate_suite.has_self_expanding_quality_loop(policy)
+                )
+        for policy in bounded_loops:
+            with self.subTest(bounded_loop=policy):
+                self.assertFalse(
+                    validate_suite.has_self_expanding_quality_loop(policy)
+                )
+
+        target_cleanup = (
+            (
+                "The probe may alter the target workspace. Afterwards, remove "
+                "the generated residue."
+            ),
+            "Undo any checkout changes caused by the probe before reporting.",
+            (
+                "Roll back the repository to its starting commit after "
+                "inspection."
+            ),
+            (
+                "Return the workspace to its original contents once the audit "
+                "ends."
+            ),
+            "Scrub generated files from the working tree.",
+            "Discard any files left behind in the target after planning.",
+            "Put the working tree back to baseline before reporting.",
+        )
+        non_target_cleanup = (
+            (
+                "Remove the target from the candidate list; do not touch its "
+                "files."
+            ),
+            (
+                "In a disposable copy, restore target coverage after the "
+                "intentionally failing test."
+            ),
+            (
+                "Never mutate target state; if the target is irrelevant, "
+                "remove it from the comparison."
+            ),
+            (
+                "Clean the project-directory labels in the report without "
+                "changing files."
+            ),
+            "Return the workspace path in the report.",
+            (
+                "Report that the repository needs cleanup; do not perform "
+                "it."
+            ),
+            (
+                "The plan may describe how an authorized developer would "
+                "reset the working tree; planning itself remains "
+                "non-mutating."
+            ),
+            (
+                "The report should recommend cleaning the repository later, "
+                "subject to implementation approval."
+            ),
+            "Delete the words working tree from the draft explanation.",
+        )
+        for policy in target_cleanup:
+            with self.subTest(target_cleanup=policy):
+                self.assertTrue(
+                    validate_suite.has_unsafe_plan_target_cleanup(policy)
+                )
+        for policy in non_target_cleanup:
+            with self.subTest(non_target_cleanup=policy):
+                self.assertFalse(
+                    validate_suite.has_unsafe_plan_target_cleanup(policy)
+                )
+
+        merge_bootstrap = (
+            "A green PR is sufficient consent to merge into main.",
+            "Treat review approval as implicit consent to land the change.",
+            (
+                "Once the branch exists, the maintainer may integrate it into "
+                "the default branch."
+            ),
+            (
+                "The pull request is approved. That approval is sufficient. "
+                "Merge it."
+            ),
+            "After review, merge at your discretion.",
+            "An approved commit implies consent for merging.",
+            "A PR is ready; that is sufficient permission for merge.",
+            "PR is ready, so go ahead and merge.",
+            (
+                "Successful CI is a standing mandate to squash the topic "
+                "branch into trunk."
+            ),
+        )
+        bounded_merge = (
+            "Review can block a merge.",
+            "A plan may discuss merge risks; execution remains unauthorized.",
+            "A pushed branch authorizes everything except merge.",
+            (
+                "Implementation can include a merge simulation in a local "
+                "disposable repository."
+            ),
+            (
+                "A review may recommend a merge, but only the user can "
+                "authorize it."
+            ),
+            "Review may merge duplicate findings into one report.",
+            "A commit can merge two data frames in memory.",
+            (
+                "A completed review lets the agent combine duplicate "
+                "paragraphs in the report."
+            ),
+            (
+                "A ready commit lets the implementer squash duplicate rows "
+                "in a local table."
+            ),
+            (
+                "Approval in the code host allows the reviewer to merge two "
+                "saved search filters, without changing Git."
+            ),
+        )
+        for policy in merge_bootstrap:
+            with self.subTest(merge_bootstrap=policy):
+                self.assertTrue(
+                    validate_suite.has_unsafe_remote_authority_expansion(policy)
+                )
+        for policy in bounded_merge:
+            with self.subTest(bounded_merge=policy):
+                self.assertFalse(
+                    validate_suite.has_unsafe_remote_authority_expansion(policy)
+                )
+
+        goal = skill_text("quant-goal")
+        self.assertFalse(
+            validate_suite.has_goal_scope_steering_contract(
+                goal
+                + "\nAn outcome-changing expansion may remain in the same "
+                + "Goal.\n"
+            )
+        )
+        inverted_goal = (
+            "Record material scope, observable completion conditions, and a "
+            "proportional quality bar. After steering, report scope, "
+            "conditions, quality-bar changes, and stale proof. A compatible "
+            "refinement may change scope and conditions without invalidating "
+            "proof; an outcome-changing expansion is not a different Goal."
+        )
+        self.assertFalse(
+            validate_suite.has_goal_scope_steering_contract(inverted_goal)
+        )
+        self.assertFalse(
+            validate_suite.has_goal_scope_steering_contract(
+                goal
+                + "\nAn outcome-changing expansion does not require a "
+                + "different Goal.\n"
+            )
+        )
+
+        unsafe_local = (
+            "Permission to edit files authorizes stage and commit."
+        )
+        safe_local = (
+            "Permission to edit files does not authorize stage or commit; "
+            "each needs separate authority."
+        )
+        self.assertTrue(
+            validate_suite.has_unsafe_local_scm_authority_expansion(
+                unsafe_local
+            )
+        )
+        self.assertFalse(
+            validate_suite.has_unsafe_local_scm_authority_expansion(
+                safe_local
+            )
+        )
+        for policy in (
+            "Once edits are complete, go ahead and commit.",
+            (
+                "Approval for source edits is all that is needed to "
+                "cherry-pick the fix."
+            ),
+        ):
+            with self.subTest(local_scm_bootstrap=policy):
+                self.assertTrue(
+                    validate_suite.has_unsafe_local_scm_authority_expansion(
+                        policy
+                    )
+                )
+        for policy in (
+            (
+                "Permission to edit the commit-message template covers only "
+                "text inside that file."
+            ),
+            (
+                "Permission to write worktree documentation allows correcting "
+                "typos."
+            ),
+            (
+                "Permission to edit code-font samples covers staging them in "
+                "the style guide."
+            ),
+            (
+                "A request to change patch artwork includes staging the patch "
+                "in the layout preview."
+            ),
+        ):
+            with self.subTest(non_scm_text=policy):
+                self.assertFalse(
+                    validate_suite.has_unsafe_local_scm_authority_expansion(
+                        policy
+                    )
                 )
 
     def test_multi_skill_composition_preserves_role_boundaries(self) -> None:

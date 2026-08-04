@@ -1,6 +1,6 @@
 interface:
   display_name: "Quant Goal"
   short_description: "Adaptive native Goal pursuit and steering"
-  default_prompt: "Use $quant-goal to initialize or resume one native Goal, scale condition tracking to its complexity, pursue it adaptively, and transition only on fresh evidence or a genuine repeated blocker."
+  default_prompt: "Use $quant-goal to initialize or resume one native Goal, scale conditions and coordination to its complexity, pursue the strongest proportional outcome adaptively, and transition only on fresh evidence or a genuine repeated blocker."
 policy:
   allow_implicit_invocation: false

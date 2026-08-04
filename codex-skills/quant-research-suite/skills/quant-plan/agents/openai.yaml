@@ -1,6 +1,6 @@
 interface:
   display_name: "Quant Plan"
   short_description: "Manual adaptive read-only Quant planning"
-  default_prompt: "Use $quant-plan to inspect the target read-only, scale depth and capability guidance to the task, and return the smallest sufficient audit, quick plan, or decision-complete implementation plan with observable acceptance."
+  default_prompt: "Use $quant-plan to inspect the target read-only, scale depth and independent evidence to the task, and return a lean but complete audit, quick plan, or decision-complete implementation plan with a proportional quality bar and observable acceptance."
 policy:
   allow_implicit_invocation: false

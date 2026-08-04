@@ -148,6 +148,37 @@ class GenericSkillContractTests(unittest.TestCase):
             r"\b(?:edit|modify|write) files\b.{0,40}\b(?:during|in) planning\b",
         )
 
+    def test_plan_treats_generated_probe_artifacts_as_target_writes(self) -> None:
+        plan = skill("quant-plan")
+        self.assert_concepts(
+            plan,
+            {
+                "ordinary checks are not presumed read-only": (
+                    r"\bdo not assume\b.{0,100}"
+                    r"\b(?:test|linter|import|build|preview)\b.{0,120}"
+                    r"\bnon-writing\b",
+                ),
+                "generated artifacts count as writes": (
+                    r"\bbytecode\b.{0,80}\bcaches\b.{0,80}"
+                    r"\b(?:coverage|snapshots|lockfiles)\b.{0,100}"
+                    r"\bwrites\b",
+                ),
+                "unknown checks are redirected or copied": (
+                    r"\buncertain check\b.{0,160}\bredirected\b"
+                    r".{0,100}\bdisposable copy\b",
+                ),
+                "cleanup stays outside the target": (
+                    r"\bremove only exact\b.{0,80}\bartifacts\b"
+                    r".{0,100}\btask-scoped disposable path\b",
+                ),
+                "target drift is reported not repaired": (
+                    r"\bif target state changed\b.{0,100}"
+                    r"\bdo not mutate it further\b.{0,120}"
+                    r"\bdisclose the exact residue\b",
+                ),
+            },
+        )
+
     def test_goal_uses_native_state_without_duplicate_or_default_ledger(
         self,
     ) -> None:
@@ -188,6 +219,10 @@ class GenericSkillContractTests(unittest.TestCase):
                     r"\bobservable\b.{0,50}\b(?:completion|success) conditions?\b",
                     r"\b(?:completion|success) conditions?\b.{0,50}\bobservable\b",
                 ),
+                "material scope is recorded": (
+                    r"\bmaterial scope\b.{0,100}"
+                    r"\bobservable completion conditions?\b",
+                ),
                 "stable IDs are conditional": (
                     r"\bstable (?:condition )?ids?\b.{0,180}"
                     r"\b(?:long|multi|steering|audit)\b",
@@ -217,6 +252,20 @@ class GenericSkillContractTests(unittest.TestCase):
                     r"\b(?:stale|reverify|refresh)\b",
                     r"\binvalidate\b.{0,80}\bevidence\b.{0,80}\baffected\b",
                 ),
+                "steering reports scope and quality-bar changes": (
+                    r"\bafter steering\b.{0,120}\bscope\b.{0,80}"
+                    r"\bcondition\b.{0,80}\bquality-bar\b.{0,80}"
+                    r"\bstale proof\b",
+                ),
+                "compatible scope changes invalidate proof": (
+                    r"\bwithin the stored outcome\b.{0,100}\bscope\b"
+                    r".{0,100}\bconditions\b.{0,100}\binvalidate\b"
+                    r".{0,80}\bproof\b",
+                ),
+                "outcome change becomes a different Goal": (
+                    r"\boutcome-changing expansion\b.{0,80}"
+                    r"\bdifferent goal\b",
+                ),
             },
         )
         self.assertTrue(
@@ -224,6 +273,9 @@ class GenericSkillContractTests(unittest.TestCase):
         )
         self.assertTrue(
             validate_suite.has_conditional_condition_evidence_map(goal)
+        )
+        self.assertTrue(
+            validate_suite.has_goal_scope_steering_contract(goal)
         )
         optional_inversions = (
             "Stable condition IDs are compulsory.",
@@ -502,9 +554,9 @@ class GenericSkillContractTests(unittest.TestCase):
                 "non-required work is quality debt": (
                     r"\bquality debt\b",
                 ),
-                "smallest acceptance-satisfying change": (
-                    r"\bsmallest coherent change\b.{0,80}"
-                    r"\bsatisfies acceptance\b",
+                "least-churn bounded change": (
+                    r"\bbounded coherent (?:change|patch)\b.{0,100}"
+                    r"\bleast unrelated churn\b",
                 ),
                 "extra scope needs request or target evidence": (
                     r"\badd new\b.{0,180}\bonly when\b.{0,80}"
@@ -536,6 +588,107 @@ class GenericSkillContractTests(unittest.TestCase):
                     "quant-developer: open-ended improvement loop is prohibited",
                     errors,
                 )
+
+    def test_quality_frontier_is_complete_without_becoming_open_ended(
+        self,
+    ) -> None:
+        kernel = read("shared/references/adaptive-workflow.md")
+        plan = skill("quant-plan")
+        goal = skill("quant-goal")
+        developer = skill("quant-developer")
+
+        self.assert_concepts(
+            kernel,
+            {
+                "strongest complete result": (
+                    r"\bstrongest complete result\b.{0,140}"
+                    r"\brequest\b.{0,100}\bconstraints\b",
+                ),
+                "proportionality is not minimum effort": (
+                    r"\bproportionality\b.{0,100}\bnot least effort\b",
+                ),
+                "quality bar is stable rather than self-expanding": (
+                    r"\bset the proportional quality bar\b.{0,160}"
+                    r"\bbefore substantial action\b.{0,180}"
+                    r"\bdo not repeatedly raise it\b",
+                ),
+                "material quality is established-bar bounded": (
+                    r"\bmaterial gap against the established quality bar\b"
+                    r".{0,200}\bnot permission to expand the bar\b",
+                ),
+                "quality debt stays bounded": (
+                    r"\bquality debt\b.{0,160}"
+                    r"\b(?:cosmetic|speculative|adjacent)\b",
+                ),
+                "quality-bar stop": (
+                    r"\bstop once\b.{0,120}\bproportional quality bar\b"
+                    r".{0,100}\bquality debt\b",
+                ),
+            },
+        )
+        self.assertRegex(
+            normalized(plan),
+            r"\bleanest communication form\b.{0,120}"
+            r"\bbrevity\b.{0,80}\bnot reduce\b",
+        )
+        self.assertIn("minimal churn is not minimum effort", normalized(developer))
+        for role in (goal, developer):
+            with self.subTest(role=role.splitlines()[1]):
+                body = normalized(role)
+                self.assertIn(
+                    "material gap against the established quality bar",
+                    body,
+                )
+                self.assertIn("proportional quality bar", body)
+                self.assertRegex(
+                    body,
+                    r"\b(?:cosmetic|speculative|adjacent)\b.{0,120}"
+                    r"\bquality debt\b",
+                )
+
+    def test_orchestration_is_early_visible_and_integrated_not_ceremonial(
+        self,
+    ) -> None:
+        kernel = read("shared/references/adaptive-workflow.md")
+        body = normalized(kernel)
+        self.assert_concepts(
+            kernel,
+            {
+                "dependency-shaped coordination": (
+                    r"\bderive the dependency shape\b",
+                ),
+                "delegation can influence route": (
+                    r"\bbounded subagents\b.{0,160}"
+                    r"\bearly enough\b.{0,80}\binfluence the route\b",
+                ),
+                "parent keeps progressing": (
+                    r"\bparent continues\b.{0,80}\bnon-overlapping work\b",
+                ),
+                "native status visibility": (
+                    r"\bhost-native plan or status\b.{0,140}"
+                    r"\bownership\b.{0,80}\bdependencies\b",
+                ),
+                "one integrated state": (
+                    r"\bone integrated state\b.{0,100}"
+                    r"\bjudging the whole result\b",
+                ),
+                "conflicts are tested": (
+                    r"\bfindings conflict\b.{0,120}"
+                    r"\btest the competing claims\b",
+                ),
+                "retry is classified": (
+                    r"\bretry only\b.{0,160}\btransient\b"
+                    r".{0,100}\bsafe to repeat\b",
+                ),
+                "same-state independent review": (
+                    r"\bfresh independent reviewer\b.{0,180}"
+                    r"\bsame integrated state\b",
+                ),
+            },
+        )
+        self.assertIn("not a mandatory packet", body)
+        self.assertIn("do not create a project file", body)
+        self.assertIn("do not add a reviewer merely to satisfy a count", body)
 
     def test_flexible_recovery_and_authority_additions_are_bounded(self) -> None:
         plan = skill("quant-plan")
@@ -672,6 +825,10 @@ class GenericSkillContractTests(unittest.TestCase):
                 "persistent automation needs separate authority": (
                     r"\bpersistent automation\b.{0,120}\bseparate\b"
                     r".{0,120}\bmutation\b.{0,180}\bcurrent user requested\b",
+                ),
+                "repository mutation has a routed rail": (
+                    r"\bproject file edits\b.{0,180}"
+                    r"`capabilities/repo-mutation\.md`",
                 ),
             },
         )

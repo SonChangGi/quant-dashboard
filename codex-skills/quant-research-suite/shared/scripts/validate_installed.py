@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Verify the installed Quant Research suite against its install manifest."""
+"""Verify the installed Quant Research suite against its install manifest.
+
+The semantic checks below are conservative drift lint over high-confidence
+policy relations, not authentication or general natural-language proof.
+Manifest hashes and source provenance own package integrity; safe policy prose
+must not be rejected merely because it shares a word with a protected action.
+"""
 
 from __future__ import annotations
 
@@ -33,6 +39,7 @@ BASE_SHARED_FILES = frozenset(
         "capabilities/interactive-chart.md",
         "capabilities/public-web.md",
         "capabilities/publication.md",
+        "capabilities/repo-mutation.md",
         "capabilities/remote-release.md",
         "capabilities/scheduled-automation.md",
         "capabilities/web-ui.md",
@@ -351,6 +358,443 @@ def has_unsafe_developer_expansion(text: str) -> bool:
     return False
 
 
+def policy_windows(text: str, max_width: int = 3) -> list[str]:
+    units = [
+        unit.strip()
+        for unit in re.split(
+            r"(?<=[.!?;])\s+",
+            normalized_policy_text(text),
+        )
+        if unit.strip()
+    ]
+    return [
+        " ".join(units[index : index + width])
+        for width in range(1, max_width + 1)
+        for index in range(len(units) - width + 1)
+    ]
+
+
+def policy_neighbor_contexts(text: str) -> list[str]:
+    units = [
+        unit.strip()
+        for unit in re.split(
+            r"(?<=[.!?])\s+",
+            normalized_policy_text(text),
+        )
+        if unit.strip()
+    ]
+    return [
+        " ".join(units[max(0, index - 1) : index + 2])
+        for index in range(len(units))
+    ]
+
+
+def has_self_expanding_quality_loop(text: str) -> bool:
+    loop_motion = (
+        r"(?:"
+        r"\b(?:improv\w*|continu\w*|polish\w*|refin\w*|"
+        r"keep working|carry on|repeat the cycle|each pass|make another pass|"
+        r"seek\w*|pursu\w*|iterat\w*|chase\w*|hunt\w*|reopen\w*|"
+        r"cycle\w*|maximiz\w*|never stop)\b"
+        r")"
+    )
+    open_frontier = (
+        r"(?:"
+        r"\bwhenever\b.{0,80}\b(?:opportunit\w*|enhanc\w*|"
+        r"improv\w*|polish\w*|quality gain)\b"
+        r"|\b(?:any|every|all|another|further|additional|worthwhile|valuable)\b"
+        r".{0,60}\b(?:opportunit\w*|enhanc\w*|improv\w*|refin\w*|"
+        r"polish\w*|quality gain|work)\b"
+        r"|\b(?:opportunit\w*|enhanc\w*|improv\w*|polish\w*|"
+        r"quality gain)\b.{0,80}\b(?:until none remain|none remain|"
+        r"none (?:is|are) left)\b"
+        r"|\bno worthwhile\b.{0,40}\b(?:enhanc\w*|improv\w*|"
+        r"opportunit\w*|work)\b.{0,30}\b(?:left|remain\w*)\b"
+        r"|\bstandard can still rise\b"
+        r"|\bas long as\b.{0,80}\b(?:further|additional)\b"
+        r".{0,50}\b(?:positive value|worthwhile|valuable)\b"
+        r"|\bwhile\b.{0,80}\b(?:opportunit\w*|enhanc\w*|"
+        r"improv\w*)\b.{0,50}\b(?:remain\w*|exist\w*|outweigh\w*)\b"
+        r"|\b(?:without end|indefinit\w*)\b"
+        r"|\bnext upgrade\b|\balways another level\b"
+        r"|\bever-better\b|\bnicer result\b"
+        r"|\buseful ideas?\b.{0,30}\b(?:generated|remain\w*)\b"
+        r"|\bwithout (?:a )?(?:predefined|fixed) stopping point\b"
+        r"|\b(?:marginal value|further gains?)\b.{0,40}"
+        r"\b(?:disappears?|impossible)\b"
+        r")"
+    )
+    prohibited = (
+        r"(?:\b(?:do not|never|must not|cannot)\b.{0,40}"
+        r"\b(?:continu\w*|keep working|carry on|repeat|pursu\w*)\b"
+        r"|\bnot\b.{0,45}\breason\b.{0,35}\bindefinit\w*\b)"
+    )
+    bounded_frontier = (
+        r"\b(?:required|called for) by\b.{0,60}"
+        r"\b(?:agreed|documented|established|pre-set)\b.{0,40}"
+        r"\b(?:checklist|quality (?:bar|standard)|defect list)\b"
+        r"|\buntil\b.{0,60}\b(?:acceptance tests? pass|"
+        r"quality (?:bar|standard) is met)\b"
+        r"|\bsolely to satisfy\b.{0,50}"
+        r"\b(?:established|pre-set|agreed) quality (?:bar|standard)\b"
+        r"|\bdocumented defect list\b.{0,80}\beach item is resolved\b"
+    )
+    for window in policy_windows(text):
+        if (
+            re.search(loop_motion, window)
+            and re.search(open_frontier, window)
+            and not re.search(prohibited, window)
+            and not re.search(bounded_frontier, window)
+        ):
+            return True
+    return False
+
+
+def has_unsafe_plan_target_cleanup(text: str) -> bool:
+    cleanup = (
+        r"(?:"
+        r"\b(?:delet\w*|remov\w*|clean\w*|restor\w*|revert\w*|"
+        r"reset\w*|undo\w*|scrub\w*|return\w*|discard\w*|prun\w*|"
+        r"recreat\w*|purg\w*|abandon\w*|replac\w*)\b"
+        r"|\broll back\b|\bput\b.{0,30}\bback\b"
+        r"|\bmake\b.{0,30}\bpristine\b)"
+    )
+    mutable_object = (
+        r"(?:"
+        r"\btarget[- ](?:state|tree|files?|workspace|directory|residue|"
+        r"artifacts?|outputs?|contents)\b"
+        r"|\bproject[- ](?:state|tree|files?|workspace|directory|contents)\b"
+        r"|\b(?:checkout(?: changes?)?|working tree|worktree changes?|"
+        r"modified files?|generated (?:files?|residue)|audit artifacts?|"
+        r"audit by-products?|probe-induced changes?|repository|"
+        r"source control|directory contents?)\b"
+        r"|\bworkspace\b.{0,35}\b(?:original|baseline|pre-audit)\b"
+        r".{0,25}\bcontents?\b"
+        r"|\bfiles? left behind\b.{0,30}\b(?:in|inside) the target\b)"
+    )
+    for clause in policy_neighbor_contexts(text):
+        relation = (
+            re.search(rf"{cleanup}.{{0,100}}{mutable_object}", clause)
+            or re.search(rf"{mutable_object}.{{0,100}}{cleanup}", clause)
+            or re.search(
+                rf"\bput\b.{{0,35}}{mutable_object}.{{0,25}}\bback\b",
+                clause,
+            )
+            or re.search(
+                rf"\bmake\b.{{0,35}}{mutable_object}.{{0,25}}\bpristine\b",
+                clause,
+            )
+        )
+        if not relation:
+            continue
+        prohibited = re.search(
+            rf"\b(?:do not|never|must not|cannot)\b.{{0,50}}{cleanup}",
+            clause,
+        ) or re.search(
+            rf"{cleanup}.{{0,45}}\b(?:not allowed|not permitted|prohibited)\b",
+            clause,
+        )
+        disposable_only = re.search(
+            r"\b(?:inside|within|in)\b.{0,30}\b(?:disposable|temporary)\b"
+            r".{0,80}" + cleanup,
+            clause,
+        ) or re.search(
+            cleanup
+            + r".{0,80}\bonly\b.{0,80}\b(?:disposable|temporary)\b",
+            clause,
+        )
+        report_only = re.search(
+            r"(?:\breport\b.{0,80}\b(?:do not|not)\b.{0,30}"
+            r"\b(?:perform|mutate|from disk)\b"
+            r"|\breport\b.{0,45}\b(?:recommend|state|note)\w*\b"
+            r".{0,45}\bclean\w*\b.{0,45}"
+            r"\b(?:later|subject to|approval)\b"
+            r"|\b(?:written plan|temporary report|diagram|"
+            r"workspace path|candidate list|comparison)\b"
+            r"|\bplanning itself remains non-mutating\b"
+            r"|\b(?:delete|remove)\w*\b.{0,30}"
+            r"\b(?:words?|phrases?|labels?)\b.{0,45}"
+            r"\b(?:draft|report|explanation)\b"
+            r"|"
+            + cleanup
+            + r".{0,60}\b(?:candidate list|comparison|"
+            r"(?:project[- ]directory )?labels?\b.{0,30}\breport)\b)",
+            clause,
+        )
+        if not (prohibited or disposable_only or report_only):
+            return True
+    return False
+
+
+def has_unsafe_remote_authority_expansion(text: str) -> bool:
+    bootstrap = (
+        r"(?:"
+        r"\b(?:green|ready|approved|accepted|completed|pushed?)\b.{0,25}"
+        r"\b(?:pr|pull request|code review|review|commit|branch)\b"
+        r"|\b(?:successful ci|passing checks?|reviewers? approve|"
+        r"review approval|branch readiness|approval in the code host)\b"
+        r"|\b(?:pull request|pr|push\w* branch|review|approval|"
+        r"branch|commit)\b)"
+    )
+    remote_action = (
+        r"(?:"
+        r"\bmerg\w*\b|\bland(?:ing|ed)?\b|\bintegrat\w*\b|"
+        r"\bsquash\w*\b|\bship\w*\b|\bfast-forward\w*\b|"
+        r"\bcombine\w*\b|\bpress\w*.{0,20}\bmerge button\b)"
+    )
+    authority_grant = (
+        r"(?:\b(?:sufficient|enough)\b.{0,30}"
+        r"\b(?:consent|approval|authority|permission)\b"
+        r"|\b(?:consent|approval|authority|permission)\b.{0,30}"
+        r"\b(?:sufficient|enough)\b"
+        r"|\bimplicit (?:consent|approval|authority|permission)\b"
+        r"|\bimpli(?:es|ed)\b.{0,30}"
+        r"\b(?:consent|approval|authority|permission)\b"
+        r"|\b(?:authoriz\w*|grant\w*|permit\w*|allow\w*)\b"
+        r"|\bstanding mandate\b|\bwithout asking\b|\bgo ahead\b"
+        r"|\b(?:delegat\w*|transfer\w*)\b.{0,35}\bdecision\b"
+        r"|\blets?\b.{0,20}\b(?:agent|maintainer|implementer)\b"
+        r"|\ball\b.{0,20}\bconsent\b.{0,20}\bneeded\b"
+        r"|\b(?:agent|maintainer|implementer|reviewer)\b.{0,25}"
+        r"\b(?:may|can|should)\b.{0,20}" + remote_action +
+        r"|" + remote_action + r".{0,20}\bat (?:your|their) discretion\b)"
+    )
+    non_repo_meaning = (
+        r"(?:"
+        r"\bmerg\w*\b.{0,45}\b(?:findings?|reports?|data frames?|"
+        r"calendar entries|decision paths?|duplicate results?|"
+        r"paragraphs?|rows?|search filters?)\b"
+        r"|\b(?:findings?|reports?|data frames?|calendar entries|"
+        r"decision paths?|duplicate results?|paragraphs?|rows?|"
+        r"search filters?)\b.{0,45}\b(?:merg\w*|squash\w*|combine\w*)\b"
+        r"|\b(?:squash\w*|combine\w*)\b.{0,45}"
+        r"\b(?:paragraphs?|rows?|search filters?|local table)\b"
+        r"|\bland\w*\b.{0,35}\b(?:on (?:either )?architecture|"
+        r"error messages?|local snapshot)\b"
+        r"|\bbranch model\b.{0,45}\bmerg\w*\b)"
+    )
+    safety_guard = (
+        r"\b(?:except|excluding)\b.{0,20}\bmerge\b"
+        r"|\bmerge simulation\b|\bsimulat\w*.{0,30}\bmerge\b"
+        r"|\b(?:merge|execution)\b.{0,40}\bunauthoriz\w*\b"
+        r"|\b(?:does not|do not|never|must not|cannot)\b.{0,50}"
+        r"\b(?:authoriz\w*|grant\w*|permit\w*|allow\w*|merg\w*)\b"
+        r"|\bonly\b.{0,30}\b(?:current )?user\b.{0,40}"
+        r"\b(?:can|may|must)\b.{0,20}\bauthoriz\w*\b"
+        r"|\bmerg\w*\b.{0,60}\b(?:needs?|requires?)\b.{0,40}"
+        r"\b(?:separate|additional|explicit)\b.{0,30}"
+        r"\b(?:authority|approval|request)\b"
+        r"|\bwithout\b.{0,25}\b(?:changing|mutating|touching)\b"
+        r".{0,20}\b(?:git|source control|remote)\b"
+    )
+    for clause in policy_windows(text):
+        if not (
+            re.search(remote_action, clause)
+            and re.search(bootstrap, clause)
+            and re.search(authority_grant, clause)
+        ):
+            continue
+        if not (
+            re.search(safety_guard, clause)
+            or re.search(non_repo_meaning, clause)
+        ):
+            return True
+    return False
+
+
+def has_goal_scope_steering_contract(text: str) -> bool:
+    windows = policy_windows(text)
+    negation = r"\b(?:do not|never|must not|cannot|need not)\b"
+    scope_definition = any(
+        re.search(r"\b(?:record|state|define|capture)\w*\b", window)
+        and re.search(r"\b(?:material|substantive|meaningful) scope\b", window)
+        and re.search(
+            r"\b(?:observable completion conditions?|acceptance conditions?|"
+            r"verifiable (?:completion|finish) criteria)\b",
+            window,
+        )
+        and re.search(
+            r"\b(?:proportional|agreed|established|pre-set) quality "
+            r"(?:bar|standard)\b",
+            window,
+        )
+        and not re.search(
+            negation + r".{0,35}\b(?:record|state|define|capture)\w*\b",
+            window,
+        )
+        for window in windows
+    )
+    steering_report = any(
+        re.search(r"\b(?:after steering|when steered|on steering)\b", window)
+        and re.search(r"\b(?:report|state|identify|describe)\w*\b", window)
+        and re.search(r"\bscope\b", window)
+        and re.search(r"\bconditions?\b", window)
+        and re.search(r"\bquality[- ](?:bar|standard)\b", window)
+        and re.search(r"\bstale (?:proof|evidence)\b", window)
+        and not re.search(
+            negation + r".{0,35}\b(?:report|state|identify|describe)\w*\b",
+            window,
+        )
+        for window in windows
+    )
+    compatible_change = any(
+        re.search(
+            r"\b(?:within the stored outcome|compatible refinement)\b",
+            window,
+        )
+        and re.search(r"\bscope\b", window)
+        and re.search(r"\bconditions?\b", window)
+        and re.search(r"\binvalidat\w*\b", window)
+        and not re.search(
+            r"\b(?:without|not|never|does not|need not)\b.{0,30}"
+            r"\binvalidat\w*\b",
+            window,
+        )
+        for window in windows
+    )
+    different_goal = any(
+        re.search(r"\boutcome-changing\b", window)
+        and re.search(
+            r"\b(?:is|becomes?|constitutes?|requires?)\b.{0,20}"
+            r"\b(?:a )?different goal\b",
+            window,
+        )
+        and not re.search(
+            r"\b(?:is|becomes?|constitutes?) not\b.{0,20}"
+            r"\b(?:a )?different goal\b"
+            r"|\b(?:does not|do not|need not|cannot)\b.{0,25}"
+            r"\brequir\w*\b.{0,25}\b(?:a )?different goal\b",
+            window,
+        )
+        for window in windows
+    )
+    contradictory_change = any(
+        (
+            re.search(r"\boutcome-changing\b", window)
+            and (
+            re.search(
+                r"\b(?:may|can|should)\b.{0,35}"
+                r"\b(?:remain|stay|continue)\b.{0,25}"
+                r"\b(?:same|current) goal\b",
+                window,
+            )
+            or re.search(
+                r"\b(?:is|becomes?|constitutes?) not\b.{0,20}"
+                r"\b(?:a )?different goal\b",
+                window,
+            )
+            or re.search(
+                r"\b(?:does not|do not|need not|cannot)\b.{0,25}"
+                r"\brequir\w*\b.{0,25}\b(?:a )?different goal\b",
+                window,
+            )
+            or re.search(
+                r"\b(?:treat|handle)\w*\b.{0,30}"
+                r"\b(?:compatible|same goal)\b",
+                window,
+            )
+            )
+        )
+        or re.search(r"\bno material scope\b", window)
+        or re.search(
+            r"\b(?:omit|hide|leave unreported)\w*\b.{0,35}"
+            r"\b(?:scope changes?|quality (?:bar|standard))\b",
+            window,
+        )
+        or re.search(
+            r"\b(?:steering|success criteria)\b.{0,60}"
+            r"\b(?:keep|leave|reuse)\b.{0,30}\b(?:prior|existing) "
+            r"(?:proof|evidence)\b.{0,20}\bcurrent\b",
+            window,
+        )
+        or re.search(
+            r"\b(?:replacement|different|materially different) "
+            r"(?:outcome|result)\b.{0,80}"
+            r"\b(?:active|current|same) goal\b",
+            window,
+        )
+        or re.search(
+            r"\b(?:broaden|expand)\w*\b.{0,45}"
+            r"\b(?:objective|outcome)\b.{0,45}\bbeyond\b.{0,30}"
+            r"\bstored outcome\b.{0,45}\bwithout\b.{0,30}"
+            r"\bnew goal\b",
+            window,
+        )
+        for window in windows
+    )
+    return all(
+        (
+            scope_definition,
+            steering_report,
+            compatible_change,
+            different_goal,
+            not contradictory_change,
+        )
+    )
+
+
+def has_unsafe_local_scm_authority_expansion(text: str) -> bool:
+    edit_authority = (
+        r"(?:"
+        r"\b(?:permission|authority|request|approval|ability)\b.{0,45}"
+        r"\b(?:edit|change|write|modify)\w*\b.{0,25}"
+        r"\b(?:files?|code|source|patch)\b"
+        r"|\b(?:files?|code|source|patch)\b.{0,20}"
+        r"\b(?:changes?|edits?)\b.{0,20}\b(?:requested|approved)\b"
+        r"|\b(?:permission|authority|request|approval)\b.{0,35}"
+        r"\b(?:files?|code|source|patch)\b.{0,12}\b(?:changes?|edits?)\b"
+        r"|\basked\b.{0,20}\b(?:edit|change|write|modify)\w*\b.{0,20}"
+        r"\b(?:files?|code|source|patch)\b"
+        r"|\buser\b.{0,20}\b(?:says?|asks?)\b.{0,20}"
+        r"\b(?:edit|change|write|modify)\w*\b.{0,20}"
+        r"\b(?:a )?(?:file|code|source|patch)\b"
+        r"|\bchange request\b"
+        r"|\bedits?\b.{0,20}\b(?:are )?(?:complete|completed|done)\b)"
+    )
+    local_action = (
+        r"(?:"
+        r"\b(?:create|make|open)\w*\b.{0,25}"
+        r"\b(?:a )?(?:commit|branch|worktree)\b"
+        r"|\bgo ahead\b.{0,25}\bcommit\w*\b"
+        r"|\b(?:stage|staging)\b.{0,20}"
+        r"\b(?:it|them|the patch|changes?|files?)\b"
+        r"|\b(?:stage|commit)\b.{0,15}\band\b.{0,15}"
+        r"\b(?:stage|commit)\b"
+        r"|\bcheckpoint\w*\b.{0,30}\b(?:in|with) git\b"
+        r"|\bcherry-pick\w*\b.{0,25}\b(?:the )?(?:fix|commit)\b"
+        r"|\bworktree creation\b"
+        r"|\brebase\w*\b.{0,20}\b(?:the|this|current) branch\b)"
+    )
+    grant = (
+        r"\b(?:authoriz\w*|grant\w*|permit\w*|allow\w*|cover\w*|"
+        r"include\w*|sufficient|enough|delegat\w*)\b"
+        r"|\bimplicit\w*\b.{0,20}\b(?:consent|extend\w*|delegat\w*)\b"
+        r"|\bcarries? consent\b|\bgo ahead\b|\ball\b.{0,25}\bneeded\b"
+        r"|\balso\b.{0,25}" + local_action
+    )
+    guard = (
+        r"\b(?:does not|do not|never|must not|cannot)\b.{0,50}"
+        r"\b(?:authoriz\w*|grant\w*|permit\w*|allow\w*|cover\w*)\b"
+        r"|\b(?:not sufficient|not enough|separate(?:ly)? authoriz\w*|"
+        r"separate (?:authority|permission|request))\b"
+    )
+    non_scm_meaning = (
+        r"\b(?:commit-message template|branch labels?|staging color|"
+        r"worktree documentation|cherry-pick tutorial|branch-name field|"
+        r"style guide|layout preview|code-font samples?|patch artwork)\b"
+        r"|\b(?:css edits?|prose|typos?|outdated link|"
+        r"whitespace normalization)\b.{0,25}\bonly\b"
+    )
+    return any(
+        re.search(edit_authority, window)
+        and re.search(local_action, window)
+        and re.search(grant, window)
+        and not re.search(guard, window)
+        and not re.search(non_scm_meaning, window)
+        for window in policy_windows(text)
+    )
+
+
 def has_unsafe_goal_terminal_expansion(text: str) -> bool:
     for clause in policy_segments(text):
         if _has_goal_terminal_guard(clause):
@@ -514,6 +958,8 @@ def validate_public_body(name: str, skill_text: str) -> list[str]:
             errors.append(f"{name}: disposable copies must isolate external writes")
         if has_unsafe_plan_probe_expansion(body):
             errors.append(f"{name}: body permits unsafe target or remote writes")
+        if has_unsafe_plan_target_cleanup(body):
+            errors.append(f"{name}: body permits cleanup of target residue")
     elif name == "quant-goal":
         tools = (
             r"\bnative goal\b",
@@ -534,6 +980,12 @@ def validate_public_body(name: str, skill_text: str) -> list[str]:
             errors.append(f"{name}: body must prohibit fake terminal replacement")
         if has_unsafe_goal_terminal_expansion(body):
             errors.append(f"{name}: body permits fake terminal replacement")
+        if has_self_expanding_quality_loop(body):
+            errors.append(f"{name}: body permits a self-expanding quality loop")
+        if not has_goal_scope_steering_contract(body):
+            errors.append(
+                f"{name}: body must preserve material scope and steering boundaries"
+            )
     elif name == "quant-developer":
         bounded_change = has_relation(
             body,
@@ -582,7 +1034,32 @@ def validate_public_body(name: str, skill_text: str) -> list[str]:
             errors.append(f"{name}: body contradicts proportional delivery")
         if has_unsafe_developer_expansion(body):
             errors.append(f"{name}: body permits open-ended improvement")
+        if has_self_expanding_quality_loop(body):
+            errors.append(f"{name}: body permits a self-expanding quality loop")
+    if has_unsafe_remote_authority_expansion(body):
+        errors.append(f"{name}: body permits merge without separate authority")
     return errors
+
+
+def validate_kernel_body(text: str) -> list[str]:
+    errors: list[str] = []
+    normalized = normalized_policy_text(text)
+    if "`capabilities/repo-mutation.md`" not in normalized:
+        errors.append("adaptive kernel: missing repository-mutation rail")
+    if has_self_expanding_quality_loop(text):
+        errors.append("adaptive kernel: permits a self-expanding quality loop")
+    if has_unsafe_remote_authority_expansion(text):
+        errors.append("adaptive kernel: permits merge without separate authority")
+    return errors
+
+
+def validate_repo_mutation_body(text: str) -> list[str]:
+    if has_unsafe_local_scm_authority_expansion(text):
+        return [
+            "repository mutation: file-edit authority must not grant local "
+            "source-control actions"
+        ]
+    return []
 
 
 def validate_public_metadata(
@@ -965,6 +1442,20 @@ def main() -> int:
                     shared_files,
                 )
             )
+        kernel_path = shared_root / "references/adaptive-workflow.md"
+        try:
+            kernel_text = kernel_path.read_text(encoding="utf-8")
+        except OSError as exc:
+            errors.append(f"adaptive kernel: cannot read body: {exc}")
+        else:
+            errors.extend(validate_kernel_body(kernel_text))
+        repo_mutation_path = shared_root / "capabilities/repo-mutation.md"
+        try:
+            repo_mutation_text = repo_mutation_path.read_text(encoding="utf-8")
+        except OSError as exc:
+            errors.append(f"repository mutation: cannot read body: {exc}")
+        else:
+            errors.extend(validate_repo_mutation_body(repo_mutation_text))
     if (
         len(actual_items) == len(INSTALL_ITEMS)
         and isinstance(manifest_suite_hash, str)
