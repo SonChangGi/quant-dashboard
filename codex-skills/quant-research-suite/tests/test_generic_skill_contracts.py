@@ -676,6 +676,58 @@ class GenericSkillContractTests(unittest.TestCase):
             },
         )
 
+    def test_external_host_patterns_remain_bounded_and_host_neutral(self) -> None:
+        kernel = read("shared/references/adaptive-workflow.md")
+        scheduled = read("shared/capabilities/scheduled-automation.md")
+
+        self.assert_concepts(
+            kernel,
+            {
+                "isolation is not a security sandbox": (
+                    r"\b(?:isolated root|worktree)\b.{0,120}\bnot\b"
+                    r".{0,60}\bsecurity sandbox\b",
+                ),
+                "isolation does not expand authority": (
+                    r"\b(?:isolated root|worktree)\b.{0,180}"
+                    r"\bnever expands\b.{0,60}\bauthority\b",
+                ),
+                "isolated writer is bound to its integration context": (
+                    r"\bexact root\b.{0,80}\bverified baseline\b.{0,80}"
+                    r"\bintegration target\b.{0,80}\bacceptance\b",
+                ),
+                "duplicate implementation stays conditional": (
+                    r"\bduplicate implementation\b.{0,80}\bonly\b"
+                    r".{0,100}\b(?:explicit comparison|material uncertainty)\b",
+                ),
+                "one candidate is integrated and reverified": (
+                    r"\bintegrate one coherent\b.{0,80}\bcandidate\b"
+                    r".{0,180}\brerun affected proof\b",
+                ),
+            },
+        )
+        self.assert_concepts(
+            scheduled,
+            {
+                "context-free runner gets a self-contained job": (
+                    r"\brunner\b.{0,100}\bdoes not inherit\b.{0,100}"
+                    r"\bconversation\b.{0,120}\bself-contained\b",
+                ),
+                "scheduled work does not rely on prior conversation": (
+                    r"\bdo not rely on\b.{0,120}\b(?:memory|prior chat)\b",
+                ),
+            },
+        )
+
+        combined = normalized(kernel + "\n" + scheduled)
+        for product_name in ("orca", "lobehub", "claude", "opencode"):
+            with self.subTest(product_name=product_name):
+                self.assertNotIn(product_name, combined)
+        self.assertIn(
+            "do not require fixed roles, models, worker counts, review counts, "
+            "worktrees",
+            combined,
+        )
+
     def test_ordinary_base_rails_have_no_legacy_runtime_labels(self) -> None:
         for relative in validate_suite.ORDINARY_CAPABILITY_FILES:
             text = read(f"shared/capabilities/{relative}")
