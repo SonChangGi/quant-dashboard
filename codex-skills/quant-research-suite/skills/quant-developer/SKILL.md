@@ -104,8 +104,10 @@ authorized scope and consumer-visible readback.
 Report results-first: what works, areas changed, checks and actual-surface
 observations, and material limits. Scale detail to risk and audience.
 
-Manifest and ledger runtimes, structured receipts, team protocols, and durable
-state are off the ordinary path. Legacy compatibility is explicit: use
+Manifest and ledger runtimes, structured receipts, team protocols, and full
+legacy durable state are off the ordinary path and require explicit legacy
+compatibility selection. A lightweight checkpoint follows only the shared
+kernel's narrow interruption-recovery trigger. Use
 `../../shared/core/context-routing.md` in source or
 `../quant-research-shared/core/context-routing.md` when installed only for an
 existing exact contract, explicit machine audit, or explicitly requested

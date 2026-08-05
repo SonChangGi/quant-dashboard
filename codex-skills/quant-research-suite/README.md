@@ -45,6 +45,8 @@ or proof. The kernel:
   and sends only the changed scope or evidence;
 - uses host wait, monitor, or continuation for one-off time/event dependencies,
   and creates automation only when the request authorizes it;
+- adds one private, non-authoritative recovery checkpoint only when accepted
+  state must survive a real interruption boundary;
 - routes to just the needed analysis, data, UI, automation, publication, or
   public-readback capability rail;
 - continues for unmet acceptance or material risk and stops at verified
@@ -53,7 +55,8 @@ or proof. The kernel:
   consumer surface.
 
 The default path creates no manifest, ledger, receipt, packet, or workflow
-harness. Canonical authority and cost rules live in
+harness. Small and uninterrupted tasks create no recovery state. Canonical
+authority and cost rules live in
 `shared/core/authority.md`; routing and opt-in compatibility rules live in
 `shared/core/context-routing.md`.
 
@@ -69,20 +72,31 @@ Useful ordinary-path rails include:
 - `capabilities/scheduled-automation.md`
 - `capabilities/publication.md` and `capabilities/public-web.md`
 - `capabilities/remote-release.md`
+- `capabilities/long-running-recovery.md` for a real interruption boundary,
+  never for duration, complexity, or worker count alone
 
 Load only what the task needs. The ordinary analysis-input flow checks the
 project-native path without imposing schemas, captures, hashes, or receipts.
 The preserved strict `capabilities/analysis-input-binding.md` contract is
 compatibility-only.
 
+The recovery rail keeps one latest capsule under
+`$CODEX_HOME/state/quant-recovery/` through
+`scripts/recovery_checkpoint.py`. Native Goal, current user authority, Git,
+workers, and live consumer evidence remain canonical. Resume treats saved
+workers and evidence as claims to recheck, and retirement removes only the
+exact recovery ID at its latest sequence after verified completion. It is not
+the legacy Goal ledger or a background runtime.
+
 ## Legacy compatibility
 
 The source package preserves the established manifests, schemas, templates,
-Goal ledger, durable runtime, evidence validators, and team protocol. The
-default `base` installation omits that payload. Use it only for an existing
-exact project contract, an explicit machine audit, or explicitly requested
-contract-specific high-risk recovery. Its identifiers, hashes, versions, and
-validators remain authoritative on that path.
+Goal ledger, full durable runtime, evidence validators, and team protocol. The
+default `base` installation omits that compatibility payload while retaining
+the separate lightweight recovery rail above. Use the legacy payload only for
+an existing exact project contract, an explicit machine audit, or explicitly
+requested contract-specific high-risk recovery. Its identifiers, hashes,
+versions, and validators remain authoritative on that path.
 
 When that compatibility path is explicitly needed, install the `compat`
 profile at the same established relative paths:
@@ -114,7 +128,8 @@ python3 -B ~/.codex/skills/quant-research-shared/scripts/validate_installed.py
 ```
 
 The installer validates and stages the three public skills plus the adaptive
-kernel, canonical policy, selected capability rails, and installed validator.
+kernel, canonical policy, selected capability rails, recovery helper, and
+installed validator.
 It records `install_profile: base|compat`, backs up the previous installation,
 replaces each directory with rollback on a caught failure, and verifies
 installed hashes plus stable public metadata and routing invariants without

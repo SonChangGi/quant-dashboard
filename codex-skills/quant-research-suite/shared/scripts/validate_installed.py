@@ -37,6 +37,7 @@ BASE_SHARED_FILES = frozenset(
         "capabilities/backend.md",
         "capabilities/external-data.md",
         "capabilities/interactive-chart.md",
+        "capabilities/long-running-recovery.md",
         "capabilities/public-web.md",
         "capabilities/publication.md",
         "capabilities/repo-mutation.md",
@@ -46,6 +47,7 @@ BASE_SHARED_FILES = frozenset(
         "core/authority.md",
         "core/context-routing.md",
         "references/adaptive-workflow.md",
+        "scripts/recovery_checkpoint.py",
         "scripts/validate_installed.py",
     }
 )
@@ -68,6 +70,7 @@ COMPAT_SHARED_FILES = frozenset(
         "capabilities/backend.md",
         "capabilities/external-data.md",
         "capabilities/interactive-chart.md",
+        "capabilities/long-running-recovery.md",
         "capabilities/multi-agent-write.md",
         "capabilities/public-web.md",
         "capabilities/publication.md",
@@ -112,6 +115,7 @@ COMPAT_SHARED_FILES = frozenset(
         "scripts/goal_runtime.py",
         "scripts/project_inventory.py",
         "scripts/quantctl.py",
+        "scripts/recovery_checkpoint.py",
         "scripts/team_protocol.py",
         "scripts/validate_evidence.py",
         "scripts/validate_evidence_v3.py",
@@ -1046,10 +1050,91 @@ def validate_kernel_body(text: str) -> list[str]:
     normalized = normalized_policy_text(text)
     if "`capabilities/repo-mutation.md`" not in normalized:
         errors.append("adaptive kernel: missing repository-mutation rail")
+    if "`capabilities/long-running-recovery.md`" not in normalized:
+        errors.append("adaptive kernel: missing long-running recovery rail")
+    if not (
+        re.search(r"\breal interruption\b", normalized)
+        and re.search(
+            r"\b(?:duration|task duration)\b.{0,100}\b(?:alone|do not)\b"
+            r"|\b(?:alone|not)\b.{0,100}\b(?:duration|task duration)\b",
+            normalized,
+        )
+    ):
+        errors.append("adaptive kernel: recovery trigger is not bounded")
     if has_self_expanding_quality_loop(text):
         errors.append("adaptive kernel: permits a self-expanding quality loop")
     if has_unsafe_remote_authority_expansion(text):
         errors.append("adaptive kernel: permits merge without separate authority")
+    return errors
+
+
+def validate_recovery_body(text: str) -> list[str]:
+    """Check high-confidence safety relations for the optional recovery rail."""
+
+    body = normalized_policy_text(text)
+    concepts = {
+        "real interruption trigger": r"\breal interruption\b",
+        "duration alone excluded": (
+            r"\b(?:duration|task duration)\b.{0,100}\b(?:alone|do not)\b"
+            r"|\b(?:alone|not)\b.{0,100}\b(?:duration|task duration)\b"
+        ),
+        "plan remains read-only": r"\bquant-plan\b.{0,80}\bread-only\b",
+        "native state remains canonical": (
+            r"\bnative (?:goal|task)\b.{0,180}\b(?:canonical|source of truth)\b"
+        ),
+        "one integration writer": r"\bone integration owner\b.{0,80}\bwriter\b",
+        "meaningful boundaries": r"\bmeaningful boundaries\b",
+        "no fixed cadence": (
+            r"\bdo not checkpoint\b.{0,140}\b(?:timer|fixed command)\b"
+        ),
+        "authority not recorded": r"\bauthority\b.{0,80}\bnot_recorded\b",
+        "running worker becomes unknown": (
+            r"\bsaved\b.{0,30}\brunning\b.{0,80}\bunknown\b"
+        ),
+        "drift stales evidence": r"\bdrift\b.{0,80}\bevidence\b.{0,50}\bstale\b",
+        "live evidence revalidation": (
+            r"\bsaved evidence\b.{0,100}\b(?:revalidation|revalidate|freshness)\b"
+        ),
+        "exact retirement": r"\bretire\b.{0,100}\bexact recovery\b",
+        "no secret persistence": r"\bnever persist\b.{0,220}\bcredentials\b",
+    }
+    errors = [
+        f"long-running recovery: missing concept {label!r}"
+        for label, pattern in concepts.items()
+        if not re.search(pattern, body)
+    ]
+    unsafe = (
+        ("universal checkpoint", r"\b(?:always|must) checkpoint\b"),
+        (
+            "fixed checkpoint cadence",
+            r"\bevery\b.{0,30}\b(?:minutes?|commands?|tests?|worker messages?)\b",
+        ),
+        (
+            "checkpoint grants authority",
+            r"\bcheckpoint\b.{0,80}\b(?:grants?|authorizes?|approves?)\b",
+        ),
+        (
+            "checkpoint proves completion",
+            r"\bcheckpoint\b.{0,80}\bproves?\b.{0,30}\bcompletion\b",
+        ),
+        (
+            "saved worker trusted as complete",
+            r"\bsaved\b.{0,50}\bworker\b.{0,80}\b(?:completed|accepted)\b"
+            r".{0,50}\bwithout\b.{0,40}\b(?:live|reinspect|verify)\w*\b",
+        ),
+    )
+    for label, pattern in unsafe:
+        for clause in policy_segments(text):
+            if not re.search(pattern, clause):
+                continue
+            if re.search(
+                r"\b(?:do not|never|must not|cannot)\b.{0,180}"
+                r"\b(?:always|every|checkpoint|saved worker)\b",
+                clause,
+            ):
+                continue
+            errors.append(f"long-running recovery: unsafe {label}")
+            break
     return errors
 
 
@@ -1449,6 +1534,13 @@ def main() -> int:
             errors.append(f"adaptive kernel: cannot read body: {exc}")
         else:
             errors.extend(validate_kernel_body(kernel_text))
+        recovery_path = shared_root / "capabilities/long-running-recovery.md"
+        try:
+            recovery_text = recovery_path.read_text(encoding="utf-8")
+        except OSError as exc:
+            errors.append(f"long-running recovery: cannot read body: {exc}")
+        else:
+            errors.extend(validate_recovery_body(recovery_text))
         repo_mutation_path = shared_root / "capabilities/repo-mutation.md"
         try:
             repo_mutation_text = repo_mutation_path.read_text(encoding="utf-8")
