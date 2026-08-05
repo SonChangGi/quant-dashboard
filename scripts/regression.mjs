@@ -211,7 +211,7 @@ assert(validKelly.state === 'unavailable' && validKelly.assetCount === 50 && val
 assert(validKelly.fullKelly === null && validKelly.expectedLogGrowth === null, 'Kelly parser does not synthesize unavailable calculation values');
 assert(api.formatKellyHeadlineMetric({ value: 1.5, unit: 'fraction' }) === '150%', 'Kelly fraction metric formats allocation without losing leverage');
 assert(api.formatKellyHeadlineMetric({ value: 6.5, unit: 'percent' }) === '6.5%', 'Kelly percent metric is not multiplied by 100');
-const kellyRecord = { project: { id: 'kelly' }, summary: validKelly, mode: 'live', generatedAt: validKelly.generatedAt, dataAsOf: '' };
+const kellyRecord = { project: { id: 'kelly' }, summary: validKelly, mode: 'live', generatedAt: new Date().toISOString(), dataAsOf: '' };
 assert(api.healthTone(kellyRecord) === 'warn' && api.healthLabel(kellyRecord) === '산출 불가', 'Kelly unavailable contract renders as warning rather than healthy green');
 const kellyBriefing = api.briefingItemForRecord(kellyRecord);
 assert(kellyBriefing.tone === 'warning' && /0\/50개/.test(kellyBriefing.title) && /직접 가정 계산/.test(kellyBriefing.detail), 'Kelly briefing separates public market coverage from usable direct-input calculations');
@@ -1630,6 +1630,23 @@ assert(trendforceDram.series.length === 1 && /TrendForce daily/.test(trendforceD
 assert(trendforceDram.series[0].points.length === 2 && trendforceDram.observationCount === 2, 'DRAM chart uses daily TrendForce observations and counts selected points');
 const dramAxisTicks = api.buildDramAxisTicks(4.4543, 5.1234, 5);
 assert(dramAxisTicks.length >= 3 && dramAxisTicks.every((tick) => Number.isInteger(tick)), 'DRAM chart y-axis ticks are clean integers for fractional prices');
+const dramChartFixture = [
+  { source: 'trendforce', name: 'High Price', points: [['2026-06-10', 60], ['2026-06-11', 66], ['2026-06-12', 72]] },
+  { source: 'trendforce', name: 'Low Price', points: [['2026-06-10', 10], ['2026-06-11', 11], ['2026-06-12', 12]] },
+];
+const dramPriceMarkup = api.renderDramSourceChart('trendforce', dramChartFixture);
+const dramIndexedMarkup = api.renderDramSourceChart('trendforce', dramChartFixture, 'indexed');
+assert((dramPriceMarkup.match(/class="dram-series /g) || []).length === 2, 'DRAM price view preserves every input series');
+assert((dramPriceMarkup.match(/class="dram-data-point/g) || []).length === 6, 'DRAM price view preserves every recorded point');
+assert((dramPriceMarkup.match(/class="dram-legend-button"/g) || []).length === 2, 'DRAM legend exposes one selectable button per series');
+assert((dramPriceMarkup.match(/data-keyboard-label=/g) || []).length === 6, 'DRAM points retain exact-value keyboard readout labels');
+assert((dramPriceMarkup.match(/class="dram-chart-frame" tabindex="0"/g) || []).length === 1, 'DRAM chart keeps one keyboard entry point');
+assert(!/dram-value-(?:layer|label)/.test(dramPriceMarkup), 'DRAM chart never renders the overlapping all-point value layer');
+assert(dramPriceMarkup.indexOf('dram-chart-readout') < dramPriceMarkup.indexOf('dram-chart-frame'), 'DRAM exact-value readout stays outside and before the plot');
+assert(/data-dram-scale-mode="price"/.test(dramPriceMarkup) && /data-dram-scale="price" aria-pressed="true"/.test(dramPriceMarkup), 'DRAM defaults to the original USD price axis');
+assert(/data-dram-scale-mode="indexed"/.test(dramIndexedMarkup) && /상대 변화 · 첫 관측=100/.test(dramIndexedMarkup), 'DRAM indexed display mode clearly identifies its first-observation baseline');
+assert(/72 USD · 시작=100 지수 120/.test(dramIndexedMarkup) && /12 USD · 시작=100 지수 120/.test(dramIndexedMarkup), 'DRAM indexed view keeps raw USD exact values alongside rebased display values');
+assert((dramIndexedMarkup.match(/class="dram-data-point/g) || []).length === 6 && dramIndexedMarkup !== dramPriceMarkup, 'DRAM scale switching changes only presentation while retaining all points');
 
 const validBest = api.parseBestFactor({ summary: { best_factor: 'quality', data_end_date: '2026-06-10' }, latest_holdings: [{ factor: 'quality', ticker: 'BBB', score: 1, weight: 0.3, rebalance_date: '2026-06-01' }] });
 assert(validBest.rows.length === 1 && validBest.factor === 'quality', 'recorded valid Best Factor fixture produces holding row');

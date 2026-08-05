@@ -531,6 +531,7 @@
   };
 
   const COLORS = ['#7dd3fc', '#86efac', '#fb7185', '#fbbf24', '#c4b5fd', '#67e8f9'];
+  const DRAM_DASHES = ['', '9 5', '3 4', '12 4 3 4', '2 5', '7 3 2 3'];
   const PANEL_RECORDS = new Map();
   const ETF_HISTORY_WINDOW_DAYS = 31;
   const ETF_HISTORY_TAIL_BYTES = 2_400_000;
@@ -3188,8 +3189,14 @@
       const seriesGroups = [...frame.querySelectorAll(selectors.seriesSelector)];
       if (!seriesGroups.length) return;
       const readout = frame.parentElement?.querySelector(selectors.readoutSelector);
+      const initialReadout = readout?.innerHTML || '';
+      const legendButtons = selectors.legendSelector
+        ? [...(frame.parentElement?.querySelectorAll(selectors.legendSelector) || [])]
+        : [];
+      const selectionGuide = selectors.guideSelector ? frame.querySelector(selectors.guideSelector) : null;
       let seriesIndex = 0;
       let pointIndex = Math.max(seriesGroups[0].querySelectorAll(selectors.pointSelector).length - 1, 0);
+      let pinnedSelection = null;
 
       const pointsForSeries = (index) => [...(seriesGroups[index]?.querySelectorAll(selectors.pointSelector) || [])];
       const closestPointIndex = (points, targetDate) => {
@@ -3200,6 +3207,22 @@
           const bestDistance = Math.abs(Date.parse(points[bestIndex]?.dataset.date) - target);
           return distance < bestDistance ? index : bestIndex;
         }, 0);
+      };
+      const updateLegendState = () => {
+        legendButtons.forEach((button) => {
+          button.setAttribute('aria-pressed', String(Number(button.dataset.seriesIndex) === pinnedSelection?.seriesIndex));
+        });
+      };
+      const clearSelection = () => {
+        seriesGroups.forEach((series) => series.classList.remove('is-keyboard-active'));
+        frame.querySelectorAll(selectors.pointSelector).forEach((point) => point.classList.remove('is-keyboard-active'));
+        seriesIndex = 0;
+        pointIndex = Math.max(pointsForSeries(0).length - 1, 0);
+        frame.classList.remove('is-keyboard-active');
+        if (selectionGuide) selectionGuide.setAttribute('hidden', '');
+        if (readout) readout.innerHTML = initialReadout;
+        frame.setAttribute('aria-label', frame.dataset.baseLabel || '차트');
+        updateLegendState();
       };
       const update = () => {
         seriesGroups.forEach((series) => series.classList.remove('is-keyboard-active'));
@@ -3214,10 +3237,58 @@
         const label = point.dataset.keyboardLabel || '선택값 확인 필요';
         if (readout) readout.innerHTML = `${escapeHtml(label)} <span>· 방향키: ${escapeHtml(navigationLabel)}</span>`;
         frame.setAttribute('aria-label', `${frame.dataset.baseLabel || '차트'} 현재 선택 ${label}`);
+        const chartX = finiteOrNull(point.dataset.chartX);
+        if (selectionGuide && chartX !== null) {
+          selectionGuide.removeAttribute('hidden');
+          selectionGuide.setAttribute('x1', chartX);
+          selectionGuide.setAttribute('x2', chartX);
+        }
+        updateLegendState();
+      };
+      const pinCurrentSelection = () => {
+        pinnedSelection = { seriesIndex, pointIndex };
+        update();
+      };
+      const restorePinnedSelection = () => {
+        if (!pinnedSelection) {
+          clearSelection();
+          return;
+        }
+        seriesIndex = pinnedSelection.seriesIndex;
+        pointIndex = pinnedSelection.pointIndex;
+        update();
+      };
+      const chartPointerX = (event) => {
+        const svg = frame.querySelector('svg');
+        if (!svg?.createSVGPoint || !svg.getScreenCTM) return null;
+        const matrix = svg.getScreenCTM();
+        if (!matrix) return null;
+        try {
+          const pointer = svg.createSVGPoint();
+          pointer.x = event.clientX;
+          pointer.y = event.clientY;
+          return pointer.matrixTransform(matrix.inverse()).x;
+        } catch {
+          return null;
+        }
+      };
+      const closestPointIndexByX = (points, targetX) => {
+        if (!Number.isFinite(targetX)) return Math.max(points.length - 1, 0);
+        return points.reduce((bestIndex, point, index) => {
+          const distance = Math.abs(numberOr(point.dataset.chartX, targetX) - targetX);
+          const bestDistance = Math.abs(numberOr(points[bestIndex]?.dataset.chartX, targetX) - targetX);
+          return distance < bestDistance ? index : bestIndex;
+        }, 0);
       };
 
       frame.addEventListener('focus', update);
       frame.addEventListener('keydown', (event) => {
+        if (selectors.pointerPreview && event.key === 'Escape') {
+          event.preventDefault();
+          pinnedSelection = null;
+          clearSelection();
+          return;
+        }
         const points = pointsForSeries(seriesIndex);
         if (!points.length) return;
         const currentDate = points[pointIndex]?.dataset.date || '';
@@ -3233,7 +3304,63 @@
           return;
         }
         event.preventDefault();
-        update();
+        if (selectors.pointerPreview) pinCurrentSelection();
+        else update();
+      });
+
+      if (!selectors.pointerPreview) return;
+
+      frame.addEventListener('pointerleave', restorePinnedSelection);
+      frame.addEventListener('blur', restorePinnedSelection);
+      seriesGroups.forEach((series, nextSeriesIndex) => {
+        const points = pointsForSeries(nextSeriesIndex);
+        points.forEach((point, nextPointIndex) => {
+          point.addEventListener('pointerenter', () => {
+            seriesIndex = nextSeriesIndex;
+            pointIndex = nextPointIndex;
+            update();
+          });
+          point.addEventListener('click', (event) => {
+            event.stopPropagation();
+            seriesIndex = nextSeriesIndex;
+            pointIndex = nextPointIndex;
+            pinCurrentSelection();
+          });
+        });
+
+        if (!selectors.hitSelector) return;
+        const hitTarget = series.querySelector(selectors.hitSelector);
+        if (!hitTarget) return;
+        const previewAtPointer = (event, shouldPin = false) => {
+          const chartX = chartPointerX(event);
+          seriesIndex = nextSeriesIndex;
+          pointIndex = closestPointIndexByX(points, chartX);
+          if (shouldPin) pinCurrentSelection();
+          else update();
+        };
+        hitTarget.addEventListener('pointermove', (event) => previewAtPointer(event));
+        hitTarget.addEventListener('click', (event) => previewAtPointer(event, true));
+      });
+
+      legendButtons.forEach((button) => {
+        const previewLegendSeries = () => {
+          const nextSeriesIndex = Number(button.dataset.seriesIndex);
+          if (!Number.isInteger(nextSeriesIndex) || !seriesGroups[nextSeriesIndex]) return;
+          const currentDate = pinnedSelection
+            ? pointsForSeries(pinnedSelection.seriesIndex)[pinnedSelection.pointIndex]?.dataset.date
+            : pointsForSeries(seriesIndex)[pointIndex]?.dataset.date;
+          seriesIndex = nextSeriesIndex;
+          pointIndex = closestPointIndex(pointsForSeries(seriesIndex), currentDate);
+          update();
+        };
+        button.addEventListener('pointerenter', previewLegendSeries);
+        button.addEventListener('pointerleave', restorePinnedSelection);
+        button.addEventListener('focus', previewLegendSeries);
+        button.addEventListener('blur', restorePinnedSelection);
+        button.addEventListener('click', () => {
+          previewLegendSeries();
+          pinCurrentSelection();
+        });
       });
     });
   }
@@ -3310,22 +3437,66 @@
       if (!sourceBuckets.has(source)) sourceBuckets.set(source, []);
       sourceBuckets.get(source).push(item);
     });
-    target.innerHTML = `<div class="dram-source-grid">${[...sourceBuckets.entries()]
+    const sourceEntries = [...sourceBuckets.entries()];
+    target.innerHTML = `<div class="dram-source-grid">${sourceEntries
       .map(([source, sourceSeries]) => renderDramSourceChart(source, sourceSeries))
       .join('')}</div>`;
-    bindChartKeyboardFrames(target, {
+    const cards = [...target.querySelectorAll('.dram-source-card')];
+    sourceEntries.forEach(([source, sourceSeries], index) => bindDramSourceCard(cards[index], source, sourceSeries));
+  }
+
+  function bindDramSourceCard(card, source, chartSeries) {
+    if (!card) return;
+    bindChartKeyboardFrames(card, {
       frameSelector: '.dram-chart-frame',
       seriesSelector: '.dram-series',
       pointSelector: '.dram-data-point',
       readoutSelector: '.dram-chart-readout',
       navigationLabel: '날짜/제품',
+      pointerPreview: true,
+      hitSelector: '.dram-series-hit',
+      legendSelector: '.dram-legend-button',
+      guideSelector: '.dram-selection-guide',
+    });
+    card.querySelectorAll('[data-dram-scale]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const nextMode = button.dataset.dramScale === 'indexed' ? 'indexed' : 'price';
+        if (nextMode === card.dataset.dramScaleMode) return;
+        const restoreFocus = document.activeElement === button;
+        const template = document.createElement('template');
+        template.innerHTML = renderDramSourceChart(source, chartSeries, nextMode).trim();
+        const replacement = template.content.firstElementChild;
+        if (!replacement) return;
+        card.replaceWith(replacement);
+        bindDramSourceCard(replacement, source, chartSeries);
+        if (restoreFocus) {
+          queueMicrotask(() => replacement.querySelector(`[data-dram-scale="${nextMode}"]`)?.focus({ preventScroll: true }));
+        }
+      });
     });
   }
 
-  function renderDramSourceChart(source, chartSeries) {
-    const points = chartSeries.flatMap((item) => item.points.map(([date, value]) => ({ date, value: Number(value) })));
+  function renderDramSourceChart(source, chartSeries, scaleMode = 'price') {
+    const normalizedSeries = normalizeChartSeries(chartSeries);
+    const canIndex = normalizedSeries.every((item) => Number(item.points[0]?.[1]) !== 0);
+    const mode = scaleMode === 'indexed' && canIndex ? 'indexed' : 'price';
+    const displaySeries = normalizedSeries.map((item) => {
+      const baseline = Number(item.points[0][1]);
+      return {
+        ...item,
+        points: item.points.map(([date, value]) => {
+          const numericValue = Number(value);
+          return {
+            date,
+            value: numericValue,
+            plotValue: mode === 'indexed' ? (numericValue / baseline) * 100 : numericValue,
+          };
+        }),
+      };
+    });
+    const points = displaySeries.flatMap((item) => item.points);
     const dates = points.map((point) => Date.parse(point.date)).filter(Number.isFinite);
-    const values = points.map((point) => point.value).filter(Number.isFinite);
+    const values = points.map((point) => point.plotValue).filter(Number.isFinite);
     const minDate = Math.min(...dates);
     const maxDate = Math.max(...dates);
     const minValue = Math.min(...values);
@@ -3356,59 +3527,74 @@
       return `<text x="${x(date).toFixed(1)}" y="${height - 22}" text-anchor="${anchor}" fill="#9aa4b2" font-size="12">${escapeHtml(date)}</text>`;
     }).join('');
 
-    const paths = chartSeries.map((item, index) => {
+    const paths = displaySeries.map((item, index) => {
       const color = COLORS[index % COLORS.length];
-      const validPoints = item.points.filter(([, value]) => Number.isFinite(Number(value)));
-      const pathData = validPoints.map(([date, value], pointIndex) => `${pointIndex === 0 ? 'M' : 'L'} ${x(date).toFixed(1)} ${y(Number(value)).toFixed(1)}`).join(' ');
-      const circles = validPoints.map(([date, value], pointIndex) => {
-        const keyboardLabel = `${item.name} · ${date} · ${formatNumber(value)} USD`;
-        return `<circle class="dram-data-point${pointIndex === validPoints.length - 1 ? ' endpoint' : ''}" cx="${x(date).toFixed(1)}" cy="${y(Number(value)).toFixed(1)}" r="${pointIndex === validPoints.length - 1 ? '4.2' : '3.3'}" fill="${color}" data-series-index="${index}" data-point-index="${pointIndex}" data-date="${escapeAttribute(date)}" data-keyboard-label="${escapeAttribute(keyboardLabel)}"><title>${escapeHtml(`${item.name} · ${date} · ${formatNumber(value)}`)}</title></circle>`;
+      const dash = DRAM_DASHES[index % DRAM_DASHES.length];
+      const pathData = item.points.map((point, pointIndex) => `${pointIndex === 0 ? 'M' : 'L'} ${x(point.date).toFixed(1)} ${y(point.plotValue).toFixed(1)}`).join(' ');
+      const circles = item.points.map((point, pointIndex) => {
+        const indexContext = mode === 'indexed' ? ` · 시작=100 지수 ${formatNumber(point.plotValue)}` : '';
+        const keyboardLabel = `${item.name} · ${point.date} · ${formatNumber(point.value)} USD${indexContext}`;
+        const pointX = x(point.date).toFixed(1);
+        const pointY = y(point.plotValue).toFixed(1);
+        return `<circle class="dram-data-point${pointIndex === item.points.length - 1 ? ' endpoint' : ''}" cx="${pointX}" cy="${pointY}" r="${pointIndex === item.points.length - 1 ? '4.2' : '3.3'}" fill="${color}" data-series-index="${index}" data-point-index="${pointIndex}" data-date="${escapeAttribute(point.date)}" data-chart-x="${pointX}" data-keyboard-label="${escapeAttribute(keyboardLabel)}"/>`;
       }).join('');
-      const labels = validPoints.map(([date, value], pointIndex) => {
-        const label = formatNumber(value);
-        const labelWidth = Math.min(96, Math.max(48, label.length * 7.2 + 18));
-        const pointX = x(date);
-        const pointY = y(Number(value));
-        let labelX = pointX + 12;
-        if (labelX + labelWidth > width - margin.right) labelX = pointX - labelWidth - 12;
-        labelX = Math.max(8, Math.min(labelX, width - margin.right - labelWidth));
-        const lane = (pointIndex % 3) - 1;
-        const labelY = Math.max(margin.top + 18, Math.min(pointY - 14 + lane * 18, height - margin.bottom - 8));
-        return `<g class="dram-value-label" transform="translate(${labelX.toFixed(1)} ${labelY.toFixed(1)})"><rect x="0" y="-16" width="${labelWidth.toFixed(1)}" height="21" rx="6"/><text x="8" y="-5" dominant-baseline="middle">${escapeHtml(label)}</text></g>`;
-      }).join('');
-      return `<g class="dram-series" data-series-index="${index}" data-series-label="${escapeAttribute(item.name)}" style="--series-color:${color}"><path class="dram-series-hit" d="${pathData}" fill="none" stroke="transparent"/><path class="dram-series-line" d="${pathData}" fill="none" stroke="${color}"/>${circles}<g class="dram-value-layer">${labels}</g></g>`;
+      const dashAttribute = dash ? ` stroke-dasharray="${dash}"` : '';
+      return `<g class="dram-series series-color-${index % COLORS.length}" data-series-index="${index}" data-series-label="${escapeAttribute(item.name)}" style="--series-color:${color}"><path class="dram-series-hit" d="${pathData}" fill="none" stroke="transparent"/><path class="dram-series-line" d="${pathData}" fill="none" stroke="${color}"${dashAttribute}/>${circles}</g>`;
     }).join('');
 
-    const legend = chartSeries.map((item, index) => `
-      <span><i class="legend-key" style="background:${COLORS[index % COLORS.length]}"></i>${escapeHtml(item.name)}</span>
-    `).join('');
+    const legend = displaySeries.map((item, index) => {
+      const dash = DRAM_DASHES[index % DRAM_DASHES.length];
+      const dashAttribute = dash ? ` stroke-dasharray="${dash}"` : '';
+      return `
+      <button type="button" class="dram-legend-button" data-series-index="${index}" aria-pressed="false" aria-label="${escapeAttribute(`${item.name} 계열 선택`)}">
+        <svg viewBox="0 0 30 10" aria-hidden="true"><line x1="1" x2="29" y1="5" y2="5" stroke="${COLORS[index % COLORS.length]}" stroke-width="3"${dashAttribute}/></svg>
+        <span>${escapeHtml(item.name)}</span>
+      </button>
+    `;
+    }).join('');
 
     const sourceName = dramSourceLabel(source);
     const firstDate = allDates[0] || '';
     const lastDate = allDates.at(-1) || '';
-    const initialSeries = chartSeries[0];
-    const initialPoint = asArray(initialSeries?.points).filter(([, value]) => Number.isFinite(Number(value))).at(-1);
+    const initialSeries = displaySeries[0];
+    const initialPoint = initialSeries?.points.at(-1);
+    const scaleContext = mode === 'indexed' ? ` · 시작=100 지수 ${formatNumber(initialPoint?.plotValue)}` : '';
     const initialReadout = initialSeries && initialPoint
-      ? `${initialSeries.name} · ${initialPoint[0]} · ${formatNumber(initialPoint[1])} USD`
+      ? `${initialSeries.name} · ${initialPoint.date} · ${formatNumber(initialPoint.value)} USD${scaleContext}`
       : '차트 값을 확인할 수 없습니다.';
-    const frameLabel = `${sourceName} D램 일별 가격. 좌우 방향키로 날짜, 위아래 방향키로 제품을 탐색합니다.`;
-    return `<article class="dram-source-card">
+    const modeLabel = mode === 'indexed' ? '변화율 비교, 각 제품 첫 관측 100 기준' : '가격, USD';
+    const frameLabel = `${sourceName} D램 일별 ${modeLabel}. 좌우 방향키로 날짜, 위아래 방향키로 제품을 탐색합니다.`;
+    const sourceId = String(source || 'unknown').toLowerCase().replace(/[^a-z0-9_-]+/g, '-');
+    const titleId = `dram-${sourceId}-${mode}-title`;
+    const descId = `dram-${sourceId}-${mode}-desc`;
+    return `<article class="dram-source-card" data-dram-source="${escapeAttribute(source)}" data-dram-scale-mode="${mode}">
       <div class="dram-source-heading">
         <div><p class="eyebrow">Data source</p><h4>${escapeHtml(sourceName)}</h4><p>${formatInteger(points.length)}개 관측치 · ${escapeHtml(firstDate)} ~ ${escapeHtml(lastDate)}</p></div>
-        <span>${formatInteger(chartSeries.length)} series</span>
+        <span>${formatInteger(displaySeries.length)}개 계열</span>
       </div>
-      <div class="dram-chart-frame" tabindex="0" role="group" aria-label="${escapeAttribute(frameLabel)}" data-base-label="${escapeAttribute(frameLabel)}">
-        <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeAttribute(`${sourceName} D램 일별 가격 추이`)}">
+      <div class="dram-chart-toolbar">
+        <p class="chart-keyboard-readout dram-chart-readout" aria-live="polite">${escapeHtml(initialReadout)} <span>· 방향키: 날짜/제품</span></p>
+        <div class="dram-scale-control" role="group" aria-label="D램 차트 표시 방식">
+          <button type="button" data-dram-scale="price" aria-pressed="${mode === 'price'}">가격 (USD)</button>
+          <button type="button" data-dram-scale="indexed" aria-pressed="${mode === 'indexed'}">변화율 (시작=100)</button>
+        </div>
+      </div>
+      <div class="chart-legend dram-legend" role="group" aria-label="D램 제품 계열 선택">${legend}</div>
+      <div class="dram-chart-frame" tabindex="0" role="group" aria-label="${escapeAttribute(frameLabel)}" aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown Home End Escape" data-base-label="${escapeAttribute(frameLabel)}">
+        <svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="${titleId} ${descId}">
+          <title id="${titleId}">${escapeHtml(`${sourceName} D램 일별 ${modeLabel}`)}</title>
+          <desc id="${descId}">${escapeHtml(`${firstDate}부터 ${lastDate}까지 ${displaySeries.length}개 제품, ${points.length}개 관측치를 비교합니다. 정확값은 차트 밖 선택값 영역에서 확인합니다.`)}</desc>
           <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"/>
-          <text x="${margin.left}" y="18" fill="#d8dee8" font-size="13" font-weight="700">일별 가격 · USD</text>
+          <text x="${margin.left}" y="18" fill="#d8dee8" font-size="13" font-weight="700">${mode === 'indexed' ? '상대 변화 · 첫 관측=100' : '일별 가격 · USD'}</text>
           ${grid}
           <line x1="${margin.left}" x2="${width - margin.right}" y1="${height - margin.bottom}" y2="${height - margin.bottom}" stroke="#3b4556"/>
           <line x1="${margin.left}" x2="${margin.left}" y1="${margin.top}" y2="${height - margin.bottom}" stroke="#3b4556"/>
-          ${xTicks}${paths}
+          ${xTicks}
+          <line class="dram-selection-guide" x1="${margin.left}" x2="${margin.left}" y1="${margin.top}" y2="${height - margin.bottom}" hidden/>
+          ${paths}
         </svg>
       </div>
-      <p class="chart-keyboard-readout dram-chart-readout" aria-live="polite">${escapeHtml(initialReadout)} <span>· 방향키: 날짜/제품</span></p>
-      <div class="chart-legend dram-legend">${legend}</div>
+      <p class="dram-chart-help">선·점·범례에서 미리보기 · 클릭/탭으로 고정 · Esc로 해제</p>
     </article>`;
   }
 
@@ -4236,6 +4422,7 @@
       normalizeChartSeries,
       isValidChartPoint,
       buildDramAxisTicks,
+      renderDramSourceChart,
       buildEtfPercentAxisTicks,
       formatKellyHeadlineMetric,
       configuredSupabaseMetadata,
