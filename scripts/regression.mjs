@@ -211,7 +211,7 @@ assert(validKelly.state === 'unavailable' && validKelly.assetCount === 50 && val
 assert(validKelly.fullKelly === null && validKelly.expectedLogGrowth === null, 'Kelly parser does not synthesize unavailable calculation values');
 assert(api.formatKellyHeadlineMetric({ value: 1.5, unit: 'fraction' }) === '150%', 'Kelly fraction metric formats allocation without losing leverage');
 assert(api.formatKellyHeadlineMetric({ value: 6.5, unit: 'percent' }) === '6.5%', 'Kelly percent metric is not multiplied by 100');
-const kellyRecord = { project: { id: 'kelly' }, summary: validKelly, mode: 'live', generatedAt: validKelly.generatedAt, dataAsOf: '' };
+const kellyRecord = { project: { id: 'kelly' }, summary: validKelly, mode: 'live', generatedAt: new Date().toISOString(), dataAsOf: '' };
 assert(api.healthTone(kellyRecord) === 'warn' && api.healthLabel(kellyRecord) === '산출 불가', 'Kelly unavailable contract renders as warning rather than healthy green');
 const kellyBriefing = api.briefingItemForRecord(kellyRecord);
 assert(kellyBriefing.tone === 'warning' && /0\/50개/.test(kellyBriefing.title) && /직접 가정 계산/.test(kellyBriefing.detail), 'Kelly briefing separates public market coverage from usable direct-input calculations');
