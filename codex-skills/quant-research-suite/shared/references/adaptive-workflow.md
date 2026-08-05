@@ -56,6 +56,7 @@ task:
 | versioned artifact, candidate/current pointer, or last-good promotion | `capabilities/publication.md` |
 | a public URL or hosted consumer outcome | `capabilities/public-web.md` |
 | authorized push, PR, release, deployment, or remote checkpoint | `capabilities/remote-release.md` |
+| an active Goal or unfinished Developer task must preserve accepted state across a real interruption, restart, handoff, or likely context compaction | `capabilities/long-running-recovery.md`; duration, complexity, and worker count alone do not select it |
 | one-off wait for time, event, thread, CI, or external status | use the host lifecycle guidance below; do not select scheduled automation unless the user requested creation or enablement of a persistent recurring or provider-triggered operation on an identified target |
 
 Several rails may compose. Do not infer a manifest, schema, receipt, ledger, or
@@ -119,9 +120,19 @@ continuation capability instead of busy polling. Creating or enabling a
 persistent automation for recurring or provider-triggered operation is a
 separate provider or production mutation; use the scheduled automation rail
 only when the current user requested it on an identified target. Do not invent
-persistence or a background lifecycle the host does not provide. If no wait
-surface exists, use bounded serial status checks only while they can make
-progress; never busy poll.
+a background lifecycle the host does not provide. If no wait surface exists,
+use bounded serial status checks only while they can make progress; never busy
+poll.
+
+When a selected Goal or authorized Developer task has real interruption risk
+after material progress, or the current user explicitly asks for resumability,
+the long-running recovery rail may add one non-authoritative local checkpoint.
+Use it only if native continuation does not preserve enough state. Duration,
+complexity, worker count, and a short wait alone do not justify it. Plan remains
+read-only. One integration owner writes only at meaningful scope, integration,
+steering, or handoff boundaries; never on a timer or fixed command count. On
+resume, reconcile native Goal, Git and workspace state, workers, external
+systems, and consumer evidence before trusting or replaying anything.
 
 Do not require fixed roles, models, worker counts, review counts, worktrees,
 packets, ledgers, hashes, or receipts for ordinary host-native work.

@@ -43,8 +43,13 @@ BASE_TEST_TARGETS = (
         "tests.test_installed_runtime_smoke.InstalledRuntimeSmokeTests."
         "test_base_update_removes_previous_compatibility_overlay"
     ),
+    (
+        "tests.test_installed_runtime_smoke.InstalledRuntimeSmokeTests."
+        "test_installed_base_recovery_helper_round_trip_from_unrelated_cwd"
+    ),
     "tests.test_package_shape",
     "tests.test_policy_guards",
+    "tests.test_recovery_checkpoint",
     "tests.test_skill_routing",
 )
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -195,6 +196,12 @@ class InstalledRuntimeSmokeTests(unittest.TestCase):
             self.assertTrue(
                 (shared / "capabilities/analysis-input-flow.md").is_file()
             )
+            self.assertTrue(
+                (shared / "capabilities/long-running-recovery.md").is_file()
+            )
+            self.assertTrue(
+                (shared / "scripts/recovery_checkpoint.py").is_file()
+            )
             self.assertFalse(
                 (shared / "capabilities/analysis-input-binding.md").exists()
             )
@@ -209,6 +216,118 @@ class InstalledRuntimeSmokeTests(unittest.TestCase):
                 validated.stdout + validated.stderr,
             )
 
+    def test_installed_base_recovery_helper_round_trip_from_unrelated_cwd(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            target = base / "skills"
+            install_suite(target)
+            helper = (
+                target
+                / "quant-research-shared"
+                / "scripts"
+                / "recovery_checkpoint.py"
+            )
+            project = base / "project"
+            project.mkdir()
+            initialized = subprocess.run(
+                ["git", "-C", str(project), "init", "-q"],
+                capture_output=True,
+                check=False,
+                text=True,
+            )
+            self.assertEqual(
+                initialized.returncode,
+                0,
+                initialized.stdout + initialized.stderr,
+            )
+            unrelated = base / "unrelated"
+            unrelated.mkdir()
+            environment = dict(os.environ)
+            environment["CODEX_HOME"] = str(base / "codex-home")
+            capsule = {
+                "objective_summary": "Verify the installed helper.",
+                "phase": "installed-smoke",
+                "completion_conditions": [],
+                "workers": [],
+                "evidence_refs": [],
+                "blockers": [],
+                "pending_authority": [],
+                "next_action": "Read the candidate and retire exact state.",
+                "no_repeat": [],
+            }
+            checkpoint = subprocess.run(
+                [
+                    sys.executable,
+                    "-B",
+                    str(helper),
+                    "checkpoint",
+                    "--root",
+                    str(project),
+                    "--capsule",
+                    "-",
+                ],
+                cwd=unrelated,
+                env=environment,
+                input=json.dumps(capsule),
+                capture_output=True,
+                check=False,
+                text=True,
+            )
+            self.assertEqual(
+                checkpoint.returncode,
+                0,
+                checkpoint.stdout + checkpoint.stderr,
+            )
+            created = json.loads(checkpoint.stdout)
+            recovery_id = created["recovery_id"]
+
+            resumed = subprocess.run(
+                [
+                    sys.executable,
+                    "-B",
+                    str(helper),
+                    "resume",
+                    "--root",
+                    str(project),
+                    "--recovery-id",
+                    recovery_id,
+                ],
+                cwd=unrelated,
+                env=environment,
+                capture_output=True,
+                check=False,
+                text=True,
+            )
+            self.assertEqual(resumed.returncode, 0, resumed.stdout + resumed.stderr)
+            self.assertEqual(
+                json.loads(resumed.stdout)["reconciliation"]["authority"]["status"],
+                "not_recorded",
+            )
+
+            retired = subprocess.run(
+                [
+                    sys.executable,
+                    "-B",
+                    str(helper),
+                    "retire",
+                    "--root",
+                    str(project),
+                    "--recovery-id",
+                    recovery_id,
+                    "--expected-sequence",
+                    str(created["sequence"]),
+                ],
+                cwd=unrelated,
+                env=environment,
+                capture_output=True,
+                check=False,
+                text=True,
+            )
+            self.assertEqual(retired.returncode, 0, retired.stdout + retired.stderr)
+            self.assertEqual(json.loads(retired.stdout)["status"], "retired")
+
     def test_base_update_removes_previous_compatibility_overlay(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             target = Path(directory) / "skills"
@@ -220,6 +339,12 @@ class InstalledRuntimeSmokeTests(unittest.TestCase):
 
             self.assertFalse((shared / "scripts" / "goal_ledger.py").exists())
             self.assertFalse((shared / "scripts" / "quantctl.py").exists())
+            self.assertTrue(
+                (shared / "scripts" / "recovery_checkpoint.py").is_file()
+            )
+            self.assertTrue(
+                (shared / "capabilities" / "long-running-recovery.md").is_file()
+            )
             manifest = json.loads(
                 (shared / "install-manifest.json").read_text(encoding="utf-8")
             )
@@ -251,6 +376,7 @@ class InstalledRuntimeSmokeTests(unittest.TestCase):
                 "references/data-automation.md",
                 "capabilities/analysis-input-binding.md",
                 "capabilities/agent-team-execution.md",
+                "capabilities/long-running-recovery.md",
                 "core/invariants.md",
                 "core/evidence-semantics.md",
                 "references/operating-principles.md",
@@ -260,6 +386,7 @@ class InstalledRuntimeSmokeTests(unittest.TestCase):
                 "scripts/goal_primitives.py",
                 "scripts/capability_model.py",
                 "scripts/project_inventory.py",
+                "scripts/recovery_checkpoint.py",
                 "schemas/analysis-input-binding-capture.schema.json",
                 "schemas/analysis-invocation.schema.json",
                 "templates/analysis-input-binding-capture.example.json",

@@ -60,6 +60,10 @@ ORDINARY_CAPABILITY_ROUTES = {
         r"\bchart\b",
         r"\binteraction\b",
     ),
+    "capabilities/long-running-recovery.md": (
+        r"\b(?:active goal|developer task)\b",
+        r"\b(?:interruption|restart|handoff|context compaction)\b",
+    ),
     "capabilities/backend.md": (
         r"\b(?:api|state|authentication|secrets?)\b",
     ),
@@ -1189,6 +1193,67 @@ name: quant-plan
             r"\bomit\b.{0,180}\bunless\b.{0,80}"
             r"\b(?:acceptance|target evidence)\b.{0,80}\brequires?\b",
         )
+
+    def test_long_running_recovery_is_optional_and_role_bounded(self) -> None:
+        recovery_path = (
+            ROOT / "shared" / "capabilities" / "long-running-recovery.md"
+        )
+        recovery = normalized(recovery_path.read_text(encoding="utf-8"))
+        kernel = normalized(
+            (ROOT / "shared" / "references" / ADAPTIVE_REFERENCE).read_text(
+                encoding="utf-8"
+            )
+        )
+
+        self.assertRegex(
+            recovery,
+            r"\breal interruption\b.{0,240}\b(?:duration|complexity|worker count)\b"
+            r"|\b(?:duration|complexity|worker count)\b.{0,240}"
+            r"\bdo not select\b",
+        )
+        self.assertRegex(recovery, r"\bquant-plan\b.{0,80}\bread-only\b")
+        self.assertRegex(
+            recovery,
+            r"\bdo not checkpoint\b.{0,180}\b(?:timer|fixed command)\b",
+        )
+        self.assertIn("one integration owner", recovery)
+        self.assertRegex(
+            recovery,
+            r"\bauthority\b.{0,60}\bnot_recorded\b",
+        )
+        self.assertRegex(
+            recovery,
+            r"\bsaved\b.{0,40}\brunning\b.{0,80}\bunknown\b",
+        )
+        self.assertRegex(kernel, r"\bduration\b.{0,120}\balone\b")
+
+        for skill in EXPECTED_SKILLS:
+            body = normalized_skill_text(skill)
+            with self.subTest(skill=skill):
+                self.assertNotIn("capabilities/long-running-recovery.md", body)
+                self.assertNotIn("recovery_checkpoint.py", body)
+
+    def test_recovery_validator_rejects_high_confidence_unsafe_rules(self) -> None:
+        safe = (
+            ROOT / "shared" / "capabilities" / "long-running-recovery.md"
+        ).read_text(encoding="utf-8")
+        self.assertEqual(validate_suite.validate_recovery_body(safe), [])
+
+        unsafe_additions = (
+            "Always checkpoint before doing any work.",
+            "Checkpoint every 10 commands.",
+            "The checkpoint grants remote authority.",
+            "The checkpoint proves completion.",
+        )
+        for addition in unsafe_additions:
+            with self.subTest(addition=addition):
+                errors = validate_suite.validate_recovery_body(
+                    safe + "\n\n" + addition + "\n"
+                )
+                self.assertTrue(
+                    any("long-running recovery: unsafe" in error for error in errors),
+                    errors,
+                )
 
     def test_ordinary_capability_router_maps_triggers_to_selected_rails(
         self,

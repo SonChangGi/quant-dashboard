@@ -55,6 +55,14 @@ class PackageShapeValidationTests(unittest.TestCase):
             "scripts/validate_installed.py",
             suite_installer.BASE_SHARED_FILES,
         )
+        self.assertIn(
+            "scripts/recovery_checkpoint.py",
+            suite_installer.BASE_SHARED_FILES,
+        )
+        self.assertIn(
+            "capabilities/long-running-recovery.md",
+            suite_installer.BASE_SHARED_FILES,
+        )
         self.assertNotIn(
             "scripts/goal_ledger.py",
             suite_installer.BASE_SHARED_FILES,

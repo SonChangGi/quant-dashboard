@@ -26,16 +26,20 @@ external-status dependency, or a matching rail could materially change the
 approach, authority, failure handling, or proof. Its table is the single
 ordinary-path router for analysis, external data, analysis-input flow, UI and
 charts, backend boundaries, automation, publication, public web, remote release,
-and host lifecycle guidance. A familiar single-surface task may stay in its
-public skill when target-native instructions and checks settle those concerns.
+optional interruption recovery, and host lifecycle guidance. A familiar
+single-surface task may stay in its public skill when target-native instructions
+and checks settle those concerns.
 
 Public skills state only the generic safe-skip rule and a pointer to the
 kernel. The kernel table owns the concrete trigger mapping; do not copy its
 rows into each role or turn them into a fixed checklist.
 
-Do not auto-load a manifest, schema, receipt, ledger, validator, durable
+Do not auto-load a manifest, schema, receipt, ledger, validator, legacy durable
 runtime, or the entire shared tree. Missing optional guidance does not block a
-narrow public-skill workflow.
+narrow public-skill workflow. The base profile's optional lightweight recovery
+rail is separate from that legacy runtime: load it only through the kernel's
+real-interruption trigger, never for duration, complexity, or worker count
+alone.
 
 Resolve `<quant-shared-root>` from the active skill location, never the current
 working directory:

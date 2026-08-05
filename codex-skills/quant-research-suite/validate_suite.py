@@ -47,6 +47,7 @@ has_goal_scope_steering_contract = INSTALLED_VALIDATOR[
     "has_goal_scope_steering_contract"
 ]
 validate_kernel_body = INSTALLED_VALIDATOR["validate_kernel_body"]
+validate_recovery_body = INSTALLED_VALIDATOR["validate_recovery_body"]
 has_unsafe_local_scm_authority_expansion = INSTALLED_VALIDATOR[
     "has_unsafe_local_scm_authority_expansion"
 ]
@@ -97,12 +98,14 @@ REQUIRED_SOURCE_FILES = frozenset(
         "shared/capabilities/analysis-input-binding.md",
         "shared/capabilities/web-ui.md",
         "shared/capabilities/interactive-chart.md",
+        "shared/capabilities/long-running-recovery.md",
         "shared/capabilities/backend.md",
         "shared/capabilities/scheduled-automation.md",
         "shared/capabilities/publication.md",
         "shared/capabilities/public-web.md",
         "shared/capabilities/remote-release.md",
         "shared/scripts/validate_installed.py",
+        "shared/scripts/recovery_checkpoint.py",
         # Compatibility payload remains versioned in source.
         "shared/scripts/goal_ledger.py",
         "shared/scripts/goal_runtime.py",
@@ -890,6 +893,9 @@ def _validate_kernel(text: str) -> list[str]:
         "publication rail": ("`capabilities/publication.md`",),
         "public rail": ("`capabilities/public-web.md`",),
         "repository-mutation rail": ("`capabilities/repo-mutation.md`",),
+        "interruption-recovery rail": (
+            "`capabilities/long-running-recovery.md`",
+        ),
         "ordinary data automation": (
             "compose the external-data, scheduled-automation, publication, "
             "and public-web rails",
@@ -1004,6 +1010,9 @@ def _validate_router(text: str) -> list[str]:
         ),
         "missing child boundary": (
             "missing child makes only that compatibility path unavailable",
+        ),
+        "light recovery is not legacy runtime": (
+            "lightweight recovery rail is separate from that legacy runtime",
         ),
     }
     return [
@@ -1258,6 +1267,7 @@ def validate() -> list[str]:
     external_data = shared / "capabilities/external-data.md"
     input_flow = shared / "capabilities/analysis-input-flow.md"
     input_binding = shared / "capabilities/analysis-input-binding.md"
+    recovery = shared / "capabilities/long-running-recovery.md"
     if kernel.is_file():
         errors.extend(_validate_kernel(kernel.read_text(encoding="utf-8")))
     if authority.is_file():
@@ -1292,6 +1302,10 @@ def validate() -> list[str]:
             _validate_analysis_input_binding(
                 input_binding.read_text(encoding="utf-8")
             )
+        )
+    if recovery.is_file():
+        errors.extend(
+            validate_recovery_body(recovery.read_text(encoding="utf-8"))
         )
     for relative in ORDINARY_CAPABILITY_FILES:
         path = shared / "capabilities" / relative
