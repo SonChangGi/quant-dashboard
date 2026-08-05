@@ -41,6 +41,7 @@ try {
   if (!app.includes('https://sonchanggi.github.io/kelly/data/summary.json')) throw new Error('Kelly public summary endpoint missing');
   if (!app.includes('renderEtfDetailCards') || !app.includes('renderEtfMiniChart')) throw new Error('ETF Tracking detail card/chart renderer missing');
   if (!app.includes('momentumDashboard') || !app.includes('buildDramAxisTicks') || !app.includes('buildEtfPercentAxisTicks')) throw new Error('dashboard readability improvements missing');
+  if (!app.includes('renderDramSourceChart') || !app.includes('data-dram-scale="indexed"') || app.includes('dram-value-layer')) throw new Error('DRAM chart collision fix missing');
   if (!html.includes('id="top-nav"')) throw new Error('dynamic top navigation mount missing');
   if (!html.includes('id="summary-grid"')) throw new Error('dynamic dashboard mount missing');
   if (!html.includes('id="research-briefing"') || !html.includes('id="data-health"')) throw new Error('research cockpit mounts missing');

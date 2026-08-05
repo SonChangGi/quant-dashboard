@@ -162,6 +162,9 @@ assert(!contains(files.app, 'FALLBACK_SNAPSHOT.momentum'), 'momentum consumer ne
 assert(contains(files.app, 'parseDram'), 'DRAM parser exists');
 assert(contains(files.app, 'renderDramChart'), 'DRAM SVG chart renderer exists');
 assert(contains(files.app, 'buildDramAxisTicks'), 'DRAM chart uses clean integer y-axis ticks');
+assert(contains(files.app, 'renderDramSourceChart') && contains(files.app, 'data-dram-scale="indexed"'), 'DRAM chart offers a display-only indexed comparison while preserving USD view');
+assert(contains(files.app, 'pointerPreview: true') && contains(files.app, 'dram-selection-guide'), 'DRAM chart coordinates pointer, keyboard, and single-date selection feedback');
+assert(!contains(files.app, 'dram-value-layer') && !contains(files.app, 'dram-value-label'), 'DRAM chart does not overlay every observation value on the plot');
 assert(contains(files.app, 'TrendForce daily'), 'DRAM chart prioritizes saved TrendForce daily prices');
 assert(contains(files.app, 'D램 가격'), 'Korean D램 price label exists');
 assert(contains(files.app, 'isValidChartPoint'), 'DRAM chart validates date/value points');
@@ -204,6 +207,8 @@ assert(
 );
 assert(contains(files.css, '.etf-detail-grid'), 'ETF Tracking detail grid CSS exists');
 assert(contains(files.css, '.etf-top10-list'), 'ETF Tracking TOP10 list CSS exists');
+assert(contains(files.css, '.dram-scale-control') && contains(files.css, '.dram-legend-button'), 'DRAM display controls and series buttons use dashboard-native styles');
+assert(!contains(files.css, '.dram-value-layer') && !contains(files.css, '.dram-value-label'), 'DRAM CSS contains no all-point value-label reveal behavior');
 assert(
   contains(files.css, '.panel--momentum :is(th, td):nth-child(3)')
     && contains(files.css, '.panel--sox :is(th, td):nth-child(6)')
