@@ -22,11 +22,12 @@ from .base import NormalizedAnalysisInputs, ProjectRequestError
 
 PROJECT_ID = "momentum"
 PROJECT_NAME = "Momentum Factor Lab"
-INPUT_SCHEMA_VERSION = "momentum/v2"
-INPUT_SCHEMA_HASH = "a2240581098f496fc555edac9d4b0e342eee6221a87e046a47f51ee7f6a4e81e"
+INPUT_SCHEMA_VERSION = "momentum/v3"
+INPUT_SCHEMA_HASH = "7a135e791a3269486b540c9ab02ca712077558598cc08982ba57113cff816327"
 CONFIG_HASH_ALGORITHM = "momentum-research-inputs-rfc8785-v1"
 RESULT_CONTRACT_VERSION = "momentum/schema-v5-control-result-v1"
 LEGACY_INPUT_SCHEMA_VERSION = "momentum/v1"
+PREVIOUS_INPUT_SCHEMA_VERSION = "momentum/v2"
 STATIC_FALLBACK_URL = "https://sonchanggi.github.io/momentum-factor-lab/data/dashboard.json"
 CODE_VERSION_PATTERN = re.compile(
     r"^github:SonChangGi/momentum-factor-lab@[0-9a-f]{40}$"
@@ -130,7 +131,7 @@ INPUT_FIELDS = [
     _field(
         "evaluationWindowDays",
         "integer",
-        minimum=252,
+        minimum=21,
         maximum=2520,
         unit="sessions",
     ),
@@ -224,8 +225,8 @@ def normalize_inputs(inputs: dict[str, Any]) -> NormalizedAnalysisInputs:
             raise TypeError(f"{key} must be an integer")
     if normalized["rebalanceFrequency"] not in {"W", "ME", "QE"}:
         raise ValueError("rebalanceFrequency must be W, ME, or QE")
-    if not 252 <= normalized["evaluationWindowDays"] <= 2520:
-        raise ValueError("evaluationWindowDays must be between 252 and 2520")
+    if not 21 <= normalized["evaluationWindowDays"] <= 2520:
+        raise ValueError("evaluationWindowDays must be between 21 and 2520")
     if not 1 <= normalized["topN"] <= 50:
         raise ValueError("topN must be between 1 and 50")
     if not 0 < normalized["maxWeight"] <= 1:
@@ -290,11 +291,14 @@ def _evaluation_window_days(
     *,
     input_schema_version: str,
 ) -> int:
-    if input_schema_version == INPUT_SCHEMA_VERSION:
+    if input_schema_version in {
+        INPUT_SCHEMA_VERSION,
+        PREVIOUS_INPUT_SCHEMA_VERSION,
+    }:
         value = normalized.get("evaluationWindowDays")
         if not isinstance(value, int) or isinstance(value, bool):
             raise ValueError(
-                "Momentum v2 normalized inputs have no integer evaluationWindowDays"
+                "Momentum normalized inputs have no integer evaluationWindowDays"
             )
         return value
     if input_schema_version == LEGACY_INPUT_SCHEMA_VERSION:
@@ -314,7 +318,10 @@ def _research_inputs_for_schema(
     *,
     input_schema_version: str,
 ) -> dict[str, Any]:
-    if input_schema_version == INPUT_SCHEMA_VERSION:
+    if input_schema_version in {
+        INPUT_SCHEMA_VERSION,
+        PREVIOUS_INPUT_SCHEMA_VERSION,
+    }:
         return {
             "version": "research-inputs-v2",
             **normalized,
@@ -581,6 +588,11 @@ class MomentumAdapter:
                         252,
                         evaluation_window_days - 252,
                     )
+                    if record.input_schema_version == INPUT_SCHEMA_VERSION:
+                        minimum_evaluation_observations = min(
+                            evaluation_window_days,
+                            minimum_evaluation_observations,
+                        )
                     expected_engine_inputs = {
                         "rebalance_frequency": record.normalized_inputs[
                             "rebalanceFrequency"
