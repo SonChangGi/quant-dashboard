@@ -922,10 +922,6 @@ h3 {
 .summary-grid > .panel {
   grid-column: 1 / -1;
 }
-.summary-grid > .panel--port,
-.summary-grid > .panel--kelly {
-  grid-column: span 6;
-}
 .metric-row {
   gap: 8px;
   margin-bottom: 12px;

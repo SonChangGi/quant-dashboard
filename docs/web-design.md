@@ -46,7 +46,7 @@
 ### 0.2 여섯 사이트가 서로 다를 때
 
 - 3개 이상에서 반복되고 분석 의미와 충돌하지 않는 패턴은 공통 기본값으로 채택한다.
-- 단, 9개 메뉴·theme·입력 상태·결과 binding처럼 이 문서가 명시한 canonical contract는 기존 구현의 다수결이 아니라 **모든 페이지가 이동할 목표 규칙**이다.
+- 단, 8개 메뉴·theme·입력 상태·결과 binding처럼 이 문서가 명시한 canonical contract는 기존 구현의 다수결이 아니라 **모든 페이지가 이동할 목표 규칙**이다.
 - 프로젝트 분석 의미 때문에 필요한 차이는 허용된 variant로 기록한다.
 - 단순히 과거 구현이 달랐다는 이유로 새 variant를 만들지 않는다.
 - 한 사이트를 통째로 복사하지 않는다. **여섯 사이트의 공통 문법**을 사용한다.
@@ -196,7 +196,7 @@ control
 ```text
 packages/
   ui/          token과 프로젝트가 소유하는 재사용 primitive
-  shell/       9개 메뉴, theme, page header, status, disclosure
+  shell/       8개 메뉴, theme, page header, status, disclosure
   charts/      frame, plot 밖 readout, 날짜·계열 선택 primitive
   contracts/   Zod 기반 control registry, run/result envelope
   data-client/ 정적 snapshot과 API result adapter
@@ -234,7 +234,7 @@ Quant Research 제품군은 다음처럼 보여야 한다.
 
 기본 순서는 다음과 같다.
 
-1. 9개 공통 메뉴와 현재 페이지
+1. 8개 공통 메뉴와 현재 페이지
 2. 페이지 정체성, 운영 상태, 데이터 기준일
 3. 결론·신호·최신 대표값
 4. 3~5개의 핵심 지표
@@ -273,7 +273,7 @@ Quant Research 제품군은 다음처럼 보여야 한다.
 
 프로젝트에 없는 날짜 역할을 새로 만들지 않는다.
 
-## 4. 9개 공통 메뉴
+## 4. 8개 공통 메뉴
 
 아래 registry의 label·순서·URL은 모든 사이트에서 동일해야 한다.
 
@@ -287,7 +287,6 @@ Quant Research 제품군은 다음처럼 보여야 한다.
 | 6 | ETF | `https://sonchanggi.github.io/etf-tracking/` |
 | 7 | SOX | `https://sonchanggi.github.io/sox/` |
 | 8 | Port | `https://sonchanggi.github.io/port/` |
-| 9 | Kelly | `https://sonchanggi.github.io/kelly/` |
 
 ### 4.1 Canonical navigation
 
@@ -306,7 +305,7 @@ Quant Research 제품군은 다음처럼 보여야 한다.
 - 별도 gradient `Q` mark 같은 프로젝트별 장식은 공통 nav에서 사용하지 않음
 - theme control은 sun/moon icon의 `44×44px` button으로 통일하고 `aria-pressed`와 `라이트 모드로 전환`·`다크 모드로 전환` 동적 label을 제공
 
-`760px` 이하에서는 brand와 theme control을 첫 행에 유지하고, 9개 링크를 두 번째 행의 **메뉴 자체 horizontal rail**로 제공한다. 링크를 문서 밖으로 넘기거나 일부만 숨기지 않는다.
+`760px` 이하에서는 brand와 theme control을 첫 행에 유지하고, 8개 링크를 두 번째 행의 **메뉴 자체 horizontal rail**로 제공한다. 링크를 문서 밖으로 넘기거나 일부만 숨기지 않는다.
 
 각 저장소는 메뉴를 자체 구현할 수 있지만 위 registry를 그대로 사용한다. 다른 저장소의 runtime CSS·JavaScript를 외부 import하지 않는다.
 
@@ -637,7 +636,7 @@ DRAM처럼 단순 관측 목록은 모바일 카드로 바꿀 수 있다. 사건
 2. 기존 worktree의 사용자 변경을 확인하고 최신 main 기반 전용 branch/worktree를 사용한다.
 3. 수정 금지 파일·함수·schema·결과 snapshot을 먼저 기록한다.
 4. 공개 화면과 source에서 다음 inventory를 만든다.
-   - 9개 메뉴
+   - 8개 메뉴
    - 모든 control의 id·`control_kind`·기본값 출처·validation·serialization
    - `analysis` control의 API/workflow/CLI·Python parameter·result binding·no-op 조건
    - visible copy와 중복
@@ -697,7 +696,7 @@ DRAM처럼 단순 관측 목록은 모바일 카드로 바꿀 수 있다. 사건
 
 ### 15.3 디자인
 
-- 9개 메뉴 label·순서·URL 동일
+- 8개 메뉴 label·순서·URL 동일
 - 공통 상단 메뉴 안에서 `aria-current="page"` 정확히 1개
 - body `15px/1.55` 중심의 compact hierarchy
 - 불필요한 `800+` weight 반복 없음
@@ -798,7 +797,7 @@ https://sonchanggi.github.io/quant-dashboard/docs/web-design.md
 1. 최신 origin/main, worktree, 공개 화면, 데이터 계약을 읽기 전용으로 감사해.
 2. 수정 금지 파일·함수와 현재 결과 snapshot을 먼저 고정해.
 3. 모든 visible control의 mode, 기본값 출처, validation, serialization, 실제 분석 mapping inventory를 만들어.
-4. 9개 메뉴, visible copy, typography, spacing, token, chart, table, overflow inventory를 만들어.
+4. 8개 메뉴, visible copy, typography, spacing, token, chart, table, overflow inventory를 만들어.
 5. 현재 프로젝트의 좋은 디자인은 보존하고 6개 기준 사이트와 다른 drift만 수정해.
 6. 결과→기준일·핵심 지표→핵심 차트→입력→표·운영 상세 순서로 정리해.
 7. 반복 설명, Python·JSON·재계산 구현 문구를 지우고 일반 운영 정보는 운영 상세 한 곳으로 통합해. 결과 해석에 필요한 도메인 방법론은 별도 접힘 영역으로 보존해.

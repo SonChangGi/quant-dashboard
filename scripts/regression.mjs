@@ -16,25 +16,23 @@ const assert = (condition, label) => checks.push({ ok: Boolean(condition), label
 const fallbackFor = (parsed, hasUsableData, reason) => api.resolveLoadState({ ok: true, data: {} }, hasUsableData, reason);
 
 assert(api, 'test API exposed without browser DOM');
-const degradedOperationalFindings = operationalFindingsFor('kelly', {
+const degradedOperationalFindings = operationalFindingsFor('port', {
   state: 'degraded',
-  reasonCodes: ['yahoo_public_display_rights_unconfirmed'],
   meta: {
     statusState: 'degraded',
-    degradedReasons: ['stooq_html_challenge'],
+    degradedReasons: ['provider_unavailable'],
   },
 });
 assert(
   degradedOperationalFindings.some((finding) => /upstream state is degraded/.test(finding.message))
-    && degradedOperationalFindings.some((finding) => /stooq_html_challenge/.test(finding.message))
-    && degradedOperationalFindings.some((finding) => /yahoo_public_display_rights_unconfirmed/.test(finding.message)),
-  'public health reports degraded upstream state and Kelly reason codes',
+    && degradedOperationalFindings.some((finding) => /provider_unavailable/.test(finding.message)),
+  'public health reports degraded upstream state and provider reasons',
 );
 assert(
-  transportEscalation(['kelly'], 8) === null,
+  transportEscalation(['port'], 7) === null,
   'one transient transport outage remains a soft observation warning',
 );
-const broadTransportFailure = transportEscalation(['kelly', 'etf'], 8);
+const broadTransportFailure = transportEscalation(['port', 'etf'], 7);
 assert(
   TRANSPORT_HARD_FAILURE_PROJECT_THRESHOLD === 2
     && broadTransportFailure?.severity === 'hard'
@@ -43,7 +41,7 @@ assert(
 );
 assert(
   api.PROJECTS.map((project) => project.shortName).join('|')
-    === 'Fear & Greed|Momentum|DRAM|Best Factor|ETF|SOX|Port|Kelly',
+    === 'Fear & Greed|Momentum|DRAM|Best Factor|ETF|SOX|Port',
   'project manifest preserves the canonical navigation order after Hub',
 );
 assert(
@@ -55,7 +53,6 @@ assert(
     etf: 'etf',
     sox: 'sox',
     port: 'port',
-    kelly: 'kelly',
   }),
   'Hub maps public summary ids to canonical platform project identities',
 );
@@ -161,126 +158,6 @@ assert(validFearAndGreed.entities[0].themes.includes('Flow') && validFearAndGree
 assert(fearAdapter.hasUsableData(validFearAndGreed), 'Fear & Greed adapter accepts a dated KOSPI summary');
 const unavailableFear = fearAdapter.fallback();
 assert(unavailableFear.unavailable === true && unavailableFear.rows.length === 0 && unavailableFear.dataAsOf === '', 'Fear & Greed fetch failure exposes unavailable without hardcoded market values');
-
-const validKellyPayload = {
-  schemaVersion: 1,
-  contract: 'quant-research-summary',
-  projectId: 'kelly',
-  title: 'Kelly Allocation Lab',
-  state: 'unavailable',
-  generatedAt: '2026-07-21T14:27:11Z',
-  dataAsOf: null,
-  status: {
-    state: 'unavailable',
-    label: '시장 데이터 연결 전',
-    message: '공급자 권한과 서버 측 비밀키가 확인된 데이터만 게시합니다.',
-    expectedFreshnessDays: 10,
-  },
-  coverage: { assetCount: 50, availableAssetCount: 0, frequency: 'daily' },
-  freshness: {
-    maxAgeDays: 10,
-    evaluatedAt: '2026-07-21',
-    cutoffDate: '2026-07-11',
-    minDataAsOf: null,
-    maxDataAsOf: null,
-    freshAssetCount: 0,
-    staleAssetCount: 0,
-    latestAssetCount: 0,
-    unavailableAssetCount: 50,
-  },
-  reasonCodes: ['yahoo_public_display_rights_unconfirmed'],
-  primaryEntities: [{
-    id: 'kelly-allocation-lab',
-    name: 'Kelly Allocation Lab',
-    state: 'unavailable',
-    headlineMetrics: [
-      { id: 'full-kelly', label: '풀 켈리 비중', value: null, unit: 'fraction', state: 'unavailable' },
-      { id: 'expected-log-growth', label: '기대 연 로그성장률', value: null, unit: 'percent', state: 'unavailable' },
-    ],
-  }],
-  limitations: [
-    '정적 요약에는 검증된 시장 관측값이 아직 포함되지 않았습니다.',
-    '계산기는 사용자가 직접 입력한 가정과 실데이터 결과를 명확히 구분해야 합니다.',
-  ],
-};
-const kellyAdapter = api.PANEL_ADAPTERS.kelly;
-const validKelly = api.parseKelly(validKellyPayload);
-assert(!api.validateAdapterContract(kellyAdapter, { summary: validKellyPayload }), 'Kelly contract accepts the published project identity and schema');
-assert(kellyAdapter.hasUsableData(validKelly), 'Kelly contract-valid unavailable state remains a live public contract');
-assert(validKelly.state === 'unavailable' && validKelly.assetCount === 50 && validKelly.availableAssetCount === 0, 'Kelly parser preserves honest unavailable 0/50 coverage');
-assert(validKelly.fullKelly === null && validKelly.expectedLogGrowth === null, 'Kelly parser does not synthesize unavailable calculation values');
-assert(api.formatKellyHeadlineMetric({ value: 1.5, unit: 'fraction' }) === '150%', 'Kelly fraction metric formats allocation without losing leverage');
-assert(api.formatKellyHeadlineMetric({ value: 6.5, unit: 'percent' }) === '6.5%', 'Kelly percent metric is not multiplied by 100');
-const kellyRecord = { project: { id: 'kelly' }, summary: validKelly, mode: 'live', generatedAt: new Date().toISOString(), dataAsOf: '' };
-assert(api.healthTone(kellyRecord) === 'warn' && api.healthLabel(kellyRecord) === '산출 불가', 'Kelly unavailable contract renders as warning rather than healthy green');
-const kellyBriefing = api.briefingItemForRecord(kellyRecord);
-assert(kellyBriefing.tone === 'warning' && /0\/50개/.test(kellyBriefing.title) && /직접 가정 계산/.test(kellyBriefing.detail), 'Kelly briefing separates public market coverage from usable direct-input calculations');
-const wrongKellyProject = { ...validKellyPayload, projectId: 'other-project' };
-assert(/projectId kelly/.test(api.validateAdapterContract(kellyAdapter, { summary: wrongKellyProject })), 'Kelly adapter rejects another project summary');
-const invalidKellyCoverage = api.parseKelly({ ...validKellyPayload, coverage: { assetCount: 50, availableAssetCount: 51, frequency: 'daily' } });
-assert(!invalidKellyCoverage.contractValid && !kellyAdapter.hasUsableData(invalidKellyCoverage), 'Kelly parser rejects coverage outside the fixed catalog');
-const invalidKellyFreshnessCoverage = api.parseKelly({
-  ...validKellyPayload,
-  state: 'degraded',
-  dataAsOf: '2026-07-20',
-  status: { ...validKellyPayload.status, state: 'degraded' },
-  coverage: { assetCount: 50, availableAssetCount: 2, frequency: 'daily' },
-  freshness: {
-    ...validKellyPayload.freshness,
-    minDataAsOf: '2026-07-20',
-    maxDataAsOf: '2026-07-20',
-    freshAssetCount: 1,
-    staleAssetCount: 0,
-    latestAssetCount: 2,
-    unavailableAssetCount: 49,
-  },
-  primaryEntities: [{
-    ...validKellyPayload.primaryEntities[0],
-    state: 'degraded',
-  }],
-});
-assert(!invalidKellyFreshnessCoverage.contractValid, 'Kelly parser rejects available/fresh/stale and latest-count aggregate drift');
-const unknownKellyState = api.parseKelly({
-  ...validKellyPayload,
-  state: 'mystery',
-  status: { ...validKellyPayload.status, state: 'mystery' },
-});
-assert(!unknownKellyState.contractValid && !kellyAdapter.hasUsableData(unknownKellyState), 'Kelly parser rejects unknown public states');
-const missingKellyEntity = api.parseKelly({ ...validKellyPayload, primaryEntities: [] });
-assert(!missingKellyEntity.contractValid && !kellyAdapter.hasUsableData(missingKellyEntity), 'Kelly parser fails closed when its research entity is missing');
-const missingKellyMetric = api.parseKelly({
-  ...validKellyPayload,
-  primaryEntities: [{ ...validKellyPayload.primaryEntities[0], headlineMetrics: [] }],
-});
-assert(!missingKellyMetric.contractValid && !kellyAdapter.hasUsableData(missingKellyMetric), 'Kelly parser fails closed when headline metrics are missing');
-const wrongKellyMetricUnit = api.parseKelly({
-  ...validKellyPayload,
-  primaryEntities: [{
-    ...validKellyPayload.primaryEntities[0],
-    headlineMetrics: validKellyPayload.primaryEntities[0].headlineMetrics.map((metric) => (
-      metric.id === 'expected-log-growth' ? { ...metric, unit: 'fraction' } : metric
-    )),
-  }],
-});
-assert(!wrongKellyMetricUnit.contractValid && !kellyAdapter.hasUsableData(wrongKellyMetricUnit), 'Kelly parser rejects headline metric unit drift');
-const fabricatedUnavailableKellyMetric = api.parseKelly({
-  ...validKellyPayload,
-  primaryEntities: [{
-    ...validKellyPayload.primaryEntities[0],
-    headlineMetrics: validKellyPayload.primaryEntities[0].headlineMetrics.map((metric) => (
-      metric.id === 'full-kelly' ? { ...metric, value: 1.5 } : metric
-    )),
-  }],
-});
-assert(!fabricatedUnavailableKellyMetric.contractValid && !kellyAdapter.hasUsableData(fabricatedUnavailableKellyMetric), 'Kelly unavailable contract rejects fabricated headline values');
-const unavailableKellyFallback = kellyAdapter.fallback();
-assert(
-  unavailableKellyFallback.unavailable === true
-    && unavailableKellyFallback.fullKelly === null
-    && unavailableKellyFallback.expectedLogGrowth === null
-    && unavailableKellyFallback.assetCount === null,
-  'Kelly network fallback carries no hardcoded catalog or calculation snapshot',
-);
 
 const malformedDram = api.parseDram({ observations: [{ product_name: 'Bad DRAM', date: 'not-a-date', values: { average: 1.23 } }] }, { series: [] }, { generated_at: '2026-06-10T00:00:00Z' });
 const dramState = fallbackFor(malformedDram, malformedDram.series.length > 0, 'DRAM payload did not contain usable dated price points.');
@@ -1804,9 +1681,8 @@ assert(
   'Port adapter fails closed when critical collection issues are present',
 );
 
-assert(Object.keys(api.PANEL_ADAPTERS).length === 8, 'panel adapter manifest has eight active public summary adapters including Port and Kelly');
+assert(Object.keys(api.PANEL_ADAPTERS).length === 7, 'panel adapter manifest has seven active public summary adapters including Port');
 assert(Object.keys(api.PANEL_ADAPTERS.port.sourceUrls).length === 1, 'Port adapter reads only its independent summary.json');
-assert(Object.keys(api.PANEL_ADAPTERS.kelly.sourceUrls).length === 1, 'Kelly adapter reads only its independent summary.json');
 
 const nullEntryMomentum = api.parseMomentum({
   ...momentumSummaryV4,
@@ -1913,13 +1789,12 @@ context.document = {
 };
 api.renderProjectNavigation();
 api.renderDashboardPanels();
-assert(domTargets['#top-nav'].children.length === 8, 'manifest renderer creates eight active project links including Kelly and Port');
-assert(domTargets['#summary-grid'].children.length === 8, 'manifest renderer creates eight public summary panels');
+assert(domTargets['#top-nav'].children.length === 7, 'manifest renderer creates seven active project links including Port');
+assert(domTargets['#summary-grid'].children.length === 7, 'manifest renderer creates seven public summary panels');
 assert(domTargets['#summary-grid'].children.every((child) => /열기/.test(child.innerHTML)), 'dashboard panel shells preserve project page links');
 assert(domTargets['#summary-grid'].children.some((child) => /포트폴리오 데이터/.test(child.innerHTML)), 'Port public summary panel appears in the central grid');
 assert(domTargets['#summary-grid'].children.some((child) => /panel-detail/.test(child.innerHTML)), 'ETF panel shell includes detail mount for TOP10 cards');
 assert(domTargets['#summary-grid'].children.some((child) => /SOX 구성종목/.test(child.innerHTML)), 'SOX panel shell appears in the central summary grid');
-assert(domTargets['#summary-grid'].children.some((child) => /Kelly 비중/.test(child.innerHTML)), 'Kelly panel shell appears in the central summary grid');
 api.renderEtfDetailCards('#etf-details', validEtf.rows);
 assert(/etf-detail-card/.test(domTargets['#etf-details'].innerHTML), 'ETF detail renderer creates per-ETF card markup');
 assert(/AAA/.test(domTargets['#etf-details'].innerHTML) && /BBB/.test(domTargets['#etf-details'].innerHTML), 'ETF detail renderer includes TOP10 holdings');
@@ -1952,18 +1827,6 @@ const momentumFreshnessFallbackRecord = {
 };
 assert(api.expectedFreshnessDays(momentumFreshnessFallbackRecord) === 5, 'Momentum receives a project-level freshness expectation when its custom contract omits one');
 assert(api.isRecordStale(momentumFreshnessFallbackRecord), 'project-level freshness defaults close the Momentum stale-data blind spot');
-const kellyRangeRecord = {
-  project: api.PROJECTS.find((project) => project.id === 'kelly'),
-  summary: {
-    ...validKelly,
-    minDataAsOf: '2026-07-10',
-    maxDataAsOf: '2026-07-28',
-    meta: { ...validKelly.meta, minDataAsOf: '2026-07-10', maxDataAsOf: '2026-07-28' },
-  },
-};
-assert(api.recordFreshnessDate(kellyRangeRecord) === '2026-07-10', 'Kelly health uses the oldest asset date rather than the maximum aggregate date');
-assert(/자산별 기준일/.test(api.recordFreshnessText(kellyRangeRecord)), 'Kelly health names its asset-level data date range');
-
 const records = [
   { project: api.PROJECTS.find((project) => project.id === 'momentum'), summary: validMomentum, mode: 'live', generatedAt: validMomentum.generatedAt, payloadBytes: 13000, sourceCount: 2 },
   { project: api.PROJECTS.find((project) => project.id === 'sox'), summary: validSox, mode: 'live', generatedAt: validSox.generatedAt, payloadBytes: 6000, sourceCount: 1 },

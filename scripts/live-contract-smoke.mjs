@@ -8,8 +8,7 @@ import {
 
 const MAX_PAYLOAD_BYTES = 8_000_000;
 const MAX_GENERATION_AGE_DAYS = 21;
-const REQUIRED_PROJECT_COUNT = 8;
-const KELLY_STATES = new Set(['published', 'live_api', 'stale', 'degraded', 'unavailable', 'ruin']);
+const REQUIRED_PROJECT_COUNT = 7;
 const reportPath = argumentValue('--report');
 
 const sandbox = { console };
@@ -122,43 +121,39 @@ for (const project of panelProjects) {
     `${project.id} has no expected freshness policy`,
   );
 
-  const unavailableContract = project.id === 'kelly'
-    && summary?.meta?.statusState === 'unavailable';
-  if (!unavailableContract) {
+  check(
+    project.id,
+    freshnessAgeDays !== null,
+    'contract',
+    `${project.id} has no parseable data freshness source`,
+  );
+  if (
+    summary?.meta?.dataAsOf
+    || summary?.meta?.minDataAsOf
+    || summary?.dataAsOf
+    || summary?.dataEndDate
+  ) {
     check(
       project.id,
-      freshnessAgeDays !== null,
+      freshnessSource !== summary?.generatedAt,
       'contract',
-      `${project.id} has no parseable data freshness source`,
+      `${project.id} freshness source incorrectly used generatedAt`,
     );
-    if (
-      summary?.meta?.dataAsOf
-      || summary?.meta?.minDataAsOf
-      || summary?.dataAsOf
-      || summary?.dataEndDate
-    ) {
-      check(
+  }
+  if (freshnessAgeDays !== null && expectedFreshnessDays !== null) {
+    check(
+      project.id,
+      freshnessAgeDays <= expectedFreshnessDays || staleBySource,
+      'contract',
+      `${project.id} stale data is not detected by Hub health logic`,
+    );
+    if (freshnessAgeDays > expectedFreshnessDays) {
+      addFinding(
         project.id,
-        freshnessSource !== summary?.generatedAt,
-        'contract',
-        `${project.id} freshness source incorrectly used generatedAt`,
+        'freshness',
+        'hard',
+        `${project.id} data is ${freshnessAgeDays.toFixed(1)} days old; expected <= ${expectedFreshnessDays} days`,
       );
-    }
-    if (freshnessAgeDays !== null && expectedFreshnessDays !== null) {
-      check(
-        project.id,
-        freshnessAgeDays <= expectedFreshnessDays || staleBySource,
-        'contract',
-        `${project.id} stale data is not detected by Hub health logic`,
-      );
-      if (freshnessAgeDays > expectedFreshnessDays) {
-        addFinding(
-          project.id,
-          'freshness',
-          'hard',
-          `${project.id} data is ${freshnessAgeDays.toFixed(1)} days old; expected <= ${expectedFreshnessDays} days`,
-        );
-      }
     }
   }
   if (generatedAgeDays !== null && generatedAgeDays > MAX_GENERATION_AGE_DAYS) {
@@ -170,7 +165,6 @@ for (const project of panelProjects) {
     );
   }
 
-  if (project.id === 'kelly') validateKelly(summary, project.id);
   operationalFindingsFor(project.id, summary).forEach((finding) => findings.push(finding));
 
   const projectFindings = findings.slice(projectFindingStart);
@@ -252,49 +246,6 @@ console.log(
 
 if (hardFindings.length) process.exitCode = 1;
 else if (transientFindings.length) process.exitCode = 2;
-
-function validateKelly(summary, projectId) {
-  check(projectId, summary.contractValid === true, 'contract', 'kelly strengthened contract failed');
-  check(projectId, summary.assetCount === 50, 'contract', 'kelly catalog is not exactly 50 assets');
-  check(
-    projectId,
-    Number.isInteger(summary.availableAssetCount)
-      && summary.availableAssetCount >= 0
-      && summary.availableAssetCount <= summary.assetCount,
-    'contract',
-    'kelly available asset count is outside the fixed catalog',
-  );
-  check(projectId, KELLY_STATES.has(summary.state), 'contract', 'kelly state is unsupported');
-  check(
-    projectId,
-    Number.isInteger(summary.freshAssetCount)
-      && Number.isInteger(summary.staleAssetCount)
-      && Number.isInteger(summary.unavailableAssetCount)
-      && summary.freshAssetCount + summary.staleAssetCount + summary.unavailableAssetCount
-        === summary.assetCount
-      && summary.availableAssetCount === summary.freshAssetCount + summary.staleAssetCount
-      && Number.isInteger(summary.latestAssetCount)
-      && summary.latestAssetCount <= summary.availableAssetCount,
-    'contract',
-    'kelly asset freshness counts do not reconcile',
-  );
-  check(
-    projectId,
-    Array.isArray(summary.reasonCodes)
-      && summary.reasonCodes.every((reason) => /^[a-z0-9_]+$/.test(reason)),
-    'contract',
-    'kelly reason codes are missing or unstable',
-  );
-  if (summary.state === 'unavailable') {
-    check(projectId, !summary.dataAsOf, 'contract', 'kelly unavailable state claims dataAsOf');
-    check(
-      projectId,
-      summary.fullKelly === null && summary.expectedLogGrowth === null,
-      'contract',
-      'kelly unavailable state synthesized calculation values',
-    );
-  }
-}
 
 async function fetchJson(url) {
   const controller = new AbortController();
