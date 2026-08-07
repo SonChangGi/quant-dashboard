@@ -170,7 +170,6 @@
     sox: (metrics) => `SOX proxy ${formatPercent(metrics.weight)} · 가격 ${formatNumber(metrics.priceMomentum)} · 실적 ${formatNumber(metrics.earningsMomentum)}`,
     riskScore: (metrics) => `Top ${formatNumber(metrics.topRiskScore)}/5 · OH ${formatNumber(metrics.ohScore)}/5 · RF ${formatNumber(metrics.rfScore)}/5`,
     fearngreed: (metrics) => `상태 ${metrics.signalState || '산출 불가'} · 백분위 ${formatNumber(metrics.sentimentPercentile)} · 잔차 z ${formatNumber(metrics.residualZ)} · 포지션 ${formatFearPosition(metrics.position)}`,
-    kelly: (metrics) => `Full Kelly ${formatPercent(metrics.fullKelly)} · 공개 시계열 ${formatInteger(metrics.availableAssetCount)}/${formatInteger(metrics.assetCount)}개 · ${metrics.stateLabel || '상태 확인 필요'}`,
   };
 
   const PROJECTS = [
@@ -334,21 +333,6 @@
         },
       },
     },
-    {
-      id: 'kelly',
-      shortName: 'Kelly',
-      title: 'Kelly Allocation Lab',
-      description: '과거 성과지표, 단일·다자산 Kelly 비중, 2배 레버리지 성장률과 리밸런싱 효과를 같은 기준으로 비교합니다.',
-      url: 'https://sonchanggi.github.io/kelly/',
-      accent: 'KL',
-      panelAdapter: 'kelly',
-      panel: {
-        eyebrow: 'Kelly Allocation',
-        title: 'Kelly 비중 · 데이터 계약 상태',
-        contentType: 'metrics',
-        metricLoading: 'Kelly 공개 요약을 불러오는 중...',
-      },
-    },
   ];
   const PLATFORM_PROJECT_IDS = {
     fearngreed: 'fear-greed',
@@ -359,16 +343,8 @@
     sox: 'sox',
     'risk-score': 'risk-score',
     valuation: 'valuation',
-    kelly: 'kelly',
   };
-
-  const RESEARCH_STATUS_STATES = new Set(['published', 'live_api', 'stale', 'degraded', 'unavailable', 'ruin']);
   const SUMMARY_CONTRACT = { versionField: 'schemaVersion', expectedVersion: 1, requiredKeys: ['contract', 'projectId', 'status', 'primaryEntities'] };
-  const KELLY_SUMMARY_CONTRACT = {
-    ...SUMMARY_CONTRACT,
-    expectedProjectId: 'kelly',
-    requiredKeys: ['contract', 'projectId', 'state', 'generatedAt', 'dataAsOf', 'status', 'coverage', 'primaryEntities', 'limitations'],
-  };
   const MOMENTUM_SUMMARY_CONTRACT = {
     versionField: 'schemaVersion',
     expectedVersion: 5,
@@ -484,18 +460,6 @@
       fallback: normalizeValuationFallback,
       render: renderValuation,
       emptyReason: 'Valuation summary did not contain usable ticker rows.',
-    },
-    kelly: {
-      sourceUrls: {
-        summary: 'https://sonchanggi.github.io/kelly/data/summary.json',
-      },
-      primarySourceKey: 'summary',
-      contracts: { summary: KELLY_SUMMARY_CONTRACT },
-      parse: (sources) => parseKelly(sources.summary),
-      hasUsableData: (summary) => summary?.contractValid === true,
-      fallback: normalizeKellyUnavailable,
-      render: renderKelly,
-      emptyReason: 'Kelly summary did not contain a usable coverage contract.',
     },
   };
 
@@ -2662,102 +2626,6 @@
     };
   }
 
-  function parseKelly(payload) {
-    if (!isResearchSummary(payload, 'kelly')) return normalizeKellyUnavailable();
-    const meta = summaryMeta(payload);
-    const coverage = isRecord(payload.coverage) ? payload.coverage : {};
-    const sourceEntities = asRecords(payload.primaryEntities);
-    const sourceEntity = sourceEntities[0] || {};
-    const headlineMetrics = asRecords(sourceEntity.headlineMetrics);
-    const metricById = Object.fromEntries(
-      headlineMetrics
-        .map((metric) => [stringOr(metric.id, metric.label, ''), metric])
-        .filter(([id]) => id),
-    );
-    const fullKellyMetric = metricById['full-kelly'] || null;
-    const expectedLogGrowthMetric = metricById['expected-log-growth'] || null;
-    const fullKelly = finiteOrNull(fullKellyMetric?.value);
-    const expectedLogGrowth = finiteOrNull(expectedLogGrowthMetric?.value);
-    const assetCount = finiteOrNull(coverage.assetCount);
-    const availableAssetCount = finiteOrNull(coverage.availableAssetCount);
-    const state = stringOr(payload.state, payload.status?.state, sourceEntity.state, 'unavailable');
-    const stateLabel = stringOr(payload.status?.label, meta.statusLabel, state);
-    const statusMessage = stringOr(payload.status?.message, firstLimitation(meta));
-    const entityPresent = sourceEntities.length === 1 && sourceEntity.id === 'kelly-allocation-lab';
-    const coverageValid = Number.isInteger(assetCount)
-      && assetCount === 50
-      && Number.isInteger(availableAssetCount)
-      && availableAssetCount >= 0
-      && availableAssetCount <= assetCount;
-    const metricContractValid = (metric, unit) => {
-      if (!isRecord(metric) || !Object.hasOwn(metric, 'value') || metric.unit !== unit) return false;
-      const metricState = stringOr(metric.state, '');
-      if (!RESEARCH_STATUS_STATES.has(metricState)) return false;
-      if (state === 'unavailable') return metricState === 'unavailable' && metric.value === null;
-      return metric.value === null || finiteOrNull(metric.value) !== null;
-    };
-    const headlineMetricsValid = headlineMetrics.filter((metric) => metric.id === 'full-kelly').length === 1
-      && headlineMetrics.filter((metric) => metric.id === 'expected-log-growth').length === 1
-      && metricContractValid(fullKellyMetric, 'fraction')
-      && metricContractValid(expectedLogGrowthMetric, 'percent');
-    const stateParityValid = isRecord(payload.status)
-      && payload.status.state === state
-      && sourceEntity.state === state
-      && (state !== 'unavailable' || (availableAssetCount === 0 && !meta.dataAsOf));
-    const metadataValid = Number.isFinite(Date.parse(meta.generatedAt))
-      && Array.isArray(payload.limitations);
-    const contractValid = RESEARCH_STATUS_STATES.has(state)
-      && entityPresent
-      && coverageValid
-      && headlineMetricsValid
-      && stateParityValid
-      && metadataValid;
-    const entity = {
-      id: stringOr(sourceEntity.id, 'kelly-allocation-lab'),
-      symbol: 'KELLY',
-      name: stringOr(sourceEntity.name, payload.title, 'Kelly Allocation Lab'),
-      label: stringOr(sourceEntity.name, payload.title, 'Kelly Allocation Lab'),
-      sector: 'Allocation',
-      sectorLabel: 'Allocation',
-      themes: ['Kelly', 'Portfolio', 'Risk', 'Rebalancing'],
-      metrics: {
-        fullKelly,
-        expectedLogGrowth,
-        assetCount,
-        availableAssetCount,
-        stateLabel,
-      },
-      signals: [stateLabel, `공개 시계열 ${formatInteger(availableAssetCount)}/${formatInteger(assetCount)}개`],
-      warnings: meta.limitations,
-      status: state,
-    };
-    return {
-      contractValid,
-      entityPresent,
-      generatedAt: meta.generatedAt,
-      dataAsOf: meta.dataAsOf,
-      state,
-      stateLabel,
-      status: statusMessage ? `${stateLabel} · ${statusMessage}` : stateLabel,
-      statusMessage,
-      assetCount,
-      availableAssetCount,
-      frequency: stringOr(coverage.frequency, '확인 필요'),
-      fullKelly,
-      expectedLogGrowth,
-      fullKellyMetric,
-      expectedLogGrowthMetric,
-      rows: [entity],
-      entities: [entity],
-      meta: {
-        ...meta,
-        statusState: state,
-        statusLabel: stateLabel,
-        cadence: stringOr(meta.cadence, coverage.frequency, 'manual'),
-      },
-    };
-  }
-
   function parseFearAndGreed(payload) {
     if (!isResearchSummary(payload, 'fearngreed')) return normalizeFearAndGreedUnavailable();
     const meta = summaryMeta(payload);
@@ -3058,30 +2926,6 @@
       `${row.qualityStatus} · 가격일 ${formatMaybeDate(row.priceAsOf)}`,
     ], 5);
     setStatus(panelSelector(project, 'status'), buildStatusText(mode, summary.generatedAt, error, summary.status, summaryDataAsOf(summary)), mode);
-  }
-
-  function renderKelly(summary, mode, error, project) {
-    const hasCoverage = finiteOrNull(summary.assetCount) !== null
-      && finiteOrNull(summary.availableAssetCount) !== null;
-    const coverage = hasCoverage
-      ? `${formatInteger(summary.availableAssetCount)} / ${formatInteger(summary.assetCount)}개`
-      : '확인 불가';
-    renderMetricCards(panelSelector(project, 'metrics'), [
-      ['공개 데이터 상태', summary.stateLabel || '확인 필요'],
-      ['시계열 커버리지', coverage],
-      ['Full Kelly', formatKellyHeadlineMetric(summary.fullKellyMetric)],
-      ['기대 로그성장률', formatKellyHeadlineMetric(summary.expectedLogGrowthMetric)],
-    ]);
-    setStatus(panelSelector(project, 'status'), buildStatusText(mode, summary.generatedAt, error, summary.status, summaryDataAsOf(summary)), mode);
-  }
-
-  function formatKellyHeadlineMetric(metric) {
-    const value = finiteOrNull(metric?.value);
-    if (value === null) return '원본에서 계산';
-    const unit = stringOr(metric?.unit, '');
-    if (unit === 'fraction') return formatPercent(value);
-    if (unit === 'percent') return `${formatNumber(value)}%`;
-    return formatNumber(value);
   }
 
   function renderFearAndGreed(summary, mode, error, project) {
@@ -3534,33 +3378,6 @@
     };
   }
 
-  function normalizeKellyUnavailable() {
-    return {
-      unavailable: true,
-      contractValid: false,
-      generatedAt: '',
-      dataAsOf: '',
-      state: 'unavailable',
-      stateLabel: '공개 계약 확인 불가',
-      status: 'Kelly 공개 요약을 사용할 수 없습니다.',
-      statusMessage: '네트워크 또는 공개 계약을 확인하세요.',
-      assetCount: null,
-      availableAssetCount: null,
-      frequency: '',
-      fullKelly: null,
-      expectedLogGrowth: null,
-      fullKellyMetric: null,
-      expectedLogGrowthMetric: null,
-      rows: [],
-      entities: [],
-      meta: {
-        statusState: 'unavailable',
-        statusLabel: 'unavailable',
-        limitations: ['마지막 계산값을 하드코딩된 값으로 대체하지 않습니다.'],
-      },
-    };
-  }
-
   function normalizeValuationFallback() {
     return {
       generatedAt: FALLBACK_SNAPSHOT.valuation.generatedAt,
@@ -3651,19 +3468,6 @@
         title: `Top ${formatNumber(current.topRiskScore)}/5 · ${current.actionLabel || '확인 필요'}`,
         detail: `OH ${formatNumber(current.ohScore)}/5 · RF ${formatNumber(current.rfScore)}/5 · confirmation ${current.confirmedTopRisk ? 'ON' : 'OFF'} · ${firstLimitation(summary.meta || {})}`,
         tone: current.confirmedTopRisk || current.topRiskScore >= 4 ? 'warning' : '',
-      };
-    }
-    if (record.project.id === 'kelly') {
-      const available = finiteOrNull(summary.availableAssetCount);
-      const total = finiteOrNull(summary.assetCount);
-      const coverage = available !== null && total !== null
-        ? `${formatInteger(available)}/${formatInteger(total)}개`
-        : '확인 불가';
-      return {
-        kicker: 'Kelly Allocation',
-        title: `시계열 ${coverage} · ${summary.stateLabel || '상태 확인 필요'}`,
-        detail: `직접 가정·CSV 계산 사용 가능 · ${summary.statusMessage || firstLimitation(summary.meta || {})}`,
-        tone: ['published', 'live_api'].includes(summary.meta?.statusState) ? '' : 'warning',
       };
     }
     if (record.project.id === 'valuation') {
@@ -4124,14 +3928,11 @@
       parseBestFactor,
       parseEtfTracking,
       parseValuation,
-      parseKelly,
       parseSox,
       renderSox,
       parseRiskScore,
       renderRiskScore,
-      renderKelly,
       renderFearAndGreed,
-      normalizeKellyUnavailable,
       isMomentumSummaryV5,
       isMomentumDashboardV5,
       validMomentumFactorAccountingV5,
@@ -4193,7 +3994,6 @@
       isValidChartPoint,
       buildDramAxisTicks,
       buildEtfPercentAxisTicks,
-      formatKellyHeadlineMetric,
       configuredSupabaseMetadata,
       getPublishedSnapshotMetadata,
       PLATFORM_PROJECT_IDS,
