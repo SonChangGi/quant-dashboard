@@ -31,7 +31,6 @@ const projectUrls = [
   'https://sonchanggi.github.io/quant-dashboard/risk-score/',
   'https://sonchanggi.github.io/valuation/',
   'https://sonchanggi.github.io/port/',
-  'https://sonchanggi.github.io/kelly/',
 ];
 for (const url of projectUrls) {
   assert(contains(files.html, url) || contains(files.app, url), `project URL present: ${url}`);
@@ -52,7 +51,6 @@ const dataUrls = [
   'https://sonchanggi.github.io/sox/data/summary.json',
   'https://sonchanggi.github.io/quant-dashboard/risk-score/data/risk-score/risk_score_summary.json',
   'https://sonchanggi.github.io/valuation/data/summary.json',
-  'https://sonchanggi.github.io/kelly/data/summary.json',
 ];
 for (const url of dataUrls) {
   assert(contains(files.app, url), `public data endpoint present: ${url}`);
@@ -60,7 +58,6 @@ for (const url of dataUrls) {
 
 assert(contains(files.app, 'const PROJECTS = ['), 'project registry exists');
 assert(contains(files.app, "id: 'port'"), 'port project registry entry exists');
-assert(contains(files.app, "id: 'kelly'"), 'Kelly project registry entry exists');
 assert(contains(files.app, 'PANEL_ADAPTERS'), 'panel adapter manifest exists');
 assert(contains(files.app, 'quant-research-summary'), 'common summary contract is validated');
 assert(contains(files.app, 'summaryEntities'), 'common summary entities feed dossier search');
@@ -130,10 +127,6 @@ assert(contains(files.app, "riskScore: {\n      sourceUrls") && contains(files.a
 assert(contains(files.app, 'SOX Top Risk · OH/RF/Confirmation'), 'Risk Score central summary panel copy exists');
 assert(contains(files.app, "id: 'risk-score'"), 'Risk Score project registry entry exists');
 assert(contains(files.app, 'parseValuation'), 'Valuation parser exists');
-assert(contains(files.app, 'parseKelly') && contains(files.app, 'renderKelly'), 'Kelly parser and panel renderer exist');
-assert(contains(files.app, 'normalizeKellyUnavailable'), 'Kelly fetch or contract failure stays unavailable without hardcoded calculation values');
-assert(contains(files.app, "expectedProjectId: 'kelly'") && contains(files.app, 'KELLY_SUMMARY_CONTRACT'), 'Kelly adapter requires its own project identity and coverage contract');
-assert(contains(files.app, "kelly: {\n      sourceUrls") && contains(files.app, "parse: (sources) => parseKelly(sources.summary)"), 'Kelly adapter reads only its public summary contract');
 assert(contains(files.app, 'ETF별 TOP10 비중'), 'ETF Tracking detail panel label exists');
 assert(contains(files.app, '최근 1개월 비중 변화'), 'ETF Tracking chart copy names the one-month history window');
 assert(contains(files.app, 'enrichEtfTrackingSources'), 'ETF Tracking adapter loads per-ETF history sources');
@@ -167,7 +160,6 @@ assert(contains(files.commonDesign, '프레젠테이션 상태') && contains(fil
 assert(contains(files.commonDesign, '데이터 기준일') && contains(files.commonDesign, '평가 종료일') && contains(files.commonDesign, '차트 선택일'), 'common design v1 names distinct date roles');
 assert(contains(files.commonDesign, '390px') && contains(files.commonDesign, '44px'), 'common design v1 declares mobile containment and touch targets');
 assert(contains(files.commonDesign, 'quant-research-theme') && contains(files.commonDesign, 'quant-dashboard-theme') && contains(files.commonDesign, 'quant-calm-theme') && contains(files.commonDesign, 'dram-price-theme'), 'common design v1 fixes canonical and legacy theme keys');
-assert(contains(files.commonDesign, 'Hub → Fear & Greed → Momentum → DRAM') && contains(files.commonDesign, 'Kelly'), 'common design v1 fixes the project navigation order');
 assert(contains(files.commonDesign, 'skip link') && contains(files.commonDesign, '12px'), 'common design v1 fixes keyboard entry and legible dense labels');
 assert(contains(files.commonDesign, '프로젝트별 plan-goal'), 'common design v1 requires project-by-project rollout');
 assert(contains(files.commonDesign, 'plot 영역 밖') && contains(files.commonDesign, 'absolute overlay'), 'common design v1 keeps exact-value readouts away from plotted marks');
@@ -175,7 +167,7 @@ assert(contains(files.commonDesign, '구현 설명') && contains(files.commonDes
 assert(contains(files.commonDesign, '버전: `1.2.0`') && contains(files.commonDesign, '공통 타이포그래피와 세로 밀도'), 'common design v1.2 fixes the shared typography and density reference');
 assert(contains(files.commonDesign, '`15px`, `line-height: 1.55`') && contains(files.commonDesign, '`800` 이상'), 'common design v1.2 fixes the shared type scale and weight hierarchy');
 assert(contains(files.commonDesign, '작은 disclaimer') && contains(files.commonDesign, '기본 닫힘 `운영 상세`'), 'common design v1.2 does not exempt fine print from copy reduction');
-assert(contains(files.commonDesign, '11개 항목') && contains(files.commonDesign, '완료된 일부 프로젝트나 현재 프로젝트와 Hub만'), 'common design v1.2 requires the complete shared navigation');
+assert(contains(files.commonDesign, '10개 항목') && contains(files.commonDesign, '완료된 일부 프로젝트나 현재 프로젝트와 Hub만'), 'common design v1.2 requires the complete shared navigation');
 assert(contains(files.commonDesign, '승인된 기존 색 토큰·primary·의미색') && contains(files.commonDesign, 'type·series·axis·legend·column·order를 보존'), 'common design v1.2 preserves project-specific visuals and analytical surfaces');
 assert(contains(files.commonDesign, '역사적 적용 사례의 도메인 차이(비규범)') && contains(files.commonDesign, '비규범 파일럿 근거'), 'common design v1.2 keeps pilot projects as evidence rather than normative templates');
 assert(contains(files.readme, 'docs/common-design-v1-rollout-prompt.md') && contains(files.design, 'docs/common-design-v1-rollout-prompt.md'), 'README and DESIGN link the rollout prompt');
@@ -183,7 +175,7 @@ assert(contains(files.commonDesignPrompt, '프로젝트별 plan-goal') && contai
 assert(contains(files.commonDesignPrompt, 'plot 밖의 고정 행') && contains(files.commonDesignPrompt, '구현 설명') && contains(files.commonDesignPrompt, 'bounding box'), 'rollout prompt requires copy reduction and chart collision QA');
 assert(contains(files.commonDesignPrompt, 'Quant Research 공통 디자인 v1.2') && contains(files.commonDesignPrompt, '공통 타이포그래피와 밀도') && contains(files.commonDesignPrompt, '통일성의 범위'), 'rollout prompt applies the shared visual reference');
 assert(contains(files.commonDesignPrompt, '`15px / 1.55`') && contains(files.commonDesignPrompt, '`800` 이상'), 'rollout prompt carries the compact type and weight rules');
-assert(contains(files.commonDesignPrompt, 'Hub → Fear & Greed → Momentum → DRAM') && contains(files.commonDesignPrompt, '정확히 11개'), 'rollout prompt requires the full registry-driven top navigation');
+assert(contains(files.commonDesignPrompt, 'Hub → Fear & Greed → Momentum → DRAM') && contains(files.commonDesignPrompt, '정확히 10개'), 'rollout prompt requires the full registry-driven top navigation');
 assert(contains(files.commonDesignPrompt, 'sticky shell 약 `58px`') && contains(files.commonDesignPrompt, '메뉴 글자 `12px / 650`'), 'rollout prompt carries the compact shared navigation density');
 assert(contains(files.commonDesignPrompt, '`데이터 · 출처 · 운영 상세`'), 'rollout prompt consolidates secondary copy in one named closed details section');
 assert(contains(files.commonDesignPrompt, '기존 차트 유형·패널·축·범례·계열') && contains(files.commonDesignPrompt, '기존 색 토큰'), 'rollout prompt preserves project-specific charts, tables, and colors');
@@ -195,8 +187,7 @@ assert(contains(files.packageJson, '"test:live"'), 'package exposes optional liv
 assert(contains(files.packageJson, '"test:publish"') && contains(files.packageJson, 'npm run test:live'), 'package exposes publish gate with live contract smoke');
 assert(contains(files.liveSmoke, 'MAX_PAYLOAD_BYTES') && contains(files.liveSmoke, 'MAX_STALENESS_DAYS'), 'live contract smoke checks payload size and freshness');
 assert(contains(files.liveSmoke, 'validateAdapterContract'), 'live contract smoke rejects incompatible contract versions');
-assert(contains(files.liveSmoke, 'REQUIRED_PROJECT_COUNT = 9'), 'live contract smoke requires all nine public summary panels');
-assert(!contains(files.app, '../momentum-factor-lab') && !contains(files.app, '../dram-price') && !contains(files.app, '../best-factor') && !contains(files.app, '../etf-tracking') && !contains(files.app, '../sox') && !contains(files.app, '../valuation') && !contains(files.app, '../risk-score') && !contains(files.app, '../kelly'), 'no sibling local source paths referenced');
+assert(contains(files.liveSmoke, 'REQUIRED_PROJECT_COUNT = 8'), 'live contract smoke requires all eight public summary panels');
 assert(statSync('risk-score/index.html').isFile(), 'Risk Score deploy subtree index exists');
 assert(statSync('risk-score/assets/app.js').isFile(), 'Risk Score deploy subtree app asset exists');
 assert(statSync('risk-score/data/risk-score/risk_score_summary.json').isFile(), 'Risk Score deploy subtree summary JSON exists');
