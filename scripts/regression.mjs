@@ -1532,6 +1532,8 @@ const validRiskScore = api.parseRiskScore({
 assert(validRiskScore.current.topRiskScore === 5 && validRiskScore.current.confirmedTopRisk, 'recorded valid Risk Score fixture produces current top-risk row');
 assert(validRiskScore.rows.some((row) => row.label === 'RF Score' && /5/.test(row.value)), 'Risk Score parser exposes OH/RF summary rows');
 
+assert(Object.keys(api.PANEL_ADAPTERS).length === 8, 'panel adapter manifest has eight public summary adapters');
+
 const riskScoreAdapter = api.PANEL_ADAPTERS.riskScore;
 assert(Boolean(riskScoreAdapter?.sourceUrls?.summary?.includes('/quant-dashboard/risk-score/data/risk-score/risk_score_summary.json')), 'Risk Score adapter exposes public summary source URL');
 assert(typeof riskScoreAdapter?.parse === 'function', 'Risk Score adapter exposes parser function');
@@ -1662,6 +1664,9 @@ context.document = {
 };
 api.renderProjectNavigation();
 api.renderDashboardPanels();
+assert(domTargets['#top-nav'].children.length === 9, 'manifest renderer creates nine project links including Port');
+assert(domTargets['#hero-actions'].children.length === 9, 'manifest renderer creates nine hero action links including Port');
+assert(domTargets['#summary-grid'].children.length === 8, 'manifest renderer creates eight public summary panel shells');
 assert(domTargets['#summary-grid'].children.every((child) => /원본 열기/.test(child.innerHTML)), 'dashboard panel shells preserve original page links');
 assert(domTargets['#summary-grid'].children.some((child) => /panel-detail/.test(child.innerHTML)), 'ETF panel shell includes detail mount for TOP10 cards');
 assert(domTargets['#summary-grid'].children.some((child) => /SOX 구성종목/.test(child.innerHTML)), 'SOX panel shell appears in the central summary grid');
