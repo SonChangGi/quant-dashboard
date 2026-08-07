@@ -152,7 +152,7 @@ FastAPI, Supabase, Vercel, React 또는 TypeScript 전환은 별도 아키텍처
 
 ## 5. 공통 탐색·테마 셸
 
-- 프로젝트 메뉴의 기준 순서는 `Hub → Fear & Greed → Momentum → DRAM → Best Factor → ETF → SOX → Risk Score → Port → Valuation → Kelly`다.
+- 프로젝트 메뉴의 기준 순서는 `Hub → Fear & Greed → Momentum → DRAM → Best Factor → ETF → SOX → Risk Score → Port → Valuation`다.
 - 현재 페이지는 `aria-current="page"`로 구분하고, 메뉴는 좁은 화면에서 문서가 아니라 자체 영역만 스크롤한다.
 - 본문으로 바로 가는 skip link를 첫 keyboard focus로 제공한다.
 - 테마 저장의 기준 key는 `quant-research-theme`다. 기존 `quant-dashboard-theme`, `quant-calm-theme`, `dram-price-theme`는 읽은 뒤 기준 key로 옮기는 호환 입력으로만 유지한다.
