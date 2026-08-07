@@ -32,18 +32,6 @@ export function operationalFindingsFor(projectId, summary = {}) {
     });
   }
 
-  const reasonCodes = uniqueStrings(
-    summary?.reasonCodes,
-    summary?.meta?.reasonCodes,
-  );
-  if (projectId === 'kelly' && reasonCodes.length) {
-    findings.push({
-      project: projectId,
-      category: 'operation',
-      severity: 'transient',
-      message: `${projectId} reason codes: ${reasonCodes.join(',')}`,
-    });
-  }
   return findings;
 }
 
