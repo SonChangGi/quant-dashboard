@@ -4,7 +4,7 @@
 
 ## 목적
 
-- Fear & Greed Flow Lab, 모멘텀 팩터 랩, D램(DRAM) 가격 랩, Best Factor Lab, ETF TOP10 Tracking, SOX 반도체 지수 Cockpit, Risk Score, Port Portfolio Dashboard, 기업 가치평가 Lab, Kelly Allocation Lab을 한 화면에서 연결합니다.
+- Fear & Greed Flow Lab, 모멘텀 팩터 랩, D램(DRAM) 가격 랩, Best Factor Lab, ETF TOP10 Tracking, SOX 반도체 지수 Cockpit, Risk Score, Port Portfolio Dashboard, 기업 가치평가 Lab을 한 화면에서 연결합니다.
 - 각 프로젝트 카드의 버튼으로 원본 GitHub Pages 페이지를 바로 엽니다. Port 카드는 포트폴리오 비중/ETF 기초 노출 도구로 이동합니다.
 - 공개 배포 JSON만 best-effort로 읽되, 공통 `quant-research-summary` contract와 필수 key가 맞지 않으면 fallback/준비중 상태를 보여줍니다.
 - 리서치 브리핑, 티커·테마 dossier, 데이터 상태/자동화 패널로 “오늘 무엇을 확인할지”와 “어떤 한계를 같이 읽어야 하는지”를 먼저 보여줍니다.
@@ -36,13 +36,11 @@
 - `https://sonchanggi.github.io/etf-tracking/data/dashboard.json`
 - `https://sonchanggi.github.io/sox/data/summary.json`
 - `https://sonchanggi.github.io/valuation/data/summary.json`
-- `https://sonchanggi.github.io/kelly/data/summary.json`
 
 Risk Score는 예외적으로 이 저장소의 `risk-score/` 정적 subtree에서 서비스합니다. `.github/workflows/sync-risk-score.yml`의 읽기 전용 job이 `SonChangGi/risk-score`의 canonical `main`을 테스트하고 원본 freshness와 exact mirror 검증을 통과한 산출물을 checksum과 함께 전달합니다. 별도 쓰기 job은 원격 원본 스크립트를 실행하지 않고 이 검증 산출물만 복사·재검증한 뒤 subtree를 커밋합니다. 공개 저장소가 자신의 `GITHUB_TOKEN`으로 배포를 소유하므로 원본 저장소에 cross-repository PAT를 둘 필요가 없습니다.
 
 `summary.json`의 공통 필드는 `schemaVersion`, `contract`, `projectId`, `generatedAt`, `dataAsOf`, `status`, `coverage`, `primaryEntities`, `limitations`, `automation`입니다. 대형 원본 payload는 원본 프로젝트에 남겨두고 중앙 허브는 ticker/theme dossier와 health 상태에 필요한 작은 요약부터 사용합니다.
 
-허브는 10개 프로젝트 링크와 9개 공개 요약 패널을 제공합니다. Port는 링크 전용이며, Kelly는 독립 Pages의 `summary.json` 하나만 읽습니다. Kelly의 `unavailable`은 계약 실패가 아니라 검증된 시장 시계열이 아직 공개되지 않은 정상 상태일 수 있으므로, 네트워크 fallback과 구분해 표시합니다.
 
 공개 JSON 구조가 바뀌거나 네트워크가 실패하면 대시보드는 마지막 확인 스냅샷 또는 오류 상태를 보여주고, 원본 페이지 링크는 계속 유지합니다. 중앙 허브의 숫자는 투자 결론이 아니라 원본 프로젝트의 방법론, 가격 기준일, 데이터 품질, 한계를 확인하기 위한 출발점입니다.
 
@@ -67,7 +65,7 @@ npm run test:live  # 공개 GitHub Pages JSON 계약을 네트워크로 확인�
 - 모든 프로젝트 원본 링크 존재
 - SOX/가치평가 프로젝트 링크와 `summary.json` endpoint 존재
 - 공개 summary/detail endpoint 상수 존재
-- Fear & Greed / Momentum / D램(DRAM) / Best Factor / ETF Tracking / SOX / Valuation / Kelly parser와 fallback 존재
+- Fear & Greed / Momentum / D램(DRAM) / Best Factor / ETF Tracking / SOX / Valuation
 - freshness/status 표시 hook 존재
 - Research Cockpit, 티커·테마 Dossier, Data Health/automation hook 존재
 - 선택형 live contract smoke로 공개 JSON row 수, schema/contract version, 최신성, payload 크기 확인
