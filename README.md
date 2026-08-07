@@ -38,6 +38,8 @@ Risk Score는 예외적으로 이 저장소의 `risk-score/` 정적 subtree에�
 `summary.json`의 공통 필드는 `schemaVersion`, `contract`, `projectId`, `generatedAt`, `dataAsOf`, `status`, `coverage`, `primaryEntities`, `limitations`, `automation`입니다. 대형 원본 payload는 원본 프로젝트에 남겨두고 중앙 허브는 ticker/theme dossier와 health 상태에 필요한 작은 요약부터 사용합니다.
 
 
+허브는 9개 프로젝트 링크와 8개 공개 요약 패널을 제공합니다. Port는 링크 전용입니다.
+
 공개 JSON 구조가 바뀌거나 네트워크가 실패하면 대시보드는 마지막 확인 스냅샷 또는 오류 상태를 보여주고, 원본 페이지 링크는 계속 유지합니다. 중앙 허브의 숫자는 투자 결론이 아니라 원본 프로젝트의 방법론, 가격 기준일, 데이터 품질, 한계를 확인하기 위한 출발점입니다.
 
 ## 로컬 실행
@@ -61,7 +63,7 @@ npm run test:live  # 공개 GitHub Pages JSON 계약을 네트워크로 확인�
 - 모든 프로젝트 원본 링크 존재
 - SOX/가치평가 프로젝트 링크와 `summary.json` endpoint 존재
 - 공개 summary/detail endpoint 상수 존재
-- Fear & Greed / Momentum / D램(DRAM) / Best Factor / ETF Tracking / SOX / Valuation
+- Fear & Greed / Momentum / D램(DRAM) / Best Factor / ETF Tracking / SOX / Valuation parser와 fallback 존재
 - freshness/status 표시 hook 존재
 - Research Cockpit, 티커·테마 Dossier, Data Health/automation hook 존재
 - 선택형 live contract smoke로 공개 JSON row 수, schema/contract version, 최신성, payload 크기 확인

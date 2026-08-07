@@ -51,7 +51,7 @@ for (const project of panelProjects) {
   assert(payloadBytes > 0, `${project.id} payload byte count is known`);
   assert(payloadBytes <= MAX_PAYLOAD_BYTES, `${project.id} payload is under ${MAX_PAYLOAD_BYTES.toLocaleString('en-US')} bytes`);
   assert(generatedFreshness !== null, `${project.id} payload exposes a parseable generatedAt timestamp`);
-  if (!unavailableContract && expectedFreshnessDays !== null) {
+  if (expectedFreshnessDays !== null) {
     assert(freshness !== null, `${project.id} payload exposes a parseable data freshness source`);
     if ((summary?.meta?.dataAsOf || summary?.dataAsOf || summary?.dataEndDate) && freshnessSource === summary?.generatedAt) {
       throw new Error(`${project.id} freshness source did not prefer dataAsOf/dataEndDate over generatedAt`);
@@ -61,7 +61,7 @@ for (const project of panelProjects) {
     } else {
       assert(!staleBySource, `${project.id} fresh dataAsOf is not mislabeled stale`);
     }
-  } else if (!unavailableContract) {
+  } else {
     assert(generatedFreshness <= MAX_STALENESS_DAYS, `${project.id} generatedAt is fresh within ${MAX_STALENESS_DAYS} days`);
   }
   if (project.id === 'valuation') {
