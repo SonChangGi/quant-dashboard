@@ -116,7 +116,7 @@ CANONICAL_ZERO_SPEND_GUARD = (
     "paid action; free-plan cost hard stops must remain enabled."
 )
 EXPECTED_WEB_DESIGN_SHA = (
-    "e7000c09db8250817e320a539a59b5482d325142ca8ba676a9f33c59ff3646d1"
+    "08839e31be6e5136808969394c879f8ea3ade89bf5f4ab828f9d0d1f7e9d5ea8"
 )
 AGENT_METADATA_PATTERN = re.compile(
     r"\Ainterface:\n"

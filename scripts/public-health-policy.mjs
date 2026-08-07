@@ -36,7 +36,7 @@ export function operationalFindingsFor(projectId, summary = {}) {
     summary?.reasonCodes,
     summary?.meta?.reasonCodes,
   );
-  if (projectId === 'kelly' && reasonCodes.length) {
+  if (reasonCodes.length) {
     findings.push({
       project: projectId,
       category: 'operation',
