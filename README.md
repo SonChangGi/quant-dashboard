@@ -44,7 +44,7 @@
 
 `summary.json`의 공통 필드는 `schemaVersion`, `contract`, `projectId`, `generatedAt`, `dataAsOf`, `status`, `coverage`, `primaryEntities`, `limitations`, `automation`입니다. 대형 원본 payload는 원본 프로젝트에 남겨두고 중앙 허브는 ticker/theme dossier와 health 상태에 필요한 작은 요약부터 사용합니다.
 
-허브는 8개 프로젝트 링크와 8개 공개 요약 패널을 제공합니다. Port의 수집 품질과 Regime의 공개 합성 데모 상태도 health 집계에 포함합니다. Regime 어댑터는 `meta.mode=demo`, `synthetic_*` source ID, `synthetic_fixture` 라이선스를 모두 만족할 때만 값을 표시합니다.
+허브는 8개 프로젝트 링크와 8개 공개 요약 패널을 제공합니다. Port의 수집 품질과 Regime 상태도 health 집계에 포함합니다. Regime 어댑터는 합성 데모 계약 또는 개인·비상업 live-derived 계약(`alpha_vantage/private_noncommercial`, `alfred/user_confirmed_ml_storage_derived`)을 정확히 만족할 때만 값을 표시합니다.
 
 각 패널에는 upstream 계약이 `expectedFreshnessDays`를 생략해도 적용되는 프로젝트별 보수적 freshness 기본값이 있습니다. `.github/workflows/public-data-health.yml`은 마지막 예약 재시도 이후와 Platform Foundation 성공 후 `npm run test:live`를 실행합니다. Upstream `degraded`/`stale` 상태는 운영 경고로 기록합니다. HTTP 429/5xx·timeout 같은 단일 프로젝트 전송 장애만 `transient`로 허용하며, 동시에 2개 이상 프로젝트를 관측할 수 없으면 hard observability failure로 승격합니다. 404/JSON·schema 계약 오류와 freshness 초과도 hard failure입니다. 전체 bounded JSON 보고서는 14일간 Actions artifact로 보존됩니다.
 

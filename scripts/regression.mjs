@@ -1726,12 +1726,23 @@ assert(
   api.briefingItemForRecord({ project: { id: 'regime' }, summary: validRegime }).detail.includes('13주 90%'),
   'Regime briefing derives risk and date values from the public demo payload',
 );
-const rejectedLiveRegime = api.parsePanelSafely(api.PANEL_ADAPTERS.regime, {
-  summary: { ...validRegimePayload, meta: { ...validRegimePayload.meta, mode: 'live' } },
+const validLiveRegimePayload = {
+  ...validRegimePayload,
+  meta: { ...validRegimePayload.meta, mode: 'live', status: 'degraded' },
+  sources: [
+    { id: 'alpha_vantage', license_class: 'private_noncommercial' },
+    { id: 'alfred', license_class: 'user_confirmed_ml_storage_derived' },
+  ],
+};
+const validLiveRegime = api.parsePanelSafely(api.PANEL_ADAPTERS.regime, {
+  summary: validLiveRegimePayload,
 });
 assert(
-  !rejectedLiveRegime.ok && /meta.mode=demo/.test(rejectedLiveRegime.error),
-  'Regime adapter rejects live payloads even when their result values are otherwise valid',
+  validLiveRegime.ok
+    && validLiveRegime.data.publicPayloadValid
+    && validLiveRegime.data.meta.dataModeLabel === 'Live 파생 결과'
+    && validLiveRegime.data.meta.statusState === 'degraded',
+  'Regime adapter accepts the exact personal noncommercial live-derived source contract',
 );
 const rejectedProviderRegime = api.parsePanelSafely(api.PANEL_ADAPTERS.regime, {
   summary: {
@@ -1741,7 +1752,7 @@ const rejectedProviderRegime = api.parsePanelSafely(api.PANEL_ADAPTERS.regime, {
 });
 assert(
   !rejectedProviderRegime.ok && /not synthetic/.test(rejectedProviderRegime.error),
-  'Regime adapter rejects provider-derived source metadata',
+  'Regime demo adapter rejects provider-derived source metadata',
 );
 const rejectedLicenseRegime = api.parsePanelSafely(api.PANEL_ADAPTERS.regime, {
   summary: {
@@ -1752,6 +1763,19 @@ const rejectedLicenseRegime = api.parsePanelSafely(api.PANEL_ADAPTERS.regime, {
 assert(
   !rejectedLicenseRegime.ok && /not synthetic_fixture/.test(rejectedLicenseRegime.error),
   'Regime adapter requires synthetic_fixture licensing for every public source',
+);
+const rejectedLiveLicenseRegime = api.parsePanelSafely(api.PANEL_ADAPTERS.regime, {
+  summary: {
+    ...validLiveRegimePayload,
+    sources: [
+      { id: 'alpha_vantage', license_class: 'synthetic_fixture' },
+      { id: 'alfred', license_class: 'user_confirmed_ml_storage_derived' },
+    ],
+  },
+});
+assert(
+  !rejectedLiveLicenseRegime.ok && /invalid license_class/.test(rejectedLiveLicenseRegime.error),
+  'Regime live adapter rejects a mismatched provider license contract',
 );
 const rejectedProbabilityRegime = api.parsePanelSafely(api.PANEL_ADAPTERS.regime, {
   summary: {
@@ -1780,7 +1804,7 @@ assert(
 
 assert(Object.keys(api.PANEL_ADAPTERS).length === 8, 'panel adapter manifest has eight active public summary adapters including Regime');
 assert(Object.keys(api.PANEL_ADAPTERS.port.sourceUrls).length === 1, 'Port adapter reads only its independent summary.json');
-assert(Object.keys(api.PANEL_ADAPTERS.regime.sourceUrls).length === 1, 'Regime adapter reads only its public demo result JSON');
+assert(Object.keys(api.PANEL_ADAPTERS.regime.sourceUrls).length === 1, 'Regime adapter reads only its public result JSON');
 
 const nullEntryMomentum = api.parseMomentum({
   ...momentumSummaryV4,
@@ -1893,7 +1917,7 @@ assert(domTargets['#summary-grid'].children.every((child) => /열기/.test(child
 assert(domTargets['#summary-grid'].children.some((child) => /포트폴리오 데이터/.test(child.innerHTML)), 'Port public summary panel appears in the central grid');
 assert(domTargets['#summary-grid'].children.some((child) => /panel-detail/.test(child.innerHTML)), 'ETF panel shell includes detail mount for TOP10 cards');
 assert(domTargets['#summary-grid'].children.some((child) => /SOX 구성종목/.test(child.innerHTML)), 'SOX panel shell appears in the central summary grid');
-assert(domTargets['#summary-grid'].children.some((child) => /현재 국면 · 다음 주 전망/.test(child.innerHTML)), 'Regime public demo panel appears in the central summary grid');
+assert(domTargets['#summary-grid'].children.some((child) => /현재 국면 · 다음 주 전망/.test(child.innerHTML)), 'Regime public result panel appears in the central summary grid');
 api.renderEtfDetailCards('#etf-details', validEtf.rows);
 assert(/etf-detail-card/.test(domTargets['#etf-details'].innerHTML), 'ETF detail renderer creates per-ETF card markup');
 assert(/AAA/.test(domTargets['#etf-details'].innerHTML) && /BBB/.test(domTargets['#etf-details'].innerHTML), 'ETF detail renderer includes TOP10 holdings');
