@@ -307,7 +307,7 @@ Quant Research 제품군은 다음처럼 보여야 한다.
 
 프로젝트에 없는 날짜 역할을 새로 만들지 않는다.
 
-## 4. 8개 공통 메뉴
+## 4. 7개 공통 메뉴
 
 아래 registry의 label·순서·URL은 모든 사이트에서 동일해야 한다.
 
@@ -320,7 +320,6 @@ Quant Research 제품군은 다음처럼 보여야 한다.
 | 5 | Best Factor | `https://sonchanggi.github.io/best-factor/` |
 | 6 | ETF | `https://sonchanggi.github.io/etf-tracking/` |
 | 7 | SOX | `https://sonchanggi.github.io/sox/` |
-| 8 | Port | `https://sonchanggi.github.io/port/` |
 
 ### 4.1 Canonical navigation
 

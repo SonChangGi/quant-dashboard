@@ -168,7 +168,6 @@
     dram: (metrics) => `${metrics.kind || '가격'} · ${formatMaybeDate(metrics.date)} · ${metrics.source || 'source N/A'}`,
     sox: (metrics) => `SOX proxy ${formatPercent(metrics.weight)} · 가격 ${formatNumber(metrics.priceMomentum)} · 실적 ${formatNumber(metrics.earningsMomentum)}`,
     fearngreed: (metrics) => `상태 ${metrics.signalState || '산출 불가'} · 백분위 ${formatNumber(metrics.sentimentPercentile)} · 잔차 z ${formatNumber(metrics.residualZ)} · 포지션 ${formatFearPosition(metrics.position)}`,
-    port: (metrics) => `가격 ${formatInteger(metrics.assetCount)}개 · history ${formatInteger(metrics.historyAssetCount)}개 · 경고 ${formatInteger(metrics.warningCount)}건`,
     regime: (metrics) => `현재 ${metrics.currentStateLabel || '-'} ${formatPercent(metrics.currentConfidence)} · 다음 주 ${metrics.nextStateLabel || '-'} ${formatPercent(metrics.nextConfidence)} · 1주 이탈 ${formatPercent(metrics.transitionRisk1w)}`,
   };
 
@@ -286,21 +285,6 @@
       },
     },
     {
-      id: 'port',
-      shortName: 'Port',
-      title: '포트폴리오 비중 Cockpit',
-      description: '티커·보유 주수·종가 통화로 비중과 ETF 기초 노출을 계산합니다.',
-      url: 'https://sonchanggi.github.io/port/',
-      accent: 'PT',
-      panelAdapter: 'port',
-      panel: {
-        eyebrow: 'Portfolio Weights',
-        title: '포트폴리오 데이터 · 수집 상태',
-        contentType: 'metrics',
-        metricLoading: 'Port 공개 요약을 불러오는 중...',
-      },
-    },
-    {
       id: 'regime',
       shortName: 'Regime',
       title: 'US Market Regime Lab',
@@ -323,7 +307,6 @@
     best: 'best-factor',
     etf: 'etf',
     sox: 'sox',
-    port: 'port',
     regime: 'regime',
   };
   const PROJECT_EXPECTED_FRESHNESS_DAYS = Object.freeze({
@@ -333,11 +316,9 @@
     best: 5,
     etf: 5,
     sox: 5,
-    port: 5,
     regime: 10,
   });
 
-  const PORT_STATUS_STATES = new Set(['ok', 'published', 'live_api', 'stale', 'degraded', 'unavailable']);
   const REGIME_RESULT_VERSIONS = new Set(['weekly-regime-result-v3', 'weekly-regime-result-v4']);
   const REGIME_STATES = Object.freeze(['risk_on', 'transition', 'risk_off']);
   const REGIME_LIVE_SOURCE_LICENSES = Object.freeze({
@@ -350,11 +331,6 @@
     risk_off: '위험 회피',
   });
   const SUMMARY_CONTRACT = { versionField: 'schemaVersion', expectedVersion: 1, requiredKeys: ['contract', 'projectId', 'status', 'primaryEntities'] };
-  const PORT_SUMMARY_CONTRACT = {
-    ...SUMMARY_CONTRACT,
-    expectedProjectId: 'port',
-    requiredKeys: ['contract', 'projectId', 'generatedAt', 'dataAsOf', 'status', 'coverage', 'automation', 'primaryEntities', 'limitations'],
-  };
   const MOMENTUM_SUMMARY_CONTRACT = {
     versionField: 'schemaVersion',
     expectedVersion: 5,
@@ -446,18 +422,6 @@
       fallback: normalizeSoxFallback,
       render: renderSox,
       emptyReason: 'SOX summary did not contain usable constituents.',
-    },
-    port: {
-      sourceUrls: {
-        summary: 'https://sonchanggi.github.io/port/data/summary.json',
-      },
-      primarySourceKey: 'summary',
-      contracts: { summary: PORT_SUMMARY_CONTRACT },
-      parse: (sources) => parsePort(sources.summary),
-      hasUsableData: (summary) => summary?.contractValid === true,
-      fallback: normalizePortUnavailable,
-      render: renderPort,
-      emptyReason: 'Port summary did not contain a usable collection contract.',
     },
     regime: {
       sourceUrls: {
@@ -2718,55 +2682,6 @@
     return requireRegimeDate(value.slice(0, 10), context);
   }
 
-  function parsePort(payload) {
-    if (!isResearchSummary(payload, 'port')) return normalizePortUnavailable();
-    const meta = summaryMeta(payload);
-    const coverage = isRecord(payload.coverage) ? payload.coverage : {};
-    const entities = summaryEntities(payload);
-    const assetCount = finiteOrNull(coverage.assetCount);
-    const historyAssetCount = finiteOrNull(coverage.historyAssetCount);
-    const priceFallbackCount = finiteOrNull(coverage.priceFallbackCount);
-    const warningCount = finiteOrNull(payload.status?.warningCount);
-    const criticalIssueCount = finiteOrNull(payload.status?.criticalIssueCount);
-    const state = stringOr(meta.statusState, 'unavailable');
-    const holdingsSourceCounts = isRecord(coverage.holdingsSourceCounts)
-      ? coverage.holdingsSourceCounts
-      : {};
-    const holdingsCountsValid = Object.keys(holdingsSourceCounts).length > 0
-      && Object.values(holdingsSourceCounts).every(
-        (value) => Number.isInteger(value) && value >= 0,
-      );
-    const countsValid = [assetCount, historyAssetCount, priceFallbackCount, warningCount, criticalIssueCount]
-      .every((value) => Number.isInteger(value) && value >= 0);
-    const contractValid = Number.isFinite(Date.parse(meta.generatedAt))
-      && Number.isFinite(Date.parse(meta.dataAsOf))
-      && countsValid
-      && holdingsCountsValid
-      && PORT_STATUS_STATES.has(state)
-      && criticalIssueCount === 0
-      && historyAssetCount <= assetCount
-      && priceFallbackCount <= assetCount
-      && Array.isArray(payload.primaryEntities)
-      && Array.isArray(payload.limitations);
-    return {
-      contractValid,
-      generatedAt: meta.generatedAt,
-      dataAsOf: meta.dataAsOf,
-      state,
-      stateLabel: stringOr(meta.statusLabel, meta.statusState, '상태 확인 필요'),
-      status: stringOr(meta.statusLabel, meta.statusState, '상태 확인 필요'),
-      assetCount,
-      historyAssetCount,
-      priceFallbackCount,
-      warningCount,
-      criticalIssueCount,
-      holdingsSourceCounts,
-      rows: entities,
-      entities,
-      meta,
-    };
-  }
-
   function parseFearAndGreed(payload) {
     if (!isResearchSummary(payload, 'fearngreed')) return normalizeFearAndGreedUnavailable();
     const meta = summaryMeta(payload);
@@ -2993,23 +2908,6 @@
     ], 5);
     renderEtfDetailCards(panelSelector(project, 'details'), summary.rows);
     setStatus(panelSelector(project, 'status'), buildStatusText(mode, summary.generatedAt, error, summary.status, summaryDataAsOf(summary)), mode);
-  }
-
-  function renderPort(summary, mode, error, project) {
-    const holdings = summary.holdingsSourceCounts || {};
-    renderMetricCards(panelSelector(project, 'metrics'), [
-      ['가격 자산', `${formatInteger(summary.assetCount)}개`],
-      ['History 자산', `${formatInteger(summary.historyAssetCount)}개`],
-      ['가격 fallback', `${formatInteger(summary.priceFallbackCount)}개`],
-      ['Holdings live / official', `${formatInteger(holdings.live)} / ${formatInteger(holdings.official)}개`],
-      ['경고 / 중대', `${formatInteger(summary.warningCount)} / ${formatInteger(summary.criticalIssueCount)}건`],
-      ['데이터 기준일', formatMaybeDate(summary.dataAsOf)],
-    ]);
-    setStatus(
-      panelSelector(project, 'status'),
-      buildStatusText(mode, summary.generatedAt, error, summary.status, summaryDataAsOf(summary)),
-      mode,
-    );
   }
 
   function renderRegime(summary, mode, error, project) {
@@ -3724,32 +3622,6 @@
     };
   }
 
-  function normalizePortUnavailable() {
-    return {
-      unavailable: true,
-      contractValid: false,
-      generatedAt: '',
-      dataAsOf: '',
-      state: 'unavailable',
-      stateLabel: '공개 계약 확인 불가',
-      status: 'Port 공개 요약을 사용할 수 없습니다.',
-      assetCount: null,
-      historyAssetCount: null,
-      priceFallbackCount: null,
-      warningCount: null,
-      criticalIssueCount: null,
-      holdingsSourceCounts: {},
-      rows: [],
-      entities: [],
-      meta: {
-        statusState: 'unavailable',
-        statusLabel: 'unavailable',
-        expectedFreshnessDays: PROJECT_EXPECTED_FRESHNESS_DAYS.port,
-        limitations: ['마지막 시장 수치를 하드코딩된 값으로 대체하지 않습니다.'],
-      },
-    };
-  }
-
   function normalizeRegimeUnavailable() {
     return {
       unavailable: true,
@@ -3847,14 +3719,6 @@
         kicker: 'SOX',
         title: topScore ? `${topScore.ticker} 종합 ${formatNumber(topScore.score)} · ${formatMaybeDate(summary.dataAsOf)}` : 'SOX 요약 확인 필요',
         detail: `${topWeight ? `최대 proxy ${topWeight.ticker} ${formatPercent(topWeight.weight)} · ` : ''}${firstLimitation(summary.meta || {})}`,
-        tone: summary.meta?.statusState === 'ok' ? '' : 'warning',
-      };
-    }
-    if (record.project.id === 'port') {
-      return {
-        kicker: 'Portfolio Weights',
-        title: `가격 ${formatInteger(summary.assetCount)}개 · history ${formatInteger(summary.historyAssetCount)}개`,
-        detail: `경고 ${formatInteger(summary.warningCount)}건 · 가격 fallback ${formatInteger(summary.priceFallbackCount)}개 · 기준일 ${formatMaybeDate(summary.dataAsOf)}`,
         tone: summary.meta?.statusState === 'ok' ? '' : 'warning',
       };
     }
@@ -4364,14 +4228,11 @@
       parseDram,
       parseBestFactor,
       parseEtfTracking,
-      parsePort,
       parseRegime,
       parseSox,
       renderSox,
-      renderPort,
       renderRegime,
       renderFearAndGreed,
-      normalizePortUnavailable,
       normalizeRegimeUnavailable,
       isMomentumSummaryV5,
       isMomentumDashboardV5,

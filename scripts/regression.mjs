@@ -16,7 +16,7 @@ const assert = (condition, label) => checks.push({ ok: Boolean(condition), label
 const fallbackFor = (parsed, hasUsableData, reason) => api.resolveLoadState({ ok: true, data: {} }, hasUsableData, reason);
 
 assert(api, 'test API exposed without browser DOM');
-const degradedOperationalFindings = operationalFindingsFor('port', {
+const degradedOperationalFindings = operationalFindingsFor('sox', {
   state: 'degraded',
   meta: {
     statusState: 'degraded',
@@ -29,10 +29,10 @@ assert(
   'public health reports degraded upstream state and provider reasons',
 );
 assert(
-  transportEscalation(['port'], 8) === null,
+  transportEscalation(['sox'], 7) === null,
   'one transient transport outage remains a soft observation warning',
 );
-const broadTransportFailure = transportEscalation(['port', 'etf'], 8);
+const broadTransportFailure = transportEscalation(['sox', 'etf'], 7);
 assert(
   TRANSPORT_HARD_FAILURE_PROJECT_THRESHOLD === 2
     && broadTransportFailure?.severity === 'hard'
@@ -41,7 +41,7 @@ assert(
 );
 assert(
   api.PROJECTS.map((project) => project.shortName).join('|')
-    === 'Fear & Greed|Momentum|DRAM|Best Factor|ETF|SOX|Port|Regime',
+    === 'Fear & Greed|Momentum|DRAM|Best Factor|ETF|SOX|Regime',
   'project manifest preserves the canonical navigation order after Hub',
 );
 assert(
@@ -52,7 +52,6 @@ assert(
     best: 'best-factor',
     etf: 'etf',
     sox: 'sox',
-    port: 'port',
     regime: 'regime',
   }),
   'Hub maps public summary ids to canonical platform project identities',
@@ -1623,65 +1622,6 @@ const validSox = api.parseSox({
 assert(validSox.rows.length === 2 && validSox.rows[0].ticker === 'AAA', 'recorded valid SOX fixture sorts summary rows by combined score');
 assert(validSox.topWeight.ticker === 'BBB' && validSox.entities.some((entity) => entity.symbol === 'AAA'), 'SOX parser preserves top proxy weight and dossier entities');
 
-const validPortPayload = {
-  schemaVersion: 1,
-  contract: 'quant-research-summary',
-  projectId: 'port',
-  generatedAt: '2026-07-28T06:13:36Z',
-  dataAsOf: '2026-07-28',
-  status: {
-    state: 'degraded',
-    label: '225개 가격 자산 · warnings 6',
-    cadence: 'scheduled',
-    expectedFreshnessDays: 5,
-    warningCount: 6,
-    criticalIssueCount: 0,
-  },
-  coverage: {
-    assetCount: 225,
-    historyAssetCount: 225,
-    priceFallbackCount: 0,
-    holdingsSourceCounts: { official: 3, live: 22, no_holdings: 17, proxy: 3 },
-  },
-  automation: { workflowUrl: 'https://github.com/SonChangGi/port/actions/workflows/update-data.yml' },
-  primaryEntities: [{ symbol: 'SPY', name: 'SPY', metrics: { price: 739.09 } }],
-  limitations: ['무료 공개 holdings는 지연될 수 있습니다.'],
-};
-const validPort = api.parsePort(validPortPayload);
-assert(!api.validateAdapterContract(api.PANEL_ADAPTERS.port, { summary: validPortPayload }), 'Port adapter accepts its own public summary contract');
-assert(api.PANEL_ADAPTERS.port.hasUsableData(validPort) && validPort.assetCount === 225 && validPort.warningCount === 6, 'Port adapter joins collection coverage into Hub health');
-assert(api.briefingItemForRecord({ project: { id: 'port' }, summary: validPort }).detail.includes('가격 fallback 0개'), 'Port briefing exposes fallback and warning diagnostics');
-const invalidPortHoldingsCounts = api.parsePort({
-  ...validPortPayload,
-  coverage: {
-    ...validPortPayload.coverage,
-    holdingsSourceCounts: { official: 3, live: -1 },
-  },
-});
-assert(!invalidPortHoldingsCounts.contractValid, 'Port adapter rejects negative or non-integer holdings source counts');
-const invalidPortState = api.parsePort({
-  ...validPortPayload,
-  status: {
-    ...validPortPayload.status,
-    state: 'mystery',
-  },
-});
-assert(
-  !invalidPortState.contractValid && !api.PANEL_ADAPTERS.port.hasUsableData(invalidPortState),
-  'Port adapter rejects unsupported public status states',
-);
-const criticalPort = api.parsePort({
-  ...validPortPayload,
-  status: {
-    ...validPortPayload.status,
-    criticalIssueCount: 1,
-  },
-});
-assert(
-  !criticalPort.contractValid && !api.PANEL_ADAPTERS.port.hasUsableData(criticalPort),
-  'Port adapter fails closed when critical collection issues are present',
-);
-
 const validRegimePayload = {
   meta: {
     mode: 'demo',
@@ -1802,8 +1742,7 @@ assert(
   'Regime unavailable fallback contains no hardcoded market state, probability, or date',
 );
 
-assert(Object.keys(api.PANEL_ADAPTERS).length === 8, 'panel adapter manifest has eight active public summary adapters including Regime');
-assert(Object.keys(api.PANEL_ADAPTERS.port.sourceUrls).length === 1, 'Port adapter reads only its independent summary.json');
+assert(Object.keys(api.PANEL_ADAPTERS).length === 7, 'panel adapter manifest has seven active public summary adapters including Regime');
 assert(Object.keys(api.PANEL_ADAPTERS.regime.sourceUrls).length === 1, 'Regime adapter reads only its public result JSON');
 
 const nullEntryMomentum = api.parseMomentum({
@@ -1911,10 +1850,9 @@ context.document = {
 };
 api.renderProjectNavigation();
 api.renderDashboardPanels();
-assert(domTargets['#top-nav'].children.length === 8, 'manifest renderer creates eight active project links including Regime');
-assert(domTargets['#summary-grid'].children.length === 8, 'manifest renderer creates eight public summary panels');
+assert(domTargets['#top-nav'].children.length === 7, 'manifest renderer creates seven active project links including Regime');
+assert(domTargets['#summary-grid'].children.length === 7, 'manifest renderer creates seven public summary panels');
 assert(domTargets['#summary-grid'].children.every((child) => /열기/.test(child.innerHTML)), 'dashboard panel shells preserve project page links');
-assert(domTargets['#summary-grid'].children.some((child) => /포트폴리오 데이터/.test(child.innerHTML)), 'Port public summary panel appears in the central grid');
 assert(domTargets['#summary-grid'].children.some((child) => /panel-detail/.test(child.innerHTML)), 'ETF panel shell includes detail mount for TOP10 cards');
 assert(domTargets['#summary-grid'].children.some((child) => /SOX 구성종목/.test(child.innerHTML)), 'SOX panel shell appears in the central summary grid');
 assert(domTargets['#summary-grid'].children.some((child) => /현재 국면 · 다음 주 전망/.test(child.innerHTML)), 'Regime public result panel appears in the central summary grid');
