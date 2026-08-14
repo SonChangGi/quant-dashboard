@@ -340,6 +340,10 @@
   const PORT_STATUS_STATES = new Set(['ok', 'published', 'live_api', 'stale', 'degraded', 'unavailable']);
   const REGIME_RESULT_VERSIONS = new Set(['weekly-regime-result-v3', 'weekly-regime-result-v4']);
   const REGIME_STATES = Object.freeze(['risk_on', 'transition', 'risk_off']);
+  const REGIME_LIVE_SOURCE_LICENSES = Object.freeze({
+    alpha_vantage: 'private_noncommercial',
+    alfred: 'user_confirmed_ml_storage_derived',
+  });
   const REGIME_STATE_LABELS = Object.freeze({
     risk_on: '위험 선호',
     transition: '전환',
@@ -461,10 +465,10 @@
       },
       primarySourceKey: 'summary',
       parse: (sources) => parseRegime(sources.summary),
-      hasUsableData: (summary) => Boolean(summary?.publicDemoValid && summary.unavailable !== true),
+      hasUsableData: (summary) => Boolean(summary?.publicPayloadValid && summary.unavailable !== true),
       fallback: normalizeRegimeUnavailable,
       render: renderRegime,
-      emptyReason: 'Regime payload is not an explicitly synthetic public demo.',
+      emptyReason: 'Regime public payload did not satisfy the demo or live-derived contract.',
     },
   };
 
@@ -2532,8 +2536,8 @@
   function parseRegime(payload) {
     if (!isRecord(payload)) throw new Error('Regime payload must be an object.');
     const meta = payload.meta;
-    if (!isRecord(meta) || meta.mode !== 'demo') {
-      throw new Error('Regime public payload must declare meta.mode=demo.');
+    if (!isRecord(meta) || !['demo', 'live'].includes(meta.mode)) {
+      throw new Error('Regime public payload must declare meta.mode=demo or live.');
     }
     if (!REGIME_RESULT_VERSIONS.has(meta.result_version)) {
       throw new Error(`Unsupported Regime result version: ${meta.result_version || 'missing'}.`);
@@ -2541,16 +2545,29 @@
 
     const sources = payload.sources;
     if (!Array.isArray(sources) || !sources.length || sources.some((source) => !isRecord(source))) {
-      throw new Error('Regime public payload must contain synthetic sources.');
+      throw new Error('Regime public payload must contain sources.');
     }
-    sources.forEach((source, index) => {
-      if (typeof source.id !== 'string' || !source.id.startsWith('synthetic_')) {
-        throw new Error(`Regime sources[${index}].id is not synthetic.`);
+    if (meta.mode === 'demo') {
+      sources.forEach((source, index) => {
+        if (typeof source.id !== 'string' || !source.id.startsWith('synthetic_')) {
+          throw new Error(`Regime sources[${index}].id is not synthetic.`);
+        }
+        if (source.license_class !== 'synthetic_fixture') {
+          throw new Error(`Regime sources[${index}].license_class is not synthetic_fixture.`);
+        }
+      });
+    } else {
+      const liveSources = new Map(sources.map((source) => [source.id, source]));
+      if (liveSources.size !== sources.length
+        || liveSources.size !== Object.keys(REGIME_LIVE_SOURCE_LICENSES).length) {
+        throw new Error('Regime live-derived payload must contain the exact provider source set.');
       }
-      if (source.license_class !== 'synthetic_fixture') {
-        throw new Error(`Regime sources[${index}].license_class is not synthetic_fixture.`);
-      }
-    });
+      Object.entries(REGIME_LIVE_SOURCE_LICENSES).forEach(([sourceId, expectedLicense]) => {
+        if (liveSources.get(sourceId)?.license_class !== expectedLicense) {
+          throw new Error(`Regime live source ${sourceId} has an invalid license_class.`);
+        }
+      });
+    }
 
     if (!Array.isArray(payload.weekly) || !payload.weekly.length || payload.weekly.some((row) => !isRecord(row))) {
       throw new Error('Regime weekly results are missing.');
@@ -2599,8 +2616,16 @@
       throw new Error('Regime 1w transition probability is internally inconsistent.');
     }
 
+    const isLive = meta.mode === 'live';
+    const liveStatus = ['ok', 'degraded', 'stale', 'blocked', 'error'].includes(meta.status)
+      ? meta.status
+      : 'degraded';
+    const statusState = isLive ? liveStatus : 'demo';
+    const statusLabel = isLive
+      ? (liveStatus === 'ok' ? '정상' : '주의')
+      : '합성 데모';
     const summary = {
-      publicDemoValid: true,
+      publicPayloadValid: true,
       generatedAt,
       dataAsOf: date,
       nextDate,
@@ -2614,13 +2639,13 @@
       transitionRisk1w: transitionRisk['1w'].probability,
       transitionRisk4w: transitionRisk['4w'].probability,
       transitionRisk13w: transitionRisk['13w'].probability,
-      status: '합성 데모',
+      status: statusLabel,
       rows: [],
       entities: [],
       meta: {
-        statusState: 'demo',
-        statusLabel: '합성 데모',
-        dataModeLabel: '합성 데모',
+        statusState,
+        statusLabel,
+        dataModeLabel: isLive ? 'Live 파생 결과' : '합성 데모',
         dataAsOf: date,
         cadence: 'weekly',
         expectedFreshnessDays: PROJECT_EXPECTED_FRESHNESS_DAYS.regime,
@@ -2639,7 +2664,7 @@
       metrics: { ...summary },
       signals: [`현재 ${summary.currentStateLabel}`, `다음 주 ${summary.nextStateLabel}`],
       warnings: [],
-      status: 'demo',
+      status: statusState,
     }];
     return summary;
   }
@@ -2988,7 +3013,7 @@
   }
 
   function renderRegime(summary, mode, error, project) {
-    const available = summary?.publicDemoValid === true && summary?.unavailable !== true;
+    const available = summary?.publicPayloadValid === true && summary?.unavailable !== true;
     renderMetricCards(panelSelector(project, 'metrics'), [
       ['현재 국면', available ? `${summary.currentStateLabel} · ${formatPercent(summary.currentConfidence)}` : '확인 불가'],
       ['다음 주', available ? `${summary.nextStateLabel} · ${formatPercent(summary.nextConfidence)}` : '확인 불가'],
@@ -2998,9 +3023,9 @@
       ['기준일', available ? formatMaybeDate(summary.dataAsOf) : '확인 불가'],
     ]);
     const statusText = available
-      ? `공개 합성 데모 · 기준일 ${formatMaybeDate(summary.dataAsOf)} · 업데이트 ${formatFreshness(summary.generatedAt)}`
-      : `Regime 공개 합성 데모 사용 불가 · ${error || summary?.status || '계약 확인 필요'}`;
-    setStatus(panelSelector(project, 'status'), statusText, 'warning');
+      ? `${summary.meta?.dataModeLabel || '공개 결과'} · 기준일 ${formatMaybeDate(summary.dataAsOf)} · 업데이트 ${formatFreshness(summary.generatedAt)}`
+      : `Regime 공개 결과 사용 불가 · ${error || summary?.status || '계약 확인 필요'}`;
+    setStatus(panelSelector(project, 'status'), statusText, summary.meta?.statusState === 'ok' ? 'ok' : 'warning');
   }
 
   function renderFearAndGreed(summary, mode, error, project) {
@@ -3728,7 +3753,7 @@
   function normalizeRegimeUnavailable() {
     return {
       unavailable: true,
-      publicDemoValid: false,
+      publicPayloadValid: false,
       generatedAt: '',
       dataAsOf: '',
       nextDate: '',
@@ -3741,7 +3766,7 @@
       transitionRisk1w: null,
       transitionRisk4w: null,
       transitionRisk13w: null,
-      status: 'Regime 공개 합성 데모를 사용할 수 없습니다.',
+      status: 'Regime 공개 결과를 사용할 수 없습니다.',
       rows: [],
       entities: [],
       meta: {
@@ -3834,19 +3859,19 @@
       };
     }
     if (record.project.id === 'regime') {
-      if (summary.unavailable || !summary.publicDemoValid) {
+      if (summary.unavailable || !summary.publicPayloadValid) {
         return {
           kicker: 'Regime',
           title: '공개 요약 확인 필요',
-          detail: '합성 데모 계약을 확인할 수 없습니다.',
+          detail: '공개 결과 계약을 확인할 수 없습니다.',
           tone: 'warning',
         };
       }
       return {
-        kicker: 'Regime · 합성 데모',
+        kicker: `Regime · ${summary.meta?.dataModeLabel || '공개 결과'}`,
         title: `현재 ${summary.currentStateLabel} ${formatPercent(summary.currentConfidence)} · 다음 주 ${summary.nextStateLabel} ${formatPercent(summary.nextConfidence)}`,
         detail: `이탈 1주 ${formatPercent(summary.transitionRisk1w)} · 4주 ${formatPercent(summary.transitionRisk4w)} · 13주 ${formatPercent(summary.transitionRisk13w)} · 기준일 ${formatMaybeDate(summary.dataAsOf)}`,
-        tone: 'warning',
+        tone: summary.meta?.statusState === 'ok' ? '' : 'warning',
       };
     }
     return null;
