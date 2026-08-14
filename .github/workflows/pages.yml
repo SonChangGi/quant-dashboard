@@ -1,0 +1,127 @@
+name: Deploy Quant Dashboard Pages
+
+on:
+  workflow_run:
+    workflows: ["Platform Foundation"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: quant-dashboard-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: >-
+      ${{ github.event_name == 'workflow_dispatch' ||
+          (github.event.workflow_run.event == 'push' &&
+           github.event.workflow_run.head_branch == 'main' &&
+           github.event.workflow_run.conclusion == 'success') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    outputs:
+      source_sha: ${{ steps.source.outputs.source_sha }}
+    steps:
+      - name: Check out the validated main revision
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - name: Require a production main revision
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: test "$GITHUB_REF_NAME" = "$DEFAULT_BRANCH"
+      - name: Record exact validated source revision
+        id: source
+        run: echo "source_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Require Actions-owned Pages configuration
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          build_type="$(timeout 30s gh api "repos/${GITHUB_REPOSITORY}/pages" --jq .build_type)"
+          if [[ "$build_type" != "workflow" ]]; then
+            echo "GitHub Pages must use GitHub Actions before this deployment workflow is enabled; received ${build_type}." >&2
+            exit 1
+          fi
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22"
+      - name: Revalidate the static Hub contract
+        run: npm test
+      - name: Build an allowlisted Pages artifact
+        run: |
+          mkdir -p dist
+          cp index.html dist/index.html
+          cp -R assets dist/assets
+          test "$(find dist -type f | wc -l | tr -d ' ')" -eq 5
+          test ! -e dist/platform
+          test ! -e dist/codex-skills
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
+      - name: Upload exact static Hub artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Check out current production main
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+      - name: Refuse a superseded Hub artifact
+        env:
+          EXPECTED_SOURCE_SHA: ${{ needs.build.outputs.source_sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE_SHA"
+      - name: Deploy validated Hub artifact
+        id: deployment
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5
+      - name: Verify public Hub bytes
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          public_files=(
+            index.html
+            assets/app.js
+            assets/styles.css
+            assets/shared-nav.css
+            assets/theme.js
+          )
+          for attempt in {1..12}; do
+            matched=true
+            for relative_path in "${public_files[@]}"; do
+              readback="$RUNNER_TEMP/quant-dashboard-${relative_path//\//-}"
+              if ! curl \
+                --fail \
+                --silent \
+                --show-error \
+                --connect-timeout 10 \
+                --max-time 30 \
+                --output "$readback" \
+                "${PAGE_URL%/}/${relative_path}?run=${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${attempt}" \
+                || ! cmp --silent "$relative_path" "$readback"; then
+                matched=false
+                break
+              fi
+            done
+            if [[ "$matched" == "true" ]]; then
+              echo "Public Quant Dashboard bytes match the validated main revision."
+              exit 0
+            fi
+            [[ $attempt -lt 12 ]] || exit 1
+            sleep 5
+          done

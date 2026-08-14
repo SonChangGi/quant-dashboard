@@ -40,13 +40,15 @@
 - `https://sonchanggi.github.io/etf-tracking/data/dashboard.json`
 - `https://sonchanggi.github.io/sox/data/summary.json`
 - `https://sonchanggi.github.io/port/data/summary.json`
-- `https://sonchanggi.github.io/regime/data/regime-results.json` (합성 데모 전용)
+- `https://sonchanggi.github.io/regime/data/regime-results.json` (검증된 live-derived 또는 합성 데모)
 
 `summary.json`의 공통 필드는 `schemaVersion`, `contract`, `projectId`, `generatedAt`, `dataAsOf`, `status`, `coverage`, `primaryEntities`, `limitations`, `automation`입니다. 대형 원본 payload는 원본 프로젝트에 남겨두고 중앙 허브는 ticker/theme dossier와 health 상태에 필요한 작은 요약부터 사용합니다.
 
 허브는 8개 프로젝트 링크와 8개 공개 요약 패널을 제공합니다. Port의 수집 품질과 Regime 상태도 health 집계에 포함합니다. Regime 어댑터는 합성 데모 계약 또는 개인·비상업 live-derived 계약(`alpha_vantage/private_noncommercial`, `alfred/user_confirmed_ml_storage_derived`)을 정확히 만족할 때만 값을 표시합니다.
 
-각 패널에는 upstream 계약이 `expectedFreshnessDays`를 생략해도 적용되는 프로젝트별 보수적 freshness 기본값이 있습니다. `.github/workflows/public-data-health.yml`은 마지막 예약 재시도 이후와 Platform Foundation 성공 후 `npm run test:live`를 실행합니다. Upstream `degraded`/`stale` 상태는 운영 경고로 기록합니다. HTTP 429/5xx·timeout 같은 단일 프로젝트 전송 장애만 `transient`로 허용하며, 동시에 2개 이상 프로젝트를 관측할 수 없으면 hard observability failure로 승격합니다. 404/JSON·schema 계약 오류와 freshness 초과도 hard failure입니다. 전체 bounded JSON 보고서는 14일간 Actions artifact로 보존됩니다.
+각 패널에는 upstream 계약이 `expectedFreshnessDays`를 생략해도 적용되는 프로젝트별 보수적 freshness 기본값이 있습니다. `.github/workflows/public-data-health.yml`은 마지막 예약 재시도 이후와 Platform Foundation 성공 후 `npm run test:live`를 실행합니다. Upstream `degraded`/`stale` 상태는 운영 경고로 기록합니다. HTTP 429/5xx·timeout 같은 단일 프로젝트 전송 장애만 `transient`로 허용하며, 동시에 2개 이상 프로젝트를 관측할 수 없으면 hard observability failure로 승격합니다. 404/JSON·schema 계약 오류와 freshness 초과도 hard failure입니다. Hub 코드 변경 직후에는 contract·observability 회귀만 실패시키고 기존 upstream freshness 장애는 반복 실패 메일로 만들지 않습니다. 마지막 일일 예약은 hard incident의 숫자·날짜 변화를 정규화한 fingerprint를 30일간 보존해 새 장애나 장애 유형 변경 때만 다시 실패합니다. 전체 bounded JSON 보고서는 14일간 Actions artifact로 보존됩니다.
+
+정적 Hub는 `.github/workflows/pages.yml`이 Platform Foundation을 통과한 정확한 `main` revision에서 `index.html`과 `assets/`만 allowlist artifact로 만들고, 배포 직전 원격 SHA를 다시 확인한 뒤 공개 핵심 파일을 byte-for-byte 검증합니다. 저장소의 Pages source는 이 workflow를 반영할 때 `GitHub Actions`로 한 번 전환해야 하며, 기존 branch/Jekyll 배포를 동시에 유지하지 않습니다.
 
 공개 JSON 구조가 바뀌거나 네트워크가 실패하면 대시보드는 마지막 확인 스냅샷 또는 오류 상태를 보여주고, 원본 페이지 링크는 계속 유지합니다. 중앙 허브의 숫자는 투자 결론이 아니라 원본 프로젝트의 방법론, 가격 기준일, 데이터 품질, 한계를 확인하기 위한 출발점입니다.
 

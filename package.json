@@ -4,7 +4,7 @@
   "private": true,
   "description": "Unified static GitHub Pages dashboard for quant research projects.",
   "scripts": {
-    "test": "node --check assets/app.js && node --check assets/theme.js && node --check scripts/verify.mjs && node --check scripts/regression.mjs && node --check scripts/public-health-policy.mjs && node --check scripts/theme-regression.mjs && node --check scripts/static-smoke.mjs && node scripts/verify.mjs && node scripts/regression.mjs && node scripts/theme-regression.mjs && node scripts/static-smoke.mjs",
+    "test": "node --check assets/app.js && node --check assets/theme.js && node --check scripts/verify.mjs && node --check scripts/regression.mjs && node --check scripts/public-health-policy.mjs && node --check scripts/public-health-incident.mjs && node --check scripts/public-health-gate.mjs && node --check scripts/theme-regression.mjs && node --check scripts/static-smoke.mjs && node --test scripts/public-health-incident.test.mjs scripts/public-health-gate.test.mjs && node scripts/verify.mjs && node scripts/regression.mjs && node scripts/theme-regression.mjs && node scripts/static-smoke.mjs",
     "test:live": "node --check scripts/live-contract-smoke.mjs && node --check scripts/public-health-policy.mjs && node scripts/live-contract-smoke.mjs",
     "test:publish": "npm test && npm run test:live"
   }

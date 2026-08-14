@@ -15,15 +15,18 @@ const files = {
   packageJson: readFileSync('package.json', 'utf8'),
   liveSmoke: readFileSync('scripts/live-contract-smoke.mjs', 'utf8'),
   publicHealthPolicy: readFileSync('scripts/public-health-policy.mjs', 'utf8'),
+  publicHealthIncident: readFileSync('scripts/public-health-incident.mjs', 'utf8'),
+  publicHealthGate: readFileSync('scripts/public-health-gate.mjs', 'utf8'),
   platformFoundationWorkflow: readFileSync('.github/workflows/platform-foundation.yml', 'utf8'),
   publicHealthWorkflow: readFileSync('.github/workflows/public-data-health.yml', 'utf8'),
+  pagesWorkflow: readFileSync('.github/workflows/pages.yml', 'utf8'),
 };
 
 const checks = [];
 const assert = (condition, label) => checks.push({ label, ok: Boolean(condition) });
 const contains = (file, needle) => file.includes(needle);
 
-for (const path of ['index.html', 'assets/styles.css', 'assets/shared-nav.css', 'assets/app.js', 'DESIGN.md', 'docs/web-design.md', 'docs/common-design-v1.md', 'docs/common-design-v1-rollout-prompt.md', 'docs/platform-architecture-v1.md', 'docs/control-audit-2026-07-24.md', 'scripts/verify.mjs', 'scripts/regression.mjs', 'scripts/static-smoke.mjs', 'scripts/live-contract-smoke.mjs', 'scripts/public-health-policy.mjs', '.github/workflows/platform-foundation.yml', '.github/workflows/public-data-health.yml', 'platform/vercel.json', 'package.json']) {
+for (const path of ['index.html', 'assets/styles.css', 'assets/shared-nav.css', 'assets/app.js', 'DESIGN.md', 'docs/web-design.md', 'docs/common-design-v1.md', 'docs/common-design-v1-rollout-prompt.md', 'docs/platform-architecture-v1.md', 'docs/control-audit-2026-07-24.md', 'scripts/verify.mjs', 'scripts/regression.mjs', 'scripts/static-smoke.mjs', 'scripts/live-contract-smoke.mjs', 'scripts/public-health-policy.mjs', 'scripts/public-health-incident.mjs', 'scripts/public-health-incident.test.mjs', 'scripts/public-health-gate.mjs', 'scripts/public-health-gate.test.mjs', '.github/workflows/platform-foundation.yml', '.github/workflows/public-data-health.yml', '.github/workflows/pages.yml', 'platform/vercel.json', 'package.json']) {
   assert(statSync(path).isFile(), `${path} exists`);
 }
 
@@ -299,7 +302,10 @@ assert(contains(files.packageJson, '"test:publish"') && contains(files.packageJs
 assert(contains(files.liveSmoke, 'MAX_PAYLOAD_BYTES') && contains(files.liveSmoke, 'MAX_GENERATION_AGE_DAYS'), 'live contract smoke checks payload size and freshness');
 assert(contains(files.liveSmoke, "'transport'") && contains(files.liveSmoke, "'contract'") && contains(files.liveSmoke, "'freshness'"), 'live health report distinguishes transient transport from hard contract and freshness failures');
 assert(contains(files.publicHealthWorkflow, 'cron: "15 5 * * 2-6"') && contains(files.publicHealthWorkflow, 'workflow_run:'), 'public health runs on schedule and after the main platform workflow');
-assert(contains(files.publicHealthWorkflow, 'Fail hard contract, freshness, or observability regressions') && contains(files.publicHealthWorkflow, 'HEALTH_EXIT" == "2"'), 'scheduled monitor softens one transport incident but fails broad observability and contract/freshness regressions');
+assert(contains(files.publicHealthWorkflow, 'public-data-incident-state') && contains(files.publicHealthWorkflow, '--incident-changed'), 'scheduled public health deduplicates an unchanged hard incident');
+assert(contains(files.publicHealthWorkflow, 'scripts/public-health-gate.mjs') && contains(files.publicHealthGate, "eventName === 'workflow_run'") && contains(files.publicHealthGate, "finding.category === 'contract' || finding.category === 'observability'"), 'Hub code pushes fail only contract or observability regressions, not unchanged upstream freshness');
+assert(contains(files.publicHealthWorkflow, 'Fail hard contract, freshness, or observability regressions') && contains(files.publicHealthWorkflow, 'HEALTH_EXIT" == "2"'), 'scheduled monitor softens one transport incident but retains hard production gates');
+assert(contains(files.publicHealthIncident, 'normalizeIncidentMessage') && contains(files.publicHealthIncident, 'quant-dashboard-public-health-incident'), 'public health incident identity normalizes moving age values');
 assert(
   contains(files.publicHealthPolicy, 'TRANSPORT_HARD_FAILURE_PROJECT_THRESHOLD = 2')
     && contains(files.publicHealthPolicy, 'operationalFindingsFor')
@@ -310,6 +316,16 @@ assert(
   files.platformFoundationWorkflow.split('".github/workflows/public-data-health.yml"').length - 1 === 2,
   'public health workflow changes trigger Platform Foundation on pull requests and main pushes',
 );
+assert(
+  files.platformFoundationWorkflow.split('".github/workflows/pages.yml"').length - 1 === 2,
+  'Pages workflow changes trigger Platform Foundation on pull requests and main pushes',
+);
+assert(contains(files.pagesWorkflow, 'workflows: ["Platform Foundation"]') && contains(files.pagesWorkflow, "workflow_run.event == 'push'") && contains(files.pagesWorkflow, 'conclusion == \'success\''), 'Pages deploys only after successful main-push Platform Foundation validation');
+assert(contains(files.publicHealthWorkflow, "workflow_run.event == 'push'"), 'privileged workflow_run health checks reject pull-request revisions');
+assert(contains(files.pagesWorkflow, 'Refuse a superseded Hub artifact') && contains(files.pagesWorkflow, 'EXPECTED_SOURCE_SHA'), 'Pages refuses a superseded Hub artifact');
+assert(contains(files.pagesWorkflow, 'Require Actions-owned Pages configuration') && contains(files.pagesWorkflow, 'build_type') && contains(files.pagesWorkflow, 'workflow'), 'Pages refuses to race the legacy branch publisher');
+assert(contains(files.pagesWorkflow, 'Build an allowlisted Pages artifact') && contains(files.pagesWorkflow, 'Verify public Hub bytes'), 'Pages publishes an allowlisted artifact and verifies public bytes');
+assert(!contains(files.pagesWorkflow, 'actions/checkout@v') && !contains(files.pagesWorkflow, 'actions/deploy-pages@v'), 'Pages workflow pins third-party Actions by commit SHA');
 assert(contains(files.liveSmoke, 'validateAdapterContract'), 'live contract smoke rejects incompatible contract versions');
 assert(contains(files.liveSmoke, 'REQUIRED_PROJECT_COUNT = 8'), 'live contract smoke requires all eight active public summary panels');
 assert(
