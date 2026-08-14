@@ -37,6 +37,7 @@ try {
   if (!app.includes('parseEtfTracking')) throw new Error('ETF Tracking parser missing');
   if (!app.includes('parseFearAndGreed') || !app.includes('Fear & Greed · 현재 연구 상태')) throw new Error('Fear & Greed parser/panel missing');
   if (!app.includes('parseSox') || !app.includes('SOX 구성종목 · Momentum Top 5')) throw new Error('SOX parser/panel missing');
+  if (!app.includes('parseRegime') || !app.includes('현재 국면 · 다음 주 전망')) throw new Error('Regime synthetic-demo parser/panel missing');
   if (!app.includes('renderEtfDetailCards') || !app.includes('renderEtfMiniChart')) throw new Error('ETF Tracking detail card/chart renderer missing');
   if (!app.includes('momentumDashboard') || !app.includes('buildDramAxisTicks') || !app.includes('buildEtfPercentAxisTicks')) throw new Error('dashboard readability improvements missing');
   if (!app.includes('renderDramSourceChart') || !app.includes('data-dram-scale="indexed"') || app.includes('dram-value-layer')) throw new Error('DRAM chart collision fix missing');

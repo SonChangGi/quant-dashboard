@@ -49,7 +49,7 @@
 - 정상 상태는 짧은 값으로 표시하고 긴 문장은 warning·error일 때만 사용한다.
 
 공통 상위 메뉴
-- 상위 메뉴는 `Hub → Fear & Greed → Momentum → DRAM → Best Factor → ETF → SOX → Port` 전체 8개 목적지를 최신 `quant-dashboard` registry와 같은 label·순서·URL로 제공한다.
+- 상위 메뉴는 `Hub → Fear & Greed → Momentum → DRAM → Best Factor → ETF → SOX → Port → Regime` 전체 9개 목적지를 최신 `quant-dashboard` registry와 같은 label·순서·URL로 제공한다.
 - 완료된 일부 프로젝트 또는 Hub·현재 프로젝트만 하드코딩하지 않는다.
 - 각 저장소가 메뉴 데이터와 markup을 자체 구현하며 다른 저장소의 runtime JavaScript·CSS를 직접 import하지 않는다.
 - 공통 compact menu는 sticky shell 약 `58px`, brand `14px`, 메뉴 글자 `12px / 650`, 조작 영역 최소 `44px`로 구성한다. 현재 항목은 기존 primary 색의 soft surface로 구분한다.

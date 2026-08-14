@@ -4,7 +4,7 @@
 
 ## 목적
 
-- Fear & Greed Flow Lab, 모멘텀 팩터 랩, D램(DRAM) 가격 랩, Best Factor Lab, ETF TOP10 Tracking, SOX 반도체 지수 Cockpit, Port Portfolio Dashboard를 한 화면에서 연결합니다.
+- Fear & Greed Flow Lab, 모멘텀 팩터 랩, D램(DRAM) 가격 랩, Best Factor Lab, ETF TOP10 Tracking, SOX 반도체 지수 Cockpit, Port Portfolio Dashboard, US Market Regime Lab을 한 화면에서 연결합니다.
 - 각 프로젝트 카드의 버튼으로 원본 GitHub Pages 페이지를 바로 엽니다. Port 카드는 포트폴리오 비중/ETF 기초 노출 도구로 이동합니다.
 - 공개 배포 JSON만 best-effort로 읽되, 공통 `quant-research-summary` contract와 필수 key가 맞지 않으면 fallback/준비중 상태를 보여줍니다.
 - 리서치 브리핑, 티커·테마 dossier, 데이터 상태/자동화 패널로 “오늘 무엇을 확인할지”와 “어떤 한계를 같이 읽어야 하는지”를 먼저 보여줍니다.
@@ -40,10 +40,11 @@
 - `https://sonchanggi.github.io/etf-tracking/data/dashboard.json`
 - `https://sonchanggi.github.io/sox/data/summary.json`
 - `https://sonchanggi.github.io/port/data/summary.json`
+- `https://sonchanggi.github.io/regime/data/regime-results.json` (합성 데모 전용)
 
 `summary.json`의 공통 필드는 `schemaVersion`, `contract`, `projectId`, `generatedAt`, `dataAsOf`, `status`, `coverage`, `primaryEntities`, `limitations`, `automation`입니다. 대형 원본 payload는 원본 프로젝트에 남겨두고 중앙 허브는 ticker/theme dossier와 health 상태에 필요한 작은 요약부터 사용합니다.
 
-허브는 7개 프로젝트 링크와 7개 공개 요약 패널을 제공합니다. Port도 독립 `summary.json`의 가격/history/holdings 품질과 자동화 링크를 health 집계에 포함합니다.
+허브는 8개 프로젝트 링크와 8개 공개 요약 패널을 제공합니다. Port의 수집 품질과 Regime의 공개 합성 데모 상태도 health 집계에 포함합니다. Regime 어댑터는 `meta.mode=demo`, `synthetic_*` source ID, `synthetic_fixture` 라이선스를 모두 만족할 때만 값을 표시합니다.
 
 각 패널에는 upstream 계약이 `expectedFreshnessDays`를 생략해도 적용되는 프로젝트별 보수적 freshness 기본값이 있습니다. `.github/workflows/public-data-health.yml`은 마지막 예약 재시도 이후와 Platform Foundation 성공 후 `npm run test:live`를 실행합니다. Upstream `degraded`/`stale` 상태는 운영 경고로 기록합니다. HTTP 429/5xx·timeout 같은 단일 프로젝트 전송 장애만 `transient`로 허용하며, 동시에 2개 이상 프로젝트를 관측할 수 없으면 hard observability failure로 승격합니다. 404/JSON·schema 계약 오류와 freshness 초과도 hard failure입니다. 전체 bounded JSON 보고서는 14일간 Actions artifact로 보존됩니다.
 
@@ -70,7 +71,7 @@ npm run test:live  # 공개 GitHub Pages JSON 계약을 네트워크로 확인�
 - 모든 프로젝트 원본 링크 존재
 - 모든 활성 프로젝트 링크와 `summary.json` endpoint 존재
 - 공개 summary/detail endpoint 상수 존재
-- Fear & Greed / Momentum / D램(DRAM) / Best Factor / ETF Tracking / SOX / Port parser와 fallback 존재
+- Fear & Greed / Momentum / D램(DRAM) / Best Factor / ETF Tracking / SOX / Port / Regime parser와 fallback 존재
 - freshness/status 표시 hook 존재
 - Research Cockpit, 티커·테마 Dossier, Data Health/automation hook 존재
 - 선택형 live contract smoke로 공개 JSON row 수, schema/contract version, 최신성, payload 크기 확인

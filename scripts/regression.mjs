@@ -29,10 +29,10 @@ assert(
   'public health reports degraded upstream state and provider reasons',
 );
 assert(
-  transportEscalation(['port'], 7) === null,
+  transportEscalation(['port'], 8) === null,
   'one transient transport outage remains a soft observation warning',
 );
-const broadTransportFailure = transportEscalation(['port', 'etf'], 7);
+const broadTransportFailure = transportEscalation(['port', 'etf'], 8);
 assert(
   TRANSPORT_HARD_FAILURE_PROJECT_THRESHOLD === 2
     && broadTransportFailure?.severity === 'hard'
@@ -41,7 +41,7 @@ assert(
 );
 assert(
   api.PROJECTS.map((project) => project.shortName).join('|')
-    === 'Fear & Greed|Momentum|DRAM|Best Factor|ETF|SOX|Port',
+    === 'Fear & Greed|Momentum|DRAM|Best Factor|ETF|SOX|Port|Regime',
   'project manifest preserves the canonical navigation order after Hub',
 );
 assert(
@@ -53,6 +53,7 @@ assert(
     etf: 'etf',
     sox: 'sox',
     port: 'port',
+    regime: 'regime',
   }),
   'Hub maps public summary ids to canonical platform project identities',
 );
@@ -1681,8 +1682,105 @@ assert(
   'Port adapter fails closed when critical collection issues are present',
 );
 
-assert(Object.keys(api.PANEL_ADAPTERS).length === 7, 'panel adapter manifest has seven active public summary adapters including Port');
+const validRegimePayload = {
+  meta: {
+    mode: 'demo',
+    result_version: 'weekly-regime-result-v4',
+    generated_at: '2026-08-08T00:00:00Z',
+    data_as_of: '2026-08-07T20:00:00Z',
+  },
+  sources: [
+    { id: 'synthetic_market_fixture', license_class: 'synthetic_fixture' },
+    { id: 'synthetic_macro_fixture', license_class: 'synthetic_fixture' },
+  ],
+  weekly: [{
+    date: '2026-08-07',
+    current: {
+      state: 'risk_on',
+      probabilities: { risk_on: 0.6, transition: 0.3, risk_off: 0.1 },
+      confidence: 0.6,
+    },
+    next_week: {
+      state: 'transition',
+      probabilities: { risk_on: 0.3, transition: 0.6, risk_off: 0.1 },
+      confidence: 0.6,
+      date: '2026-08-14',
+    },
+    transition_probability: 0.7,
+    transition_risk: {
+      '1w': { probability: 0.7, target_end: '2026-08-14' },
+      '4w': { probability: 0.8, target_end: '2026-09-04' },
+      '13w': { probability: 0.9, target_end: '2026-11-06' },
+    },
+  }],
+};
+const validRegime = api.parseRegime(validRegimePayload);
+assert(
+  api.PANEL_ADAPTERS.regime.hasUsableData(validRegime)
+    && validRegime.currentStateLabel === '위험 선호'
+    && validRegime.nextStateLabel === '전환'
+    && validRegime.transitionRisk13w === 0.9,
+  'Regime adapter parses current, next-week, and 1/4/13-week probabilities from a synthetic demo',
+);
+assert(
+  api.briefingItemForRecord({ project: { id: 'regime' }, summary: validRegime }).detail.includes('13주 90%'),
+  'Regime briefing derives risk and date values from the public demo payload',
+);
+const rejectedLiveRegime = api.parsePanelSafely(api.PANEL_ADAPTERS.regime, {
+  summary: { ...validRegimePayload, meta: { ...validRegimePayload.meta, mode: 'live' } },
+});
+assert(
+  !rejectedLiveRegime.ok && /meta.mode=demo/.test(rejectedLiveRegime.error),
+  'Regime adapter rejects live payloads even when their result values are otherwise valid',
+);
+const rejectedProviderRegime = api.parsePanelSafely(api.PANEL_ADAPTERS.regime, {
+  summary: {
+    ...validRegimePayload,
+    sources: [{ id: 'alpha_vantage', license_class: 'private_noncommercial' }],
+  },
+});
+assert(
+  !rejectedProviderRegime.ok && /not synthetic/.test(rejectedProviderRegime.error),
+  'Regime adapter rejects provider-derived source metadata',
+);
+const rejectedLicenseRegime = api.parsePanelSafely(api.PANEL_ADAPTERS.regime, {
+  summary: {
+    ...validRegimePayload,
+    sources: [{ id: 'synthetic_market_fixture', license_class: 'private_noncommercial' }],
+  },
+});
+assert(
+  !rejectedLicenseRegime.ok && /not synthetic_fixture/.test(rejectedLicenseRegime.error),
+  'Regime adapter requires synthetic_fixture licensing for every public source',
+);
+const rejectedProbabilityRegime = api.parsePanelSafely(api.PANEL_ADAPTERS.regime, {
+  summary: {
+    ...validRegimePayload,
+    weekly: [{
+      ...validRegimePayload.weekly[0],
+      current: {
+        ...validRegimePayload.weekly[0].current,
+        probabilities: { risk_on: 0.8, transition: 0.3, risk_off: 0.1 },
+      },
+    }],
+  },
+});
+assert(
+  !rejectedProbabilityRegime.ok && /sum to one/.test(rejectedProbabilityRegime.error),
+  'Regime adapter rejects malformed three-state probability distributions',
+);
+const unavailableRegime = api.PANEL_ADAPTERS.regime.fallback();
+assert(
+  unavailableRegime.unavailable === true
+    && unavailableRegime.dataAsOf === ''
+    && unavailableRegime.currentConfidence === null
+    && unavailableRegime.transitionRisk13w === null,
+  'Regime unavailable fallback contains no hardcoded market state, probability, or date',
+);
+
+assert(Object.keys(api.PANEL_ADAPTERS).length === 8, 'panel adapter manifest has eight active public summary adapters including Regime');
 assert(Object.keys(api.PANEL_ADAPTERS.port.sourceUrls).length === 1, 'Port adapter reads only its independent summary.json');
+assert(Object.keys(api.PANEL_ADAPTERS.regime.sourceUrls).length === 1, 'Regime adapter reads only its public demo result JSON');
 
 const nullEntryMomentum = api.parseMomentum({
   ...momentumSummaryV4,
@@ -1789,12 +1887,13 @@ context.document = {
 };
 api.renderProjectNavigation();
 api.renderDashboardPanels();
-assert(domTargets['#top-nav'].children.length === 7, 'manifest renderer creates seven active project links including Port');
-assert(domTargets['#summary-grid'].children.length === 7, 'manifest renderer creates seven public summary panels');
+assert(domTargets['#top-nav'].children.length === 8, 'manifest renderer creates eight active project links including Regime');
+assert(domTargets['#summary-grid'].children.length === 8, 'manifest renderer creates eight public summary panels');
 assert(domTargets['#summary-grid'].children.every((child) => /열기/.test(child.innerHTML)), 'dashboard panel shells preserve project page links');
 assert(domTargets['#summary-grid'].children.some((child) => /포트폴리오 데이터/.test(child.innerHTML)), 'Port public summary panel appears in the central grid');
 assert(domTargets['#summary-grid'].children.some((child) => /panel-detail/.test(child.innerHTML)), 'ETF panel shell includes detail mount for TOP10 cards');
 assert(domTargets['#summary-grid'].children.some((child) => /SOX 구성종목/.test(child.innerHTML)), 'SOX panel shell appears in the central summary grid');
+assert(domTargets['#summary-grid'].children.some((child) => /현재 국면 · 다음 주 전망/.test(child.innerHTML)), 'Regime public demo panel appears in the central summary grid');
 api.renderEtfDetailCards('#etf-details', validEtf.rows);
 assert(/etf-detail-card/.test(domTargets['#etf-details'].innerHTML), 'ETF detail renderer creates per-ETF card markup');
 assert(/AAA/.test(domTargets['#etf-details'].innerHTML) && /BBB/.test(domTargets['#etf-details'].innerHTML), 'ETF detail renderer includes TOP10 holdings');
