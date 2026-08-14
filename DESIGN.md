@@ -220,7 +220,7 @@
 
 ## Readability remediation audit — 2026-06-29
 - Protected boundary: this pass is UI-only. Static HTML/CSS and browser-rendered explanatory JS may change; calculation code, generated result/data JSON, analysis methodology, automation schedules, and existing disclaimer intent remain unchanged.
-- Connected surfaces now treated as one Pages family for readability: `quant-dashboard`, `momentum-factor-lab`, `dram-price`, `best-factor`, `etf-tracking`, `sox`, and `port`.
+- Connected surfaces now treated as one Pages family for readability: `quant-dashboard`, `momentum-factor-lab`, `dram-price`, `best-factor`, `etf-tracking`, `sox`, and `regime`.
 - Shared page structure decisions:
   - Every site gets fixed “↑ 위 / ↓ 아래” jump controls with real `#top` and `#page-bottom` anchors.
   - Operational notices, manual-update panels, data-contract warnings, and caveats belong near the bottom when they are not required to interpret the first result view.

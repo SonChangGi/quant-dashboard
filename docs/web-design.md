@@ -286,8 +286,7 @@ Quant Research 제품군은 다음처럼 보여야 한다.
 | 5 | Best Factor | `https://sonchanggi.github.io/best-factor/` |
 | 6 | ETF | `https://sonchanggi.github.io/etf-tracking/` |
 | 7 | SOX | `https://sonchanggi.github.io/sox/` |
-| 8 | Port | `https://sonchanggi.github.io/port/` |
-| 9 | Regime | `https://sonchanggi.github.io/regime/` |
+| 8 | Regime | `https://sonchanggi.github.io/regime/` |
 
 ### 4.1 Canonical navigation
 
