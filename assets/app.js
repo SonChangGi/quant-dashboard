@@ -169,6 +169,7 @@
     sox: (metrics) => `SOX proxy ${formatPercent(metrics.weight)} · 가격 ${formatNumber(metrics.priceMomentum)} · 실적 ${formatNumber(metrics.earningsMomentum)}`,
     fearngreed: (metrics) => `상태 ${metrics.signalState || '산출 불가'} · 백분위 ${formatNumber(metrics.sentimentPercentile)} · 잔차 z ${formatNumber(metrics.residualZ)} · 포지션 ${formatFearPosition(metrics.position)}`,
     port: (metrics) => `가격 ${formatInteger(metrics.assetCount)}개 · history ${formatInteger(metrics.historyAssetCount)}개 · 경고 ${formatInteger(metrics.warningCount)}건`,
+    regime: (metrics) => `현재 ${metrics.currentStateLabel || '-'} ${formatPercent(metrics.currentConfidence)} · 다음 주 ${metrics.nextStateLabel || '-'} ${formatPercent(metrics.nextConfidence)} · 1주 이탈 ${formatPercent(metrics.transitionRisk1w)}`,
   };
 
   const PROJECTS = [
@@ -299,6 +300,21 @@
         metricLoading: 'Port 공개 요약을 불러오는 중...',
       },
     },
+    {
+      id: 'regime',
+      shortName: 'Regime',
+      title: 'US Market Regime Lab',
+      description: '미국 증시의 현재 국면과 다음 주 확률을 확인합니다.',
+      url: 'https://sonchanggi.github.io/regime/',
+      accent: 'RG',
+      panelAdapter: 'regime',
+      panel: {
+        eyebrow: 'US Market Regime',
+        title: '현재 국면 · 다음 주 전망',
+        contentType: 'metrics',
+        metricLoading: 'Regime 공개 요약을 불러오는 중...',
+      },
+    },
   ];
   const PLATFORM_PROJECT_IDS = {
     fearngreed: 'fear-greed',
@@ -308,6 +324,7 @@
     etf: 'etf',
     sox: 'sox',
     port: 'port',
+    regime: 'regime',
   };
   const PROJECT_EXPECTED_FRESHNESS_DAYS = Object.freeze({
     fearngreed: 5,
@@ -317,9 +334,17 @@
     etf: 5,
     sox: 5,
     port: 5,
+    regime: 10,
   });
 
   const PORT_STATUS_STATES = new Set(['ok', 'published', 'live_api', 'stale', 'degraded', 'unavailable']);
+  const REGIME_RESULT_VERSIONS = new Set(['weekly-regime-result-v3', 'weekly-regime-result-v4']);
+  const REGIME_STATES = Object.freeze(['risk_on', 'transition', 'risk_off']);
+  const REGIME_STATE_LABELS = Object.freeze({
+    risk_on: '위험 선호',
+    transition: '전환',
+    risk_off: '위험 회피',
+  });
   const SUMMARY_CONTRACT = { versionField: 'schemaVersion', expectedVersion: 1, requiredKeys: ['contract', 'projectId', 'status', 'primaryEntities'] };
   const PORT_SUMMARY_CONTRACT = {
     ...SUMMARY_CONTRACT,
@@ -429,6 +454,17 @@
       fallback: normalizePortUnavailable,
       render: renderPort,
       emptyReason: 'Port summary did not contain a usable collection contract.',
+    },
+    regime: {
+      sourceUrls: {
+        summary: 'https://sonchanggi.github.io/regime/data/regime-results.json',
+      },
+      primarySourceKey: 'summary',
+      parse: (sources) => parseRegime(sources.summary),
+      hasUsableData: (summary) => Boolean(summary?.publicDemoValid && summary.unavailable !== true),
+      fallback: normalizeRegimeUnavailable,
+      render: renderRegime,
+      emptyReason: 'Regime payload is not an explicitly synthetic public demo.',
     },
   };
 
@@ -2493,6 +2529,170 @@
     });
   }
 
+  function parseRegime(payload) {
+    if (!isRecord(payload)) throw new Error('Regime payload must be an object.');
+    const meta = payload.meta;
+    if (!isRecord(meta) || meta.mode !== 'demo') {
+      throw new Error('Regime public payload must declare meta.mode=demo.');
+    }
+    if (!REGIME_RESULT_VERSIONS.has(meta.result_version)) {
+      throw new Error(`Unsupported Regime result version: ${meta.result_version || 'missing'}.`);
+    }
+
+    const sources = payload.sources;
+    if (!Array.isArray(sources) || !sources.length || sources.some((source) => !isRecord(source))) {
+      throw new Error('Regime public payload must contain synthetic sources.');
+    }
+    sources.forEach((source, index) => {
+      if (typeof source.id !== 'string' || !source.id.startsWith('synthetic_')) {
+        throw new Error(`Regime sources[${index}].id is not synthetic.`);
+      }
+      if (source.license_class !== 'synthetic_fixture') {
+        throw new Error(`Regime sources[${index}].license_class is not synthetic_fixture.`);
+      }
+    });
+
+    if (!Array.isArray(payload.weekly) || !payload.weekly.length || payload.weekly.some((row) => !isRecord(row))) {
+      throw new Error('Regime weekly results are missing.');
+    }
+    const datedWeeks = payload.weekly.map((row, index) => ({
+      row,
+      date: requireRegimeDate(row.date, `weekly[${index}].date`),
+    })).sort((left, right) => left.date.localeCompare(right.date));
+    const { row: latest, date } = datedWeeks.at(-1);
+    const generatedAt = stringOr(meta.generated_at, '');
+    if (!generatedAt || !Number.isFinite(Date.parse(generatedAt))) {
+      throw new Error('Regime meta.generated_at is missing or invalid.');
+    }
+    const declaredDataAsOf = requireRegimeDatePrefix(meta.data_as_of, 'meta.data_as_of');
+    if (declaredDataAsOf !== date) {
+      throw new Error('Regime meta.data_as_of does not match the latest observation week.');
+    }
+
+    const current = parseRegimeEstimate(latest.current, 'weekly.latest.current');
+    const nextWeek = parseRegimeEstimate(latest.next_week, 'weekly.latest.next_week');
+    const nextDate = requireRegimeDate(latest.next_week?.date, 'weekly.latest.next_week.date');
+    if (nextDate <= date) throw new Error('Regime next-week date must follow the observation week.');
+
+    const transitionRisk = {};
+    for (const horizon of [1, 4, 13]) {
+      const key = `${horizon}w`;
+      const item = latest.transition_risk?.[key];
+      if (!isRecord(item)) throw new Error(`Regime transition_risk.${key} is missing.`);
+      transitionRisk[key] = {
+        probability: requireRegimeProbability(item.probability, `transition_risk.${key}.probability`),
+        targetEnd: requireRegimeDate(item.target_end, `transition_risk.${key}.target_end`),
+      };
+    }
+    if (transitionRisk['1w'].targetEnd !== nextDate) {
+      throw new Error('Regime 1w transition target does not match the next-week date.');
+    }
+    if (!(transitionRisk['1w'].probability <= transitionRisk['4w'].probability + 1e-8
+      && transitionRisk['4w'].probability <= transitionRisk['13w'].probability + 1e-8)) {
+      throw new Error('Regime transition risks must be monotone across 1w, 4w, and 13w.');
+    }
+
+    const transitionProbability = requireRegimeProbability(latest.transition_probability, 'transition_probability');
+    const canonicalTransition = 1 - nextWeek.probabilities[current.state];
+    if (Math.abs(transitionProbability - canonicalTransition) > 1e-6
+      || Math.abs(transitionProbability - transitionRisk['1w'].probability) > 1e-6) {
+      throw new Error('Regime 1w transition probability is internally inconsistent.');
+    }
+
+    const summary = {
+      publicDemoValid: true,
+      generatedAt,
+      dataAsOf: date,
+      nextDate,
+      resultVersion: meta.result_version,
+      currentState: current.state,
+      currentStateLabel: REGIME_STATE_LABELS[current.state],
+      currentConfidence: current.confidence,
+      nextState: nextWeek.state,
+      nextStateLabel: REGIME_STATE_LABELS[nextWeek.state],
+      nextConfidence: nextWeek.confidence,
+      transitionRisk1w: transitionRisk['1w'].probability,
+      transitionRisk4w: transitionRisk['4w'].probability,
+      transitionRisk13w: transitionRisk['13w'].probability,
+      status: '합성 데모',
+      rows: [],
+      entities: [],
+      meta: {
+        statusState: 'demo',
+        statusLabel: '합성 데모',
+        dataModeLabel: '합성 데모',
+        dataAsOf: date,
+        cadence: 'weekly',
+        expectedFreshnessDays: PROJECT_EXPECTED_FRESHNESS_DAYS.regime,
+        limitations: [],
+        sourceCount: sources.length,
+      },
+    };
+    summary.entities = [{
+      id: 'us-market-regime',
+      symbol: 'US Market',
+      name: '미국 증시 국면',
+      label: `미국 증시 · ${summary.currentStateLabel}`,
+      sector: 'United States',
+      sectorLabel: 'United States',
+      themes: ['Regime', '미국 증시'],
+      metrics: { ...summary },
+      signals: [`현재 ${summary.currentStateLabel}`, `다음 주 ${summary.nextStateLabel}`],
+      warnings: [],
+      status: 'demo',
+    }];
+    return summary;
+  }
+
+  function parseRegimeEstimate(value, context) {
+    if (!isRecord(value) || !isRecord(value.probabilities)) {
+      throw new Error(`${context} is missing probabilities.`);
+    }
+    const keys = Object.keys(value.probabilities);
+    if (keys.length !== REGIME_STATES.length || REGIME_STATES.some((state) => !keys.includes(state))) {
+      throw new Error(`${context} must contain the exact three Regime probability keys.`);
+    }
+    const probabilities = Object.fromEntries(REGIME_STATES.map((state) => [
+      state,
+      requireRegimeProbability(value.probabilities[state], `${context}.probabilities.${state}`),
+    ]));
+    const total = Object.values(probabilities).reduce((sum, probability) => sum + probability, 0);
+    if (Math.abs(total - 1) > 1e-6) throw new Error(`${context} probabilities must sum to one.`);
+    const state = value.state;
+    if (!REGIME_STATES.includes(state)) throw new Error(`${context}.state is invalid.`);
+    const confidence = requireRegimeProbability(value.confidence, `${context}.confidence`);
+    const winningProbability = Math.max(...Object.values(probabilities));
+    if (Math.abs(confidence - probabilities[state]) > 1e-6
+      || Math.abs(probabilities[state] - winningProbability) > 1e-6) {
+      throw new Error(`${context} state and confidence do not match its probabilities.`);
+    }
+    return { state, probabilities, confidence };
+  }
+
+  function requireRegimeProbability(value, context) {
+    if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value > 1) {
+      throw new Error(`${context} must be a finite probability.`);
+    }
+    return value;
+  }
+
+  function requireRegimeDate(value, context) {
+    const parsed = typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
+      ? new Date(`${value}T00:00:00Z`)
+      : null;
+    if (!parsed || Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value) {
+      throw new Error(`${context} must be an ISO date.`);
+    }
+    return value;
+  }
+
+  function requireRegimeDatePrefix(value, context) {
+    if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}/.test(value) || !Number.isFinite(Date.parse(value))) {
+      throw new Error(`${context} must contain an ISO date.`);
+    }
+    return requireRegimeDate(value.slice(0, 10), context);
+  }
+
   function parsePort(payload) {
     if (!isResearchSummary(payload, 'port')) return normalizePortUnavailable();
     const meta = summaryMeta(payload);
@@ -2785,6 +2985,22 @@
       buildStatusText(mode, summary.generatedAt, error, summary.status, summaryDataAsOf(summary)),
       mode,
     );
+  }
+
+  function renderRegime(summary, mode, error, project) {
+    const available = summary?.publicDemoValid === true && summary?.unavailable !== true;
+    renderMetricCards(panelSelector(project, 'metrics'), [
+      ['현재 국면', available ? `${summary.currentStateLabel} · ${formatPercent(summary.currentConfidence)}` : '확인 불가'],
+      ['다음 주', available ? `${summary.nextStateLabel} · ${formatPercent(summary.nextConfidence)}` : '확인 불가'],
+      ['1주 이탈', available ? formatPercent(summary.transitionRisk1w) : '확인 불가'],
+      ['4주 이탈', available ? formatPercent(summary.transitionRisk4w) : '확인 불가'],
+      ['13주 이탈', available ? formatPercent(summary.transitionRisk13w) : '확인 불가'],
+      ['기준일', available ? formatMaybeDate(summary.dataAsOf) : '확인 불가'],
+    ]);
+    const statusText = available
+      ? `공개 합성 데모 · 기준일 ${formatMaybeDate(summary.dataAsOf)} · 업데이트 ${formatFreshness(summary.generatedAt)}`
+      : `Regime 공개 합성 데모 사용 불가 · ${error || summary?.status || '계약 확인 필요'}`;
+    setStatus(panelSelector(project, 'status'), statusText, 'warning');
   }
 
   function renderFearAndGreed(summary, mode, error, project) {
@@ -3509,6 +3725,36 @@
     };
   }
 
+  function normalizeRegimeUnavailable() {
+    return {
+      unavailable: true,
+      publicDemoValid: false,
+      generatedAt: '',
+      dataAsOf: '',
+      nextDate: '',
+      currentState: '',
+      currentStateLabel: '',
+      currentConfidence: null,
+      nextState: '',
+      nextStateLabel: '',
+      nextConfidence: null,
+      transitionRisk1w: null,
+      transitionRisk4w: null,
+      transitionRisk13w: null,
+      status: 'Regime 공개 합성 데모를 사용할 수 없습니다.',
+      rows: [],
+      entities: [],
+      meta: {
+        statusState: 'unavailable',
+        statusLabel: 'unavailable',
+        dataModeLabel: '사용 불가',
+        cadence: 'weekly',
+        expectedFreshnessDays: PROJECT_EXPECTED_FRESHNESS_DAYS.regime,
+        limitations: [],
+      },
+    };
+  }
+
   function renderResearchBriefing(records = []) {
     const target = $('#research-briefing');
     if (!target) return;
@@ -3585,6 +3831,22 @@
         title: `가격 ${formatInteger(summary.assetCount)}개 · history ${formatInteger(summary.historyAssetCount)}개`,
         detail: `경고 ${formatInteger(summary.warningCount)}건 · 가격 fallback ${formatInteger(summary.priceFallbackCount)}개 · 기준일 ${formatMaybeDate(summary.dataAsOf)}`,
         tone: summary.meta?.statusState === 'ok' ? '' : 'warning',
+      };
+    }
+    if (record.project.id === 'regime') {
+      if (summary.unavailable || !summary.publicDemoValid) {
+        return {
+          kicker: 'Regime',
+          title: '공개 요약 확인 필요',
+          detail: '합성 데모 계약을 확인할 수 없습니다.',
+          tone: 'warning',
+        };
+      }
+      return {
+        kicker: 'Regime · 합성 데모',
+        title: `현재 ${summary.currentStateLabel} ${formatPercent(summary.currentConfidence)} · 다음 주 ${summary.nextStateLabel} ${formatPercent(summary.nextConfidence)}`,
+        detail: `이탈 1주 ${formatPercent(summary.transitionRisk1w)} · 4주 ${formatPercent(summary.transitionRisk4w)} · 13주 ${formatPercent(summary.transitionRisk13w)} · 기준일 ${formatMaybeDate(summary.dataAsOf)}`,
+        tone: 'warning',
       };
     }
     return null;
@@ -4078,11 +4340,14 @@
       parseBestFactor,
       parseEtfTracking,
       parsePort,
+      parseRegime,
       parseSox,
       renderSox,
       renderPort,
+      renderRegime,
       renderFearAndGreed,
       normalizePortUnavailable,
+      normalizeRegimeUnavailable,
       isMomentumSummaryV5,
       isMomentumDashboardV5,
       validMomentumFactorAccountingV5,

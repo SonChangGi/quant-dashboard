@@ -8,7 +8,7 @@ import {
 
 const MAX_PAYLOAD_BYTES = 8_000_000;
 const MAX_GENERATION_AGE_DAYS = 21;
-const REQUIRED_PROJECT_COUNT = 7;
+const REQUIRED_PROJECT_COUNT = 8;
 const reportPath = argumentValue('--report');
 
 const sandbox = { console };
