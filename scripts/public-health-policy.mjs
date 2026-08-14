@@ -40,7 +40,7 @@ export function transportEscalation(projectIds, projectCount) {
   if (affectedProjects.length < TRANSPORT_HARD_FAILURE_PROJECT_THRESHOLD) return null;
   return {
     project: 'hub',
-    category: 'transport',
+    category: 'observability',
     severity: 'hard',
     message: (
       `${affectedProjects.length}/${projectCount} public projects are unobservable; `
