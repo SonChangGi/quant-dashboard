@@ -11,6 +11,14 @@ const MAX_GENERATION_AGE_DAYS = 21;
 const REQUIRED_PROJECT_COUNT = 8;
 const reportPath = argumentValue('--report');
 
+class PublicFetchError extends Error {
+  constructor(category, message) {
+    super(message);
+    this.name = 'PublicFetchError';
+    this.category = category;
+  }
+}
+
 const sandbox = { console };
 sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
@@ -311,12 +319,4 @@ function ageDays(value) {
 function argumentValue(name) {
   const index = process.argv.indexOf(name);
   return index >= 0 ? process.argv[index + 1] || '' : '';
-}
-
-class PublicFetchError extends Error {
-  constructor(category, message) {
-    super(message);
-    this.name = 'PublicFetchError';
-    this.category = category;
-  }
 }

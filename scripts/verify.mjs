@@ -312,6 +312,11 @@ assert(
 );
 assert(contains(files.liveSmoke, 'validateAdapterContract'), 'live contract smoke rejects incompatible contract versions');
 assert(contains(files.liveSmoke, 'REQUIRED_PROJECT_COUNT = 8'), 'live contract smoke requires all eight active public summary panels');
+assert(
+  files.liveSmoke.indexOf('class PublicFetchError') >= 0
+    && files.liveSmoke.indexOf('class PublicFetchError') < files.liveSmoke.indexOf('for (const project of panelProjects)'),
+  'live contract smoke initializes its typed fetch error before the top-level network loop',
+);
 assert(!contains(files.app, '../momentum-factor-lab') && !contains(files.app, '../dram-price') && !contains(files.app, '../best-factor') && !contains(files.app, '../etf-tracking') && !contains(files.app, '../sox'), 'no sibling local source paths referenced');
 
 const failed = checks.filter((check) => !check.ok);
