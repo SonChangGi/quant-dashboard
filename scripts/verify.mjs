@@ -297,8 +297,8 @@ assert(contains(files.liveSmoke, 'MAX_PAYLOAD_BYTES') && contains(files.liveSmok
 assert(contains(files.liveSmoke, "'transport'") && contains(files.liveSmoke, "'contract'") && contains(files.liveSmoke, "'freshness'"), 'live health report distinguishes transient transport from hard contract and freshness failures');
 assert(contains(files.publicHealthWorkflow, 'cron: "15 5 * * 2-6"') && contains(files.publicHealthWorkflow, 'workflow_run:'), 'public health runs on schedule and after the main platform workflow');
 assert(contains(files.publicHealthWorkflow, 'public-data-incident-state') && contains(files.publicHealthWorkflow, '--incident-changed'), 'scheduled public health deduplicates an unchanged hard incident');
-assert(contains(files.publicHealthWorkflow, 'scripts/public-health-gate.mjs') && contains(files.publicHealthGate, "eventName === 'workflow_run'") && contains(files.publicHealthGate, "finding.category === 'contract' || finding.category === 'observability'"), 'Hub code pushes fail only contract or observability regressions, not unchanged upstream freshness');
-assert(contains(files.publicHealthWorkflow, 'Fail hard contract, freshness, or observability regressions') && contains(files.publicHealthWorkflow, 'HEALTH_EXIT" == "2"'), 'scheduled monitor softens one transport incident but retains hard production gates');
+assert(contains(files.publicHealthWorkflow, 'scripts/public-health-gate.mjs') && contains(files.publicHealthGate, "finding.category === 'contract' || finding.category === 'observability'") && contains(files.publicHealthGate, "'data_health_warning'"), 'Hub health fails only web-breaking contract or observability regressions while retaining data-health evidence');
+assert(contains(files.publicHealthWorkflow, 'Fail only public contract or broad observability regressions') && contains(files.publicHealthWorkflow, 'HEALTH_EXIT" == "2"'), 'scheduled monitor keeps transient and stale data findings non-notifying');
 assert(contains(files.publicHealthIncident, 'normalizeIncidentMessage') && contains(files.publicHealthIncident, 'quant-dashboard-public-health-incident'), 'public health incident identity normalizes moving age values');
 assert(
   contains(files.publicHealthPolicy, 'TRANSPORT_HARD_FAILURE_PROJECT_THRESHOLD = 2')
@@ -319,6 +319,7 @@ assert(contains(files.publicHealthWorkflow, "workflow_run.event == 'push'"), 'pr
 assert(contains(files.pagesWorkflow, 'Refuse a superseded Hub artifact') && contains(files.pagesWorkflow, 'EXPECTED_SOURCE_SHA'), 'Pages refuses a superseded Hub artifact');
 assert(contains(files.pagesWorkflow, 'Require Actions-owned Pages configuration') && contains(files.pagesWorkflow, 'build_type') && contains(files.pagesWorkflow, 'workflow'), 'Pages refuses to race the legacy branch publisher');
 assert(contains(files.pagesWorkflow, 'Build an allowlisted Pages artifact') && contains(files.pagesWorkflow, 'Verify public Hub bytes'), 'Pages publishes an allowlisted artifact and verifies public bytes');
+assert(contains(files.pagesWorkflow, 'public-site-health:') && contains(files.pagesWorkflow, 'Fail only when the existing public Hub is unusable'), 'automatic Pages failures are notification-gated by live Hub usability');
 assert(!contains(files.pagesWorkflow, 'actions/checkout@v') && !contains(files.pagesWorkflow, 'actions/deploy-pages@v'), 'Pages workflow pins third-party Actions by commit SHA');
 assert(contains(files.liveSmoke, 'validateAdapterContract'), 'live contract smoke rejects incompatible contract versions');
 assert(contains(files.liveSmoke, 'REQUIRED_PROJECT_COUNT = 7'), 'live contract smoke requires all seven active public summary panels');

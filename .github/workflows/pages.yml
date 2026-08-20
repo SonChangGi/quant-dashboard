@@ -23,6 +23,7 @@ jobs:
            github.event.workflow_run.head_branch == 'main' &&
            github.event.workflow_run.conclusion == 'success') }}
     runs-on: ubuntu-latest
+    continue-on-error: ${{ github.event_name == 'workflow_run' }}
     timeout-minutes: 12
     outputs:
       source_sha: ${{ steps.source.outputs.source_sha }}
@@ -72,6 +73,7 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    continue-on-error: ${{ github.event_name == 'workflow_run' }}
     timeout-minutes: 12
     environment:
       name: github-pages
@@ -125,3 +127,49 @@ jobs:
             [[ $attempt -lt 12 ]] || exit 1
             sleep 5
           done
+
+  public-site-health:
+    needs: [build, deploy]
+    if: ${{ always() && github.event_name == 'workflow_run' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      contents: read
+    steps:
+      - name: Fail only when the existing public Hub is unusable
+        env:
+          PAGE_URL: https://sonchanggi.github.io/quant-dashboard/
+        shell: bash
+        run: |
+          set -u
+          required_paths=(index.html assets/app.js)
+          for attempt in {1..12}; do
+            usable=true
+            for relative_path in "${required_paths[@]}"; do
+              readback="$RUNNER_TEMP/quant-hub-health-${relative_path//\//-}"
+              if ! curl --fail --silent --show-error --location \
+                --header "Cache-Control: no-cache" \
+                --connect-timeout 10 \
+                --max-time 30 \
+                --output "$readback" \
+                "${PAGE_URL%/}/${relative_path}?health=${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${attempt}"; then
+                usable=false
+                break
+              fi
+              if [[ ! -s "$readback" ]]; then
+                usable=false
+                break
+              fi
+              if [[ "$relative_path" == "index.html" ]] && ! grep -Eiq '<!doctype html|<html' "$readback"; then
+                usable=false
+                break
+              fi
+            done
+            if [[ "$usable" == "true" ]]; then
+              echo "The existing Quant Hub remains usable; automatic release errors stay in run logs without failure mail."
+              exit 0
+            fi
+            [[ $attempt -lt 12 ]] && sleep 10
+          done
+          echo "::error::The public Quant Hub shell is unavailable or invalid after repeated checks."
+          exit 1

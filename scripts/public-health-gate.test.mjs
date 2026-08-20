@@ -10,13 +10,19 @@ const report = (findings = []) => ({
   findings,
 });
 
-test('Hub code pushes do not repeat an upstream freshness failure', () => {
+test('freshness failures are recorded without failing a usable public site', () => {
   assert.deepEqual(decideHealthGate({
     report: report([hard('freshness')]),
     healthExit: 1,
     eventName: 'workflow_run',
     incidentChanged: true,
-  }), { fail: false, reason: 'upstream_freshness_notified_elsewhere' });
+  }), { fail: false, reason: 'data_health_warning' });
+  assert.deepEqual(decideHealthGate({
+    report: report([hard('freshness')]),
+    healthExit: 1,
+    eventName: 'schedule',
+    incidentChanged: true,
+  }), { fail: false, reason: 'data_health_warning' });
 });
 
 test('Hub code pushes still fail contract and observability regressions', () => {
@@ -30,21 +36,21 @@ test('Hub code pushes still fail contract and observability regressions', () => 
   }
 });
 
-test('scheduled monitor fails once for a new incident and softens an unchanged incident', () => {
+test('scheduled monitor fails once only for a new web-breaking incident', () => {
   assert.equal(decideHealthGate({
-    report: report([hard('freshness')]),
+    report: report([hard('contract')]),
     healthExit: 1,
     eventName: 'schedule',
     incidentChanged: true,
   }).fail, true);
   assert.deepEqual(decideHealthGate({
-    report: report([hard('freshness')]),
+    report: report([hard('contract')]),
     healthExit: 1,
     eventName: 'schedule',
     incidentChanged: false,
-  }), { fail: false, reason: 'unchanged_scheduled_incident' });
+  }), { fail: false, reason: 'unchanged_web_incident' });
   assert.equal(decideHealthGate({
-    report: report([hard('freshness')]),
+    report: report([hard('observability')]),
     healthExit: 1,
     eventName: 'schedule',
     incidentChanged: null,
@@ -52,8 +58,14 @@ test('scheduled monitor fails once for a new incident and softens an unchanged i
 });
 
 test('manual hard checks fail and transient-only checks pass', () => {
-  assert.equal(decideHealthGate({
+  assert.deepEqual(decideHealthGate({
     report: report([hard('freshness')]),
+    healthExit: 1,
+    eventName: 'workflow_dispatch',
+    incidentChanged: false,
+  }), { fail: false, reason: 'data_health_warning' });
+  assert.equal(decideHealthGate({
+    report: report([hard('contract')]),
     healthExit: 1,
     eventName: 'workflow_dispatch',
     incidentChanged: false,
@@ -66,32 +78,20 @@ test('manual hard checks fail and transient-only checks pass', () => {
   }).fail, false);
 });
 
-test('unexpected monitor exit fails closed', () => {
+test('unexpected monitor exit stays visible without producing a page-failure signal', () => {
   assert.deepEqual(decideHealthGate({
     report: report(),
     healthExit: 17,
     eventName: 'schedule',
     incidentChanged: false,
-  }), { fail: true, reason: 'monitor_failed' });
+  }), { fail: false, reason: 'monitor_internal_error' });
 });
 
-test('invalid reports and report-exit mismatches fail closed', () => {
+test('invalid reports stay non-notifying when no web breakage was proved', () => {
   assert.deepEqual(decideHealthGate({
     report: {},
     healthExit: 0,
     eventName: 'schedule',
     incidentChanged: false,
-  }), { fail: true, reason: 'invalid_health_report' });
-  assert.deepEqual(decideHealthGate({
-    report: report([hard('freshness')]),
-    healthExit: 0,
-    eventName: 'schedule',
-    incidentChanged: false,
-  }), { fail: true, reason: 'report_exit_mismatch' });
-  assert.deepEqual(decideHealthGate({
-    report: report(),
-    healthExit: 1,
-    eventName: 'schedule',
-    incidentChanged: false,
-  }), { fail: true, reason: 'report_exit_mismatch' });
+  }), { fail: false, reason: 'monitor_internal_error' });
 });

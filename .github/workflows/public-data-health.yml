@@ -106,7 +106,7 @@ jobs:
           if [[ "$HEALTH_EXIT" == "2" ]]; then
             echo "::warning::Only one bounded transport incident or upstream degraded/stale operation warnings were observed."
           fi
-      - name: Fail hard contract, freshness, or observability regressions
+      - name: Fail only public contract or broad observability regressions
         if: always()
         run: |
           node scripts/public-health-gate.mjs \

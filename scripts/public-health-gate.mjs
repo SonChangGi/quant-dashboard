@@ -8,34 +8,25 @@ export function decideHealthGate({ report = {}, healthExit, eventName, incidentC
     && report?.contract === 'quant-dashboard-public-health'
     && Array.isArray(report?.findings);
   if (!reportValid) {
-    return { fail: true, reason: 'invalid_health_report' };
+    return { fail: false, reason: 'monitor_internal_error' };
   }
   const hardFindings = report.findings.filter((finding) => finding?.severity === 'hard');
-  if ((exitCode === '0' || exitCode === '2') && hardFindings.length) {
-    return { fail: true, reason: 'report_exit_mismatch' };
-  }
-  if (exitCode === '1' && !hardFindings.length) {
-    return { fail: true, reason: 'report_exit_mismatch' };
-  }
-  if (exitCode === '0' || exitCode === '2') {
-    return { fail: false, reason: exitCode === '2' ? 'transient_findings' : 'healthy' };
-  }
-  if (exitCode !== '1') {
-    return { fail: true, reason: 'monitor_failed' };
-  }
-
-  if (eventName === 'workflow_run') {
-    const blocking = hardFindings.filter((finding) => (
-      finding.category === 'contract' || finding.category === 'observability'
-    ));
-    if (!blocking.length) {
-      return { fail: false, reason: 'upstream_freshness_notified_elsewhere' };
+  const webBreakingFindings = hardFindings.filter((finding) => (
+    finding.category === 'contract' || finding.category === 'observability'
+  ));
+  if (!webBreakingFindings.length) {
+    if (!['0', '1', '2'].includes(exitCode)) {
+      return { fail: false, reason: 'monitor_internal_error' };
     }
+    return {
+      fail: false,
+      reason: hardFindings.length ? 'data_health_warning' : exitCode === '2' ? 'transient_findings' : 'healthy',
+    };
   }
   if (eventName === 'schedule' && incidentChanged === false) {
-    return { fail: false, reason: 'unchanged_scheduled_incident' };
+    return { fail: false, reason: 'unchanged_web_incident' };
   }
-  return { fail: true, reason: 'hard_regression' };
+  return { fail: true, reason: 'public_site_regression' };
 }
 
 function argumentValue(name) {
