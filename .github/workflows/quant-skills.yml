@@ -1,0 +1,41 @@
+name: Validate Quant Research Skills
+
+on:
+  pull_request:
+    paths:
+      - "codex-skills/quant-research-suite/**"
+      - ".github/workflows/quant-skills.yml"
+  push:
+    branches: [main]
+    paths:
+      - "codex-skills/quant-research-suite/**"
+      - ".github/workflows/quant-skills.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quant-skills-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: codex-skills/quant-research-suite
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6
+        with:
+          python-version: "3.11"
+      - name: Validate source suite
+        run: python -B validate_suite.py
+      - name: Run full source regression
+        run: python -B -m unittest discover -s tests -p 'test_*.py' -q
+      - name: Prove a clean-source installation candidate
+        run: python -B install.py --update --dry-run --require-clean-source

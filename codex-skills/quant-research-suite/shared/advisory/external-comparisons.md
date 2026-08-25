@@ -10,15 +10,15 @@ When comparing another workflow, framework, skill suite, or agent runtime:
 
 ## LazyCodex and Gajae Code
 
-The vNext comparison was refreshed on 2026-08-04. LazyCodex's current release
-was v4.19.4 and Gajae Code's current release was v0.12.11. Package or installer
-aliases may use separate version lines. Version-specific claims use tagged
-source where overview documentation lags:
+The vNext comparison was refreshed on 2026-08-24. The latest tagged releases
+observed then were LazyCodex v4.19.4 and Gajae Code v0.15.0. Package or
+installer aliases may use separate version lines. Version-specific claims use
+tagged source where overview documentation lags:
 
 - [LazyCodex v4.19.4](https://github.com/code-yeongyu/lazycodex/releases/tag/v4.19.4);
 - [LazyCodex planning](https://github.com/code-yeongyu/lazycodex/blob/v4.19.4/plugins/omo/components/ultrawork/skills/ulw-plan/SKILL.md);
 - [LazyCodex discipline agents](https://github.com/code-yeongyu/lazycodex/blob/v4.19.4/packages/web/content/docs/discipline-agents.md);
-- [Gajae Code v0.12.11](https://github.com/Yeachan-Heo/gajae-code/releases/tag/v0.12.11);
+- [Gajae Code v0.15.0](https://github.com/Yeachan-Heo/gajae-code/releases/tag/v0.15.0);
 - [Gajae Code skills](https://gajae-code.com/docs/skills.html);
 - [Gajae Code receipts](https://gajae-code.com/docs/receipts.html);
 - [Gajae Code harness](https://gajae-code.com/docs/harness.html);

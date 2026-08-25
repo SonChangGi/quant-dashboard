@@ -1,8 +1,8 @@
 # Quant Research Web Design Prompt
 
-> 버전: `2.4.1`
+> 버전: `2.4.2`
 >
-> 기준일: `2026-07-29`
+> 기준일: `2026-08-25`
 >
 > 상태: 앞으로의 기존 페이지 개선과 신규 프로젝트에 사용하는 최우선 웹 디자인 프롬프트
 > 적용 범위: Quant Research Hub와 연결되는 모든 공개 웹페이지
@@ -307,7 +307,7 @@ Quant Research 제품군은 다음처럼 보여야 한다.
 
 프로젝트에 없는 날짜 역할을 새로 만들지 않는다.
 
-## 4. 7개 공통 메뉴
+## 4. 8개 공통 메뉴
 
 아래 registry의 label·순서·URL은 모든 사이트에서 동일해야 한다.
 
@@ -320,6 +320,7 @@ Quant Research 제품군은 다음처럼 보여야 한다.
 | 5 | Best Factor | `https://sonchanggi.github.io/best-factor/` |
 | 6 | ETF | `https://sonchanggi.github.io/etf-tracking/` |
 | 7 | SOX | `https://sonchanggi.github.io/sox/` |
+| 8 | Regime | `https://sonchanggi.github.io/regime/` |
 
 ### 4.1 Canonical navigation
 

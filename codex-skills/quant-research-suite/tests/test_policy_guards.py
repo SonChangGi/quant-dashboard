@@ -86,8 +86,8 @@ class PolicyGuardTests(unittest.TestCase):
             "../quant-research-shared/references/adaptive-workflow.md"
         )
         limits = {
-            "quant-plan": 780,
-            "quant-goal": 860,
+            "quant-plan": 880,
+            "quant-goal": 1050,
             "quant-developer": 800,
         }
         for skill in validate_suite.SKILLS:
@@ -184,9 +184,47 @@ class PolicyGuardTests(unittest.TestCase):
         source = (
             ROOT / "shared/references/web-design-source.md"
         ).read_text(encoding="utf-8")
-        self.assertIn("web-design-v2.4.1.md", source)
-        self.assertIn("version: `2.4.1`", source)
+        design = (
+            ROOT / "shared/references/web-design-v2.4.2.md"
+        ).read_text(encoding="utf-8")
+        self.assertIn("web-design-v2.4.2.md", source)
+        self.assertIn(
+            f"version: `{validate_suite.EXPECTED_WEB_DESIGN_VERSION}`",
+            source,
+        )
+        self.assertIn(
+            f"source date: `{validate_suite.EXPECTED_WEB_DESIGN_SOURCE_DATE}`",
+            source,
+        )
         self.assertIn(validate_suite.EXPECTED_WEB_DESIGN_SHA, source)
+        normalized_source = " ".join(source.split())
+        self.assertIn("candidate contradicts itself", normalized_source)
+        self.assertIn("continue to the next candidate", normalized_source)
+        self.assertIn(
+            f"> 버전: `{validate_suite.EXPECTED_WEB_DESIGN_VERSION}`",
+            design,
+        )
+        self.assertIn(
+            f"> 기준일: `{validate_suite.EXPECTED_WEB_DESIGN_SOURCE_DATE}`",
+            design,
+        )
+        for stale in ("7개 메뉴", "7개 링크", "9개 메뉴", "9개 링크"):
+            self.assertNotIn(stale, design)
+        nav_heading = (
+            f"## 4. {validate_suite.EXPECTED_WEB_DESIGN_MENU_COUNT}개 공통 메뉴"
+        )
+        nav_registry = design.split(nav_heading, 1)[1].split(
+            "### 4.1 Canonical navigation", 1
+        )[0]
+        nav_rows = re.findall(
+            r"^\|\s*(\d+)\s*\|\s*([^|]+?)\s*\|\s*`([^`]+)`\s*\|$",
+            nav_registry,
+            re.MULTILINE,
+        )
+        self.assertEqual(
+            tuple(nav_rows),
+            validate_suite.EXPECTED_WEB_DESIGN_NAVIGATION,
+        )
 
 
 if __name__ == "__main__":

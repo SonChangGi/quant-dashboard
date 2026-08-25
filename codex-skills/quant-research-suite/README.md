@@ -124,16 +124,24 @@ Install the lean `base` profile from committed, reproducible source:
 
 ```bash
 python3 -B install.py --update --require-clean-source
-python3 -B ~/.codex/skills/quant-research-shared/scripts/validate_installed.py
+python3 -B ~/.agents/skills/quant-research-shared/scripts/validate_installed.py
 ```
 
 The installer validates and stages the three public skills plus the adaptive
 kernel, canonical policy, selected capability rails, recovery helper, and
-installed validator.
+installed validator. Its default target is Codex's USER-scope discovery path,
+`~/.agents/skills`. A prior or explicitly selected target such as
+`~/.codex/skills` is not deleted automatically. After verifying the USER-scope
+install, move same-named legacy suite directories outside every discovery root
+and retain that moved copy as the reviewed rollback; otherwise skill selectors
+show duplicate names. Use `--target` only for a deliberate compatibility install.
 It records `install_profile: base|compat`, backs up the previous installation,
 replaces each directory with rollback on a caught failure, and verifies
 installed hashes plus stable public metadata and routing invariants without
-enforcing prose templates. A base install runs the focused
+broadly enforcing prose templates. The safety-critical uncertain-scope routing
+rule is the narrow exception: it uses a reviewed closed grammar and rejects an
+unrecognized paraphrase until that wording is explicitly reviewed. A base
+install runs the focused
 public/kernel/installer contract lane; `--include-legacy` runs the full
 compatibility regression. The full unittest command above remains the
 source-release check. An intentional development or archive install may omit

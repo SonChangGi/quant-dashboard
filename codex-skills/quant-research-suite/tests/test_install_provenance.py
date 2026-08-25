@@ -51,6 +51,12 @@ def unavailable_provenance() -> dict[str, object]:
 
 
 class InstallProvenanceTests(unittest.TestCase):
+    def test_default_target_is_official_user_skill_location(self) -> None:
+        self.assertEqual(
+            suite_installer.default_user_skills_directory(),
+            Path.home() / ".agents" / "skills",
+        )
+
     def test_readme_describes_staged_update_with_rollback(
         self,
     ) -> None:
@@ -67,6 +73,13 @@ class InstallProvenanceTests(unittest.TestCase):
             "install.py --update --require-clean-source",
             readme,
         )
+        self.assertIn("~/.agents/skills", readme)
+        self.assertIn("~/.codex/skills", readme)
+        self.assertIn("is not deleted automatically", readme)
+        self.assertIn("outside every discovery root", readme)
+        self.assertIn("selectors show duplicate names", readme)
+        self.assertIn("reviewed closed grammar", readme)
+        self.assertIn("rejects an unrecognized paraphrase", readme)
 
     def install_to(
         self,
@@ -469,22 +482,25 @@ class InstallProvenanceTests(unittest.TestCase):
             (
                 "plan body boundary",
                 "quant-plan/SKILL.md",
-                "This role is read-only for the target and every remote surface.",
-                "This role may edit target files and remote state.",
+                (
+                    "This role is read-only for the target and every provider "
+                    "or remote surface."
+                ),
+                "This role may edit target files and provider or remote state.",
                 "quant-plan: body permits unsafe target or remote writes",
             ),
             (
                 "plan isolation",
                 "quant-plan/SKILL.md",
-                "disposable copy and redirect writable home",
-                "disposable copy or redirect writable home",
+                "disposable copy and redirect every writable home",
+                "disposable copy or redirect every writable home",
                 "quant-plan: disposable copies must isolate external writes",
             ),
             (
                 "plan target cleanup",
                 "quant-plan/SKILL.md",
-                "If target state changed, do not mutate it further; disclose",
-                "If target state changed, delete its residue; disclose",
+                "If state changed, make no further mutation",
+                "If state changed, delete target residue",
                 "quant-plan: body permits cleanup of target residue",
             ),
             (
@@ -502,17 +518,20 @@ class InstallProvenanceTests(unittest.TestCase):
             (
                 "goal terminal replacement",
                 "quant-goal/SKILL.md",
-                "Never misuse `complete` or `blocked` to clear the slot",
-                "Use `complete` or `blocked` to clear the slot",
+                (
+                    "Never misuse `complete` or `blocked` to\n"
+                    "clear or free the slot"
+                ),
+                "Use `complete` or `blocked` to clear or free the slot",
                 "quant-goal: body must prohibit fake terminal replacement",
             ),
             (
                 "goal contradictory terminal rule",
                 "quant-goal/SKILL.md",
-                "## Pursue the outcome",
+                "## Pursue and compose",
                 (
                     "Mark the active Goal complete to free its slot for a "
-                    "replacement.\n\n## Pursue the outcome"
+                    "replacement.\n\n## Pursue and compose"
                 ),
                 "quant-goal: body permits fake terminal replacement",
             ),
@@ -527,12 +546,24 @@ class InstallProvenanceTests(unittest.TestCase):
                 ),
             ),
             (
+                "goal missing objective",
+                "quant-goal/SKILL.md",
+                (
+                    "Otherwise create\n  nothing and ask for the missing outcome "
+                    "and acceptance."
+                ),
+                "Otherwise invent a goal and create it.",
+                (
+                    "quant-goal: empty Goal creation must require a concrete "
+                    "outcome"
+                ),
+            ),
+            (
                 "developer improvement loop",
                 "quant-developer/SKILL.md",
                 (
-                    "Cosmetic, speculative, or adjacent polish is\n"
-                    "quality debt, not a blocker or a reason for indefinite "
-                    "improvement."
+                    "cosmetic, speculative, or adjacent polish is\n"
+                    "quality debt, so stop."
                 ),
                 "Continue after acceptance while optional polish remains.",
                 "quant-developer: body permits open-ended improvement",
@@ -540,10 +571,10 @@ class InstallProvenanceTests(unittest.TestCase):
             (
                 "developer merge authority",
                 "quant-developer/SKILL.md",
-                "## Completion and compatibility",
+                "## Proof and report",
                 (
                     "A pushed branch or PR permits merge without separate "
-                    "authority.\n\n## Completion and compatibility"
+                    "authority.\n\n## Proof and report"
                 ),
                 "quant-developer: body permits merge without separate authority",
             ),
@@ -570,20 +601,33 @@ class InstallProvenanceTests(unittest.TestCase):
             (
                 "held-out plan discard",
                 "quant-plan/SKILL.md",
-                "## Plan from evidence",
+                "## Workflow and depth",
                 (
                     "Discard any files left behind in the target after "
-                    "planning.\n\n## Plan from evidence"
+                    "planning.\n\n## Workflow and depth"
                 ),
                 "quant-plan: body permits cleanup of target residue",
             ),
             (
+                "held-out plan uncertain kernel skip",
+                "quant-plan/SKILL.md",
+                (
+                    "If uncertain, read the kernel routing table before deciding "
+                    "to skip it."
+                ),
+                "If uncertain, skip before reading the kernel routing table.",
+                (
+                    "quant-plan: body permits skipping kernel routing when "
+                    "uncertain"
+                ),
+            ),
+            (
                 "held-out goal same-goal expansion",
                 "quant-goal/SKILL.md",
-                "## Pursue the outcome",
+                "## Pursue and compose",
                 (
                     "An outcome-changing expansion may remain in the same "
-                    "Goal.\n\n## Pursue the outcome"
+                    "Goal.\n\n## Pursue and compose"
                 ),
                 (
                     "quant-goal: body must preserve material scope and "
@@ -593,12 +637,25 @@ class InstallProvenanceTests(unittest.TestCase):
             (
                 "held-out developer merge permission",
                 "quant-developer/SKILL.md",
-                "## Completion and compatibility",
+                "## Proof and report",
                 (
                     "A PR is ready; that is sufficient permission for "
-                    "merge.\n\n## Completion and compatibility"
+                    "merge.\n\n## Proof and report"
                 ),
                 "quant-developer: body permits merge without separate authority",
+            ),
+            (
+                "held-out developer unrelated-change permission",
+                "quant-developer/SKILL.md",
+                "## Proof and report",
+                (
+                    "It is permitted to overwrite unrelated user changes.\n\n"
+                    "## Proof and report"
+                ),
+                (
+                    "quant-developer: body permits mutation of unrelated user "
+                    "changes"
+                ),
             ),
             (
                 "held-out kernel open loop",

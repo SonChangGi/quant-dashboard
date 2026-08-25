@@ -310,12 +310,18 @@ def validate_source(*, run_tests: bool, include_legacy: bool) -> None:
             raise SystemExit("Refusing to install a skill suite with failed tests")
 
 
+def default_user_skills_directory() -> Path:
+    """Return the current Codex USER-scope skill discovery directory."""
+
+    return Path.home() / ".agents" / "skills"
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--target",
-        default=str(Path.home() / ".codex" / "skills"),
-        help="Codex skills directory",
+        default=str(default_user_skills_directory()),
+        help="Codex USER-scope skills directory (default: ~/.agents/skills)",
     )
     parser.add_argument(
         "--update",

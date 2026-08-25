@@ -3,7 +3,9 @@
 
 The validator protects structural and semantic boundaries. It intentionally
 does not treat headings, prose order, worker counts, or report templates as an
-API. Runtime and schema behavior is exercised by the unittest suite.
+API, except for the small reviewed closed grammar of the safety-critical
+uncertain-scope kernel rule. Runtime and schema behavior is exercised by the
+unittest suite.
 """
 
 from __future__ import annotations
@@ -26,13 +28,21 @@ parse_skill_frontmatter = INSTALLED_VALIDATOR["parse_skill_frontmatter"]
 parse_agent_metadata = INSTALLED_VALIDATOR["parse_agent_metadata"]
 validate_public_metadata = INSTALLED_VALIDATOR["validate_public_metadata"]
 validate_public_body = INSTALLED_VALIDATOR["validate_public_body"]
+extract_public_shared_routes = INSTALLED_VALIDATOR[
+    "extract_public_shared_routes"
+]
 validate_public_routes = INSTALLED_VALIDATOR["validate_public_routes"]
 policy_segments = INSTALLED_VALIDATOR["policy_segments"]
+has_guarded_kernel_skip = INSTALLED_VALIDATOR["has_guarded_kernel_skip"]
+has_unsafe_kernel_skip = INSTALLED_VALIDATOR["has_unsafe_kernel_skip"]
 has_unsafe_plan_probe_expansion = INSTALLED_VALIDATOR[
     "has_unsafe_plan_probe_expansion"
 ]
 has_unsafe_developer_expansion = INSTALLED_VALIDATOR[
     "has_unsafe_developer_expansion"
+]
+has_unsafe_unrelated_change_permission = INSTALLED_VALIDATOR[
+    "has_unsafe_unrelated_change_permission"
 ]
 has_self_expanding_quality_loop = INSTALLED_VALIDATOR[
     "has_self_expanding_quality_loop"
@@ -63,8 +73,21 @@ ORDINARY_CAPABILITY_FILES = tuple(
 )
 
 EXPECTED_WEB_DESIGN_SHA = (
-    "dee11da0061b943ef04a8516ffb9811735571ff464c9a81bd8950cb3b6ee516e"
+    "88b2f130f354b1232ffbcb4a48d0807bbb78ce81aaf74c8a41ddbc4f88f7e996"
 )
+EXPECTED_WEB_DESIGN_VERSION = "2.4.2"
+EXPECTED_WEB_DESIGN_SOURCE_DATE = "2026-08-25"
+EXPECTED_WEB_DESIGN_NAVIGATION = (
+    ("1", "Hub", "https://sonchanggi.github.io/quant-dashboard/"),
+    ("2", "Fear & Greed", "https://sonchanggi.github.io/fearNgreed/"),
+    ("3", "Momentum", "https://sonchanggi.github.io/momentum-factor-lab/"),
+    ("4", "DRAM", "https://sonchanggi.github.io/dram-price/"),
+    ("5", "Best Factor", "https://sonchanggi.github.io/best-factor/"),
+    ("6", "ETF", "https://sonchanggi.github.io/etf-tracking/"),
+    ("7", "SOX", "https://sonchanggi.github.io/sox/"),
+    ("8", "Regime", "https://sonchanggi.github.io/regime/"),
+)
+EXPECTED_WEB_DESIGN_MENU_COUNT = len(EXPECTED_WEB_DESIGN_NAVIGATION)
 
 CANONICAL_ZERO_SPEND_GUARD = (
     "the default is zero spend and cost-unknown is blocked. a non-data paid "
@@ -292,54 +315,6 @@ def has_unsafe_continuation_expansion(text: str) -> bool:
         ):
             continue
         return True
-    return False
-
-
-def has_guarded_kernel_skip(text: str) -> bool:
-    clauses = re.split(r"(?<=[.!?;])\s+", normalized_policy_text(text))
-    consult = r"(?:read|inspect|consult|check)"
-    for clause in clauses:
-        if not (
-            re.search(r"\b(?:uncertain|unsure|unclear|in doubt)\b", clause)
-            and re.search(r"\b(?:routing|router|kernel)\b", clause)
-            and re.search(rf"\b{consult}\w*\b", clause)
-            and re.search(r"\bskip\w*\b", clause)
-        ):
-            continue
-        safe_double_negative = re.search(
-            rf"\bdo\s+not\s+skip\w*\b.{{0,100}}\bwithout\b"
-            rf".{{0,80}}\b{consult}\w*\b",
-            clause,
-        )
-        if safe_double_negative:
-            return True
-        if re.search(
-            rf"\b(?:do\s+not|never|avoid)\s+{consult}\w*\b"
-            rf"|\brefrain\s+from\s+{consult}\w*\b"
-            rf"|\brefuse\s+to\s+{consult}\w*\b",
-            clause,
-        ):
-            continue
-        if re.search(
-            rf"\bskip\w*\b.{{0,100}}\bwithout\b"
-            rf".{{0,80}}\b{consult}\w*\b",
-            clause,
-        ):
-            continue
-        consult_match = re.search(rf"\b{consult}\w*\b", clause)
-        skip_match = re.search(r"\bskip\w*\b", clause)
-        if (
-            consult_match
-            and skip_match
-            and consult_match.start() < skip_match.start()
-        ):
-            return True
-        if re.search(
-            rf"\bskip\w*\b.{{0,80}}\bafter\b"
-            rf".{{0,80}}\b{consult}\w*\b",
-            clause,
-        ):
-            return True
     return False
 
 
@@ -823,7 +798,11 @@ def _validate_public_skill(name: str, text: str) -> list[str]:
     }
     for concept in _missing_terms(text, role_concepts[name]):
         errors.append(f"{name}: missing role contract {concept!r}")
-    if not has_guarded_kernel_skip(text):
+    if has_unsafe_kernel_skip(text):
+        errors.append(
+            f"{name}: uncertain scope must not permit skipping kernel routing"
+        )
+    elif not has_guarded_kernel_skip(text):
         errors.append(
             f"{name}: uncertain narrow work must consult routing before skip"
         )
@@ -871,6 +850,13 @@ def _validate_public_skill(name: str, text: str) -> list[str]:
         )
     if name == "quant-developer" and has_unsafe_developer_expansion(text):
         errors.append("quant-developer: open-ended improvement loop is prohibited")
+    if (
+        name == "quant-developer"
+        and has_unsafe_unrelated_change_permission(text)
+    ):
+        errors.append(
+            "quant-developer: body permits mutation of unrelated user changes"
+        )
     if name in {"quant-goal", "quant-developer"} and (
         has_self_expanding_quality_loop(text)
     ):
@@ -906,21 +892,42 @@ def _validate_kernel(text: str) -> list[str]:
         "available capability": (
             "collaboration and continuation surfaces the host actually exposes",
         ),
-        "bounded delegation": ("bounded subagents",),
-        "team threshold": ("ongoing mutual coordination",),
+        "bounded delegation": (
+            "bounded independent lanes",
+            "bounded subagents",
+        ),
+        "team threshold": (
+            "coordinated team only for real ongoing interaction",
+            "ongoing mutual coordination",
+        ),
         "serial fallback": ("otherwise serial work",),
         "one-off lifecycle": (
             "one-off wait for time, event, thread, ci, or external status",
         ),
-        "parent integration": ("parent reconciles claims",),
-        "parent evidence review": ("re-inspects returned evidence",),
+        "parent integration": (
+            "integrates one coherent state",
+            "parent reconciles claims",
+        ),
+        "parent evidence review": (
+            "the parent inspects returned artifacts",
+            "re-inspects returned evidence",
+        ),
         "worker claim is not proof": ("worker completion claim is not proof",),
         "quality frontier": ("strongest complete result",),
         "least churn is not least effort": ("not least effort",),
         "early useful delegation": ("early enough to influence the route",),
-        "visible native coordination": ("host-native plan or status",),
-        "single integrated state": ("one integrated state",),
-        "conflicting findings are resolved": ("test the competing claims",),
+        "visible native coordination": (
+            "host-native status",
+            "host-native plan or status",
+        ),
+        "single integrated state": (
+            "integrates one coherent state",
+            "one integrated state",
+        ),
+        "conflicting findings are resolved": (
+            "reconciles conflicts against the shared source",
+            "test the competing claims",
+        ),
         "safe retry classification": ("safe to repeat",),
         "established quality gap": (
             "material gap against the established quality bar",
@@ -1326,14 +1333,45 @@ def validate() -> list[str]:
             )
     errors.extend(validate_team_template_examples(shared))
 
-    design = shared / "references/web-design-v2.4.1.md"
+    design = shared / "references/web-design-v2.4.2.md"
     design_source = shared / "references/web-design-source.md"
-    if design.is_file() and sha256(design) != EXPECTED_WEB_DESIGN_SHA:
-        errors.append("web-design-v2.4.1.md hash mismatch")
-    if design_source.is_file() and EXPECTED_WEB_DESIGN_SHA not in (
-        design_source.read_text(encoding="utf-8")
-    ):
-        errors.append("web-design-source.md does not bind the expected hash")
+    if design.is_file():
+        design_text = design.read_text(encoding="utf-8")
+        if sha256(design) != EXPECTED_WEB_DESIGN_SHA:
+            errors.append("web-design-v2.4.2.md hash mismatch")
+        if f"> 버전: `{EXPECTED_WEB_DESIGN_VERSION}`" not in design_text:
+            errors.append("web design version declaration mismatch")
+        if f"> 기준일: `{EXPECTED_WEB_DESIGN_SOURCE_DATE}`" not in design_text:
+            errors.append("web design source-date declaration mismatch")
+        nav_heading = f"## 4. {EXPECTED_WEB_DESIGN_MENU_COUNT}개 공통 메뉴"
+        if nav_heading not in design_text:
+            errors.append("web design menu-count heading mismatch")
+        else:
+            nav_registry = design_text.split(nav_heading, 1)[1].split(
+                "### 4.1 Canonical navigation", 1
+            )[0]
+            nav_rows = re.findall(
+                r"^\|\s*(\d+)\s*\|\s*([^|]+?)\s*\|\s*`([^`]+)`\s*\|$",
+                nav_registry,
+                re.MULTILINE,
+            )
+            if tuple(nav_rows) != EXPECTED_WEB_DESIGN_NAVIGATION:
+                errors.append("web design navigation registry mismatch")
+        if any(
+            stale in design_text
+            for stale in ("7개 메뉴", "7개 링크", "9개 메뉴", "9개 링크")
+        ):
+            errors.append("web design retains a stale navigation-count contract")
+    if design_source.is_file():
+        source_text = design_source.read_text(encoding="utf-8")
+        required_bindings = (
+            "web-design-v2.4.2.md",
+            f"version: `{EXPECTED_WEB_DESIGN_VERSION}`",
+            f"source date: `{EXPECTED_WEB_DESIGN_SOURCE_DATE}`",
+            EXPECTED_WEB_DESIGN_SHA,
+        )
+        if any(binding not in source_text for binding in required_bindings):
+            errors.append("web-design-source.md does not bind the expected release")
     return errors
 
 
