@@ -1,6 +1,9 @@
 # Capability: repository mutation
 
-Use when project files or local source-control state may change.
+Use when edits face dirty or overlapping user state, protected paths,
+concurrent writers, or an explicitly authorized local source-control action.
+Ordinary bounded edits on a clean, understood single-writer path stay in the
+public Developer loop.
 
 - Record root, project instructions, protected paths, and current changed
   surfaces before editing. When Git exists, also record its common directory,

@@ -2,7 +2,8 @@
 """Verify the installed Quant Research suite against its install manifest.
 
 The semantic checks below are conservative drift lint over high-confidence
-policy relations, not authentication or general natural-language proof.
+policy relations, not authentication or general natural-language proof. The
+uncertain-scope kernel rule deliberately uses a small reviewed closed grammar.
 Manifest hashes and source provenance own package integrity; safe policy prose
 must not be rejected merely because it shares a word with a protected action.
 """
@@ -94,7 +95,7 @@ COMPAT_SHARED_FILES = frozenset(
         "references/operating-principles.md",
         "references/research-and-planning.md",
         "references/web-design-source.md",
-        "references/web-design-v2.4.1.md",
+        "references/web-design-v2.4.2.md",
         "schemas/analysis-input-binding-capture.schema.json",
         "schemas/analysis-invocation.schema.json",
         "schemas/evidence-receipt-v3.schema.json",
@@ -269,6 +270,54 @@ def policy_segments(text: str) -> list[str]:
     ]
 
 
+def _uncertain_kernel_skip_contexts(text: str) -> list[str]:
+    contexts: list[str] = []
+    blocks = re.split(r"\n\s*\n+", text.replace("\r\n", "\n"))
+    for block in blocks:
+        normalized = normalized_policy_text(block)
+        for context in re.split(r"(?<=[.!?;])\s+", normalized):
+            if (
+                re.search(r"\b(?:uncertain|unsure|unclear|in doubt)\b", context)
+                and re.search(r"\b(?:routing|router|kernel)\b", context)
+                and re.search(r"\bskip\w*\b", context)
+            ):
+                contexts.append(context)
+    return contexts
+
+
+SAFE_KERNEL_SKIP_RULES = frozenset(
+    {
+        "if uncertain, read the kernel routing table before deciding to skip it",
+        "when unsure, consult the kernel router before skipping it",
+        "when unsure, do not skip without consulting the kernel router",
+        "if uncertain about whether to skip, read the kernel routing table first",
+        "if uncertain, never skip before consulting the kernel router",
+        "if uncertain, skipping without reading the kernel router is prohibited",
+    }
+)
+
+
+def _kernel_skip_rule_key(context: str) -> str:
+    return context.strip().rstrip(".!?;").strip()
+
+
+def has_unsafe_kernel_skip(text: str) -> bool:
+    """Fail closed on uncertainty rules outside the reviewed safe grammar."""
+
+    return any(
+        _kernel_skip_rule_key(context) not in SAFE_KERNEL_SKIP_RULES
+        for context in _uncertain_kernel_skip_contexts(text)
+    )
+
+
+def has_guarded_kernel_skip(text: str) -> bool:
+    contexts = _uncertain_kernel_skip_contexts(text)
+    return bool(contexts) and all(
+        _kernel_skip_rule_key(context) in SAFE_KERNEL_SKIP_RULES
+        for context in contexts
+    )
+
+
 def _prohibits_write(clause: str) -> bool:
     action = r"(?:allow\w*|permit\w*|edit\w*|mutat\w*|writ\w*)"
     return bool(
@@ -360,6 +409,148 @@ def has_unsafe_developer_expansion(text: str) -> bool:
         ):
             return True
     return False
+
+
+def has_unsafe_unrelated_change_permission(text: str) -> bool:
+    """Reject direct grants to mutate changes outside the authorized target."""
+
+    action = (
+        r"(?:overwrit\w*|revert\w*|stag(?:e|es|ed|ing)|format\w*|"
+        r"alter\w*|modif\w*|mutat\w*|discard\w*|edit\w*|delet\w*|"
+        r"remov\w*|reset\w*|clean\w*|renam\w*|mov(?:e|es|ed|ing)|"
+        r"check(?:out|s?\s+out|ed\s+out|ing\s+out))"
+    )
+    command_action = (
+        r"(?:overwrite|revert|stage|format|alter|modify|mutate|discard|edit|"
+        r"delete|remove|reset|clean|rename|move|checkout|check\s+out)"
+    )
+    outside = (
+        r"(?:unrelated (?:user )?(?:changes?|files?|paths?|work)|"
+        r"(?:changes?|files?|paths?|work) outside (?:the )?"
+        r"(?:authorized|requested|in-scope|target)"
+        r"(?: scope| target| paths?| files?| work)?)"
+    )
+    actor = (
+        r"(?:you|we|codex|the agent|the developer|the worker|this role|"
+        r"this skill|the skill|it)"
+    )
+    modal = (
+        r"(?:may|should|must|can|(?:is|are) "
+        r"(?:allowed|permitted|authorized))"
+    )
+    preservation = r"(?:preserv\w*|protect\w*|respect\w*|keep\w*)"
+    action_chain = rf"{action}(?:\s+(?:or|and)\s+{action})?"
+    direct_object = (
+        rf"\b{action_chain}\b\s+(?:the\s+|any\s+|these\s+|those\s+)?"
+        rf"\b{outside}\b"
+    )
+    modal_gap = r"\s+(?:(?:also|directly|freely|safely|then)\s+){0,2}"
+    for clause in policy_segments(text):
+        if not re.search(rf"\b{outside}\b", clause) or not (
+            re.search(rf"\b{action}\b", clause)
+            or re.search(rf"\b{preservation}\b", clause)
+        ):
+            continue
+        if re.search(
+            r"^(?:[-*]\s+)?(?:ask|report|check|verify|determine)\b.{0,45}"
+            r"\b(?:whether|if)\b",
+            clause,
+        ) or re.search(
+            r"\b(?:validator|guard|test)\b.{0,35}"
+            r"\b(?:reject\w*|flag\w*|detect\w*|prohibit\w*|forbid\w*)\b"
+            r".{0,45}\b(?:example|phrase|wording|statement|rule)\b",
+            clause,
+        ):
+            continue
+        prohibited = (
+            re.search(
+                rf"\b(?:do not(?!\s+need\b)|never|must not|cannot|may not|can not|"
+                rf"should not)\b.{{0,35}}{direct_object}",
+                clause,
+            )
+            or re.search(
+                rf"\b{outside}\b.{{0,35}}\b(?:must not|may not|should not|"
+                rf"cannot)\b.{{0,20}}(?:be )?\b{action}\b",
+                clause,
+            )
+            or re.search(
+                rf"{direct_object}.{{0,35}}\b"
+                rf"(?:not allowed|not permitted|not authorized|prohibited)\b",
+                clause,
+            )
+            or (
+                re.search(r"\b(?:if|when)\b", clause)
+                and re.search(r"\b(?:may|can|could)\b", clause)
+                and re.search(
+                    r"\b(?:skip|stop|abort|do not run|must not run)\b",
+                    clause,
+                )
+            )
+        )
+        if prohibited:
+            continue
+        direct_grant = (
+            re.search(
+                rf"\b{actor}\b.{{0,20}}\b{modal}\b{modal_gap}"
+                rf"(?:to\s+)?{direct_object}",
+                clause,
+            )
+            or re.search(
+                rf"\b(?:allowed|permitted|authorized|acceptable|okay|ok)\b"
+                rf"\s+to\s+{direct_object}",
+                clause,
+            )
+            or re.search(
+                rf"\b(?:feel free|go ahead)\b\s+to\s+{direct_object}",
+                clause,
+            )
+            or re.search(
+                rf"\b{actor}\b.{{0,20}}\b(?:do not need|need no)\b"
+                rf".{{0,20}}\bpermission\b\s+to\s+{direct_object}",
+                clause,
+            )
+            or re.search(
+                rf"{direct_object}.{{0,25}}\bwithout\b.{{0,15}}"
+                rf"\bpermission\b",
+                clause,
+            )
+            or re.search(
+                rf"\b{outside}\b.{{0,45}}\b(?:may|can|should|must)\b"
+                rf".{{0,20}}"
+                rf"(?:be )?\b{action}\b",
+                clause,
+            )
+            or re.search(
+                rf"^(?:[-*]\s+)?\b{command_action}\b"
+                rf"(?:\s+(?:or|and)\s+\b{command_action}\b)?\s+"
+                rf"(?:the\s+|any\s+|these\s+|those\s+)?\b{outside}\b",
+                clause,
+            )
+            or re.search(
+                rf"\b(?:do not|need not|may ignore|can ignore|should not)\b"
+                rf".{{0,35}}\b{preservation}\b"
+                rf".{{0,35}}\b{outside}\b",
+                clause,
+            )
+            or re.search(
+                rf"\b{outside}\b.{{0,45}}\b(?:need not|do not need to|"
+                rf"may be ignored|can be ignored)\b.{{0,30}}"
+                rf"\b{preservation}\b",
+                clause,
+            )
+        )
+        if direct_grant:
+            return True
+    normalized = normalized_policy_text(text)
+    return bool(
+        re.search(
+            rf"\b{actor}\b.{{0,20}}\b{modal}\b{modal_gap}"
+            rf"(?:to\s+)?\b{action}\b\s+(?:them|those|these)\b"
+            rf".{{0,100}}\b(?:they|those|these)\b.{{0,20}}\b(?:are|mean)\b"
+            rf".{{0,20}}\b{outside}\b",
+            normalized,
+        )
+    )
 
 
 def policy_windows(text: str, max_width: int = 3) -> list[str]:
@@ -923,7 +1114,8 @@ def validate_public_body(name: str, skill_text: str) -> list[str]:
     match = FRONTMATTER_BLOCK.match(skill_text.replace("\r\n", "\n"))
     if not match:
         return []
-    body = normalized_policy_text(skill_text[match.end() :])
+    raw_body = skill_text[match.end() :]
+    body = normalized_policy_text(raw_body)
     errors: list[str] = []
     if name == "quant-plan":
         read_only = has_relation(
@@ -980,6 +1172,17 @@ def validate_public_body(name: str, skill_text: str) -> list[str]:
         )
         if not (_has_all_patterns(body, tools) and empty_slot):
             errors.append(f"{name}: body must preserve the native Goal lifecycle")
+        missing_objective = has_relation(
+            body,
+            (r"\bno unfinished goal\b",),
+            (r"\b(?:missing|no) (?:concrete )?(?:outcome|objective)\b",),
+            (r"\bcreate nothing\b",),
+            span=3,
+        )
+        if not missing_objective:
+            errors.append(
+                f"{name}: empty Goal creation must require a concrete outcome"
+            )
         if not _has_goal_terminal_guard(body):
             errors.append(f"{name}: body must prohibit fake terminal replacement")
         if has_unsafe_goal_terminal_expansion(body):
@@ -1029,6 +1232,25 @@ def validate_public_body(name: str, skill_text: str) -> list[str]:
             )
         ):
             errors.append(f"{name}: body must preserve proportional delivery")
+        repo_safety = all(
+            phrase in body
+            for phrase in (
+                "target instructions",
+                "protected paths",
+                "current changed surfaces",
+                "unrelated user changes",
+                "potentially broad formatter or native check",
+                "do not overwrite, revert, stage, format",
+            )
+        )
+        if not repo_safety:
+            errors.append(
+                f"{name}: body must preserve repository context and user changes"
+            )
+        if has_unsafe_unrelated_change_permission(body):
+            errors.append(
+                f"{name}: body permits mutation of unrelated user changes"
+            )
         if re.search(
             r"\b(?:do not|never|must not|cannot)\b.{0,35}"
             r"\b(?:prefer|make|use)\b.{0,60}"
@@ -1040,6 +1262,12 @@ def validate_public_body(name: str, skill_text: str) -> list[str]:
             errors.append(f"{name}: body permits open-ended improvement")
         if has_self_expanding_quality_loop(body):
             errors.append(f"{name}: body permits a self-expanding quality loop")
+    if has_unsafe_kernel_skip(raw_body):
+        errors.append(f"{name}: body permits skipping kernel routing when uncertain")
+    elif not has_guarded_kernel_skip(raw_body):
+        errors.append(
+            f"{name}: body must consult kernel routing before skip when uncertain"
+        )
     if has_unsafe_remote_authority_expansion(body):
         errors.append(f"{name}: body permits merge without separate authority")
     return errors

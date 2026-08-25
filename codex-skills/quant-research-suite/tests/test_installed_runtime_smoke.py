@@ -538,7 +538,7 @@ class InstalledRuntimeSmokeTests(unittest.TestCase):
                 "references/agent-orchestration.md",
                 "references/durable-runtime.md",
                 "references/web-design-source.md",
-                "references/web-design-v2.4.1.md",
+                "references/web-design-v2.4.2.md",
                 "scripts/goal_ledger.py",
                 "scripts/team_protocol.py",
                 "schemas/analysis-input-binding-capture.schema.json",
