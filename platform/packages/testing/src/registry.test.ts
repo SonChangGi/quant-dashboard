@@ -1,12 +1,15 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, expectTypeOf, it } from "vitest";
 import {
   canonicalProjectRegistry,
   getCanonicalNavigation,
+  getProject,
   publicSummaryProjectIds,
+  type CompletedDashboardId,
+  type ProjectId,
 } from "@quant-research/project-registry";
 
 describe("canonical project registry", () => {
-  it("keeps all 7 platform labels and URLs in the approved order", () => {
+  it("keeps all 8 platform labels and URLs in the approved order", () => {
     expect(canonicalProjectRegistry).toEqual([
       { id: "hub", label: "Hub", url: "https://sonchanggi.github.io/quant-dashboard/" },
       { id: "fear-greed", label: "Fear & Greed", url: "https://sonchanggi.github.io/fearNgreed/" },
@@ -15,6 +18,7 @@ describe("canonical project registry", () => {
       { id: "best-factor", label: "Best Factor", url: "https://sonchanggi.github.io/best-factor/" },
       { id: "etf", label: "ETF", url: "https://sonchanggi.github.io/etf-tracking/" },
       { id: "sox", label: "SOX", url: "https://sonchanggi.github.io/sox/" },
+      { id: "regime", label: "Regime", url: "https://sonchanggi.github.io/regime/" },
     ]);
   });
 
@@ -34,5 +38,19 @@ describe("canonical project registry", () => {
       etf: "etf",
       sox: "sox",
     });
+  });
+
+  it("supports Regime navigation without inventing a public summary contract", () => {
+    expect(getProject("regime")).toEqual({
+      id: "regime",
+      label: "Regime",
+      url: "https://sonchanggi.github.io/regime/",
+    });
+    expect(getCanonicalNavigation("regime").filter((item) => item.current)).toEqual([
+      expect.objectContaining({ id: "regime" }),
+    ]);
+    expect(publicSummaryProjectIds).not.toHaveProperty("regime");
+    expectTypeOf<Extract<ProjectId, "regime">>().toEqualTypeOf<"regime">();
+    expectTypeOf<Extract<CompletedDashboardId, "regime">>().toEqualTypeOf<never>();
   });
 });

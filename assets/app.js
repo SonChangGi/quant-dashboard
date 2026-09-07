@@ -168,7 +168,7 @@
     dram: (metrics) => `${metrics.kind || '가격'} · ${formatMaybeDate(metrics.date)} · ${metrics.source || 'source N/A'}`,
     sox: (metrics) => `SOX proxy ${formatPercent(metrics.weight)} · 가격 ${formatNumber(metrics.priceMomentum)} · 실적 ${formatNumber(metrics.earningsMomentum)}`,
     fearngreed: (metrics) => `상태 ${metrics.signalState || '산출 불가'} · 백분위 ${formatNumber(metrics.sentimentPercentile)} · 잔차 z ${formatNumber(metrics.residualZ)} · 포지션 ${formatFearPosition(metrics.position)}`,
-    regime: (metrics) => `현재 ${metrics.currentStateLabel || '-'} ${formatPercent(metrics.currentConfidence)} · 다음 주 ${metrics.nextStateLabel || '-'} ${formatPercent(metrics.nextConfidence)} · 1주 이탈 ${formatPercent(metrics.transitionRisk1w)}`,
+    regime: (metrics) => `현재 ${metrics.currentStateLabel || '-'} · ${metrics.currentMeasureLabel || '확률'} ${formatPercent(metrics.currentConfidence)} · ${formatMaybeDate(metrics.nextDate)} 예측 ${metrics.nextStateLabel || '-'} · 확률 ${formatPercent(metrics.nextConfidence)} · 1주 이탈 ${formatPercent(metrics.transitionRisk1w)}`,
   };
 
   const PROJECTS = [
@@ -319,11 +319,16 @@
     regime: 10,
   });
 
-  const REGIME_RESULT_VERSIONS = new Set(['weekly-regime-result-v3', 'weekly-regime-result-v4']);
+  const REGIME_RESULT_VERSIONS = new Set(['weekly-regime-result-v3', 'weekly-regime-result-v4', 'weekly-regime-result-v5']);
+  const REGIME_CORE_VERSIONS = new Set(['regime-dashboard-core/1', 'regime-dashboard-core/2']);
   const REGIME_STATES = Object.freeze(['risk_on', 'transition', 'risk_off']);
   const REGIME_LIVE_SOURCE_LICENSES = Object.freeze({
     alpha_vantage: 'private_noncommercial',
     alfred: 'user_confirmed_ml_storage_derived',
+  });
+  const REGIME_V5_LIVE_SOURCE_LICENSES = Object.freeze({
+    ...REGIME_LIVE_SOURCE_LICENSES,
+    frb_h10: 'federal_reserve_board_public_domain_citation_requested',
   });
   const REGIME_STATE_LABELS = Object.freeze({
     risk_on: '위험 선호',
@@ -425,7 +430,7 @@
     },
     regime: {
       sourceUrls: {
-        summary: 'https://sonchanggi.github.io/regime/data/regime-results.json',
+        summary: 'https://sonchanggi.github.io/regime/data/regime-core.json',
       },
       primarySourceKey: 'summary',
       parse: (sources) => parseRegime(sources.summary),
@@ -2497,7 +2502,28 @@
     });
   }
 
-  function parseRegime(payload) {
+  function unwrapRegimePayload(document) {
+    if (!isRecord(document)) throw new Error('Regime payload must be an object.');
+    if (!Object.hasOwn(document, 'schema_version') && !Object.hasOwn(document, 'payload')) return document;
+    if (!REGIME_CORE_VERSIONS.has(document.schema_version)) {
+      throw new Error(`Unsupported Regime core version: ${document.schema_version || 'missing'}.`);
+    }
+    const payload = document.payload;
+    if (!isRecord(payload) || payload.meta?.result_version !== 'weekly-regime-result-v5') {
+      throw new Error('Regime core must contain a v5 payload.');
+    }
+    if (typeof document.generation_id !== 'string' || !document.generation_id.trim()
+      || document.generation_id !== payload.meta.generation_id) {
+      throw new Error('Regime core generation does not match its payload.');
+    }
+    if (typeof document.source_payload_sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(document.source_payload_sha256)) {
+      throw new Error('Regime core source payload SHA-256 is missing or invalid.');
+    }
+    return payload;
+  }
+
+  function parseRegime(document) {
+    const payload = unwrapRegimePayload(document);
     if (!isRecord(payload)) throw new Error('Regime payload must be an object.');
     const meta = payload.meta;
     if (!isRecord(meta) || !['demo', 'live'].includes(meta.mode)) {
@@ -2506,6 +2532,7 @@
     if (!REGIME_RESULT_VERSIONS.has(meta.result_version)) {
       throw new Error(`Unsupported Regime result version: ${meta.result_version || 'missing'}.`);
     }
+    const isV5 = meta.result_version === 'weekly-regime-result-v5';
 
     const sources = payload.sources;
     if (!Array.isArray(sources) || !sources.length || sources.some((source) => !isRecord(source))) {
@@ -2521,12 +2548,13 @@
         }
       });
     } else {
+      const expectedLicenses = isV5 ? REGIME_V5_LIVE_SOURCE_LICENSES : REGIME_LIVE_SOURCE_LICENSES;
       const liveSources = new Map(sources.map((source) => [source.id, source]));
       if (liveSources.size !== sources.length
-        || liveSources.size !== Object.keys(REGIME_LIVE_SOURCE_LICENSES).length) {
+        || liveSources.size !== Object.keys(expectedLicenses).length) {
         throw new Error('Regime live-derived payload must contain the exact provider source set.');
       }
-      Object.entries(REGIME_LIVE_SOURCE_LICENSES).forEach(([sourceId, expectedLicense]) => {
+      Object.entries(expectedLicenses).forEach(([sourceId, expectedLicense]) => {
         if (liveSources.get(sourceId)?.license_class !== expectedLicense) {
           throw new Error(`Regime live source ${sourceId} has an invalid license_class.`);
         }
@@ -2550,10 +2578,13 @@
       throw new Error('Regime meta.data_as_of does not match the latest observation week.');
     }
 
-    const current = parseRegimeEstimate(latest.current, 'weekly.latest.current');
+    const current = isV5
+      ? parseRegimeMembership(latest.current, 'weekly.latest.current')
+      : parseRegimeEstimate(latest.current, 'weekly.latest.current');
     const nextWeek = parseRegimeEstimate(latest.next_week, 'weekly.latest.next_week');
     const nextDate = requireRegimeDate(latest.next_week?.date, 'weekly.latest.next_week.date');
-    if (nextDate <= date) throw new Error('Regime next-week date must follow the observation week.');
+    const horizonDate = (weeks) => new Date(Date.parse(`${date}T00:00:00Z`) + weeks * 7 * 86_400_000).toISOString().slice(0, 10);
+    if (nextDate !== horizonDate(1)) throw new Error('Regime next-week date must be one week after the observation week.');
 
     const transitionRisk = {};
     for (const horizon of [1, 4, 13]) {
@@ -2564,6 +2595,9 @@
         probability: requireRegimeProbability(item.probability, `transition_risk.${key}.probability`),
         targetEnd: requireRegimeDate(item.target_end, `transition_risk.${key}.target_end`),
       };
+      if (transitionRisk[key].targetEnd !== horizonDate(horizon)) {
+        throw new Error(`Regime ${key} transition target does not match its observation horizon.`);
+      }
     }
     if (transitionRisk['1w'].targetEnd !== nextDate) {
       throw new Error('Regime 1w transition target does not match the next-week date.');
@@ -2597,6 +2631,7 @@
       currentState: current.state,
       currentStateLabel: REGIME_STATE_LABELS[current.state],
       currentConfidence: current.confidence,
+      currentMeasureLabel: isV5 ? '소속도' : '확률',
       nextState: nextWeek.state,
       nextStateLabel: REGIME_STATE_LABELS[nextWeek.state],
       nextConfidence: nextWeek.confidence,
@@ -2634,28 +2669,41 @@
   }
 
   function parseRegimeEstimate(value, context) {
-    if (!isRecord(value) || !isRecord(value.probabilities)) {
-      throw new Error(`${context} is missing probabilities.`);
+    const result = parseRegimeDistribution(value, context, 'probabilities', 'confidence');
+    return { state: result.state, probabilities: result.values, confidence: result.confidence };
+  }
+
+  function parseRegimeMembership(value, context) {
+    if (!isRecord(value) || value.method !== 'risk_score_anchor_membership') {
+      throw new Error(`${context} must declare risk_score_anchor_membership.`);
     }
-    const keys = Object.keys(value.probabilities);
+    // The observed hysteresis state is authoritative, even when another membership is larger.
+    return parseRegimeDistribution(value, context, 'memberships', 'primary_membership', false);
+  }
+
+  function parseRegimeDistribution(value, context, valuesKey, confidenceKey, requireDominantState = true) {
+    if (!isRecord(value) || !isRecord(value[valuesKey])) {
+      throw new Error(`${context} is missing ${valuesKey}.`);
+    }
+    const keys = Object.keys(value[valuesKey]);
     if (keys.length !== REGIME_STATES.length || REGIME_STATES.some((state) => !keys.includes(state))) {
-      throw new Error(`${context} must contain the exact three Regime probability keys.`);
+      throw new Error(`${context} must contain the exact three Regime ${valuesKey} keys.`);
     }
-    const probabilities = Object.fromEntries(REGIME_STATES.map((state) => [
+    const values = Object.fromEntries(REGIME_STATES.map((state) => [
       state,
-      requireRegimeProbability(value.probabilities[state], `${context}.probabilities.${state}`),
+      requireRegimeProbability(value[valuesKey][state], `${context}.${valuesKey}.${state}`),
     ]));
-    const total = Object.values(probabilities).reduce((sum, probability) => sum + probability, 0);
-    if (Math.abs(total - 1) > 1e-6) throw new Error(`${context} probabilities must sum to one.`);
+    const total = Object.values(values).reduce((sum, probability) => sum + probability, 0);
+    if (Math.abs(total - 1) > 1e-6) throw new Error(`${context} ${valuesKey} must sum to one.`);
     const state = value.state;
     if (!REGIME_STATES.includes(state)) throw new Error(`${context}.state is invalid.`);
-    const confidence = requireRegimeProbability(value.confidence, `${context}.confidence`);
-    const winningProbability = Math.max(...Object.values(probabilities));
-    if (Math.abs(confidence - probabilities[state]) > 1e-6
-      || Math.abs(probabilities[state] - winningProbability) > 1e-6) {
-      throw new Error(`${context} state and confidence do not match its probabilities.`);
+    const confidence = requireRegimeProbability(value[confidenceKey], `${context}.${confidenceKey}`);
+    const winningValue = Math.max(...Object.values(values));
+    if (Math.abs(confidence - values[state]) > 1e-6
+      || (requireDominantState && Math.abs(values[state] - winningValue) > 1e-6)) {
+      throw new Error(`${context} state and ${confidenceKey} do not match its ${valuesKey}.`);
     }
-    return { state, probabilities, confidence };
+    return { state, values, confidence };
   }
 
   function requireRegimeProbability(value, context) {
@@ -2913,8 +2961,8 @@
   function renderRegime(summary, mode, error, project) {
     const available = summary?.publicPayloadValid === true && summary?.unavailable !== true;
     renderMetricCards(panelSelector(project, 'metrics'), [
-      ['현재 국면', available ? `${summary.currentStateLabel} · ${formatPercent(summary.currentConfidence)}` : '확인 불가'],
-      ['다음 주', available ? `${summary.nextStateLabel} · ${formatPercent(summary.nextConfidence)}` : '확인 불가'],
+      ['현재 국면', available ? `${summary.currentStateLabel} · ${summary.currentMeasureLabel} ${formatPercent(summary.currentConfidence)}` : '확인 불가'],
+      [available ? `예측 · ${formatMaybeDate(summary.nextDate)}` : '다음 주 예측', available ? `${summary.nextStateLabel} · 확률 ${formatPercent(summary.nextConfidence)}` : '확인 불가'],
       ['1주 이탈', available ? formatPercent(summary.transitionRisk1w) : '확인 불가'],
       ['4주 이탈', available ? formatPercent(summary.transitionRisk4w) : '확인 불가'],
       ['13주 이탈', available ? formatPercent(summary.transitionRisk13w) : '확인 불가'],
@@ -3733,7 +3781,7 @@
       }
       return {
         kicker: `Regime · ${summary.meta?.dataModeLabel || '공개 결과'}`,
-        title: `현재 ${summary.currentStateLabel} ${formatPercent(summary.currentConfidence)} · 다음 주 ${summary.nextStateLabel} ${formatPercent(summary.nextConfidence)}`,
+        title: `현재 ${summary.currentStateLabel} · ${summary.currentMeasureLabel} ${formatPercent(summary.currentConfidence)} · ${formatMaybeDate(summary.nextDate)} 예측 ${summary.nextStateLabel} · 확률 ${formatPercent(summary.nextConfidence)}`,
         detail: `이탈 1주 ${formatPercent(summary.transitionRisk1w)} · 4주 ${formatPercent(summary.transitionRisk4w)} · 13주 ${formatPercent(summary.transitionRisk13w)} · 기준일 ${formatMaybeDate(summary.dataAsOf)}`,
         tone: summary.meta?.statusState === 'ok' ? '' : 'warning',
       };

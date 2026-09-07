@@ -34,6 +34,11 @@ export const canonicalProjectRegistry = [
     label: "SOX",
     url: "https://sonchanggi.github.io/sox/",
   },
+  {
+    id: "regime",
+    label: "Regime",
+    url: "https://sonchanggi.github.io/regime/",
+  },
 ] as const;
 
 export type ProjectId = (typeof canonicalProjectRegistry)[number]["id"];
@@ -42,6 +47,7 @@ export type ProjectRegistryEntry = (typeof canonicalProjectRegistry)[number];
 /**
  * Existing public summary ids are protected data contracts. Keep translation
  * here instead of rewriting generated JSON to match navigation/API ids.
+ * Regime uses its own weekly-regime-result-v5 contract, not a summary id.
  */
 export const publicSummaryProjectIds = {
   "fear-greed": "fearngreed",
@@ -52,6 +58,7 @@ export const publicSummaryProjectIds = {
   sox: "sox",
 } as const satisfies Partial<Record<ProjectId, string>>;
 
+/** Summary-contract dashboards only; navigation registration is broader. */
 export type CompletedDashboardId = keyof typeof publicSummaryProjectIds;
 
 export function getPublicSummaryProjectId(

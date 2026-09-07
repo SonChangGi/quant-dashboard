@@ -56,7 +56,7 @@ const dataUrls = [
   'https://sonchanggi.github.io/etf-tracking/data/dashboard.json',
   'https://sonchanggi.github.io/etf-tracking/data/history.json',
   'https://sonchanggi.github.io/sox/data/summary.json',
-  'https://sonchanggi.github.io/regime/data/regime-results.json',
+  'https://sonchanggi.github.io/regime/data/regime-core.json',
 ];
 for (const url of dataUrls) {
   assert(contains(files.app, url), `public data endpoint present: ${url}`);

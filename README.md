@@ -39,7 +39,7 @@
 - `https://sonchanggi.github.io/etf-tracking/data/summary.json`
 - `https://sonchanggi.github.io/etf-tracking/data/dashboard.json`
 - `https://sonchanggi.github.io/sox/data/summary.json`
-- `https://sonchanggi.github.io/regime/data/regime-results.json` (검증된 live-derived 또는 합성 데모)
+- `https://sonchanggi.github.io/regime/data/regime-core.json` (v5 핵심 결과; 현재 국면 소속도·다음 주 예측 확률·이탈 확률)
 
 `summary.json`의 공통 필드는 `schemaVersion`, `contract`, `projectId`, `generatedAt`, `dataAsOf`, `status`, `coverage`, `primaryEntities`, `limitations`, `automation`입니다. 대형 원본 payload는 원본 프로젝트에 남겨두고 중앙 허브는 ticker/theme dossier와 health 상태에 필요한 작은 요약부터 사용합니다.
 

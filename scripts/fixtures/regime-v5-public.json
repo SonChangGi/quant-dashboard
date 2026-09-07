@@ -1,0 +1,238 @@
+{
+  "provenance": {
+    "description": "Exact projection of locally frozen public v5 documents; no probabilities, source identities, or licenses synthesized.",
+    "snapshots": {
+      "full": {
+        "url": "https://sonchanggi.github.io/regime/data/regime-results.json",
+        "sha256": "06c9193a3ee3016ecee3ae9f629130cf237f3af7aee3be4dde87090f2e5478ce",
+        "bytes": 9713536
+      },
+      "core": {
+        "url": "https://sonchanggi.github.io/regime/data/regime-core.json",
+        "sha256": "b68bbc2de7c9c947f12883e0dd8cc1805f27fb704ecd8e9a037e6490df93b5c8",
+        "bytes": 682700
+      }
+    },
+    "historical_projection": "The 2023-03-03 source row is projected with meta.data_as_of set to that row's original data_as_of; the original generation metadata is retained."
+  },
+  "full": {
+    "meta": {
+      "mode": "live",
+      "result_version": "weekly-regime-result-v5",
+      "generated_at": "2026-09-06T20:09:46.236868+00:00",
+      "generation_id": "20260906T200946.236868Z",
+      "data_as_of": "2026-09-04T20:00:00+00:00",
+      "status": "degraded"
+    },
+    "sources": [
+      {
+        "id": "alpha_vantage",
+        "license_class": "private_noncommercial"
+      },
+      {
+        "id": "alfred",
+        "license_class": "user_confirmed_ml_storage_derived"
+      },
+      {
+        "id": "frb_h10",
+        "license_class": "federal_reserve_board_public_domain_citation_requested"
+      }
+    ],
+    "weekly": [
+      {
+        "date": "2026-09-04",
+        "current": {
+          "state": "risk_on",
+          "memberships": {
+            "risk_on": 0.56947738,
+            "transition": 0.41001117,
+            "risk_off": 0.02051145
+          },
+          "primary_membership": 0.56947738,
+          "membership_entropy": 0.69716473,
+          "method": "risk_score_anchor_membership"
+        },
+        "next_week": {
+          "state": "risk_on",
+          "probabilities": {
+            "risk_on": 0.80730902,
+            "transition": 0.17584056,
+            "risk_off": 0.01685042
+          },
+          "confidence": 0.80730902,
+          "date": "2026-09-11"
+        },
+        "transition_probability": 0.19269098,
+        "transition_risk": {
+          "1w": {
+            "probability": 0.19269098,
+            "target_end": "2026-09-11"
+          },
+          "4w": {
+            "probability": 0.50678686,
+            "target_end": "2026-10-02"
+          },
+          "13w": {
+            "probability": 0.63651609,
+            "target_end": "2026-12-04"
+          }
+        }
+      }
+    ]
+  },
+  "core": {
+    "generation_id": "20260906T200946.236868Z",
+    "history_sidecars": [
+      {
+        "end": "2024-12-27",
+        "path": "regime-history-000.json",
+        "row_count": 104,
+        "sha256": "a042cd45135e8f62a753c502f4f2c3d4d95461ccf5d38287e9f5bd6daa8a6d37",
+        "start": "2023-01-06"
+      },
+      {
+        "end": "2026-03-06",
+        "path": "regime-history-001.json",
+        "row_count": 62,
+        "sha256": "8a315e81bcb3da54154b9d3151479ce703e9a1a1d4844240714b1d961da1188d",
+        "start": "2025-01-03"
+      }
+    ],
+    "payload": {
+      "meta": {
+        "mode": "live",
+        "result_version": "weekly-regime-result-v5",
+        "generated_at": "2026-09-06T20:09:46.236868+00:00",
+        "generation_id": "20260906T200946.236868Z",
+        "data_as_of": "2026-09-04T20:00:00+00:00",
+        "status": "degraded"
+      },
+      "sources": [
+        {
+          "id": "alpha_vantage",
+          "license_class": "private_noncommercial"
+        },
+        {
+          "id": "alfred",
+          "license_class": "user_confirmed_ml_storage_derived"
+        },
+        {
+          "id": "frb_h10",
+          "license_class": "federal_reserve_board_public_domain_citation_requested"
+        }
+      ],
+      "weekly": [
+        {
+          "date": "2026-09-04",
+          "current": {
+            "membership_entropy": 0.69716473,
+            "memberships": {
+              "risk_off": 0.02051145,
+              "risk_on": 0.56947738,
+              "transition": 0.41001117
+            },
+            "method": "risk_score_anchor_membership",
+            "primary_membership": 0.56947738,
+            "state": "risk_on"
+          },
+          "next_week": {
+            "state": "risk_on",
+            "probabilities": {
+              "risk_off": 0.01685042,
+              "risk_on": 0.80730902,
+              "transition": 0.17584056
+            },
+            "confidence": 0.80730902,
+            "date": "2026-09-11"
+          },
+          "transition_probability": 0.19269098,
+          "transition_risk": {
+            "1w": {
+              "probability": 0.19269098,
+              "target_end": "2026-09-11"
+            },
+            "4w": {
+              "probability": 0.50678686,
+              "target_end": "2026-10-02"
+            },
+            "13w": {
+              "probability": 0.63651609,
+              "target_end": "2026-12-04"
+            }
+          }
+        }
+      ]
+    },
+    "research_sidecar": {
+      "path": "regime-research.json",
+      "sha256": "ad252db187eb70759e92bda3f2013b56d85a1eee92b05335fdfa56e8807cbb93"
+    },
+    "schema_version": "regime-dashboard-core/2",
+    "source_payload_sha256": "06c9193a3ee3016ecee3ae9f629130cf237f3af7aee3be4dde87090f2e5478ce"
+  },
+  "historical": {
+    "meta": {
+      "mode": "live",
+      "result_version": "weekly-regime-result-v5",
+      "generated_at": "2026-09-06T20:09:46.236868+00:00",
+      "generation_id": "20260906T200946.236868Z",
+      "data_as_of": "2023-03-03T21:00:00+00:00",
+      "status": "degraded"
+    },
+    "sources": [
+      {
+        "id": "alpha_vantage",
+        "license_class": "private_noncommercial"
+      },
+      {
+        "id": "alfred",
+        "license_class": "user_confirmed_ml_storage_derived"
+      },
+      {
+        "id": "frb_h10",
+        "license_class": "federal_reserve_board_public_domain_citation_requested"
+      }
+    ],
+    "weekly": [
+      {
+        "date": "2023-03-03",
+        "current": {
+          "state": "risk_off",
+          "memberships": {
+            "risk_on": 0.05240372,
+            "transition": 0.5485768,
+            "risk_off": 0.39901948
+          },
+          "primary_membership": 0.39901948,
+          "membership_entropy": 0.77416297,
+          "method": "risk_score_anchor_membership"
+        },
+        "next_week": {
+          "state": "transition",
+          "probabilities": {
+            "risk_on": 0.02855882,
+            "transition": 0.59153606,
+            "risk_off": 0.37990512
+          },
+          "confidence": 0.59153606,
+          "date": "2023-03-10"
+        },
+        "transition_probability": 0.62009488,
+        "transition_risk": {
+          "1w": {
+            "probability": 0.62009488,
+            "target_end": "2023-03-10"
+          },
+          "4w": {
+            "probability": 0.62009488,
+            "target_end": "2023-03-31"
+          },
+          "13w": {
+            "probability": 0.62009488,
+            "target_end": "2023-06-02"
+          }
+        }
+      }
+    ]
+  }
+}

@@ -30,6 +30,11 @@ does not own or reimplement any project's Python calculation.
 Project-specific series meanings, table columns, result schemas, and analysis
 logic remain in the project repository.
 
+`ProjectId` includes every navigation destination, including `regime`. Regime
+uses its own `weekly-regime-result-v5` payload; it has no `quant-research-summary`
+id or Control API adapter. `publicSummaryProjectIds` and `CompletedDashboardId`
+remain limited to projects that expose the common summary contract.
+
 ## Visible copy contract
 
 Page and section supporting prose is absent by default. `PageHeader` and
