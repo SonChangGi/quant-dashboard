@@ -300,6 +300,10 @@
       },
     },
   ];
+  const NAVIGATION_PROJECTS = [
+    ...PROJECTS,
+    { id: 'news', shortName: 'News', url: 'https://sonchanggi.github.io/news/' },
+  ];
   const PLATFORM_PROJECT_IDS = {
     fearngreed: 'fear-greed',
     momentum: 'momentum',
@@ -524,7 +528,7 @@
     const topNav = $('#top-nav');
 
     if (topNav) {
-      topNav.replaceChildren(...PROJECTS.map((project) => createProjectLink(project, project.shortName)));
+      topNav.replaceChildren(...NAVIGATION_PROJECTS.map((project) => createProjectLink(project, project.shortName)));
     }
   }
 
@@ -4339,6 +4343,7 @@
       renderProjectNavigation,
       renderDashboardPanels,
       PROJECTS,
+      NAVIGATION_PROJECTS,
       PANEL_ADAPTERS,
       normalizeChartSeries,
       isValidChartPoint,

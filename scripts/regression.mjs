@@ -40,8 +40,8 @@ assert(
   'two or more unobservable projects become a hard observability failure',
 );
 assert(
-  api.PROJECTS.map((project) => project.shortName).join('|')
-    === 'Fear & Greed|Momentum|DRAM|Best Factor|ETF|SOX|Regime',
+  api.NAVIGATION_PROJECTS.map((project) => project.shortName).join('|')
+    === 'Fear & Greed|Momentum|DRAM|Best Factor|ETF|SOX|Regime|News',
   'project manifest preserves the canonical navigation order after Hub',
 );
 assert(
@@ -1850,7 +1850,7 @@ context.document = {
 };
 api.renderProjectNavigation();
 api.renderDashboardPanels();
-assert(domTargets['#top-nav'].children.length === 7, 'manifest renderer creates seven active project links including Regime');
+assert(domTargets['#top-nav'].children.length === 8, 'manifest renderer creates eight project links including News');
 assert(domTargets['#summary-grid'].children.length === 7, 'manifest renderer creates seven public summary panels');
 assert(domTargets['#summary-grid'].children.every((child) => /열기/.test(child.innerHTML)), 'dashboard panel shells preserve project page links');
 assert(domTargets['#summary-grid'].children.some((child) => /panel-detail/.test(child.innerHTML)), 'ETF panel shell includes detail mount for TOP10 cards');

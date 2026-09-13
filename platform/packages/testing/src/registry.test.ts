@@ -9,7 +9,7 @@ import {
 } from "@quant-research/project-registry";
 
 describe("canonical project registry", () => {
-  it("keeps all 8 platform labels and URLs in the approved order", () => {
+  it("keeps all 9 platform labels and URLs in the approved order", () => {
     expect(canonicalProjectRegistry).toEqual([
       { id: "hub", label: "Hub", url: "https://sonchanggi.github.io/quant-dashboard/" },
       { id: "fear-greed", label: "Fear & Greed", url: "https://sonchanggi.github.io/fearNgreed/" },
@@ -19,6 +19,7 @@ describe("canonical project registry", () => {
       { id: "etf", label: "ETF", url: "https://sonchanggi.github.io/etf-tracking/" },
       { id: "sox", label: "SOX", url: "https://sonchanggi.github.io/sox/" },
       { id: "regime", label: "Regime", url: "https://sonchanggi.github.io/regime/" },
+      { id: "news", label: "News", url: "https://sonchanggi.github.io/news/" },
     ]);
   });
 
