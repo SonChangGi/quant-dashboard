@@ -4,15 +4,15 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="color-scheme" content="light dark" />
-  <meta name="description" content="Fear &amp; Greed, 모멘텀 팩터, D램(DRAM) 가격, Best Factor, ETF Tracking, SOX, 미국 증시 Regime 프로젝트의 최신 공개 결과를 모아보는 퀀트 리서치 허브" />
+  <meta name="description" content="시장 국면과 심리, 팩터 전략, 반도체·ETF 데이터와 뉴스를 연결하는 개인 퀀트 리서치 허브" />
   <meta name="quant-supabase-url" content="" />
   <meta name="quant-supabase-publishable-key" content="" />
   <title>Quant Research Hub</title>
   <link rel="icon" href="data:," />
   <script src="assets/theme.js?v=20260728-hub-ui"></script>
-  <link rel="stylesheet" href="assets/styles.css?v=20260805-dram-chart" />
+  <link rel="stylesheet" href="assets/styles.css?v=20260917-news-summary" />
   <link rel="stylesheet" href="assets/shared-nav.css?v=20260728-shared-nav" />
-  <script src="assets/app.js?v=20260907-regime-v5" defer></script>
+  <script src="assets/app.js?v=20260917-news-summary" defer></script>
 </head>
 <body id="top" class="has-quant-shared-nav">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -28,51 +28,56 @@
   </nav>
 
   <header class="page-header" aria-labelledby="page-title">
-    <p class="eyebrow">Quant Research Hub</p>
-    <h1 id="page-title">퀀트 리서치 현황</h1>
+    <div class="page-heading">
+      <p class="eyebrow">RESEARCH OVERVIEW</p>
+      <h1 id="page-title">퀀트 리서치 현황</h1>
+    </div>
     <div class="hub-status-strip" id="hub-status" aria-live="polite" aria-label="허브 공개 데이터 현황">
       <article>
-        <span>공개 요약</span>
-        <strong id="hub-status-coverage">0/8 확인 중</strong>
+        <span>데이터 요약</span>
+        <strong id="hub-status-coverage">0/7 확인 중</strong>
       </article>
       <article>
-        <span>데이터 기준일</span>
+        <span>프로젝트별 기준일 범위</span>
         <strong id="hub-status-date">확인 중</strong>
       </article>
       <article>
-        <span>주의 필요</span>
+        <span>데이터 주의</span>
         <strong id="hub-status-attention">확인 중</strong>
       </article>
     </div>
   </header>
 
   <main id="main-content" tabindex="-1">
+    <nav class="section section-index" aria-label="허브 결과 빠른 탐색">
+      <a href="#market">시장 상태</a>
+      <a href="#factors">팩터 전략</a>
+      <a href="#semiconductors">반도체</a>
+      <a href="#holdings">ETF</a>
+      <a href="#news">뉴스</a>
+      <a href="#operations">데이터 상태</a>
+    </nav>
     <section class="section cockpit-section" aria-labelledby="cockpit-title">
       <div class="section-heading">
-        <p class="eyebrow">Research Cockpit</p>
-        <h2 id="cockpit-title">오늘 먼저 볼 것</h2>
+        <h2 id="cockpit-title">리서치 요약</h2>
+        <span class="section-meta">8개 프로젝트</span>
       </div>
       <div class="cockpit-grid">
         <article class="panel briefing-panel" aria-labelledby="briefing-title">
-          <div class="panel-header compact">
-            <div>
-              <p class="eyebrow">Briefing</p>
-              <h3 id="briefing-title">리서치 브리핑</h3>
-            </div>
-          </div>
+          <h3 id="briefing-title" class="sr-only">프로젝트별 핵심 요약</h3>
           <div id="research-briefing" class="briefing-list" aria-live="polite">
             <div class="skeleton-line">프로젝트별 핵심 신호를 불러오는 중...</div>
           </div>
         </article>
+        <div class="research-sidebar">
         <article class="panel watchlist-panel" aria-labelledby="watchlist-title">
           <div class="panel-header compact">
             <div>
-              <p class="eyebrow">Watchlist</p>
-              <h3 id="watchlist-title">티커·테마 연결</h3>
+              <h3 id="watchlist-title">티커·테마로 모아보기</h3>
             </div>
           </div>
           <form id="watchlist-form" class="watchlist-form">
-            <label for="watchlist-input">티커 또는 테마</label>
+            <label for="watchlist-input" class="sr-only">티커 또는 테마</label>
             <div class="watchlist-row">
               <input id="watchlist-input" type="search" placeholder="예: NVDA, AMD, DRAM, AI" autocomplete="off" />
               <button type="submit">찾기</button>
@@ -82,12 +87,12 @@
             <div class="skeleton-line">검색 가능한 티커를 준비하는 중...</div>
           </div>
         </article>
+        </div>
       </div>
     </section>
 
     <section class="section dashboard-section" aria-labelledby="dashboard-title">
       <div class="section-heading">
-        <p class="eyebrow">Live Summary</p>
         <h2 id="dashboard-title">프로젝트별 최신 결과</h2>
       </div>
 
@@ -98,20 +103,21 @@
       </div>
     </section>
 
-    <section class="section operations-section" aria-label="데이터와 운영 정보">
+    <section class="section operations-section" id="operations" aria-label="데이터와 운영 정보">
       <details class="operations-panel">
         <summary>
           <span>
             <small>Data &amp; Operations</small>
             <strong>데이터 · 출처 · 운영 상세</strong>
           </span>
-          <span id="operations-summary">7개 공개 요약 확인 중</span>
+          <span id="operations-summary">7개 데이터 요약 확인 중</span>
         </summary>
         <div class="operations-body" data-copy-channel="operations">
-          <p class="operations-lead">허브는 각 프로젝트의 공개 GitHub Pages JSON을 독립적으로 검증하며, 계약 오류·기준일 불일치·fallback을 정상 결과처럼 숨기지 않습니다.</p>
+          <p class="operations-lead">차트: 방향키로 날짜·계열 이동. DRAM: 클릭 고정, Esc 해제.</p>
           <div id="data-health" class="health-list" aria-live="polite">
             <div class="skeleton-line">공개 JSON 최신성과 fallback 여부를 확인하는 중...</div>
           </div>
+          <div id="news-health" class="health-list" aria-live="polite"></div>
           <p class="research-disclaimer">본 페이지는 개인 리서치 대시보드이며 투자, 세무, 법률 또는 매매 조언이 아닙니다.</p>
         </div>
       </details>

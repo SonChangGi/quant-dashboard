@@ -191,13 +191,13 @@
       id: 'momentum',
       shortName: 'Momentum',
       title: '모멘텀 팩터 랩',
-      description: '최고 모멘텀 팩터와 고정 70/30 연구 포트폴리오를 확인합니다.',
+      description: '선정 모멘텀 팩터와 현재 연구 포트폴리오를 확인합니다.',
       url: 'https://sonchanggi.github.io/momentum-factor-lab/',
       accent: 'MF',
       panelAdapter: 'momentum',
       panel: {
         eyebrow: 'Momentum Factor',
-        title: 'Python 최고 모멘텀 팩터 · Model Top 5',
+        title: '모멘텀 팩터 · 모델 Top 5',
         contentType: 'table',
         metricLoading: '모멘텀 데이터를 불러오는 중...',
         table: {
@@ -217,7 +217,7 @@
       panelAdapter: 'dram',
       panel: {
         eyebrow: 'DRAM Price',
-        title: 'TrendForce 일별 D램 가격 그래프',
+        title: 'TrendForce 현물·고정가 추이',
         contentType: 'chart',
         metricLoading: 'D램 가격 데이터를 불러오는 중...',
         chartLabel: 'TrendForce 일별 저장 D램(DRAM) 가격 추이 그래프',
@@ -237,8 +237,8 @@
         contentType: 'table',
         metricLoading: '베스트 팩터 데이터를 불러오는 중...',
         table: {
-          caption: '베스트 팩터 상위 5개 종목과 투자 비중',
-          columns: ['순위', '종목', '점수', '투자 비중', '기준일'],
+          caption: '베스트 팩터 상위 5개 종목과 모델 비중',
+          columns: ['순위', '종목', '점수', '모델 비중', '보유 기준일'],
           loadingText: '데이터를 불러오는 중...',
         },
       },
@@ -274,7 +274,7 @@
       panelAdapter: 'sox',
       panel: {
         eyebrow: 'SOX Semiconductor',
-        title: 'SOX 구성종목 · Momentum Top 5',
+        title: 'SOX 구성종목 · 모멘텀 Top 5',
         contentType: 'table',
         metricLoading: 'SOX 데이터를 불러오는 중...',
         table: {
@@ -510,6 +510,8 @@
   const COLORS = ['#7dd3fc', '#86efac', '#fb7185', '#fbbf24', '#c4b5fd', '#67e8f9'];
   const DRAM_DASHES = ['', '9 5', '3 4', '12 4 3 4', '2 5', '7 3 2 3'];
   const PANEL_RECORDS = new Map();
+  const NEWS_ARCHIVE_URL = 'https://sonchanggi.github.io/news/archive.json';
+  let newsState = { state: 'loading' };
   const ETF_HISTORY_WINDOW_DAYS = 31;
   const ETF_HISTORY_TAIL_BYTES = 2_400_000;
   let watchlistBound = false;
@@ -521,6 +523,7 @@
       renderDashboardPanels();
       renderHubStatus([], getPanelProjects().length);
       loadDashboardPanels();
+      loadNewsSummary();
     });
   }
 
@@ -544,11 +547,134 @@
   function renderDashboardPanels() {
     const summaryGrid = $('#summary-grid');
     if (!summaryGrid) return;
-    summaryGrid.replaceChildren(...PROJECTS.map((project) => (
-      project.panelAdapter && project.panel && PANEL_ADAPTERS[project.panelAdapter]
-        ? createPanelShell(project)
-        : createLinkPanelShell(project)
-    )));
+    // Display groups only: the source registry, loaders and result identities stay unchanged.
+    const groups = [
+      { id: 'market', title: '시장 상태', label: '심리와 국면', projects: ['fearngreed', 'regime'] },
+      { id: 'factors', title: '팩터 전략', label: '연구 결과와 모델 포트폴리오', projects: ['momentum', 'best'] },
+      { id: 'semiconductors', title: '반도체', label: '메모리 가격과 SOX 구성종목', projects: ['dram', 'sox'] },
+      { id: 'holdings', title: 'ETF 보유종목', label: 'TOP10 비중과 변화', projects: ['etf'] },
+    ];
+    const panels = groups.flatMap((group) => {
+      const heading = document.createElement('div');
+      heading.className = 'summary-group-heading';
+      heading.id = group.id;
+      heading.innerHTML = `<h3>${escapeHtml(group.title)}</h3><span>${escapeHtml(group.label)}</span>`;
+      return [heading, ...group.projects.map((id) => {
+        const project = PROJECTS.find((candidate) => candidate.id === id);
+        return project.panelAdapter && project.panel && PANEL_ADAPTERS[project.panelAdapter]
+          ? createPanelShell(project) : createLinkPanelShell(project);
+      })];
+    });
+    const newsHeading = document.createElement('div');
+    newsHeading.className = 'summary-group-heading';
+    newsHeading.id = 'news';
+    newsHeading.innerHTML = '<h3>뉴스</h3>';
+    const newsPanel = document.createElement('article');
+    newsPanel.className = 'panel panel-wide panel--news';
+    newsPanel.id = 'news-panel';
+    newsPanel.setAttribute('aria-labelledby', 'news-title');
+    newsPanel.innerHTML = `
+      <div class="panel-header"><div><p class="eyebrow">News</p><h4 id="news-title">주요 뉴스</h4></div><a class="panel-link" id="news-report-link" href="https://sonchanggi.github.io/news/">전체 브리핑 열기</a></div>
+      <p class="status-line" id="news-status" aria-live="polite">발행 정보 확인 중</p>
+      <div id="news-summary" class="news-summary" aria-live="polite"><div class="skeleton-line">주요 뉴스를 불러오는 중...</div></div>`;
+    summaryGrid.replaceChildren(...panels, newsHeading, newsPanel);
+  }
+
+  function parseNewsArchive(archive) {
+    if (!isRecord(archive) || archive.schema_version !== 1 || archive.visibility !== 'public'
+        || archive.base_path !== '/news/' || !Array.isArray(archive.entries)) throw new Error('News archive contract mismatch.');
+    if (!archive.entries.length && !archive.latest_date) return null;
+    const date = archive.latest_date;
+    if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date)
+        || !Number.isFinite(Date.parse(date)) || new Date(date).toISOString().slice(0, 10) !== date) throw new Error('News publication date is invalid.');
+    const matches = archive.entries.filter((entry) => entry?.date === date);
+    if (matches.length !== 1) throw new Error('News latest publication is missing or duplicated.');
+    const entry = matches[0];
+    const report = new URL(entry.report_url, NEWS_ARCHIVE_URL);
+    if (report.origin !== 'https://sonchanggi.github.io' || report.pathname !== `/news/daily/${date}/index.html`
+        || report.username || report.password || report.search || report.hash
+        || !LOWERCASE_SHA256.test(entry.sha256?.json || '')
+        || typeof entry.generated_at !== 'string' || !Number.isFinite(Date.parse(entry.generated_at))
+        || typeof entry.cutoff !== 'string' || !Number.isFinite(Date.parse(entry.cutoff))
+        || typeof entry.mode !== 'string' || !entry.mode || typeof entry.status !== 'string' || !entry.status
+        || !Number.isInteger(entry.issue_count) || entry.issue_count < 0) throw new Error('News publication identity is invalid.');
+    return { ...entry, reportUrl: report.href, jsonUrl: new URL('briefing.json', report).href };
+  }
+
+  function parseNewsBriefing(entry, payload) {
+    if (!isRecord(payload) || String(payload.schema_version) !== '1' || payload.publication?.visibility !== 'public'
+        || payload.synthetic !== false || payload.report_date !== entry.date
+        || payload.generated_at !== entry.generated_at || payload.cutoff !== entry.cutoff
+        || payload.mode !== entry.mode || payload.status !== entry.status
+        || !Array.isArray(payload.issues) || payload.issues.length !== entry.issue_count
+        || !Array.isArray(payload.highlights)) throw new Error('News briefing does not match the publication.');
+    if (payload.issues.some((issue) => !isRecord(issue) || typeof issue.title !== 'string' || !issue.title.trim()
+        || !/^issue-[a-f0-9]{16}$/.test(issue.anchor || '') || !Array.isArray(issue.summary)
+        || issue.summary.some((line) => typeof line !== 'string'))) throw new Error('News issue schema is invalid.');
+    const anchors = new Set(payload.issues.map((issue) => issue.anchor));
+    if (anchors.size !== payload.issues.length || payload.highlights.some((title) => typeof title !== 'string')) throw new Error('News issue identity is invalid.');
+    // The publication owns selection and order. Do not re-rank headlines in the Hub.
+    const selected = payload.highlights.length
+      ? payload.highlights.map((title) => payload.issues.find((issue) => issue.title === title))
+      : payload.issues;
+    if (selected.some((issue) => !issue)) throw new Error('News highlight has no matching issue.');
+    return {
+      ...entry,
+      headlines: selected.slice(0, 4).map((issue) => ({
+        title: issue.title,
+        summary: issue.evidence_expired ? '' : (issue.summary.find((line) => line.trim()) || ''),
+        url: `${entry.reportUrl}#${issue.anchor}`,
+      })),
+      notes: [payload.notice, ...asArray(payload.coverage?.missing_sources).map((source) => `누락 출처: ${source}`)].filter(Boolean),
+    };
+  }
+
+  async function loadNewsSummary(fetchJson = getJsonBestEffort) {
+    newsState = { state: 'loading' };
+    renderNewsSummary();
+    try {
+      const archive = await fetchJson(NEWS_ARCHIVE_URL);
+      if (!archive.ok) throw new Error(archive.error || 'News archive unavailable.');
+      const entry = parseNewsArchive(archive.data);
+      if (!entry) newsState = { state: 'empty' };
+      else {
+        const briefing = await fetchJson(entry.jsonUrl, 8500, entry.sha256.json);
+        if (!briefing.ok) throw new Error(briefing.error || 'News briefing unavailable.');
+        newsState = { state: 'ready', summary: parseNewsBriefing(entry, briefing.data) };
+      }
+    } catch (error) {
+      newsState = { state: 'error', error: error instanceof Error ? error.message : String(error) };
+    }
+    renderNewsSummary();
+    renderResearchBriefing(getPanelProjects().map((project) => PANEL_RECORDS.get(project.id)).filter(Boolean));
+    return newsState;
+  }
+
+  function newsPublicationLabel(summary) {
+    const mode = { reconstruction: '사후 재구성', scheduled: '정기 발행', manual: '수동 발행' }[summary.mode] || summary.mode;
+    const status = { partial: '부분 발행', complete: '발행 완료', ok: '발행 완료', failed: '발행 실패' }[summary.status] || summary.status;
+    return [mode, status].filter(Boolean).join(' · ');
+  }
+
+  function renderNewsSummary() {
+    const target = $('#news-summary');
+    const status = $('#news-status');
+    const link = $('#news-report-link');
+    const health = $('#news-health');
+    if (!target || !status) return;
+    const summary = newsState.summary;
+    status.classList.toggle('warning', newsState.state === 'error' || summary?.status === 'partial');
+    if (link) link.href = summary?.reportUrl || 'https://sonchanggi.github.io/news/';
+    if (!summary) {
+      const message = { loading: '발행 정보 확인 중', empty: '발행된 브리핑 없음', error: 'News 요약을 불러오지 못했습니다' }[newsState.state];
+      status.textContent = message;
+      target.innerHTML = newsState.state === 'loading' ? '<div class="skeleton-line">주요 뉴스를 불러오는 중...</div>' : '';
+      if (health) health.innerHTML = `<article class="health-item ${newsState.state === 'error' ? 'warn' : ''}"><div><strong>News</strong><span>${escapeHtml(message)}</span></div>${newsState.error ? `<p>${escapeHtml(newsState.error)}</p>` : ''}<div class="source-links"><a href="${NEWS_ARCHIVE_URL}">발행 목록 JSON</a></div></article>`;
+      return;
+    }
+    status.textContent = `발행일 ${summary.date} · ${summary.issue_count}개 이슈 · ${newsPublicationLabel(summary)}`;
+    target.innerHTML = summary.headlines.length ? `<ol class="news-headlines">${summary.headlines.map((issue) => `<li><a href="${escapeAttribute(issue.url)}">${escapeHtml(issue.title)} <span aria-hidden="true">↗</span></a>${issue.summary ? `<p>${escapeHtml(issue.summary)}</p>` : ''}</li>`).join('')}</ol>` : '<p class="muted">선정된 이슈 없음</p>';
+    if (health) health.innerHTML = `<article class="health-item ${summary.status === 'partial' ? 'warn' : 'ok'}"><div><strong>News</strong><span>${escapeHtml(newsPublicationLabel(summary))}</span></div><p>자료 마감 ${escapeHtml(formatFreshness(summary.cutoff))} · 생성 ${escapeHtml(formatFreshness(summary.generated_at))}</p>${summary.notes.length ? `<ul class="source-notes">${summary.notes.map((note) => `<li>${escapeHtml(note)}</li>`).join('')}</ul>` : ''}<div class="source-links"><a href="${NEWS_ARCHIVE_URL}">발행 목록 JSON</a><a href="${escapeAttribute(summary.jsonUrl)}">브리핑 JSON</a></div></article>`;
   }
 
   function createPanelShell(project) {
@@ -570,7 +696,7 @@
       <div class="panel-header">
         <div>
           <p class="eyebrow">${escapeHtml(panel.eyebrow || project.shortName)}</p>
-          <h3 id="${escapeAttribute(panelDomId(project, 'title'))}">${escapeHtml(panel.title || project.title)}</h3>
+          <h4 id="${escapeAttribute(panelDomId(project, 'title'))}">${escapeHtml(panel.title || project.title)}</h4>
         </div>
         <a class="panel-link" href="${escapeAttribute(project.url)}">${escapeHtml(project.shortName)} 열기</a>
       </div>
@@ -721,7 +847,7 @@
         && publishedMetadata.data.dataAsOf !== summaryAsOf,
     );
     adapter.render(summary, loadState.mode, loadState.error, project);
-    return {
+    const record = {
       project,
       adapterId: project.panelAdapter,
       summary,
@@ -734,6 +860,8 @@
       payloadBytes: Object.values(fetchResults).reduce((sum, result) => sum + numberOr(result.bytes, 0), 0),
       sourceCount: Object.keys(fetchResults).length,
     };
+    renderPanelStatus(record);
+    return record;
   }
 
   function validateAdapterContract(adapter, dataSources) {
@@ -788,13 +916,14 @@
     return { mode: 'fallback', error: fetchResult?.error || 'Network or public JSON fetch failed.' };
   }
 
-  async function getJsonBestEffort(url, timeoutMs = 8500) {
+  async function getJsonBestEffort(url, timeoutMs = 8500, expectedSha256 = '') {
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
     try {
       const response = await fetch(url, { signal: controller.signal, cache: 'no-store' });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const text = await response.text();
+      if (expectedSha256 && momentumSha256Hex(text) !== expectedSha256) throw new Error('Published JSON SHA-256 mismatch.');
       const headerBytes = finiteOrNull(response.headers.get('content-length'));
       const bytes = headerBytes ?? textByteLength(text);
       return { ok: true, data: JSON.parse(text), url, bytes };
@@ -2890,7 +3019,7 @@
     renderMetricCards(panelSelector(project, 'metrics'), [
       ['데이터 모드', summary.dataModeLabel],
       ['선택 팩터', summary.factor],
-      ['비중 정책', summary.selectedWeightingPolicy],
+      ['비중 정책', summary.selectedWeightingPolicy === 'score_liquidity_rank' ? '점수 70%\n거래대금 30%' : summary.selectedWeightingPolicy],
       ['종합 점수', formatNumber(summary.compositeScore)],
       ['데이터 기준일', formatMaybeDate(summary.dataAsOf)],
     ]);
@@ -2984,7 +3113,7 @@
       ['연구 상태', current.stateLabel || '산출 불가'],
       ['백분위 / 잔차 z', `${formatNumber(current.sentimentPercentile)} · ${formatNumber(current.residualZ)}`],
       ['R² / 50일 이격도', `${formatNumber(current.rollingR2)} · ${formatNumber(current.disparity50)}`],
-      ['포지션 / 기준일', `${formatFearPosition(current.position)} · ${formatMaybeDate(current.date || summary.dataAsOf)}`],
+      ['포지션 / 기준일', `${formatFearPosition(current.position)}\n${formatMaybeDate(current.date || summary.dataAsOf)}`],
     ]);
     setStatus(panelSelector(project, 'status'), buildStatusText(mode, summary.generatedAt, error, summary.status, summaryDataAsOf(summary)), mode);
   }
@@ -3570,7 +3699,6 @@
           ${paths}
         </svg>
       </div>
-      <p class="dram-chart-help">선·점·범례에서 미리보기 · 클릭/탭으로 고정 · Esc로 해제</p>
     </article>`;
   }
 
@@ -3707,14 +3835,19 @@
   function renderResearchBriefing(records = []) {
     const target = $('#research-briefing');
     if (!target) return;
-    const items = records.map(briefingItemForRecord).filter(Boolean);
+    const items = records.map((record) => {
+      const item = briefingItemForRecord(record);
+      return item ? { ...item, project: record.project, health: visibleHealthLabel(record), tone: healthTone(record) } : null;
+    }).filter(Boolean);
     target.innerHTML = items.length ? items.map((item) => `
-      <article class="briefing-item ${item.tone || ''}">
-        <span>${escapeHtml(item.kicker)}</span>
+      <a class="briefing-item ${item.tone === 'ok' ? '' : 'warning'}" href="#${escapeAttribute(panelDomId(item.project, 'panel'))}">
+        <span class="briefing-kicker">${escapeHtml(item.kicker)}<span class="briefing-state">${escapeHtml(item.health)}</span></span>
         <strong>${escapeHtml(item.title)}</strong>
-        <p>${escapeHtml(item.detail)}</p>
-      </article>
-    `).join('') : '<div class="skeleton-line">표시할 브리핑 데이터가 없습니다.</div>';
+      </a>
+    `).join('') : '';
+    const news = newsState.summary;
+    const newsTitle = news ? `${news.date} · ${news.issue_count}개 이슈` : { loading: '최신 브리핑 확인 중', empty: '발행된 브리핑 없음', error: '요약 확인 필요' }[newsState.state];
+    target.innerHTML += `<a class="briefing-item ${newsState.state === 'error' || news?.status === 'partial' ? 'warning' : ''}" href="#news-panel"><span class="briefing-kicker">News<span class="briefing-state">${escapeHtml(news ? newsPublicationLabel(news) : '')}</span></span><strong>${escapeHtml(newsTitle)}</strong></a>`;
   }
 
   function briefingItemForRecord(record) {
@@ -3732,7 +3865,7 @@
       const limit = firstLimitation(summary.meta || {});
       return {
         kicker: `Momentum · ${summary.dataModeLabel || '연구 데이터'}`,
-        title: `Python 최고 ${summary.factor || '-'} · 고정 방법 ${summary.selectedWeightingPolicy || '-'} · 종합 ${formatNumber(summary.compositeScore)}`,
+        title: `${summary.factor || '-'} · 종합 ${formatNumber(summary.compositeScore)}`,
         detail: `${summary.sourceLabel || '소스 확인 필요'} · ${momentumEvidenceLabel(summary.evidenceStatus)} · 현금 ${formatPercent(summary.cashWeight)} · 기준일 ${formatMaybeDate(summary.dataAsOf)} · ${limit}`,
         tone: summary.meta?.statusState === 'ok' ? '' : 'warning',
       };
@@ -3815,6 +3948,7 @@
         : '확인 중';
     }
     if (attentionTarget) {
+      attentionTarget.dataset.state = loaded ? (warningCount ? 'warning' : 'ok') : 'loading';
       attentionTarget.textContent = loaded
         ? warningCount
           ? `${warningCount}개`
@@ -3823,8 +3957,8 @@
     }
     if (operationsTarget) {
       operationsTarget.textContent = isComplete
-        ? `${loaded}개 공개 요약 · 주의 ${warningCount}개`
-        : `${loaded}/${expected}개 공개 요약 확인 중`;
+        ? `${loaded}개 데이터 요약 · 주의 ${warningCount}개`
+        : `${loaded}/${expected}개 데이터 요약 확인 중`;
     }
   }
 
@@ -3849,10 +3983,45 @@
         </div>
         <p>${escapeHtml(recordFreshnessText(record))}</p>
         <small>${escapeHtml(`${formatBytes(record.payloadBytes)} · ${record.sourceCount}개 JSON · ${record.summary?.meta?.cadence || 'cadence 확인 필요'} · freshness ${formatInteger(expectedFreshnessDays(record))}일${record.error ? ` · ${record.error}` : ''}`)}</small>
+        ${operationalNotes(record).length ? `<ul class="source-notes">${operationalNotes(record).map((note) => `<li>${escapeHtml(note)}</li>`).join('')}</ul>` : ''}
+        <div class="source-links"><a href="${escapeAttribute(record.project.url)}">원본 페이지</a>${Object.entries(PANEL_ADAPTERS[record.project.panelAdapter]?.sourceUrls || {}).map(([key, url]) => `<a href="${escapeAttribute(url)}">${escapeHtml(key)} JSON</a>`).join('')}</div>
         ${safeAutomationUrl(record.summary?.meta?.automation?.workflowUrl) ? `<a class="health-link" href="${escapeAttribute(safeAutomationUrl(record.summary.meta.automation.workflowUrl))}" rel="noopener noreferrer">자동화/수동 실행</a>` : ''}
       </article>
     `).join('');
     target.innerHTML = portfolioRow || rows ? `${portfolioRow}${rows}` : '<div class="skeleton-line">데이터 상태를 표시할 수 없습니다.</div>';
+  }
+
+  function operationalNotes(record) {
+    const summary = record.summary || {};
+    const meta = summary.meta || {};
+    return [...new Set([
+      summary.status,
+      summary.sourceLabel,
+      summary.selectedWeightingPolicy,
+      ...asArray(meta.limitations),
+      ...asArray(meta.degradedReasons),
+      ...asArray(summary.entities).flatMap((entity) => asArray(entity.warnings)),
+    ].filter((note) => typeof note === 'string' && note.trim()))];
+  }
+
+  function visibleHealthLabel(record) {
+    if (record.summary?.unavailable || record.summary?.meta?.statusState === 'unavailable') return '산출 불가';
+    if (!record.metadataMismatch && record.mode === 'live' && !isRecordStale(record)) {
+      if (record.summary?.meta?.statusState === 'degraded') return '데이터 주의';
+      if (record.summary?.meta?.statusState === 'ok') return '정상';
+    }
+    return healthLabel(record);
+  }
+
+  function renderPanelStatus(record) {
+    const target = $(panelSelector(record.project, 'status'));
+    if (!target) return;
+    const summary = record.summary || {};
+    const observedDate = stringOr(summary.meta?.minDataAsOf, summary.minDataAsOf, summaryDataAsOf(summary), record.dataAsOf, '');
+    const dateLabel = observedDate ? `기준일 ${formatMaybeDate(observedDate)}` : `업데이트 ${formatFreshness(record.generatedAt || summary.generatedAt)}`;
+    target.textContent = `${dateLabel} · ${visibleHealthLabel(record)}`;
+    target.classList.toggle('warning', healthTone(record) !== 'ok');
+    target.classList.toggle('error', record.summary?.unavailable === true);
   }
 
 
@@ -3960,7 +4129,7 @@
   }
 
   function bindWatchlist(records = []) {
-    renderWatchlistResults(records, []);
+    renderWatchlistResults(records, parseWatchlistTokens($('#watchlist-input')?.value || ''));
     if (watchlistBound) return;
     const form = $('#watchlist-form');
     const input = $('#watchlist-input');
@@ -3999,7 +4168,7 @@
     }
     const matches = tokens.flatMap((token) => watchlistMatchesForToken(records, token));
     if (!matches.length) {
-      target.innerHTML = `<p class="muted">${escapeHtml(tokens.join(', '))}와 직접 연결되는 공개 요약 신호가 없습니다. 원본 프로젝트에서 더 넓은 검색을 확인하세요.</p>`;
+      target.innerHTML = `<p class="muted">${escapeHtml(tokens.join(', '))} · 검색 결과 없음</p>`;
       return;
     }
     target.innerHTML = matches.slice(0, 24).map((match) => `
@@ -4007,7 +4176,6 @@
         <span>${escapeHtml(match.project)}</span>
         <strong>${escapeHtml(match.label)}</strong>
         <p>${escapeHtml(match.detail)}</p>
-        ${match.limit ? `<small>${escapeHtml(match.limit)}</small>` : ''}
       </article>
     `).join('');
   }
@@ -4285,6 +4453,12 @@
       renderSox,
       renderRegime,
       renderFearAndGreed,
+      parseNewsArchive,
+      parseNewsBriefing,
+      loadNewsSummary,
+      getJsonBestEffort,
+      renderPanelStatus,
+      visibleHealthLabel,
       normalizeRegimeUnavailable,
       isMomentumSummaryV5,
       isMomentumDashboardV5,

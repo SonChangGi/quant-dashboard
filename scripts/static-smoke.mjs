@@ -36,7 +36,7 @@ try {
   if (!html.includes('퀀트 리서치 현황')) throw new Error('results-first page header missing');
   if (!app.includes('parseEtfTracking')) throw new Error('ETF Tracking parser missing');
   if (!app.includes('parseFearAndGreed') || !app.includes('Fear & Greed · 현재 연구 상태')) throw new Error('Fear & Greed parser/panel missing');
-  if (!app.includes('parseSox') || !app.includes('SOX 구성종목 · Momentum Top 5')) throw new Error('SOX parser/panel missing');
+  if (!app.includes('parseSox') || !app.includes('SOX 구성종목 · 모멘텀 Top 5')) throw new Error('SOX parser/panel missing');
   if (!app.includes('parseRegime') || !app.includes('현재 국면 · 다음 주 전망')) throw new Error('Regime public-result parser/panel missing');
   if (!app.includes('renderEtfDetailCards') || !app.includes('renderEtfMiniChart')) throw new Error('ETF Tracking detail card/chart renderer missing');
   if (!app.includes('momentumDashboard') || !app.includes('buildDramAxisTicks') || !app.includes('buildEtfPercentAxisTicks')) throw new Error('dashboard readability improvements missing');
@@ -44,7 +44,7 @@ try {
   if (!html.includes('id="top-nav"')) throw new Error('dynamic top navigation mount missing');
   if (!html.includes('id="summary-grid"')) throw new Error('dynamic dashboard mount missing');
   if (!html.includes('id="research-briefing"') || !html.includes('id="data-health"')) throw new Error('research cockpit mounts missing');
-  if (!html.includes('티커·테마 연결')) throw new Error('watchlist copy missing');
+  if (!html.includes('티커·테마로 모아보기')) throw new Error('watchlist copy missing');
   if (!app.includes('PANEL_ADAPTERS')) throw new Error('panel adapter manifest missing');
   if (!app.includes('quant-research-summary') || !app.includes('summaryEntities')) throw new Error('summary contract support missing');
   if (!app.includes('renderDashboardPanels')) throw new Error('manifest-driven panel renderer missing');

@@ -1851,8 +1851,10 @@ context.document = {
 api.renderProjectNavigation();
 api.renderDashboardPanels();
 assert(domTargets['#top-nav'].children.length === 8, 'manifest renderer creates eight project links including News');
-assert(domTargets['#summary-grid'].children.length === 7, 'manifest renderer creates seven public summary panels');
-assert(domTargets['#summary-grid'].children.every((child) => /열기/.test(child.innerHTML)), 'dashboard panel shells preserve project page links');
+const renderedPanels = domTargets['#summary-grid'].children.filter((child) => child.dataset.projectId);
+assert(renderedPanels.length === 7 && new Set(renderedPanels.map((child) => child.dataset.projectId)).size === 7, 'grouped renderer preserves every public summary panel exactly once');
+assert(renderedPanels.map((child) => child.dataset.projectId).join('|') === 'fearngreed|regime|momentum|best|dram|sox|etf', 'display groups keep related research panels adjacent');
+assert(renderedPanels.every((child) => /열기/.test(child.innerHTML)), 'dashboard panel shells preserve project page links');
 assert(domTargets['#summary-grid'].children.some((child) => /panel-detail/.test(child.innerHTML)), 'ETF panel shell includes detail mount for TOP10 cards');
 assert(domTargets['#summary-grid'].children.some((child) => /SOX 구성종목/.test(child.innerHTML)), 'SOX panel shell appears in the central summary grid');
 assert(domTargets['#summary-grid'].children.some((child) => /현재 국면 · 다음 주 전망/.test(child.innerHTML)), 'Regime public result panel appears in the central summary grid');
@@ -1901,6 +1903,18 @@ assert(/합성 데모/.test(domTargets['#research-briefing'].innerHTML) && /brie
 assert(/갱신 지연/.test(domTargets['#data-health'].innerHTML), 'data health renders localized stale state from project-level freshness defaults');
 assert(/Momentum<\/strong>\s*<span>갱신 지연<\/span>/.test(domTargets['#data-health'].innerHTML) && /health-item warn/.test(domTargets['#data-health'].innerHTML), 'data health prioritizes stale Momentum data over its demo evidence label');
 assert(/전체 기준일/.test(domTargets['#data-health'].innerHTML), 'data health renders localized portfolio freshness snapshot');
+const evidenceNote = 'Fixture research limitation retained only in operations';
+const notesRecord = { ...records[0], summary: { ...records[0].summary, meta: { ...records[0].summary.meta, limitations: [evidenceNote] } } };
+api.renderResearchBriefing([notesRecord]);
+api.renderDataHealth([notesRecord]);
+assert(!domTargets['#research-briefing'].innerHTML.includes(evidenceNote) && domTargets['#data-health'].innerHTML.includes(evidenceNote), 'research limitations remain available only in the operations disclosure');
+assert(/source-links/.test(domTargets['#data-health'].innerHTML) && /summary\.json/.test(domTargets['#data-health'].innerHTML), 'operations includes inspectable public source links');
+const statusTarget = new ElementStub('p');
+statusTarget.classList = { toggle() {} };
+domTargets['#dram-status'] = statusTarget;
+api.renderPanelStatus({ project: { id: 'dram' }, mode: 'fallback', generatedAt: '2026-06-10T00:00:00Z', summary: { meta: {}, series: [{ points: [['2026-06-02', 10]] }] } });
+assert(statusTarget.textContent.startsWith('업데이트 ') && !statusTarget.textContent.includes('기준일'), 'missing observation date does not relabel generation time as a data date');
+assert(api.visibleHealthLabel({ mode: 'live', summary: { meta: { statusState: 'degraded', dataModeLabel: 'Live 파생 결과' } } }) === '데이터 주의', 'compact status preserves degradation alongside a data-mode label');
 const mixedFreshness = api.portfolioFreshnessSummary([
   { project: { shortName: 'A' }, summary: { dataAsOf: '2026-06-22' }, generatedAt: '2026-06-23T00:00:00Z' },
   { project: { shortName: 'B' }, summary: { dataAsOf: '2026-06-23' }, generatedAt: '2026-06-23T00:00:00Z' },
