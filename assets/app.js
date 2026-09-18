@@ -351,6 +351,7 @@
       sourceUrls: {
         summary: 'https://sonchanggi.github.io/fearNgreed/data/summary.json',
         dashboard: 'https://sonchanggi.github.io/fearNgreed/data/dashboard.json',
+        history: 'https://sonchanggi.github.io/fearNgreed/data/history.json',
       },
       primarySourceKey: 'summary',
       contracts: { summary: SUMMARY_CONTRACT },
@@ -2948,12 +2949,68 @@
   function parseFearPanel(sources) {
     const summary = parseFearAndGreed(sources.summary);
     if (summary.unavailable) return summary;
+    let scatter;
     try {
-      return { ...summary, scatter: parseFearScatter(sources.dashboard, sources.summary) };
+      scatter = parseFearScatter(sources.dashboard, sources.summary);
     } catch (error) {
       return { ...summary, scatter: null, scatterError: error.message };
     }
+    try {
+      return { ...summary, scatter: { ...scatter, pricePoints: parseFearPrices(sources.history, sources.summary, scatter) } };
+    } catch (error) {
+      return { ...summary, scatter, priceError: error.message };
+    }
   }
+
+  function parseFearPrices(payload, summary, scatter) {
+    const fail = (message) => { throw new Error(`Fear & Greed price: ${message}`); };
+    const finite = (value) => typeof value === 'number' && Number.isFinite(value);
+    if (!isRecord(payload) || payload.schemaVersion !== 1 || payload.fixture !== false
+      || payload.methodologyVersion !== summary.methodologyVersion || payload.generatedAt !== summary.generatedAt
+      || payload.dataAsOf !== summary.dataAsOf) fail('publication mismatch');
+    const columns = payload.seriesColumns, rows = payload.seriesRows;
+    const required = ['date', 'kospiClose', 'return1d', 'rawFlowTrillion'];
+    if (payload.seriesEncoding !== 'columnar-v1' || payload.numericPrecisionDigits !== 8
+      || !Array.isArray(columns) || new Set(columns).size !== columns.length
+      || !required.every((key) => columns.includes(key)) || !Array.isArray(rows) || !rows.length) fail('history contract');
+    const [dateIndex, closeIndex, returnIndex, flowIndex] = required.map((key) => columns.indexOf(key));
+    const byDate = new Map();
+    rows.forEach((row, index) => {
+      const date = row?.[dateIndex];
+      if (!Array.isArray(row) || row.length !== columns.length || typeof date !== 'string'
+        || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(Date.parse(date))
+        || new Date(date).toISOString().slice(0, 10) !== date
+        || (index && date <= rows[index - 1][dateIndex])) fail('invalid history dates');
+      byDate.set(date, { row, previous: rows[index - 1] });
+    });
+    if (rows.at(-1)[dateIndex] !== summary.dataAsOf) fail('latest history date');
+    return scatter.points.map((point) => {
+      const match = byDate.get(point.date), row = match?.row, close = row?.[closeIndex];
+      if (!finite(close) || close <= 0 || !finite(row[returnIndex]) || !finite(row[flowIndex])
+        || Math.abs(row[returnIndex] - point.return1d) > 1e-8
+        || Math.abs(row[flowIndex] - point.rawFlowTrillion) > 1e-8) fail('price observation mismatch');
+      const previousClose = match.previous?.[closeIndex];
+      if (!finite(previousClose) || previousClose <= 0
+        || Math.abs(close / previousClose - 1 - point.return1d) > 1e-8) fail('close return mismatch');
+      return { ...point, close };
+    });
+  }
+
+  // Historical rolling states do not describe the current scatter's fitted regions.
+  function fearPointState(scatter, row) {
+    if (!scatter.boundaries) return null;
+    let residual = row.rawFlowTrillion - scatter.alpha - scatter.beta * row.return1d;
+    const b = scatter.boundaries;
+    const boundary = Object.values(b).find((value) => Math.abs(residual - value) <= 5e-8);
+    if (boundary !== undefined) residual = boundary;
+    if (residual < b.extremeFearUpper) return 'extreme_fear';
+    if (residual < b.fearUpper) return 'fear';
+    if (residual < b.greedLower) return 'neutral';
+    if (residual < b.extremeGreedLower) return 'greed';
+    return 'extreme_greed';
+  }
+
+  const FEAR_POINT_LABELS = Object.freeze({ extreme_fear: '극단 공포', fear: '공포', neutral: '중립', greed: '탐욕', extreme_greed: '극단 탐욕' });
 
   function parseFearScatter(payload, summary) {
     const fail = (message) => { throw new Error(`Fear & Greed scatter: ${message}`); };
@@ -3017,7 +3074,7 @@
   }
 
   function fearScatterGeometry(scatter, width = 640) {
-    const w = Math.max(300, width), h = w < 430 ? 320 : 360;
+    const w = Math.max(300, width), h = width < 430 ? 300 : 285;
     const p = { l: 48, r: 18, t: 28, b: 45 };
     const xs = scatter.points.map((row) => row.return1d * 100);
     const xlow = Math.min(0, ...xs), xhigh = Math.max(0, ...xs);
@@ -3041,6 +3098,21 @@
       points: scatter.points.map((row) => ({ row, x: x(row.return1d * 100), y: y(row.rawFlowTrillion) })) };
   }
 
+  function fearPriceGeometry(points, width = 640) {
+    const w = Math.max(300, width), h = 190, p = { l: 48, r: 18, t: 12, b: 30 };
+    const closes = points.map((row) => row.close);
+    const low = Math.min(...closes), high = Math.max(...closes), pad = Math.max(high - low, high * .01) * .12;
+    const ymin = low - pad, ymax = high + pad;
+    const first = Date.parse(points[0].date), last = Date.parse(points.at(-1).date);
+    const x = (date) => p.l + (Date.parse(date) - first) / Math.max(1, last - first) * (w - p.l - p.r);
+    const y = (close) => h - p.b - (close - ymin) / (ymax - ymin) * (h - p.t - p.b);
+    const step = niceStep((ymax - ymin) / 4, 1), yTicks = [];
+    for (let value = Math.ceil(ymin / step) * step; value <= ymax; value += step) yTicks.push(roundTick(value));
+    const tickCount = w < 430 ? 3 : 4;
+    const dateTicks = Array.from({ length: tickCount }, (_, index) => points[Math.round(index * (points.length - 1) / (tickCount - 1))].date);
+    return { w, h, p, x, y, yTicks, dateTicks, points: points.map((row) => ({ row, x: x(row.date), y: y(row.close) })) };
+  }
+
   let fearScatterObserver;
   function renderFearScatter(scatter, project) {
     const target = $(panelSelector(project, 'chart'));
@@ -3050,12 +3122,14 @@
       target.innerHTML = '<p class="empty-state">차트 데이터를 불러올 수 없습니다.</p>';
       return;
     }
-    let selected = scatter.points.length - 1, previousWidth = 0;
+    let selected = scatter.points.length - 1, pinned = selected, previousWidth = 0;
+    const states = scatter.points.map((row) => fearPointState(scatter, row));
     const draw = () => {
       const width = Math.max(300, Math.round(target.clientWidth || 640));
       if (width === previousWidth) return;
       previousWidth = width;
       const g = fearScatterGeometry(scatter, width), { w, h, p, x, y, predicted } = g;
+      const price = scatter.pricePoints ? fearPriceGeometry(scatter.pricePoints, width) : null;
       const right = w - p.r, bottom = h - p.b;
       const line = (x1, y1, x2, y2, cls) => `<line class="${cls}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
       const grid = g.xTicks.map((value) => `${line(x(value), p.t, x(value), bottom, 'scatter-grid')}<text x="${x(value)}" y="${bottom + 20}" text-anchor="middle">${value}</text>`).join('')
@@ -3068,48 +3142,84 @@
         zones = band([bottom, bottom], ef, 'scatter-fear-extreme') + band(ef, f, 'scatter-fear')
           + band(gr, eg, 'scatter-greed') + band(eg, [p.t, p.t], 'scatter-greed-extreme');
       }
-      const marks = g.points.map(({row, x: cx, y: cy}, index) => `<circle data-point="${index}" class="scatter-observation${row.role === 'current' ? ' is-current' : ''}" cx="${cx}" cy="${cy}" r="${row.role === 'current' ? 6 : 3.2}"><title>${escapeHtml(`${row.date} · KOSPI ${formatSignedFear(row.return1d * 100, 2)}% · 개인 ${formatSignedFear(row.rawFlowTrillion, 3)}조원`)}</title></circle>`).join('');
+      const mark = ({ row, x: cx, y: cy }, index, chart) => {
+        const state = states[index], current = row.role === 'current';
+        const r = current ? 5 : state?.startsWith('extreme') ? 4 : chart === 'price' && (!state || state === 'neutral') ? 1.4 : 3;
+        const attrs = `data-point="${index}" data-date="${row.date}" data-state="${state || 'unclassified'}" class="${chart}-observation fear-point ${state || ''}${current ? ' is-current' : ''}"`;
+        const title = `<title>${escapeHtml(`${row.date} · ${FEAR_POINT_LABELS[state] || ''}${chart === 'price' ? ` · KOSPI ${row.close.toLocaleString('ko-KR', { maximumFractionDigits: 2 })}` : ` · 수익률 ${formatSignedFear(row.return1d * 100, 2)}% · 개인 ${formatSignedFear(row.rawFlowTrillion, 3)}조원`}`)}</title>`;
+        return state?.includes('greed')
+          ? `<path ${attrs} d="M${cx},${cy - r - 1}L${cx + r + 1},${cy}L${cx},${cy + r + 1}L${cx - r - 1},${cy}Z">${title}</path>`
+          : `<circle ${attrs} cx="${cx}" cy="${cy}" r="${r}">${title}</circle>`;
+      };
+      const marks = g.points.map((point, index) => mark(point, index, 'scatter')).join('');
       const current = g.points.at(-1);
       const currentLabelX = current.x > w / 2 ? current.x - 11 : current.x + 11;
-      const zoneLegend = scatter.boundaries ? '<div class="scatter-zones" aria-label="잔차 백분위 구간"><span class="fear-extreme">극단 공포 ≤5%</span><span class="fear">공포 5–20%</span><span>중립</span><span class="greed">탐욕 80–95%</span><span class="greed-extreme">극단 탐욕 ≥95%</span></div>' : '';
+      const zoneLegend = scatter.boundaries ? '<div class="scatter-zones" aria-label="현재 회귀 기준 잔차 백분위 구간"><span class="fear-extreme">극단 공포 ≤5%</span><span class="fear">공포 5–20%</span><span>중립</span><span class="greed">탐욕 80–95%</span><span class="greed-extreme">극단 탐욕 ≥95%</span><small>현재 회귀 기준</small></div>' : '';
+      const priceChart = price ? `<div class="fear-price-heading"><h4>가격 · KOSPI 종가</h4><span>지수포인트</span></div>
+        <div class="scatter-frame fear-price-frame" tabindex="0" role="group" aria-label="KOSPI 종가와 공포·탐욕. 좌우 방향키로 두 그래프의 날짜 이동" aria-describedby="fear-scatter-readout">
+          <svg viewBox="0 0 ${price.w} ${price.h}" role="img" aria-label="KOSPI 종가, 산점도와 같은 ${price.points.length}개 날짜">
+            ${price.yTicks.map((value) => `${line(price.p.l, price.y(value), w - price.p.r, price.y(value), 'scatter-grid')}<text x="${price.p.l - 8}" y="${price.y(value) + 4}" text-anchor="end">${value.toLocaleString('ko-KR')}</text>`).join('')}
+            ${price.dateTicks.map((date, index) => `<text x="${price.x(date)}" y="${price.h - 7}" text-anchor="${index === 0 ? 'start' : index === price.dateTicks.length - 1 ? 'end' : 'middle'}">${date.slice(0, 7).replace('-', '.')}</text>`).join('')}
+            <path class="fear-price-line" d="${price.points.map((point, index) => `${index ? 'L' : 'M'}${point.x},${point.y}`).join('')}"/>
+            ${price.points.map((point, index) => mark(point, index, 'price')).join('')}
+            <line class="fear-price-cursor" y1="${price.p.t}" y2="${price.h - price.p.b}"/>
+            <circle class="price-selected" r="7"/>
+          </svg>
+        </div>` : '<p class="empty-state fear-price-empty">KOSPI 종가 데이터를 불러올 수 없습니다.</p>';
       target.innerHTML = `<figure class="fear-scatter">
         <div class="scatter-legend"><span class="past">직전 ${scatter.trainingCount}거래일</span><span class="current">현재</span><span class="fit">OLS 회귀선</span></div>
-        <div class="scatter-frame" tabindex="0" role="group" aria-label="KOSPI 수익률과 개인 순매수 산점도. 좌우 방향키로 날짜 이동" aria-describedby="fear-scatter-readout">
+        <div class="scatter-frame fear-scatter-frame" tabindex="0" role="group" aria-label="KOSPI 수익률과 개인 순매수 산점도. 좌우 방향키로 두 그래프의 날짜 이동" aria-describedby="fear-scatter-readout">
           <svg viewBox="0 0 ${w} ${h}" role="img" aria-label="KOSPI 1일 수익률 퍼센트와 개인 순매수대금 조원, ${scatter.points.length}개 관측점">
             <defs><clipPath id="fear-scatter-clip"><rect x="${p.l}" y="${p.t}" width="${right - p.l}" height="${bottom - p.t}"/></clipPath></defs>
             <g clip-path="url(#fear-scatter-clip)">${zones}</g>${grid}
             ${line(x(0), p.t, x(0), bottom, 'scatter-zero')}${line(p.l, y(0), right, y(0), 'scatter-zero')}
             <g clip-path="url(#fear-scatter-clip)">${line(p.l, y(predicted(g.xmin)), right, y(predicted(g.xmax)), 'scatter-fit')}${marks}
-              <circle class="scatter-selected" cx="${g.points[selected].x}" cy="${g.points[selected].y}" r="8"/>
+              <circle class="scatter-selected" r="8"/>
             </g>
             <text class="scatter-current-label" x="${currentLabelX}" y="${Math.max(p.t + 16, current.y - 13)}" text-anchor="${current.x > w / 2 ? 'end' : 'start'}">현재</text>
             <text class="scatter-axis-title" x="${p.l}" y="16">개인 순매수대금 (조원)</text>
             <text class="scatter-axis-title" x="${(p.l + right) / 2}" y="${h - 4}" text-anchor="middle">KOSPI 1일 수익률 (%)</text>
           </svg>
-        </div>
-        <figcaption class="scatter-readout" id="fear-scatter-readout" aria-live="polite"></figcaption>${zoneLegend}
+        </div>${zoneLegend}${priceChart}
+        <figcaption class="scatter-readout" id="fear-scatter-readout" aria-live="polite"></figcaption>
       </figure>`;
-      const frame = target.querySelector('.scatter-frame'), svg = target.querySelector('svg'), readout = target.querySelector('.scatter-readout'), ring = target.querySelector('.scatter-selected');
+      const readout = target.querySelector('.scatter-readout'), ring = target.querySelector('.scatter-selected');
+      const priceRing = target.querySelector('.price-selected'), cursor = target.querySelector('.fear-price-cursor');
       const select = (index) => {
         selected = index;
-        const point = g.points[index], row = point.row;
-        ring.setAttribute('cx', point.x); ring.setAttribute('cy', point.y);
-        readout.innerHTML = `<strong>${escapeHtml(row.date)}${row.role === 'current' ? ' · 현재' : ''}</strong><span>KOSPI <b>${escapeHtml(formatSignedFear(row.return1d * 100, 2))}%</b></span><span>개인 <b>${escapeHtml(formatSignedFear(row.rawFlowTrillion, 3))}조원</b></span>`;
+        const point = g.points[index], row = point.row, state = states[index];
+        ring.setAttribute('cx', point.x); ring.setAttribute('cy', point.y); ring.dataset.date = row.date;
+        if (priceRing) {
+          const match = price.points[index];
+          priceRing.setAttribute('cx', match.x); priceRing.setAttribute('cy', match.y); priceRing.dataset.date = row.date;
+          cursor.setAttribute('x1', match.x); cursor.setAttribute('x2', match.x);
+        }
+        const close = price?.points[index].row.close;
+        readout.innerHTML = `<strong>${escapeHtml(row.date)}${row.role === 'current' ? ' · 현재' : ''}${state ? ` <em class="fear-state ${state}">${FEAR_POINT_LABELS[state]}</em>` : ''}</strong>${close !== undefined ? `<span>KOSPI <b>${close.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b></span>` : ''}<span>수익률 <b>${escapeHtml(formatSignedFear(row.return1d * 100, 2))}%</b></span><span>개인 <b>${escapeHtml(formatSignedFear(row.rawFlowTrillion, 3))}조원</b></span>`;
       };
-      const nearest = (event) => {
-        const rect = svg.getBoundingClientRect(), px = (event.clientX - rect.left) * w / rect.width, py = (event.clientY - rect.top) * h / rect.height;
-        if (px < p.l || px > right || py < p.t || py > bottom) return;
-        let best = 0, distance = Infinity;
-        g.points.forEach((point, index) => { const d = (px - point.x) ** 2 + (py - point.y) ** 2; if (d < distance) { best = index; distance = d; } });
-        select(best);
+      const bind = (selector, geometry, isPrice) => {
+        const frame = target.querySelector(selector);
+        if (!frame) return;
+        const svg = frame.querySelector('svg');
+        const nearest = (event) => {
+          const rect = svg.getBoundingClientRect(), px = (event.clientX - rect.left) * geometry.w / rect.width, py = (event.clientY - rect.top) * geometry.h / rect.height;
+          if (px < geometry.p.l || px > geometry.w - geometry.p.r || py < geometry.p.t || py > geometry.h - geometry.p.b) return null;
+          const hit = event.target.closest?.('[data-point]');
+          if (hit) return Number(hit.dataset.point);
+          let best = 0, distance = Infinity;
+          geometry.points.forEach((point, index) => { const d = (px - point.x) ** 2 + (isPrice ? 0 : (py - point.y) ** 2); if (d < distance) { best = index; distance = d; } });
+          return best;
+        };
+        svg.addEventListener('pointermove', (event) => { const index = nearest(event); if (event.pointerType !== 'touch' && index !== null) select(index); });
+        svg.addEventListener('click', (event) => { const index = nearest(event); if (index !== null) { pinned = index; select(index); } });
+        frame.addEventListener('pointerleave', () => select(pinned));
+        frame.addEventListener('keydown', (event) => {
+          const move = { ArrowLeft: Math.max(0, selected - 1), ArrowRight: Math.min(g.points.length - 1, selected + 1), Home: 0, End: g.points.length - 1, Escape: g.points.length - 1 };
+          if (Object.hasOwn(move, event.key)) { event.preventDefault(); pinned = move[event.key]; select(pinned); }
+        });
       };
-      svg.addEventListener('pointermove', (event) => { if (event.pointerType !== 'touch') nearest(event); });
-      svg.addEventListener('click', nearest);
-      frame.addEventListener('pointerleave', () => select(g.points.length - 1));
-      frame.addEventListener('keydown', (event) => {
-        const move = { ArrowLeft: Math.max(0, selected - 1), ArrowRight: Math.min(g.points.length - 1, selected + 1), Home: 0, End: g.points.length - 1, Escape: g.points.length - 1 };
-        if (Object.hasOwn(move, event.key)) { event.preventDefault(); select(move[event.key]); }
-      });
+      bind('.fear-scatter-frame', g, false);
+      if (price) bind('.fear-price-frame', price, true);
       select(selected);
     };
     draw();
@@ -4345,7 +4455,7 @@
           <span>${escapeHtml(healthLabel(record))}</span>
         </div>
         <p>${escapeHtml(recordFreshnessText(record))}</p>
-        <small>${escapeHtml(`${formatBytes(record.payloadBytes)} · ${record.sourceCount}개 JSON · ${record.summary?.meta?.cadence || 'cadence 확인 필요'} · freshness ${formatInteger(expectedFreshnessDays(record))}일${record.error || record.summary?.scatterError || record.summary?.trendError ? ` · ${record.error || record.summary.scatterError || record.summary.trendError}` : ''}`)}</small>
+        <small>${escapeHtml(`${formatBytes(record.payloadBytes)} · ${record.sourceCount}개 JSON · ${record.summary?.meta?.cadence || 'cadence 확인 필요'} · freshness ${formatInteger(expectedFreshnessDays(record))}일${record.error || record.summary?.scatterError || record.summary?.priceError || record.summary?.trendError ? ` · ${record.error || record.summary.scatterError || record.summary.priceError || record.summary.trendError}` : ''}`)}</small>
         <div class="source-links"><a href="${escapeAttribute(record.project.url)}">원본 페이지</a>${Object.entries(PANEL_ADAPTERS[record.project.panelAdapter]?.sourceUrls || {}).map(([key, url]) => `<a href="${escapeAttribute(url)}">${escapeHtml(key)} JSON</a>`).join('')}</div>
         ${safeAutomationUrl(record.summary?.meta?.automation?.workflowUrl) ? `<a class="health-link" href="${escapeAttribute(safeAutomationUrl(record.summary.meta.automation.workflowUrl))}" rel="noopener noreferrer">자동화/수동 실행</a>` : ''}
       </article>
@@ -4354,7 +4464,7 @@
   }
 
   function visibleHealthLabel(record) {
-    if (record.summary?.scatterError || record.summary?.trendError) return '차트 확인 필요';
+    if (record.summary?.scatterError || record.summary?.priceError || record.summary?.trendError) return '차트 확인 필요';
     if (record.summary?.unavailable || record.summary?.meta?.statusState === 'unavailable') return '산출 불가';
     if (!record.metadataMismatch && record.mode === 'live' && !isRecordStale(record)) {
       if (record.summary?.meta?.statusState === 'degraded') return '데이터 주의';
@@ -4393,7 +4503,7 @@
   }
 
   function healthTone(record) {
-    if (record.summary?.scatterError || record.summary?.trendError) return 'warn';
+    if (record.summary?.scatterError || record.summary?.priceError || record.summary?.trendError) return 'warn';
     if (record.metadataMismatch) return 'warn';
     if (record.mode !== 'live') return 'warn';
     if (isRecordStale(record)) return 'warn';
@@ -4402,7 +4512,7 @@
   }
 
   function healthLabel(record) {
-    if (record.summary?.scatterError || record.summary?.trendError) return '차트 확인 필요';
+    if (record.summary?.scatterError || record.summary?.priceError || record.summary?.trendError) return '차트 확인 필요';
     const state = record.summary?.meta?.statusState;
     if (record.metadataMismatch) return '메타데이터 불일치';
     if (record.mode !== 'live') return '대체 데이터';
@@ -4816,6 +4926,9 @@
       parseFearPanel,
       parseFearScatter,
       fearScatterGeometry,
+      parseFearPrices,
+      fearPointState,
+      fearPriceGeometry,
       renderFearScatter,
       parseNewsArchive,
       parseNewsBriefing,
