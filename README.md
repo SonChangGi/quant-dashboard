@@ -7,13 +7,14 @@
 - Fear & Greed Flow Lab, 모멘텀 팩터 랩, D램(DRAM) 가격 랩, Best Factor Lab, ETF TOP10 Tracking, SOX 반도체 지수 Cockpit, US Market Regime Lab을 한 화면에서 연결합니다.
 - 각 프로젝트 카드의 버튼으로 원본 GitHub Pages 페이지를 바로 엽니다.
 - 공개 배포 JSON만 best-effort로 읽되, 공통 `quant-research-summary` contract와 필수 key가 맞지 않으면 fallback/준비중 상태를 보여줍니다.
-- 리서치 브리핑, 티커·테마 dossier, 데이터 상태/자동화 패널로 “오늘 무엇을 확인할지”와 “어떤 한계를 같이 읽어야 하는지”를 먼저 보여줍니다.
+- 뉴스, 프로젝트별 결과, 티커·테마 검색으로 주요 내용을 확인합니다.
 
 ## 허브 화면 구성
 
-- 8개 원본 페이지를 연결하며 7개 공개 데이터 요약과 News 최신 브리핑을 표시합니다. News는 공개 발행 목록과 해당 JSON의 SHA-256을 대조한 뒤 발행일·이슈 수·원본 선정 주요 이슈 4개를 표시합니다.
+- News 최신 브리핑을 가장 먼저 표시하고 7개 데이터 프로젝트 요약을 이어 보여줍니다. News는 공개 발행 목록과 해당 JSON의 SHA-256을 대조한 뒤 발행일·이슈 수·원본 선정 주요 이슈 4개를 표시합니다. 긴 요약은 세 줄까지 표시하며 제목을 누르면 원문 브리핑으로 이동합니다.
+- Fear & Greed는 공개 `dashboard.json`의 직전 252거래일 raw 산점도와 현재 관측점, OLS 회귀선, 잔차 구간을 표시합니다. 가로축은 KOSPI 1일 수익률(%), 세로축은 개인 순매수대금(조원)입니다. 관측점은 마우스·터치·방향키로 선택합니다.
 - 시장 상태, 팩터 전략, 반도체, ETF 순으로 결과를 묶고 상단 링크로 이동합니다. 티커·테마 검색은 공개 요약 안에서 수행합니다.
-- 본문에는 수치·기준일·상태를 표시하고 출처·제약·상세 사유는 맨 아래 닫힌 운영 상세에 모읍니다. 계산·수집·공개 데이터 계약은 유지합니다.
+- 본문에는 결과·기준일·상태를 표시하고 출처와 운영 정보는 맨 아래 닫힌 상세에 모읍니다. 반복 설명과 서술형 제약 문구는 표시하지 않습니다. 계산·수집·공개 데이터 계약은 유지합니다.
 
 ## 공통 웹 디자인 프롬프트
 
@@ -37,6 +38,7 @@
 
 - `https://sonchanggi.github.io/momentum-factor-lab/data/summary.json`
 - `https://sonchanggi.github.io/fearNgreed/data/summary.json`
+- `https://sonchanggi.github.io/fearNgreed/data/dashboard.json`
 - `https://sonchanggi.github.io/dram-price/data/summary.json`
 - `https://sonchanggi.github.io/dram-price/data/prices.json`
 - `https://sonchanggi.github.io/dram-price/data/series.json`
@@ -49,13 +51,13 @@
 
 `summary.json`의 공통 필드는 `schemaVersion`, `contract`, `projectId`, `generatedAt`, `dataAsOf`, `status`, `coverage`, `primaryEntities`, `limitations`, `automation`입니다. 대형 원본 payload는 원본 프로젝트에 남겨두고 중앙 허브는 ticker/theme dossier와 health 상태에 필요한 작은 요약부터 사용합니다.
 
-허브는 7개 프로젝트 링크와 7개 공개 요약 패널을 제공합니다. Regime 상태도 health 집계에 포함합니다. Regime 어댑터는 합성 데모 계약 또는 개인·비상업 live-derived 계약(`alpha_vantage/private_noncommercial`, `alfred/user_confirmed_ml_storage_derived`)을 정확히 만족할 때만 값을 표시합니다.
+허브는 8개 프로젝트 링크와 7개 데이터 패널, News 브리핑을 제공합니다. Regime 상태도 health 집계에 포함합니다. Regime 어댑터는 합성 데모 계약 또는 개인·비상업 live-derived 계약(`alpha_vantage/private_noncommercial`, `alfred/user_confirmed_ml_storage_derived`)을 정확히 만족할 때만 값을 표시합니다.
 
 각 패널에는 upstream 계약이 `expectedFreshnessDays`를 생략해도 적용되는 프로젝트별 보수적 freshness 기본값이 있습니다. `.github/workflows/public-data-health.yml`은 마지막 예약 재시도 이후와 Platform Foundation 성공 후 `npm run test:live`를 실행합니다. Upstream `degraded`/`stale`와 freshness 초과는 보고서·Actions summary·artifact에 계속 기록하지만, 공개 페이지가 읽을 수 있는 계약을 유지하는 동안에는 실패 메일을 만들지 않습니다. 404·잘못된 JSON·schema 계약 오류와 동시에 2개 이상 프로젝트를 관측할 수 없는 broad observability 장애처럼 실제 화면을 깨뜨리는 문제만 실패 gate 대상입니다. 마지막 일일 예약은 web-breaking incident의 숫자·날짜 변화를 정규화한 fingerprint를 30일간 보존해 새 장애나 장애 유형 변경 때만 다시 실패합니다. 전체 bounded JSON 보고서는 14일간 Actions artifact로 보존됩니다.
 
 정적 Hub는 `.github/workflows/pages.yml`이 Platform Foundation을 통과한 정확한 `main` revision에서 `index.html`과 `assets/`만 allowlist artifact로 만들고, 배포 직전 원격 SHA를 다시 확인한 뒤 공개 핵심 파일을 byte-for-byte 검증합니다. 저장소의 Pages source는 이 workflow를 반영할 때 `GitHub Actions`로 한 번 전환해야 하며, 기존 branch/Jekyll 배포를 동시에 유지하지 않습니다.
 
-공개 JSON 구조가 바뀌거나 네트워크가 실패하면 대시보드는 마지막 확인 스냅샷 또는 오류 상태를 보여주고, 원본 페이지 링크는 계속 유지합니다. 중앙 허브의 숫자는 투자 결론이 아니라 원본 프로젝트의 방법론, 가격 기준일, 데이터 품질, 한계를 확인하기 위한 출발점입니다.
+공개 JSON 구조가 바뀌거나 네트워크가 실패하면 대시보드는 마지막 확인 스냅샷 또는 오류 상태를 보여주고, 원본 페이지 링크는 계속 유지합니다.
 
 ## 로컬 실행
 
@@ -82,9 +84,5 @@ npm run test:live  # 공개 GitHub Pages JSON 계약을 네트워크로 확인�
 - freshness/status 표시 hook 존재
 - Research Cockpit, 티커·테마 Dossier, Data Health/automation hook 존재
 - 선택형 live contract smoke로 공개 JSON row 수, schema/contract version, 최신성, payload 크기 확인
-- 투자 조언이 아니라는 disclaimer 존재
+- News 우선 배치, 산점도 단위·발행 일치·음수 축·오류 격리
 - sibling 프로젝트 로컬 경로를 참조하지 않음
-
-## 주의
-
-본 페이지는 개인 리서치와 프로젝트 허브를 위한 화면이며 투자, 세무, 법률 또는 매매 조언이 아닙니다.

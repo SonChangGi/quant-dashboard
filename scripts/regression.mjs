@@ -1907,7 +1907,7 @@ const evidenceNote = 'Fixture research limitation retained only in operations';
 const notesRecord = { ...records[0], summary: { ...records[0].summary, meta: { ...records[0].summary.meta, limitations: [evidenceNote] } } };
 api.renderResearchBriefing([notesRecord]);
 api.renderDataHealth([notesRecord]);
-assert(!domTargets['#research-briefing'].innerHTML.includes(evidenceNote) && domTargets['#data-health'].innerHTML.includes(evidenceNote), 'research limitations remain available only in the operations disclosure');
+assert(!domTargets['#research-briefing'].innerHTML.includes(evidenceNote) && !domTargets['#data-health'].innerHTML.includes(evidenceNote), 'narrative limitations are omitted while source payloads remain inspectable');
 assert(/source-links/.test(domTargets['#data-health'].innerHTML) && /summary\.json/.test(domTargets['#data-health'].innerHTML), 'operations includes inspectable public source links');
 const statusTarget = new ElementStub('p');
 statusTarget.classList = { toggle() {} };

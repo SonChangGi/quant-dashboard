@@ -1472,3 +1472,55 @@ summary:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; 
   .summary-grid .metric-row { grid-template-columns: 1fr; }
   .hub-status-strip article:nth-child(2) { display: block; }
 }
+
+/* News leads the reading order; market scatter uses the publisher's raw units. */
+.news-section { scroll-margin-top: calc(var(--quant-shared-nav-height) + 16px); }
+.news-section .panel-header { align-items: center; margin-bottom: 6px; }
+.news-section .panel-header h2 { margin: 0; font-size: 21px; }
+.news-section .status-line { margin-bottom: 16px; }
+.news-headlines a { font-size: 17px; line-height: 1.55; word-break: keep-all; overflow-wrap: anywhere; }
+.news-headlines p { font-size: 14px; line-height: 1.75; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+.news-headlines li { padding-top: 16px; }
+.panel--fearngreed { min-width: 0; }
+.fear-scatter { margin: 0; }
+.fear-scatter-mount { min-width: 0; min-height: 360px; }
+.scatter-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; margin-bottom: 10px; font-size: 12px; color: var(--muted-strong); }
+.scatter-legend span { display: inline-flex; align-items: center; gap: 7px; }
+.scatter-legend span::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #7892ad; }
+.scatter-legend .current::before { width: 10px; height: 10px; background: var(--primary-dark); box-shadow: 0 0 0 2px var(--primary-soft); }
+.scatter-legend .fit::before { width: 18px; height: 0; border-top: 2px dashed var(--ink-strong); background: none; }
+.scatter-frame { border-radius: 6px; }
+.scatter-frame:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; }
+.scatter-frame svg { display: block; width: 100%; height: auto; overflow: visible; }
+.scatter-frame text { fill: var(--muted-strong); font-family: inherit; font-size: 12px; font-variant-numeric: tabular-nums; }
+.scatter-frame .scatter-axis-title { fill: var(--ink-strong); font-size: 12px; font-weight: 600; }
+.scatter-grid { stroke: var(--line); stroke-width: 1; }
+.scatter-zero { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 4; }
+.scatter-fit { stroke: var(--ink-strong); stroke-width: 1.8; stroke-dasharray: 7 4; opacity: .8; }
+.scatter-observation { fill: #6b87a3; fill-opacity: .72; stroke: var(--panel); stroke-width: .5; }
+.scatter-observation.is-current { fill: var(--primary-dark); fill-opacity: 1; stroke: var(--panel); stroke-width: 2; }
+.scatter-selected { fill: none; stroke: var(--ink-strong); stroke-width: 1.5; pointer-events: none; }
+.scatter-frame .scatter-current-label { fill: var(--primary-dark); font-weight: 750; stroke: var(--panel); stroke-width: 4px; paint-order: stroke; }
+.scatter-fear { fill: #dc596a; fill-opacity: .06; }
+.scatter-fear-extreme { fill: #dc596a; fill-opacity: .13; }
+.scatter-greed { fill: #249d77; fill-opacity: .06; }
+.scatter-greed-extreme { fill: #249d77; fill-opacity: .13; }
+.scatter-readout { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px; margin-top: 10px; padding: 12px 14px; border-radius: var(--radius-sm); background: var(--surface); color: var(--muted-strong); font-size: 13px; font-variant-numeric: tabular-nums; }
+.scatter-readout strong { flex-basis: 100%; color: var(--ink-strong); font-size: 12px; }
+.scatter-readout b { color: var(--ink-strong); font-size: 16px; font-weight: 650; }
+.scatter-zones { display: flex; flex-wrap: wrap; gap: 6px 12px; justify-content: center; margin-top: 12px; color: var(--muted-strong); font-size: 10px; }
+.scatter-zones span { display: inline-flex; align-items: center; gap: 5px; }
+.scatter-zones span::before { content: ''; width: 8px; height: 8px; border-radius: 2px; background: var(--line); }
+.scatter-zones .fear::before { background: #dc596a55; }
+.scatter-zones .fear-extreme::before { background: #dc596a; }
+.scatter-zones .greed::before { background: #249d7755; }
+.scatter-zones .greed-extreme::before { background: #249d77; }
+@media (max-width: 760px) {
+  .news-headlines a { font-size: 16px; }
+  .news-headlines p { font-size: 14px; }
+  .news-section .panel-header h2 { font-size: 20px; }
+  .fear-scatter-mount { min-height: 320px; }
+  .scatter-legend { gap: 8px 14px; font-size: 11px; }
+  .scatter-readout { padding: 10px 12px; gap: 6px 14px; }
+  .scatter-readout b { font-size: 15px; }
+}

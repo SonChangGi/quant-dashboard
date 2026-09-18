@@ -182,8 +182,8 @@
       panelAdapter: 'fearngreed',
       panel: {
         eyebrow: 'KOSPI Flow Sentiment',
-        title: 'Fear & Greed · 현재 연구 상태',
-        contentType: 'metrics',
+        title: '수익률 × 개인 순매수대금',
+        contentType: 'scatter',
         metricLoading: 'Fear & Greed 공개 요약을 불러오는 중...',
       },
     },
@@ -350,10 +350,11 @@
     fearngreed: {
       sourceUrls: {
         summary: 'https://sonchanggi.github.io/fearNgreed/data/summary.json',
+        dashboard: 'https://sonchanggi.github.io/fearNgreed/data/dashboard.json',
       },
       primarySourceKey: 'summary',
       contracts: { summary: SUMMARY_CONTRACT },
-      parse: (sources) => parseFearAndGreed(sources.summary),
+      parse: (sources) => parseFearPanel(sources),
       hasUsableData: (summary) => Boolean(summary && summary.unavailable !== true && summary.entityPresent && summary.dataAsOf),
       fallback: normalizeFearAndGreedUnavailable,
       render: renderFearAndGreed,
@@ -558,26 +559,14 @@
       const heading = document.createElement('div');
       heading.className = 'summary-group-heading';
       heading.id = group.id;
-      heading.innerHTML = `<h3>${escapeHtml(group.title)}</h3><span>${escapeHtml(group.label)}</span>`;
+      heading.innerHTML = `<h3>${escapeHtml(group.title)}</h3>`;
       return [heading, ...group.projects.map((id) => {
         const project = PROJECTS.find((candidate) => candidate.id === id);
         return project.panelAdapter && project.panel && PANEL_ADAPTERS[project.panelAdapter]
           ? createPanelShell(project) : createLinkPanelShell(project);
       })];
     });
-    const newsHeading = document.createElement('div');
-    newsHeading.className = 'summary-group-heading';
-    newsHeading.id = 'news';
-    newsHeading.innerHTML = '<h3>뉴스</h3>';
-    const newsPanel = document.createElement('article');
-    newsPanel.className = 'panel panel-wide panel--news';
-    newsPanel.id = 'news-panel';
-    newsPanel.setAttribute('aria-labelledby', 'news-title');
-    newsPanel.innerHTML = `
-      <div class="panel-header"><div><p class="eyebrow">News</p><h4 id="news-title">주요 뉴스</h4></div><a class="panel-link" id="news-report-link" href="https://sonchanggi.github.io/news/">전체 브리핑 열기</a></div>
-      <p class="status-line" id="news-status" aria-live="polite">발행 정보 확인 중</p>
-      <div id="news-summary" class="news-summary" aria-live="polite"><div class="skeleton-line">주요 뉴스를 불러오는 중...</div></div>`;
-    summaryGrid.replaceChildren(...panels, newsHeading, newsPanel);
+    summaryGrid.replaceChildren(...panels);
   }
 
   function parseNewsArchive(archive) {
@@ -674,7 +663,7 @@
     }
     status.textContent = `발행일 ${summary.date} · ${summary.issue_count}개 이슈 · ${newsPublicationLabel(summary)}`;
     target.innerHTML = summary.headlines.length ? `<ol class="news-headlines">${summary.headlines.map((issue) => `<li><a href="${escapeAttribute(issue.url)}">${escapeHtml(issue.title)} <span aria-hidden="true">↗</span></a>${issue.summary ? `<p>${escapeHtml(issue.summary)}</p>` : ''}</li>`).join('')}</ol>` : '<p class="muted">선정된 이슈 없음</p>';
-    if (health) health.innerHTML = `<article class="health-item ${summary.status === 'partial' ? 'warn' : 'ok'}"><div><strong>News</strong><span>${escapeHtml(newsPublicationLabel(summary))}</span></div><p>자료 마감 ${escapeHtml(formatFreshness(summary.cutoff))} · 생성 ${escapeHtml(formatFreshness(summary.generated_at))}</p>${summary.notes.length ? `<ul class="source-notes">${summary.notes.map((note) => `<li>${escapeHtml(note)}</li>`).join('')}</ul>` : ''}<div class="source-links"><a href="${NEWS_ARCHIVE_URL}">발행 목록 JSON</a><a href="${escapeAttribute(summary.jsonUrl)}">브리핑 JSON</a></div></article>`;
+    if (health) health.innerHTML = `<article class="health-item ${summary.status === 'partial' ? 'warn' : 'ok'}"><div><strong>News</strong><span>${escapeHtml(newsPublicationLabel(summary))}</span></div><p>자료 마감 ${escapeHtml(formatFreshness(summary.cutoff))} · 생성 ${escapeHtml(formatFreshness(summary.generated_at))}</p><div class="source-links"><a href="${NEWS_ARCHIVE_URL}">발행 목록 JSON</a><a href="${escapeAttribute(summary.jsonUrl)}">브리핑 JSON</a></div></article>`;
   }
 
   function createPanelShell(project) {
@@ -686,7 +675,9 @@
     article.dataset.projectId = project.id;
     article.setAttribute('aria-labelledby', panelDomId(project, 'title'));
 
-    const content = contentType === 'chart'
+    const content = contentType === 'scatter'
+      ? `<div class="fear-scatter-mount" id="${escapeAttribute(panelDomId(project, 'chart'))}"><div class="skeleton-line">차트를 불러오는 중...</div></div>`
+      : contentType === 'chart'
       ? chartPanelMarkup(project)
       : contentType === 'metrics'
         ? metricsPanelMarkup(project)
@@ -2863,6 +2854,177 @@
     return requireRegimeDate(value.slice(0, 10), context);
   }
 
+  function parseFearPanel(sources) {
+    const summary = parseFearAndGreed(sources.summary);
+    if (summary.unavailable) return summary;
+    try {
+      return { ...summary, scatter: parseFearScatter(sources.dashboard, sources.summary) };
+    } catch (error) {
+      return { ...summary, scatter: null, scatterError: error.message };
+    }
+  }
+
+  function parseFearScatter(payload, summary) {
+    const fail = (message) => { throw new Error(`Fear & Greed scatter: ${message}`); };
+    const finite = (value) => typeof value === 'number' && Number.isFinite(value);
+    const dateValid = (value) => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
+      && Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
+    if (!isRecord(payload) || payload.schemaVersion !== 1 || !isResearchSummary(summary, 'fearngreed')
+      || !dateValid(payload.dataAsOf) || !Number.isFinite(Date.parse(payload.generatedAt))
+      || !payload.methodologyVersion || payload.methodologyVersion !== summary.methodologyVersion
+      || payload.dataAsOf !== summary.dataAsOf || payload.generatedAt !== summary.generatedAt
+      || payload.status?.state !== summary.status?.state) fail('publication mismatch');
+    if (!['ok', 'degraded', 'stale'].includes(payload.status?.state)) fail('unavailable');
+    const meta = payload.scatterMetaByModel?.raw;
+    const points = payload.scatterByModel?.raw;
+    const fit = payload.regression?.raw;
+    const model = payload.models?.raw;
+    if (meta?.model !== 'raw' || meta.unit !== 'krw_trillion'
+      || meta.roles?.training !== 'rolling_window' || meta.roles?.current !== 'out_of_sample_observation'
+      || !Number.isInteger(meta.window) || meta.window < 8 || !Array.isArray(points)
+      || fit?.model !== 'raw' || fit.fitMethod !== 'ols' || model?.model !== 'raw' || model.fitMethod !== 'ols'
+      || model.state === 'unavailable' || !['alpha', 'beta', 'expected', 'observed', 'residual'].every((key) => finite(fit[key]) && finite(model[key]) && Math.abs(fit[key] - model[key]) < 5e-8)) fail('raw model contract');
+    if (points.some((row, index) => !dateValid(row?.date) || !finite(row.return1d) || !finite(row.rawFlowTrillion)
+      || !['training', 'current'].includes(row.role) || (index > 0 && row.date <= points[index - 1].date))) fail('invalid observations');
+    const training = points.filter((row) => row.role === 'training');
+    const currentRows = points.filter((row) => row.role === 'current');
+    if (currentRows.length !== 1 || training.length < 8 || training.length > meta.window
+      || meta.trainingCount !== training.length || meta.currentCount !== 1 || meta.pointCount !== points.length
+      || fit.trainingCount !== training.length || model.trainingCount !== training.length) fail('observation counts');
+    const current = currentRows[0];
+    if (current !== points.at(-1) || current.date !== payload.dataAsOf
+      || training.some((row) => row.date >= current.date)) fail('current observation date');
+    const expected = fit.alpha + fit.beta * current.return1d;
+    if (Math.abs(current.rawFlowTrillion - fit.observed) > 5e-8 || Math.abs(expected - fit.expected) > 5e-8
+      || Math.abs(current.rawFlowTrillion - expected - fit.residual) > 5e-8) fail('current fit mismatch');
+    let boundaries = null;
+    if (meta.stateBoundaries) {
+      const bounds = meta.stateBoundaries;
+      const keys = ['extremeFearUpper', 'fearUpper', 'greedLower', 'extremeGreedLower'];
+      const comparisons = {
+        extremeFear: 'residual < extremeFearUpper', fear: 'extremeFearUpper <= residual < fearUpper',
+        neutral: 'fearUpper <= residual < greedLower', greed: 'greedLower <= residual < extremeGreedLower',
+        extremeGreed: 'residual >= extremeGreedLower',
+      };
+      if (Object.entries(comparisons).some(([key, value]) => bounds.comparators?.[key] !== value)) fail('boundary comparator mismatch');
+      const cuts = keys.map((key) => bounds.percentileCuts?.[key]);
+      const offsets = keys.map((key) => bounds.residualOffsets?.[key]);
+      if (bounds.method !== 'empirical_cdf_transition_order_statistic' || bounds.fitScope !== 'current_fit_on_prior_window'
+        || bounds.trainingCount !== training.length || training.length < 20
+        || cuts.join(',') !== '5,20,80,95' || offsets.some((value, index) => !finite(value) || (index && value < offsets[index - 1]))) fail('residual boundary contract');
+      const residuals = training.map((row) => row.rawFlowTrillion - fit.alpha - fit.beta * row.return1d).sort((a, b) => a - b);
+      const indices = [Math.floor(.05 * training.length), Math.floor(.2 * training.length), Math.ceil(.8 * training.length) - 1, Math.ceil(.95 * training.length) - 1];
+      if (offsets.some((value, index) => Math.abs(value - residuals[indices[index]]) > 5e-8)) fail('residual boundary mismatch');
+      boundaries = { ...bounds.residualOffsets };
+    }
+    return { date: payload.dataAsOf, generatedAt: payload.generatedAt, points, current, trainingCount: training.length,
+      alpha: fit.alpha, beta: fit.beta, boundaries, state: model.state, percentile: model.percentile };
+  }
+
+  function formatSignedFear(value, digits) {
+    return `${value > 0 ? '+' : ''}${value.toLocaleString('ko-KR', { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
+  }
+
+  function fearScatterGeometry(scatter, width = 640) {
+    const w = Math.max(300, width), h = w < 430 ? 320 : 360;
+    const p = { l: 48, r: 18, t: 28, b: 45 };
+    const xs = scatter.points.map((row) => row.return1d * 100);
+    const xlow = Math.min(0, ...xs), xhigh = Math.max(0, ...xs);
+    const xpad = Math.max(xhigh - xlow, .1) * .08;
+    const xmin = xlow - xpad, xmax = xhigh + xpad;
+    const predicted = (x) => scatter.alpha + scatter.beta * x / 100;
+    const offsets = scatter.boundaries ? Object.values(scatter.boundaries) : [];
+    const ys = [0, ...scatter.points.map((row) => row.rawFlowTrillion), predicted(xmin), predicted(xmax),
+      ...offsets.flatMap((offset) => [predicted(xmin) + offset, predicted(xmax) + offset])];
+    const ylow = Math.min(...ys), yhigh = Math.max(...ys), ypad = Math.max(yhigh - ylow, .1) * .06;
+    const ymin = ylow - ypad, ymax = yhigh + ypad;
+    const x = (value) => p.l + (value - xmin) / (xmax - xmin) * (w - p.l - p.r);
+    const y = (value) => h - p.b - (value - ymin) / (ymax - ymin) * (h - p.t - p.b);
+    const ticks = (min, max, count) => {
+      const step = niceStep((max - min) / (count - 1), .01), result = [];
+      for (let value = Math.ceil(min / step) * step; value <= max + step * .0001; value += step) result.push(roundTick(value));
+      return result;
+    };
+    return { w, h, p, xmin, xmax, ymin, ymax, x, y, predicted,
+      xTicks: ticks(xmin, xmax, 6), yTicks: ticks(ymin, ymax, 6),
+      points: scatter.points.map((row) => ({ row, x: x(row.return1d * 100), y: y(row.rawFlowTrillion) })) };
+  }
+
+  let fearScatterObserver;
+  function renderFearScatter(scatter, project) {
+    const target = $(panelSelector(project, 'chart'));
+    if (!target) return;
+    fearScatterObserver?.disconnect();
+    if (!scatter) {
+      target.innerHTML = '<p class="empty-state">차트 데이터를 불러올 수 없습니다.</p>';
+      return;
+    }
+    let selected = scatter.points.length - 1, previousWidth = 0;
+    const draw = () => {
+      const width = Math.max(300, Math.round(target.clientWidth || 640));
+      if (width === previousWidth) return;
+      previousWidth = width;
+      const g = fearScatterGeometry(scatter, width), { w, h, p, x, y, predicted } = g;
+      const right = w - p.r, bottom = h - p.b;
+      const line = (x1, y1, x2, y2, cls) => `<line class="${cls}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
+      const grid = g.xTicks.map((value) => `${line(x(value), p.t, x(value), bottom, 'scatter-grid')}<text x="${x(value)}" y="${bottom + 20}" text-anchor="middle">${value}</text>`).join('')
+        + g.yTicks.map((value) => `${line(p.l, y(value), right, y(value), 'scatter-grid')}<text x="${p.l - 8}" y="${y(value) + 4}" text-anchor="end">${value}</text>`).join('');
+      const band = (lower, upper, cls) => `<polygon class="${cls}" points="${p.l},${lower[0]} ${right},${lower[1]} ${right},${upper[1]} ${p.l},${upper[0]}"/>`;
+      const boundaryY = (offset) => [y(predicted(g.xmin) + offset), y(predicted(g.xmax) + offset)];
+      let zones = '';
+      if (scatter.boundaries) {
+        const b = scatter.boundaries, ef = boundaryY(b.extremeFearUpper), f = boundaryY(b.fearUpper), gr = boundaryY(b.greedLower), eg = boundaryY(b.extremeGreedLower);
+        zones = band([bottom, bottom], ef, 'scatter-fear-extreme') + band(ef, f, 'scatter-fear')
+          + band(gr, eg, 'scatter-greed') + band(eg, [p.t, p.t], 'scatter-greed-extreme');
+      }
+      const marks = g.points.map(({row, x: cx, y: cy}, index) => `<circle data-point="${index}" class="scatter-observation${row.role === 'current' ? ' is-current' : ''}" cx="${cx}" cy="${cy}" r="${row.role === 'current' ? 6 : 3.2}"><title>${escapeHtml(`${row.date} · KOSPI ${formatSignedFear(row.return1d * 100, 2)}% · 개인 ${formatSignedFear(row.rawFlowTrillion, 3)}조원`)}</title></circle>`).join('');
+      const current = g.points.at(-1);
+      const currentLabelX = current.x > w / 2 ? current.x - 11 : current.x + 11;
+      const zoneLegend = scatter.boundaries ? '<div class="scatter-zones" aria-label="잔차 백분위 구간"><span class="fear-extreme">극단 공포 ≤5%</span><span class="fear">공포 5–20%</span><span>중립</span><span class="greed">탐욕 80–95%</span><span class="greed-extreme">극단 탐욕 ≥95%</span></div>' : '';
+      target.innerHTML = `<figure class="fear-scatter">
+        <div class="scatter-legend"><span class="past">직전 ${scatter.trainingCount}거래일</span><span class="current">현재</span><span class="fit">OLS 회귀선</span></div>
+        <div class="scatter-frame" tabindex="0" role="group" aria-label="KOSPI 수익률과 개인 순매수 산점도. 좌우 방향키로 날짜 이동" aria-describedby="fear-scatter-readout">
+          <svg viewBox="0 0 ${w} ${h}" role="img" aria-label="KOSPI 1일 수익률 퍼센트와 개인 순매수대금 조원, ${scatter.points.length}개 관측점">
+            <defs><clipPath id="fear-scatter-clip"><rect x="${p.l}" y="${p.t}" width="${right - p.l}" height="${bottom - p.t}"/></clipPath></defs>
+            <g clip-path="url(#fear-scatter-clip)">${zones}</g>${grid}
+            ${line(x(0), p.t, x(0), bottom, 'scatter-zero')}${line(p.l, y(0), right, y(0), 'scatter-zero')}
+            <g clip-path="url(#fear-scatter-clip)">${line(p.l, y(predicted(g.xmin)), right, y(predicted(g.xmax)), 'scatter-fit')}${marks}
+              <circle class="scatter-selected" cx="${g.points[selected].x}" cy="${g.points[selected].y}" r="8"/>
+            </g>
+            <text class="scatter-current-label" x="${currentLabelX}" y="${Math.max(p.t + 16, current.y - 13)}" text-anchor="${current.x > w / 2 ? 'end' : 'start'}">현재</text>
+            <text class="scatter-axis-title" x="${p.l}" y="16">개인 순매수대금 (조원)</text>
+            <text class="scatter-axis-title" x="${(p.l + right) / 2}" y="${h - 4}" text-anchor="middle">KOSPI 1일 수익률 (%)</text>
+          </svg>
+        </div>
+        <figcaption class="scatter-readout" id="fear-scatter-readout" aria-live="polite"></figcaption>${zoneLegend}
+      </figure>`;
+      const frame = target.querySelector('.scatter-frame'), svg = target.querySelector('svg'), readout = target.querySelector('.scatter-readout'), ring = target.querySelector('.scatter-selected');
+      const select = (index) => {
+        selected = index;
+        const point = g.points[index], row = point.row;
+        ring.setAttribute('cx', point.x); ring.setAttribute('cy', point.y);
+        readout.innerHTML = `<strong>${escapeHtml(row.date)}${row.role === 'current' ? ' · 현재' : ''}</strong><span>KOSPI <b>${escapeHtml(formatSignedFear(row.return1d * 100, 2))}%</b></span><span>개인 <b>${escapeHtml(formatSignedFear(row.rawFlowTrillion, 3))}조원</b></span>`;
+      };
+      const nearest = (event) => {
+        const rect = svg.getBoundingClientRect(), px = (event.clientX - rect.left) * w / rect.width, py = (event.clientY - rect.top) * h / rect.height;
+        if (px < p.l || px > right || py < p.t || py > bottom) return;
+        let best = 0, distance = Infinity;
+        g.points.forEach((point, index) => { const d = (px - point.x) ** 2 + (py - point.y) ** 2; if (d < distance) { best = index; distance = d; } });
+        select(best);
+      };
+      svg.addEventListener('pointermove', (event) => { if (event.pointerType !== 'touch') nearest(event); });
+      svg.addEventListener('click', nearest);
+      frame.addEventListener('pointerleave', () => select(g.points.length - 1));
+      frame.addEventListener('keydown', (event) => {
+        const move = { ArrowLeft: Math.max(0, selected - 1), ArrowRight: Math.min(g.points.length - 1, selected + 1), Home: 0, End: g.points.length - 1, Escape: g.points.length - 1 };
+        if (Object.hasOwn(move, event.key)) { event.preventDefault(); select(move[event.key]); }
+      });
+      select(selected);
+    };
+    draw();
+    if (typeof ResizeObserver !== 'undefined') { fearScatterObserver = new ResizeObserver(draw); fearScatterObserver.observe(target); }
+  }
+
   function parseFearAndGreed(payload) {
     if (!isResearchSummary(payload, 'fearngreed')) return normalizeFearAndGreedUnavailable();
     const meta = summaryMeta(payload);
@@ -3108,13 +3270,7 @@
   }
 
   function renderFearAndGreed(summary, mode, error, project) {
-    const current = summary.current || {};
-    renderMetricCards(panelSelector(project, 'metrics'), [
-      ['연구 상태', current.stateLabel || '산출 불가'],
-      ['백분위 / 잔차 z', `${formatNumber(current.sentimentPercentile)} · ${formatNumber(current.residualZ)}`],
-      ['R² / 50일 이격도', `${formatNumber(current.rollingR2)} · ${formatNumber(current.disparity50)}`],
-      ['포지션 / 기준일', `${formatFearPosition(current.position)}\n${formatMaybeDate(current.date || summary.dataAsOf)}`],
-    ]);
+    renderFearScatter(summary.scatter || null, project);
     setStatus(panelSelector(project, 'status'), buildStatusText(mode, summary.generatedAt, error, summary.status, summaryDataAsOf(summary)), mode);
   }
 
@@ -3845,9 +4001,7 @@
         <strong>${escapeHtml(item.title)}</strong>
       </a>
     `).join('') : '';
-    const news = newsState.summary;
-    const newsTitle = news ? `${news.date} · ${news.issue_count}개 이슈` : { loading: '최신 브리핑 확인 중', empty: '발행된 브리핑 없음', error: '요약 확인 필요' }[newsState.state];
-    target.innerHTML += `<a class="briefing-item ${newsState.state === 'error' || news?.status === 'partial' ? 'warning' : ''}" href="#news-panel"><span class="briefing-kicker">News<span class="briefing-state">${escapeHtml(news ? newsPublicationLabel(news) : '')}</span></span><strong>${escapeHtml(newsTitle)}</strong></a>`;
+
   }
 
   function briefingItemForRecord(record) {
@@ -3856,7 +4010,7 @@
       const current = summary.current || {};
       return {
         kicker: 'Fear & Greed · KOSPI',
-        title: `${current.stateLabel || '산출 불가'} · 백분위 ${formatNumber(current.sentimentPercentile)}`,
+        title: summary.scatter ? `KOSPI ${formatSignedFear(summary.scatter.current.return1d * 100, 2)}% · 개인 ${formatSignedFear(summary.scatter.current.rawFlowTrillion, 3)}조원` : '수익률 · 개인 순매수 차트 확인 필요',
         detail: `잔차 z ${formatNumber(current.residualZ)} · R² ${formatNumber(current.rollingR2)} · ${current.primaryProxy || '226490'} ${formatFearPosition(current.position)} · 기준일 ${formatMaybeDate(summary.dataAsOf)}`,
         tone: summary.meta?.statusState === 'ok' ? '' : 'warning',
       };
@@ -3982,8 +4136,7 @@
           <span>${escapeHtml(healthLabel(record))}</span>
         </div>
         <p>${escapeHtml(recordFreshnessText(record))}</p>
-        <small>${escapeHtml(`${formatBytes(record.payloadBytes)} · ${record.sourceCount}개 JSON · ${record.summary?.meta?.cadence || 'cadence 확인 필요'} · freshness ${formatInteger(expectedFreshnessDays(record))}일${record.error ? ` · ${record.error}` : ''}`)}</small>
-        ${operationalNotes(record).length ? `<ul class="source-notes">${operationalNotes(record).map((note) => `<li>${escapeHtml(note)}</li>`).join('')}</ul>` : ''}
+        <small>${escapeHtml(`${formatBytes(record.payloadBytes)} · ${record.sourceCount}개 JSON · ${record.summary?.meta?.cadence || 'cadence 확인 필요'} · freshness ${formatInteger(expectedFreshnessDays(record))}일${record.error || record.summary?.scatterError ? ` · ${record.error || record.summary.scatterError}` : ''}`)}</small>
         <div class="source-links"><a href="${escapeAttribute(record.project.url)}">원본 페이지</a>${Object.entries(PANEL_ADAPTERS[record.project.panelAdapter]?.sourceUrls || {}).map(([key, url]) => `<a href="${escapeAttribute(url)}">${escapeHtml(key)} JSON</a>`).join('')}</div>
         ${safeAutomationUrl(record.summary?.meta?.automation?.workflowUrl) ? `<a class="health-link" href="${escapeAttribute(safeAutomationUrl(record.summary.meta.automation.workflowUrl))}" rel="noopener noreferrer">자동화/수동 실행</a>` : ''}
       </article>
@@ -3991,20 +4144,8 @@
     target.innerHTML = portfolioRow || rows ? `${portfolioRow}${rows}` : '<div class="skeleton-line">데이터 상태를 표시할 수 없습니다.</div>';
   }
 
-  function operationalNotes(record) {
-    const summary = record.summary || {};
-    const meta = summary.meta || {};
-    return [...new Set([
-      summary.status,
-      summary.sourceLabel,
-      summary.selectedWeightingPolicy,
-      ...asArray(meta.limitations),
-      ...asArray(meta.degradedReasons),
-      ...asArray(summary.entities).flatMap((entity) => asArray(entity.warnings)),
-    ].filter((note) => typeof note === 'string' && note.trim()))];
-  }
-
   function visibleHealthLabel(record) {
+    if (record.summary?.scatterError) return '차트 확인 필요';
     if (record.summary?.unavailable || record.summary?.meta?.statusState === 'unavailable') return '산출 불가';
     if (!record.metadataMismatch && record.mode === 'live' && !isRecordStale(record)) {
       if (record.summary?.meta?.statusState === 'degraded') return '데이터 주의';
@@ -4042,6 +4183,7 @@
   }
 
   function healthTone(record) {
+    if (record.summary?.scatterError) return 'warn';
     if (record.metadataMismatch) return 'warn';
     if (record.mode !== 'live') return 'warn';
     if (isRecordStale(record)) return 'warn';
@@ -4050,6 +4192,7 @@
   }
 
   function healthLabel(record) {
+    if (record.summary?.scatterError) return '차트 확인 필요';
     const state = record.summary?.meta?.statusState;
     if (record.metadataMismatch) return '메타데이터 불일치';
     if (record.mode !== 'live') return '대체 데이터';
@@ -4453,6 +4596,10 @@
       renderSox,
       renderRegime,
       renderFearAndGreed,
+      parseFearPanel,
+      parseFearScatter,
+      fearScatterGeometry,
+      renderFearScatter,
       parseNewsArchive,
       parseNewsBriefing,
       loadNewsSummary,

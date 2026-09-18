@@ -128,6 +128,8 @@ assert(contains(files.app, 'asRecords'), 'external arrays are filtered to record
 assert(contains(files.app, 'parseMomentum'), 'momentum parser exists');
 assert(contains(files.app, 'parseFearAndGreed'), 'Fear & Greed parser exists');
 assert(contains(files.app, 'normalizeFearAndGreedUnavailable'), 'Fear & Greed uses unavailable rather than hardcoded market fallback');
+assert(files.html.indexOf('id="news"') < files.html.indexOf('cockpit-section') && files.html.indexOf('cockpit-section') < files.html.indexOf('dashboard-section'), 'News leads the page while other sections retain their order');
+assert(!contains(files.html, 'research-disclaimer') && !contains(files.html, 'operations-lead'), 'repeated instruction and disclaimer copy is removed');
 assert(contains(files.app, "id: 'fearngreed'"), 'Fear & Greed project registry entry exists');
 assert(contains(files.app, 'MOMENTUM_SUMMARY_CONTRACT') && contains(files.app, 'expectedVersion: 5'), 'momentum adapter requires schemaVersion 5 summary contract');
 assert(contains(files.app, 'bestFactor') && contains(files.app, 'compositeScore'), 'momentum adapter reads Python best factor and composite score fields');
@@ -220,7 +222,7 @@ assert(contains(files.app, 'entitySummaryLine'), 'watchlist dossier uses entity-
 assert(contains(files.app, '업데이트 시각 알 수 없음'), 'freshness fallback text exists');
 assert(contains(files.app, "panelDomId(project, 'status')"), 'manifest-generated freshness/status hooks exist');
 assert(contains(files.app, 'status-line'), 'panel status line renderer exists');
-assert(contains(files.html, '투자, 세무, 법률 또는 매매 조언이 아닙니다'), 'research disclaimer exists');
+assert(!contains(files.html, '투자, 세무, 법률 또는 매매 조언이 아닙니다'), 'requested disclaimer removal is preserved');
 assert(contains(files.readme, '다른 프로젝트의 로컬 소스 코드를 직접 import하지 않습니다'), 'README isolation note exists');
 assert(contains(files.readme, 'summary.json'), 'README documents summary contract endpoint');
 assert(contains(files.readme, 'docs/web-design.md') && contains(files.design, 'docs/web-design.md'), 'README and DESIGN link the canonical web design prompt');

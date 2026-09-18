@@ -10,9 +10,9 @@
   <title>Quant Research Hub</title>
   <link rel="icon" href="data:," />
   <script src="assets/theme.js?v=20260728-hub-ui"></script>
-  <link rel="stylesheet" href="assets/styles.css?v=20260917-news-summary" />
+  <link rel="stylesheet" href="assets/styles.css?v=20260918-news-scatter" />
   <link rel="stylesheet" href="assets/shared-nav.css?v=20260728-shared-nav" />
-  <script src="assets/app.js?v=20260917-news-summary" defer></script>
+  <script src="assets/app.js?v=20260918-news-scatter" defer></script>
 </head>
 <body id="top" class="has-quant-shared-nav">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -29,7 +29,6 @@
 
   <header class="page-header" aria-labelledby="page-title">
     <div class="page-heading">
-      <p class="eyebrow">RESEARCH OVERVIEW</p>
       <h1 id="page-title">퀀트 리서치 현황</h1>
     </div>
     <div class="hub-status-strip" id="hub-status" aria-live="polite" aria-label="허브 공개 데이터 현황">
@@ -50,17 +49,27 @@
 
   <main id="main-content" tabindex="-1">
     <nav class="section section-index" aria-label="허브 결과 빠른 탐색">
+      <a href="#news">뉴스</a>
       <a href="#market">시장 상태</a>
       <a href="#factors">팩터 전략</a>
       <a href="#semiconductors">반도체</a>
       <a href="#holdings">ETF</a>
-      <a href="#news">뉴스</a>
       <a href="#operations">데이터 상태</a>
     </nav>
+    <section class="section news-section" id="news" aria-labelledby="news-title">
+      <article class="panel panel--news" id="news-panel">
+        <div class="panel-header">
+          <h2 id="news-title">주요 뉴스</h2>
+          <a class="panel-link" id="news-report-link" href="https://sonchanggi.github.io/news/">전체 브리핑 열기</a>
+        </div>
+        <p class="status-line" id="news-status" aria-live="polite">발행 정보 확인 중</p>
+        <div id="news-summary" class="news-summary" aria-live="polite"><div class="skeleton-line">주요 뉴스를 불러오는 중...</div></div>
+      </article>
+    </section>
     <section class="section cockpit-section" aria-labelledby="cockpit-title">
       <div class="section-heading">
         <h2 id="cockpit-title">리서치 요약</h2>
-        <span class="section-meta">8개 프로젝트</span>
+        <span class="section-meta">7개 데이터 프로젝트</span>
       </div>
       <div class="cockpit-grid">
         <article class="panel briefing-panel" aria-labelledby="briefing-title">
@@ -113,12 +122,10 @@
           <span id="operations-summary">7개 데이터 요약 확인 중</span>
         </summary>
         <div class="operations-body" data-copy-channel="operations">
-          <p class="operations-lead">차트: 방향키로 날짜·계열 이동. DRAM: 클릭 고정, Esc 해제.</p>
           <div id="data-health" class="health-list" aria-live="polite">
             <div class="skeleton-line">공개 JSON 최신성과 fallback 여부를 확인하는 중...</div>
           </div>
           <div id="news-health" class="health-list" aria-live="polite"></div>
-          <p class="research-disclaimer">본 페이지는 개인 리서치 대시보드이며 투자, 세무, 법률 또는 매매 조언이 아닙니다.</p>
         </div>
       </details>
     </section>
