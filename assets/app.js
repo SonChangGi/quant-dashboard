@@ -294,8 +294,8 @@
       panelAdapter: 'regime',
       panel: {
         eyebrow: 'US Market Regime',
-        title: '현재 국면 · 다음 주 전망',
-        contentType: 'metrics',
+        title: '국면 추이',
+        contentType: 'regime-trend',
         metricLoading: 'Regime 공개 요약을 불러오는 중...',
       },
     },
@@ -438,7 +438,9 @@
         summary: 'https://sonchanggi.github.io/regime/data/regime-core.json',
       },
       primarySourceKey: 'summary',
-      parse: (sources) => parseRegime(sources.summary),
+      parse: (sources) => parseRegimePanel(sources),
+      enrichSources: enrichRegimeSources,
+      enrichmentFailure: (sources, message) => ({ dataSources: { ...sources, regimeHistoryError: message }, fetchResults: { regimeHistory: { ok: false, error: message } } }),
       hasUsableData: (summary) => Boolean(summary?.publicPayloadValid && summary.unavailable !== true),
       fallback: normalizeRegimeUnavailable,
       render: renderRegime,
@@ -675,7 +677,9 @@
     article.dataset.projectId = project.id;
     article.setAttribute('aria-labelledby', panelDomId(project, 'title'));
 
-    const content = contentType === 'scatter'
+    const content = contentType === 'regime-trend'
+      ? `<div class="regime-trend-mount" id="${escapeAttribute(panelDomId(project, 'chart'))}"><div class="skeleton-line">국면 추이를 불러오는 중...</div></div>`
+      : contentType === 'scatter'
       ? `<div class="fear-scatter-mount" id="${escapeAttribute(panelDomId(project, 'chart'))}"><div class="skeleton-line">차트를 불러오는 중...</div></div>`
       : contentType === 'chart'
       ? chartPanelMarkup(project)
@@ -2646,6 +2650,93 @@
     return payload;
   }
 
+  function regimeHistoryDescriptors(core) {
+    unwrapRegimePayload(core);
+    const descriptors = core.history_sidecars || [];
+    if (!Array.isArray(descriptors)) throw new Error('Regime history manifest is invalid.');
+    const paths = new Set();
+    for (const item of descriptors) {
+      if (!isRecord(item) || !/^regime-history-\d{3}\.json$/.test(item.path)
+        || paths.has(item.path) || !LOWERCASE_SHA256.test(item.sha256 || '')
+        || !Number.isInteger(item.row_count) || item.row_count < 1 || item.row_count > 104) throw new Error('Regime history descriptor is invalid.');
+      requireRegimeDate(item.start, 'history.start'); requireRegimeDate(item.end, 'history.end');
+      if (item.start > item.end) throw new Error('Regime history range is reversed.');
+      paths.add(item.path);
+    }
+    const firstCurrent = core.payload?.weekly?.[0]?.date;
+    if (descriptors.some((item, index) => (index > 0 && item.start <= descriptors[index - 1].end) || (firstCurrent && item.end >= firstCurrent))) throw new Error('Regime history ranges overlap.');
+    return descriptors;
+  }
+
+  function validateRegimeHistory(history, core, descriptor) {
+    if (!isRecord(history) || history.schema_version !== 'regime-dashboard-history/1'
+      || history.generation_id !== core.generation_id || history.source_payload_sha256 !== core.source_payload_sha256
+      || !Array.isArray(history.weekly) || history.weekly.length !== descriptor.row_count
+      || history.weekly[0]?.date !== descriptor.start || history.weekly.at(-1)?.date !== descriptor.end
+      || history.weekly.some((row, index) => !isRecord(row) || (index > 0 && row.date <= history.weekly[index - 1].date))) {
+      throw new Error('Regime history identity or range mismatch.');
+    }
+    return history.weekly;
+  }
+
+  async function enrichRegimeSources(sources, fetchJson) {
+    // Keep the existing summary usable when a separate history file fails.
+    parseRegime(sources.summary);
+    const core = sources.summary;
+    const descriptors = regimeHistoryDescriptors(core);
+    const entries = await Promise.all(descriptors.map(async (descriptor) => {
+      const url = `https://sonchanggi.github.io/regime/data/${descriptor.path}`;
+      const result = await fetchJson(url, 12000, descriptor.sha256);
+      if (result.ok) {
+        try { validateRegimeHistory(result.data, core, descriptor); }
+        catch (error) { return [descriptor.path, { ...result, ok: false, error: error.message }]; }
+      }
+      return [descriptor.path, result];
+    }));
+    const failed = entries.find(([, result]) => !result.ok);
+    return {
+      dataSources: { ...sources, regimeHistory: Object.fromEntries(entries.map(([path, result]) => [path, result.ok ? result.data : null])),
+        regimeHistoryError: failed ? `${failed[0]}: ${failed[1].error}` : '' },
+      fetchResults: Object.fromEntries(entries),
+    };
+  }
+
+  function parseRegimePanel(sources) {
+    const summary = parseRegime(sources.summary);
+    try {
+      if (sources.regimeHistoryError) throw new Error(sources.regimeHistoryError);
+      return { ...summary, trend: parseRegimeTrend(sources.summary, sources.regimeHistory) };
+    } catch (error) {
+      return { ...summary, trend: null, trendError: error.message };
+    }
+  }
+
+  function parseRegimeTrend(core, history = {}) {
+    const summary = parseRegime(core), payload = unwrapRegimePayload(core);
+    if (['blocked', 'error'].includes(payload.meta.status)) throw new Error('Regime chart unavailable.');
+    const descriptors = regimeHistoryDescriptors(core);
+    const rows = descriptors.flatMap((item) => validateRegimeHistory(history[item.path], core, item)).concat(payload.weekly);
+    const expectedCount = payload.model?.evidence_artifacts?.weekly_state_forecasts?.row_count;
+    if (Number.isInteger(expectedCount) && rows.length !== expectedCount) throw new Error('Regime history coverage mismatch.');
+    const seen = new Set(), isV5 = payload.meta.result_version === 'weekly-regime-result-v5';
+    const parsed = rows.map((row, index) => {
+      const date = requireRegimeDate(row.date, `history[${index}].date`);
+      if (seen.has(date) || date > summary.dataAsOf) throw new Error('Regime history contains duplicate or future observations.');
+      seen.add(date);
+      const current = isV5 ? parseRegimeMembership(row.current, `history[${index}].current`) : parseRegimeEstimate(row.current, `history[${index}].current`);
+      const forecast = parseRegimeEstimate(row.next_week, `history[${index}].next_week`);
+      const nextDate = requireRegimeDate(row.next_week.date, `history[${index}].next_week.date`);
+      if (Date.parse(nextDate) - Date.parse(date) !== 7 * 86400000) throw new Error('Regime history forecast horizon is not one week.');
+      const entropy = row.next_week.entropy == null ? null : requireRegimeProbability(row.next_week.entropy, 'forecast.entropy');
+      return { date, nextDate, currentState: current.state, memberships: current.values || current.probabilities,
+        probabilities: forecast.probabilities, nextState: forecast.state, entropy };
+    }).sort((a, b) => a.date.localeCompare(b.date));
+    if (!parsed.length || parsed.at(-1).date !== summary.dataAsOf) throw new Error('Regime chart endpoint mismatch.');
+    const byDate = new Map(parsed.map((row) => [row.date, row]));
+    return { currentMeasureLabel: summary.currentMeasureLabel,
+      rows: parsed.map((row) => ({ ...row, actualState: byDate.get(row.nextDate)?.currentState || null })) };
+  }
+
   function parseRegime(document) {
     const payload = unwrapRegimePayload(document);
     if (!isRecord(payload)) throw new Error('Regime payload must be an object.');
@@ -3179,10 +3270,9 @@
 
   function renderMomentum(summary, mode, error, project) {
     renderMetricCards(panelSelector(project, 'metrics'), [
-      ['데이터 모드', summary.dataModeLabel],
       ['선택 팩터', summary.factor],
-      ['비중 정책', summary.selectedWeightingPolicy === 'score_liquidity_rank' ? '점수 70%\n거래대금 30%' : summary.selectedWeightingPolicy],
       ['종합 점수', formatNumber(summary.compositeScore)],
+      ['비중 정책', summary.selectedWeightingPolicy === 'score_liquidity_rank' ? '점수 70%\n거래대금 30%' : summary.selectedWeightingPolicy],
       ['데이터 기준일', formatMaybeDate(summary.dataAsOf)],
     ]);
     renderRows(panelSelector(project, 'rows'), summary.rows, (row) => [
@@ -3253,20 +3343,139 @@
     setStatus(panelSelector(project, 'status'), buildStatusText(mode, summary.generatedAt, error, summary.status, summaryDataAsOf(summary)), mode);
   }
 
+  function windowedRegimeRows(trend, weeks = 52) {
+    const rows = Array.isArray(trend?.rows) ? trend.rows : [];
+    return weeks === 'all' ? rows.slice() : rows.slice(-([26, 52, 104].includes(Number(weeks)) ? Number(weeks) : 52));
+  }
+
+  function regimeTrendGeometry(rows, width = 580) {
+    const w = Math.max(280, width), compact = w < 460, h = compact ? 384 : 410;
+    const left = 40, right = w - (compact ? 62 : 112), panelHeight = compact ? 125 : 138;
+    const observedTop = 26, forecastTop = observedTop + panelHeight + 44;
+    const outcomeY = forecastTop + panelHeight + 26, dateY = h - 5;
+    const day = 86400000, times = rows.map((row) => Date.parse(`${row.date}T00:00:00Z`));
+    const span = times.length > 1 ? times.at(-1) - times[0] : 0;
+    const xAt = (time) => span ? left + (time - times[0]) / span * (right - left) : (left + right) / 2;
+    const x = (index) => xAt(times[index]), y = (value, top) => top + (1 - value) * panelHeight;
+    const panels = [
+      { key: 'observed', top: observedTop, field: 'memberships', state: 'currentState' },
+      { key: 'forecast', top: forecastTop, field: 'probabilities', state: 'nextState' },
+    ].map((panel) => {
+      const bands = [];
+      rows.forEach((row, index) => {
+        const start = index ? (times[index] - times[index - 1] <= 7 * day ? (times[index] + times[index - 1]) / 2 : times[index] - 3.5 * day) : times[index];
+        const end = index < rows.length - 1 ? (times[index + 1] - times[index] <= 7 * day ? (times[index] + times[index + 1]) / 2 : times[index] + 3.5 * day) : times[index];
+        const band = { state: row[panel.state], left: rows.length === 1 ? left : xAt(start), right: rows.length === 1 ? right : xAt(end) };
+        const previous = bands.at(-1);
+        if (previous && previous.state === band.state && Math.abs(previous.right - band.left) < .01) previous.right = band.right;
+        else bands.push(band);
+      });
+      const series = REGIME_STATES.map((state) => ({ state, points: rows.map((row, index) => ({ x: x(index), y: y(row[panel.field][state], panel.top), value: row[panel.field][state], index })) }));
+      const endpoints = series.filter((item) => item.points.length).map((item) => ({ ...item.points.at(-1), state: item.state }))
+        .map((point) => ({ ...point, labelY: Math.max(panel.top + 9, Math.min(panel.top + panelHeight - 9, point.y)) }))
+        .sort((a, b) => a.labelY - b.labelY);
+      for (let i = 1; i < endpoints.length; i += 1) endpoints[i].labelY = Math.max(endpoints[i].labelY, endpoints[i - 1].labelY + 18);
+      if (endpoints.length && endpoints.at(-1).labelY > panel.top + panelHeight - 9) {
+        endpoints.at(-1).labelY = panel.top + panelHeight - 9;
+        for (let i = endpoints.length - 2; i >= 0; i -= 1) endpoints[i].labelY = Math.min(endpoints[i].labelY, endpoints[i + 1].labelY - 18);
+      }
+      return { ...panel, bands, series, endpoints };
+    });
+    const tickCount = Math.min(rows.length, Math.max(2, Math.floor((right - left) / 110) + 1));
+    const tickIndices = [...new Set(Array.from({ length: tickCount }, (_, i) => tickCount === 1 ? 0 : Math.round(i / (tickCount - 1) * (rows.length - 1))))];
+    return { w, h, compact, left, right, panelHeight, observedTop, forecastTop, outcomeY, dateY, times, x, y, panels, tickIndices };
+  }
+
+  let regimeTrendObserver;
+  function renderRegimeTrend(trend, project) {
+    const target = $(panelSelector(project, 'chart'));
+    if (!target) return;
+    regimeTrendObserver?.disconnect();
+    if (!trend?.rows?.length) {
+      target.innerHTML = '<p class="empty-state">차트 데이터를 불러올 수 없습니다.</p>';
+      return;
+    }
+    const labels = { risk_on: 'Risk-on', transition: 'Transition', risk_off: 'Risk-off' };
+    const percent = (value) => `${(value * 100).toFixed(1)}%`;
+    const observedLabel = `관측 ${trend.currentMeasureLabel || '소속도'}`;
+    const readoutId = `${project.id}-trend-readout`;
+    let period = trend.rows.length >= 52 ? '52' : 'all', selected = 0, pinnedDate = trend.rows.at(-1).date, previousWidth = 0;
+    target.innerHTML = `<figure class="regime-trend">
+      <div class="regime-trend-toolbar"><span class="regime-trend-range"></span><label>분석 기간 <select class="regime-trend-window" aria-label="국면 추이 분석 기간">${[26, 52, 104, 'all'].map((n) => `<option value="${n}"${n !== 'all' && n > trend.rows.length ? ' disabled' : ''}>${n === 'all' ? '전체' : `${n}주`}</option>`).join('')}</select></label></div>
+      <div class="regime-trend-legend">${REGIME_STATES.map((state) => `<span class="${state}"><i aria-hidden="true"></i>${labels[state]}</span>`).join('')}<small>배경 · 국면</small><small>● ◆ ▼ 실제 1주 후</small></div>
+      <figcaption id="${escapeAttribute(readoutId)}" class="regime-trend-readout" aria-live="polite"></figcaption>
+      <div class="regime-trend-frame" tabindex="0" role="group" aria-label="국면 추이. 좌우 방향키로 관측일 이동" aria-describedby="${escapeAttribute(readoutId)}"></div>
+    </figure>`;
+    const select = target.querySelector('.regime-trend-window'), frame = target.querySelector('.regime-trend-frame'), readout = target.querySelector('.regime-trend-readout');
+    select.value = period;
+    const draw = (force = false) => {
+      const width = Math.max(280, Math.round(target.clientWidth || 580));
+      if (!force && width === previousWidth) return;
+      previousWidth = width;
+      const rows = windowedRegimeRows(trend, period), g = regimeTrendGeometry(rows, width);
+      if (!rows.some((row) => row.date === pinnedDate)) pinnedDate = rows.at(-1).date;
+      selected = rows.findIndex((row) => row.date === pinnedDate);
+      target.querySelector('.regime-trend-range').textContent = `${rows.length}주 · ${rows[0].date.slice(0, 7).replace('-', '.')}–${rows.at(-1).date.slice(0, 7).replace('-', '.')}`;
+      const line = (x1, y1, x2, y2, cls) => `<line class="${cls}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
+      const panels = g.panels.map((panel) => {
+        const title = panel.key === 'observed' ? observedLabel : '1주 예측확률';
+        const bands = panel.bands.map((band) => `<rect class="regime-trend-band ${band.state}" data-panel="${panel.key}" data-state="${band.state}" x="${band.left}" y="${panel.top}" width="${band.right - band.left}" height="${g.panelHeight}"/>`).join('');
+        const grid = [0, .25, .5, .75, 1].map((v) => `${line(g.left, g.y(v, panel.top), g.right, g.y(v, panel.top), 'regime-trend-grid')}<text x="${g.left - 7}" y="${g.y(v, panel.top) + 4}" text-anchor="end">${v * 100}%</text>`).join('');
+        const curves = panel.series.map((series) => `<path class="regime-trend-line ${series.state} ${panel.key}" data-panel="${panel.key}" data-state="${series.state}" d="${series.points.map((p, index) => `${index && g.times[index] - g.times[index - 1] <= 7 * 86400000 ? 'L' : 'M'}${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' ')}"/>`).join('');
+        const ends = panel.endpoints.map((p) => `<path class="regime-trend-leader ${p.state}" d="M${p.x},${p.y} L${p.x + 6},${p.labelY} H${p.x + 10}"/><circle class="regime-trend-end ${p.state}" cx="${p.x}" cy="${p.y}" r="3"/><text class="regime-trend-end-label ${p.state}" x="${p.x + 14}" y="${p.labelY + 4}">${escapeHtml(`${g.compact ? '' : `${REGIME_STATE_LABELS[p.state].replaceAll(' ', '')} `}${percent(p.value)}`)}</text>`).join('');
+        const focus = REGIME_STATES.map((state) => `<circle class="regime-trend-focus ${state}" data-panel="${panel.key}" data-state="${state}" r="3.5"/>`).join('');
+        return `<text class="regime-trend-title" x="${g.left}" y="${panel.top - 11}">${escapeHtml(title)}</text>${bands}${grid}${curves}${ends}${focus}`;
+      }).join('');
+      const markerRadius = Math.min(3.5, (g.right - g.left) / Math.max(1, rows.length - 1) * .4);
+      const outcomes = rows.map((row, i) => {
+        const x = g.x(i), y = g.outcomeY, r = markerRadius, state = row.actualState, cls = `regime-trend-outcome ${state || 'pending'}`;
+        const description = escapeHtml(`${row.date} → ${row.nextDate} · ${state ? labels[state] : row.nextDate > trend.rows.at(-1).date ? '결과 대기' : '결과 없음'}`);
+        const title = `<title>${description}</title>`;
+        if (state === 'transition') return `<path data-date="${row.date}" class="${cls}" d="M${x},${y - r} L${x + r},${y} L${x},${y + r} L${x - r},${y} Z">${title}</path>`;
+        if (state === 'risk_off') return `<path data-date="${row.date}" class="${cls}" d="M${x - r},${y - r} L${x + r},${y - r} L${x},${y + r} Z">${title}</path>`;
+        return `<circle data-date="${row.date}" class="${cls}" cx="${x}" cy="${y}" r="${r}">${title}</circle>`;
+      }).join('');
+      const dates = g.tickIndices.map((i) => `<text x="${g.x(i)}" y="${g.dateY}" text-anchor="${i === 0 ? 'start' : i === rows.length - 1 ? 'end' : 'middle'}">${rows.length <= 26 ? rows[i].date.slice(5).replace('-', '.') : rows[i].date.slice(0, 7).replace('-', '.')}</text>`).join('');
+      frame.innerHTML = `<svg viewBox="0 0 ${g.w} ${g.h}" role="img" aria-label="${escapeAttribute(`${observedLabel}와 1주 예측확률, ${rows.length}주`)}">${panels}${line(g.left, g.outcomeY, g.right, g.outcomeY, 'regime-trend-grid')}<text class="regime-trend-outcome-title" x="${g.left}" y="${g.outcomeY - 10}">실제 t+1</text>${outcomes}${dates}${line(g.x(selected), g.observedTop, g.x(selected), g.outcomeY + 7, 'regime-trend-cursor')}</svg>`;
+      const svg = frame.querySelector('svg'), cursor = frame.querySelector('.regime-trend-cursor');
+      const show = (index) => {
+        selected = index;
+        const row = rows[index];
+        cursor.setAttribute('x1', g.x(index)); cursor.setAttribute('x2', g.x(index));
+        for (const point of frame.querySelectorAll('.regime-trend-focus')) {
+          const panel = g.panels.find((item) => item.key === point.dataset.panel);
+          point.setAttribute('cx', g.x(index)); point.setAttribute('cy', g.y(row[panel.field][point.dataset.state], panel.top));
+        }
+        for (const marker of frame.querySelectorAll('.regime-trend-outcome')) marker.classList.toggle('is-active', marker.dataset.date === row.date);
+        const actual = row.actualState ? labels[row.actualState] : row.nextDate > trend.rows.at(-1).date ? '결과 대기' : '결과 없음';
+        const vector = (values) => REGIME_STATES.map((state) => `<div class="${state}"><dt>${labels[state]}</dt><dd>${percent(values[state])}</dd></div>`).join('');
+        readout.innerHTML = `<div class="regime-trend-date"><strong>${escapeHtml(formatMaybeDate(row.date))}</strong><span>→ ${escapeHtml(formatMaybeDate(row.nextDate))}</span></div><div class="regime-trend-vectors"><div><span>${escapeHtml(observedLabel)}</span><dl>${vector(row.memberships)}</dl></div><div><span>1주 예측확률</span><dl>${vector(row.probabilities)}</dl></div></div><div class="regime-trend-result"><span>예측 <b>${labels[row.nextState]}</b></span><span>실제 <b>${actual}</b></span><span>엔트로피 <b>${Number.isFinite(row.entropy) ? row.entropy.toFixed(3) : '—'}</b></span></div>`;
+      };
+      const nearest = (event) => {
+        const rect = svg.getBoundingClientRect();
+        if (!rect.width) return selected;
+        const px = (event.clientX - rect.left) * g.w / rect.width;
+        let closest = 0;
+        rows.forEach((_, i) => { if (Math.abs(g.x(i) - px) < Math.abs(g.x(closest) - px)) closest = i; });
+        return closest;
+      };
+      frame.onpointermove = (event) => { if (event.pointerType !== 'touch') show(nearest(event)); };
+      frame.onclick = (event) => { const index = nearest(event); pinnedDate = rows[index].date; show(index); frame.focus({ preventScroll: true }); };
+      frame.onpointerleave = () => show(rows.findIndex((row) => row.date === pinnedDate));
+      frame.onkeydown = (event) => {
+        const move = { ArrowLeft: Math.max(0, selected - 1), ArrowUp: Math.max(0, selected - 1), ArrowRight: Math.min(rows.length - 1, selected + 1), ArrowDown: Math.min(rows.length - 1, selected + 1), Home: 0, End: rows.length - 1, Escape: rows.length - 1 };
+        if (Object.hasOwn(move, event.key)) { event.preventDefault(); pinnedDate = rows[move[event.key]].date; show(move[event.key]); }
+      };
+      show(selected);
+    };
+    select.addEventListener('change', () => { period = select.value; draw(true); });
+    draw();
+    if (typeof ResizeObserver !== 'undefined') { regimeTrendObserver = new ResizeObserver(() => draw()); regimeTrendObserver.observe(target); }
+  }
+
   function renderRegime(summary, mode, error, project) {
-    const available = summary?.publicPayloadValid === true && summary?.unavailable !== true;
-    renderMetricCards(panelSelector(project, 'metrics'), [
-      ['현재 국면', available ? `${summary.currentStateLabel} · ${summary.currentMeasureLabel} ${formatPercent(summary.currentConfidence)}` : '확인 불가'],
-      [available ? `예측 · ${formatMaybeDate(summary.nextDate)}` : '다음 주 예측', available ? `${summary.nextStateLabel} · 확률 ${formatPercent(summary.nextConfidence)}` : '확인 불가'],
-      ['1주 이탈', available ? formatPercent(summary.transitionRisk1w) : '확인 불가'],
-      ['4주 이탈', available ? formatPercent(summary.transitionRisk4w) : '확인 불가'],
-      ['13주 이탈', available ? formatPercent(summary.transitionRisk13w) : '확인 불가'],
-      ['기준일', available ? formatMaybeDate(summary.dataAsOf) : '확인 불가'],
-    ]);
-    const statusText = available
-      ? `${summary.meta?.dataModeLabel || '공개 결과'} · 기준일 ${formatMaybeDate(summary.dataAsOf)} · 업데이트 ${formatFreshness(summary.generatedAt)}`
-      : `Regime 공개 결과 사용 불가 · ${error || summary?.status || '계약 확인 필요'}`;
-    setStatus(panelSelector(project, 'status'), statusText, summary.meta?.statusState === 'ok' ? 'ok' : 'warning');
+    renderRegimeTrend(summary?.trend || null, project);
+    setStatus(panelSelector(project, 'status'), buildStatusText(mode, summary.generatedAt, error, summary.status, summaryDataAsOf(summary)), mode);
   }
 
   function renderFearAndGreed(summary, mode, error, project) {
@@ -4136,7 +4345,7 @@
           <span>${escapeHtml(healthLabel(record))}</span>
         </div>
         <p>${escapeHtml(recordFreshnessText(record))}</p>
-        <small>${escapeHtml(`${formatBytes(record.payloadBytes)} · ${record.sourceCount}개 JSON · ${record.summary?.meta?.cadence || 'cadence 확인 필요'} · freshness ${formatInteger(expectedFreshnessDays(record))}일${record.error || record.summary?.scatterError ? ` · ${record.error || record.summary.scatterError}` : ''}`)}</small>
+        <small>${escapeHtml(`${formatBytes(record.payloadBytes)} · ${record.sourceCount}개 JSON · ${record.summary?.meta?.cadence || 'cadence 확인 필요'} · freshness ${formatInteger(expectedFreshnessDays(record))}일${record.error || record.summary?.scatterError || record.summary?.trendError ? ` · ${record.error || record.summary.scatterError || record.summary.trendError}` : ''}`)}</small>
         <div class="source-links"><a href="${escapeAttribute(record.project.url)}">원본 페이지</a>${Object.entries(PANEL_ADAPTERS[record.project.panelAdapter]?.sourceUrls || {}).map(([key, url]) => `<a href="${escapeAttribute(url)}">${escapeHtml(key)} JSON</a>`).join('')}</div>
         ${safeAutomationUrl(record.summary?.meta?.automation?.workflowUrl) ? `<a class="health-link" href="${escapeAttribute(safeAutomationUrl(record.summary.meta.automation.workflowUrl))}" rel="noopener noreferrer">자동화/수동 실행</a>` : ''}
       </article>
@@ -4145,7 +4354,7 @@
   }
 
   function visibleHealthLabel(record) {
-    if (record.summary?.scatterError) return '차트 확인 필요';
+    if (record.summary?.scatterError || record.summary?.trendError) return '차트 확인 필요';
     if (record.summary?.unavailable || record.summary?.meta?.statusState === 'unavailable') return '산출 불가';
     if (!record.metadataMismatch && record.mode === 'live' && !isRecordStale(record)) {
       if (record.summary?.meta?.statusState === 'degraded') return '데이터 주의';
@@ -4160,7 +4369,8 @@
     const summary = record.summary || {};
     const observedDate = stringOr(summary.meta?.minDataAsOf, summary.minDataAsOf, summaryDataAsOf(summary), record.dataAsOf, '');
     const dateLabel = observedDate ? `기준일 ${formatMaybeDate(observedDate)}` : `업데이트 ${formatFreshness(record.generatedAt || summary.generatedAt)}`;
-    target.textContent = `${dateLabel} · ${visibleHealthLabel(record)}`;
+    const dataMode = record.project.id === 'momentum' ? summary.dataModeLabel : '';
+    target.textContent = [dateLabel, visibleHealthLabel(record), dataMode].filter(Boolean).join(' · ');
     target.classList.toggle('warning', healthTone(record) !== 'ok');
     target.classList.toggle('error', record.summary?.unavailable === true);
   }
@@ -4183,7 +4393,7 @@
   }
 
   function healthTone(record) {
-    if (record.summary?.scatterError) return 'warn';
+    if (record.summary?.scatterError || record.summary?.trendError) return 'warn';
     if (record.metadataMismatch) return 'warn';
     if (record.mode !== 'live') return 'warn';
     if (isRecordStale(record)) return 'warn';
@@ -4192,7 +4402,7 @@
   }
 
   function healthLabel(record) {
-    if (record.summary?.scatterError) return '차트 확인 필요';
+    if (record.summary?.scatterError || record.summary?.trendError) return '차트 확인 필요';
     const state = record.summary?.meta?.statusState;
     if (record.metadataMismatch) return '메타데이터 불일치';
     if (record.mode !== 'live') return '대체 데이터';
@@ -4595,6 +4805,13 @@
       parseSox,
       renderSox,
       renderRegime,
+      parseRegimePanel,
+      parseRegimeTrend,
+      enrichRegimeSources,
+      validateRegimeHistory,
+      renderRegimeTrend,
+      windowedRegimeRows,
+      regimeTrendGeometry,
       renderFearAndGreed,
       parseFearPanel,
       parseFearScatter,

@@ -87,7 +87,8 @@ test('actual v5 full and core/2 projections produce identical summaries without 
     assert.equal(parsed.ok, true);
     assert.equal(parsed.error, null);
     assert.equal(adapter.hasUsableData(parsed.data), true);
-    assert.deepEqual(plain(parsed.data), raw);
+    const { trend, trendError, ...originalSummary } = plain(parsed.data);
+    assert.deepEqual(originalSummary, raw);
   }
 });
 
@@ -129,45 +130,28 @@ test('source ordering is immaterial but its exact identities and licenses are pr
   assert.deepEqual(plain(api.parseRegime(reordered)), plain(api.parseRegime(fixture.full)));
 });
 
-test('panel adapter requests only the public lightweight core', () => {
+test('panel adapter starts from the public core and enriches verified history', () => {
   assert.deepEqual(plain(adapter.sourceUrls), { summary: fixture.provenance.snapshots.core.url });
   assert.equal(adapter.primarySourceKey, 'summary');
+  assert.equal(typeof adapter.enrichSources, 'function');
 });
 
-function renderCurrentCard(summary, index = 0) {
-  const nodes = new Map();
-  context.document = {
-    querySelector(selector) {
-      if (!nodes.has(selector)) nodes.set(selector, { children: [], replaceChildren(...children) { this.children = children; }, classList: { toggle() {} } });
-      return nodes.get(selector);
-    },
-    createElement() { return { innerHTML: '' }; },
-  };
-  try {
-    api.renderRegime(summary, 'live', null, api.PROJECTS.find((project) => project.id === 'regime'));
-    return nodes.get('#regime-metrics').children[index].innerHTML;
-  } finally {
-    delete context.document;
-  }
-}
-
-test('v5 cards, watchlist and briefing identify current membership separately from next probability', () => {
+test('v5 chart labels, watchlist and briefing identify current membership separately from next probability', () => {
   const summary = api.parseRegime(fixture.full);
-  const card = renderCurrentCard(summary);
+  const measure = api.parseRegimeTrend(fixture.full).currentMeasureLabel;
   const watchlist = api.entitySummaryLine('regime', summary.entities[0]);
   const briefing = api.briefingItemForRecord({ project: { id: 'regime' }, summary });
   const forecastMarker = `${summary.nextDate} 예측`;
   assert.ok(watchlist.includes(forecastMarker));
   assert.ok(briefing.title.includes(forecastMarker));
-  for (const text of [card, watchlist.split(forecastMarker)[0], briefing.title.split(forecastMarker)[0]]) {
+  for (const text of [measure, watchlist.split(forecastMarker)[0], briefing.title.split(forecastMarker)[0]]) {
     assert.match(text, /소속도/);
     assert.doesNotMatch(text, /확률/);
   }
   assert.match(watchlist.split(forecastMarker)[1], /확률/);
   assert.match(briefing.title.split(forecastMarker)[1], /확률/);
-  assert.match(renderCurrentCard(summary, 1), /2026-09-11/);
-  assert.match(renderCurrentCard(summary, 1), /확률/);
-  assert.match(renderCurrentCard(api.parseRegime(legacyPayload('v4'))), /확률/);
+  assert.equal(api.parseRegimeTrend(fixture.full).rows.at(-1).nextDate, '2026-09-11');
+  assert.equal(api.parseRegimeTrend(legacyPayload('v4')).currentMeasureLabel, '확률');
 });
 
 const rawFailures = [

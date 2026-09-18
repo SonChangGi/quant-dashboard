@@ -1857,7 +1857,7 @@ assert(renderedPanels.map((child) => child.dataset.projectId).join('|') === 'fea
 assert(renderedPanels.every((child) => /열기/.test(child.innerHTML)), 'dashboard panel shells preserve project page links');
 assert(domTargets['#summary-grid'].children.some((child) => /panel-detail/.test(child.innerHTML)), 'ETF panel shell includes detail mount for TOP10 cards');
 assert(domTargets['#summary-grid'].children.some((child) => /SOX 구성종목/.test(child.innerHTML)), 'SOX panel shell appears in the central summary grid');
-assert(domTargets['#summary-grid'].children.some((child) => /현재 국면 · 다음 주 전망/.test(child.innerHTML)), 'Regime public result panel appears in the central summary grid');
+assert(domTargets['#summary-grid'].children.some((child) => /국면 추이/.test(child.innerHTML)), 'Regime public result panel appears in the central summary grid');
 api.renderEtfDetailCards('#etf-details', validEtf.rows);
 assert(/etf-detail-card/.test(domTargets['#etf-details'].innerHTML), 'ETF detail renderer creates per-ETF card markup');
 assert(/AAA/.test(domTargets['#etf-details'].innerHTML) && /BBB/.test(domTargets['#etf-details'].innerHTML), 'ETF detail renderer includes TOP10 holdings');
