@@ -1861,7 +1861,7 @@ assert(domTargets['#summary-grid'].children.some((child) => /국면 추이/.test
 api.renderEtfDetailCards('#etf-details', validEtf.rows);
 assert(/etf-detail-card/.test(domTargets['#etf-details'].innerHTML), 'ETF detail renderer creates per-ETF card markup');
 assert(/AAA/.test(domTargets['#etf-details'].innerHTML) && /BBB/.test(domTargets['#etf-details'].innerHTML), 'ETF detail renderer includes TOP10 holdings');
-assert(/TOP10 비중 변화 미니 그래프/.test(domTargets['#etf-details'].innerHTML), 'ETF detail renderer includes mini chart markup');
+assert(/현재 상위 2종목 편입비중 추이/.test(domTargets['#etf-details'].innerHTML), 'ETF detail renderer includes mini chart markup');
 
 
 const staleByDataAsOfRecord = {

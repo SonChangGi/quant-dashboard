@@ -197,7 +197,7 @@
       panelAdapter: 'momentum',
       panel: {
         eyebrow: 'Momentum Factor',
-        title: '모멘텀 팩터 · 모델 Top 5',
+        title: '모멘텀 팩터',
         contentType: 'table',
         metricLoading: '모멘텀 데이터를 불러오는 중...',
         table: {
@@ -217,7 +217,7 @@
       panelAdapter: 'dram',
       panel: {
         eyebrow: 'DRAM Price',
-        title: 'TrendForce 현물·고정가 추이',
+        title: 'DRAM 가격 추이',
         contentType: 'chart',
         metricLoading: 'D램 가격 데이터를 불러오는 중...',
         chartLabel: 'TrendForce 일별 저장 D램(DRAM) 가격 추이 그래프',
@@ -233,7 +233,7 @@
       panelAdapter: 'best',
       panel: {
         eyebrow: 'Best Factor',
-        title: '베스트 팩터 · Top 5',
+        title: '베스트 팩터',
         contentType: 'table',
         metricLoading: '베스트 팩터 데이터를 불러오는 중...',
         table: {
@@ -253,7 +253,7 @@
       panelAdapter: 'etf',
       panel: {
         eyebrow: 'ETF Tracking',
-        title: 'ETF별 TOP10 비중 · 미니 그래프',
+        title: 'ETF별 TOP10 비중',
         contentType: 'table',
         metricLoading: 'ETF 추적 데이터를 불러오는 중...',
         detailSlot: true,
@@ -274,7 +274,7 @@
       panelAdapter: 'sox',
       panel: {
         eyebrow: 'SOX Semiconductor',
-        title: 'SOX 구성종목 · 모멘텀 Top 5',
+        title: 'SOX 구성종목 · 가격 vs 실적',
         contentType: 'table',
         metricLoading: 'SOX 데이터를 불러오는 중...',
         table: {
@@ -425,10 +425,11 @@
     sox: {
       sourceUrls: {
         summary: 'https://sonchanggi.github.io/sox/data/summary.json',
+        soxAnalysis: 'https://sonchanggi.github.io/sox/data/sox-analysis.json',
       },
       primarySourceKey: 'summary',
       contracts: { summary: SUMMARY_CONTRACT },
-      parse: (sources) => parseSox(sources.summary),
+      parse: parseSoxPanel,
       hasUsableData: (summary) => Boolean(summary?.rows?.length),
       fallback: normalizeSoxFallback,
       render: renderSox,
@@ -738,6 +739,19 @@
     const table = panel.table || { columns: [], caption: '', loadingText: '데이터를 불러오는 중...' };
     const columns = table.columns.map((label) => `<th scope="col">${escapeHtml(label)}</th>`).join('');
     const colspan = Math.max(table.columns.length, 1);
+    if (['momentum', 'best'].includes(project.id)) return `
+      <div class="factor-overview" id="${escapeAttribute(panelDomId(project, 'metrics'))}" aria-live="polite"><div class="skeleton-line">${escapeHtml(panel.metricLoading)}</div></div>
+      <details class="factor-details">
+        <summary>팩터 · 데이터 상세</summary>
+        <dl class="factor-source-meta" id="${escapeAttribute(panelDomId(project, 'factor-meta'))}"></dl>
+        <div class="table-wrap"><table><caption>${escapeHtml(table.caption)}</caption><thead><tr>${columns}</tr></thead><tbody id="${escapeAttribute(panelDomId(project, 'rows'))}"><tr><td colspan="${colspan}">${escapeHtml(table.loadingText)}</td></tr></tbody></table></div>
+      </details>`;
+    if (['sox', 'etf'].includes(project.id)) return `
+      <div class="market-summary" id="${escapeAttribute(panelDomId(project, 'metrics'))}" aria-live="polite"><div class="skeleton-line">${escapeHtml(panel.metricLoading)}</div></div>
+      <div class="panel-detail market-visual" id="${escapeAttribute(panelDomId(project, 'details'))}"></div>
+      <details class="market-details"><summary>${project.id === 'sox' ? '종목별 점수 · 비중 상세' : 'ETF별 신호 · 데이터 상세'}</summary>
+        <div class="table-wrap"><table><caption>${escapeHtml(table.caption)}</caption><thead><tr>${columns}</tr></thead><tbody id="${escapeAttribute(panelDomId(project, 'rows'))}"><tr><td colspan="${colspan}">${escapeHtml(table.loadingText)}</td></tr></tbody></table></div>
+      </details>`;
     return `
       <div class="metric-row" id="${escapeAttribute(panelDomId(project, 'metrics'))}" aria-live="polite">
         <div class="skeleton-line">${escapeHtml(panel.metricLoading || '데이터를 불러오는 중...')}</div>
@@ -761,7 +775,7 @@
       <div class="chart-toolbar" id="${escapeAttribute(panelDomId(project, 'metrics'))}" aria-live="polite">
         <span class="skeleton-line">${escapeHtml(panel.metricLoading || '차트 데이터를 불러오는 중...')}</span>
       </div>
-      <div class="chart-card" id="${escapeAttribute(panelDomId(project, 'chart'))}" role="img" aria-label="${escapeAttribute(panel.chartLabel || `${project.title} 차트`)}"></div>
+      <div class="chart-card" id="${escapeAttribute(panelDomId(project, 'chart'))}" role="group" aria-label="${escapeAttribute(panel.chartLabel || `${project.title} 차트`)}"></div>
     `;
   }
 
@@ -3282,6 +3296,54 @@
     };
   }
 
+  function parseSoxPanel(sources) {
+    const summary = parseSox(sources.summary);
+    try {
+      return { ...summary, quadrant: parseSoxQuadrant(sources.summary, sources.soxAnalysis) };
+    } catch (error) {
+      return { ...summary, quadrant: null, quadrantError: error.message };
+    }
+  }
+
+  function parseSoxQuadrant(summary, analysis) {
+    const fail = (message) => { throw new Error(`SOX quadrant: ${message}`); };
+    if (!isResearchSummary(summary, 'sox') || summary.schemaVersion !== 1
+      || !isRecord(analysis) || analysis.schemaVersion !== 1 || analysis.projectId !== 'sox'
+      || analysis.index?.symbol !== 'SOX') fail('invalid source contract');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(summary.dataAsOf || '') || !Number.isFinite(Date.parse(summary.generatedAt))
+      || analysis.dataAsOf !== summary.dataAsOf || analysis.generatedAt !== summary.generatedAt
+      || !['ok', 'degraded'].includes(analysis.status?.level) || analysis.status.level !== summary.status?.state) fail('publication mismatch');
+    const count = summary.coverage?.entityCount, rawRows = analysis.constituents;
+    if (!Number.isInteger(count) || count < 1 || !Array.isArray(rawRows) || rawRows.length !== count
+      || analysis.index.constituentCount !== count) fail('constituent coverage mismatch');
+    const tickers = new Set(), ranks = new Set();
+    const optionalScore = (value) => {
+      if (value === null) return null;
+      if (soxScore(value) === null) fail('invalid score or weight');
+      return value;
+    };
+    const rows = rawRows.map((row) => {
+      if (!isRecord(row) || !/^[A-Z0-9.^-]{1,20}$/.test(row.ticker || '') || tickers.has(row.ticker)
+        || !Number.isInteger(row.rank) || row.rank < 1 || row.rank > count || ranks.has(row.rank) || !isRecord(row.scores)) fail('invalid or duplicate constituent');
+      tickers.add(row.ticker); ranks.add(row.rank);
+      return { rank: row.rank, ticker: row.ticker, name: stringOr(row.name, row.ticker),
+        priceMomentum: optionalScore(row.scores.priceMomentum), earningsMomentum: optionalScore(row.scores.earningsMomentum),
+        score: optionalScore(row.scores.combined), weight: optionalScore(row.proxyWeight), status: stringOr(row.scores.label, ''),
+      };
+    }).sort((a, b) => a.rank - b.rank);
+    const leaders = asRecords(summary.primaryEntities);
+    if (leaders.length !== Math.min(5, count)) fail('leader coverage mismatch');
+    for (const entity of leaders) {
+      const row = rows.find((item) => item.ticker === entity.symbol), metrics = entity.metrics;
+      if (!row || !isRecord(metrics) || row.rank !== metrics.rank || row.rank > Math.min(5, count)
+        || row.score !== metrics.score || row.priceMomentum !== metrics.priceMomentum
+        || row.earningsMomentum !== metrics.earningsMomentum || row.weight !== (Object.hasOwn(metrics, 'weight') ? metrics.weight : metrics.proxyWeight)) fail('summary and constituents differ');
+    }
+    if (new Set(leaders.map((row) => row.symbol)).size !== leaders.length) fail('duplicate leaders');
+    return { rows, dataAsOf: analysis.dataAsOf, generatedAt: analysis.generatedAt, count,
+      plottedCount: rows.filter((row) => row.priceMomentum !== null && row.earningsMomentum !== null).length };
+  }
+
   function parseSox(payload) {
     if (isResearchSummary(payload, 'sox')) {
       const meta = summaryMeta(payload);
@@ -3378,13 +3440,83 @@
     return stringOr(row?.ticker, row?.codeRaw, row?.code, row?.name, '').toUpperCase();
   }
 
+  function factorDisplayName(id) {
+    if (id === 'winsorized_12m') return { name: '12개월 모멘텀', detail: '일 수익률 ±8% 제한' };
+    const riskAdjusted = /^ramom_(\d+)d_skip_(\d+)d_vol_(\d+)d$/.exec(id || '');
+    if (riskAdjusted) return { name: '변동성 조정 모멘텀', detail: `${riskAdjusted[1]}일 · 최근 ${riskAdjusted[2]}일 제외 · 변동성 ${riskAdjusted[3]}일` };
+    return { name: id || '확인 불가', detail: '' };
+  }
+
+  function factorAllocation(summary, projectId) {
+    const momentum = projectId === 'momentum';
+    const rows = asRecords(summary.rows).slice(0, 5).map((row) => ({
+      rank: row.rank, symbol: momentum ? row.symbol : row.ticker,
+      name: row.name || '', value: momentum ? row.signal : row.score,
+      weight: momentum ? row.modelWeight : row.weight,
+      date: momentum ? summary.dataAsOf : row.date,
+    }));
+    const validWeight = (weight) => typeof weight === 'number' && Number.isFinite(weight) && weight >= 0 && weight <= 1;
+    const total = rows.length && rows.every((row) => validWeight(row.weight)) ? rows.reduce((sum, row) => sum + row.weight, 0) : null;
+    const dates = [...new Set(rows.map((row) => row.date).filter(Boolean))];
+    return { rows, total: total !== null && total <= 1 + 1e-8 ? total : null,
+      dateLabel: dates.length === 1 ? formatMaybeDate(dates[0]) : dates.length > 1 ? '종목별 상이' : '확인 불가' };
+  }
+
+  function factorWeightScale(allocations) {
+    const weights = allocations.flatMap((allocation) => allocation.rows.map((row) => row.weight))
+      .filter((weight) => typeof weight === 'number' && Number.isFinite(weight) && weight >= 0 && weight <= 1);
+    return Math.max(.4, Math.ceil(Math.max(0, ...weights) * 10 - 1e-9) / 10);
+  }
+
+  const FACTOR_VIEWS = new Map();
+  function renderFactorOverview(summary, project) {
+    const target = $(panelSelector(project, 'metrics'));
+    if (!target) return;
+    const momentum = project.id === 'momentum', identity = factorDisplayName(summary.factor);
+    const allocation = factorAllocation(summary, project.id);
+    FACTOR_VIEWS.set(project.id, { allocation, project });
+    const weightPolicy = momentum ? (summary.selectedWeightingPolicy === 'score_liquidity_rank' ? '점수 70% · 거래대금 30%' : summary.selectedWeightingPolicy || '확인 불가') : '';
+    target.innerHTML = `<div class="factor-identity"><span>선택 팩터</span><strong>${escapeHtml(identity.name)}</strong>${identity.detail ? `<small>${escapeHtml(identity.detail)}</small>` : ''}</div>
+      <div class="factor-stats">
+        <div class="factor-concentration"><span>표시 ${allocation.rows.length || 5}종목 비중</span><strong>${allocation.total === null ? '—' : `${(allocation.total * 100).toFixed(2)}%`}</strong><div class="factor-total-track" role="img" aria-label="${allocation.total === null ? '비중 합계 확인 불가' : `전체 포트폴리오 중 표시 종목 비중 ${formatPercent(allocation.total)}`}" ${allocation.total === null ? 'hidden' : ''}><i style="width:${allocation.total === null ? 0 : Math.min(100, allocation.total * 100)}%"></i></div></div>
+        <div class="factor-composite"><span>종합 점수 · ${momentum ? '0–100' : '0–1'}</span><strong>${escapeHtml(formatNumber(summary.compositeScore))}</strong></div>
+      </div>
+      <div class="factor-holdings-heading"><h5>${momentum ? '신호' : '비중'} 상위 ${allocation.rows.length || 5}종목</h5><span>${momentum ? '신호' : '보유'} 기준 ${escapeHtml(allocation.dateLabel)}</span></div>
+      <div class="factor-allocation" id="${escapeAttribute(panelDomId(project, 'allocation'))}"></div>`;
+    const sourceMeta = $(panelSelector(project, 'factor-meta'));
+    if (sourceMeta) sourceMeta.innerHTML = [
+      ['팩터 ID', summary.factor], ['종합 점수', formatNumber(summary.compositeScore)],
+      ...(momentum ? [['비중 정책', weightPolicy]] : []),
+      ['데이터 기준일', formatMaybeDate(momentum ? summary.dataAsOf : summary.dataEndDate)],
+      ['업데이트', formatFreshness(summary.generatedAt)],
+    ].map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value || '확인 불가')}</dd></div>`).join('');
+    // Both panels share one weight scale, including when either source arrives first.
+    const scale = factorWeightScale([...FACTOR_VIEWS.values()].map((view) => view.allocation));
+    for (const view of FACTOR_VIEWS.values()) renderFactorAllocation(view.allocation, view.project, scale);
+  }
+
+  function renderFactorAllocation(allocation, project, scale) {
+    const target = $(panelSelector(project, 'allocation'));
+    if (!target) return;
+    const momentum = project.id === 'momentum';
+    if (!allocation.rows.length) { target.innerHTML = '<p class="empty-state">표시할 종목이 없습니다.</p>'; return; }
+    const ticks = [0, scale / 2, scale].map((value) => `${Math.round(value * 100)}%`);
+    target.innerHTML = `<div class="factor-columns" aria-hidden="true"><span>#</span><span>종목</span><span>모델 비중</span><span></span><span>${momentum ? '신호' : '팩터 점수'}</span></div>
+      <div class="factor-axis" aria-hidden="true"><div>${ticks.map((value) => `<span>${value}</span>`).join('')}</div></div>
+      <ol class="factor-holdings" aria-label="${momentum ? '모멘텀 신호' : '모델 비중'} 순위. 비중 막대 공통 범위 0에서 ${Math.round(scale * 100)}퍼센트">
+      ${allocation.rows.map((row) => {
+        const valid = typeof row.weight === 'number' && Number.isFinite(row.weight) && row.weight >= 0 && row.weight <= 1;
+        const percentage = valid ? formatPercent(row.weight) : '—';
+        return `<li data-symbol="${escapeAttribute(row.symbol)}">
+          <span class="factor-rank">${escapeHtml(row.rank)}</span><strong class="factor-symbol" title="${escapeAttribute(row.name || row.symbol)}">${escapeHtml(row.symbol)}</strong>
+          <div class="factor-bar-track" role="img" aria-label="모델 비중 ${percentage}" data-weight="${valid ? row.weight : ''}" data-scale="${scale}">${valid ? `<i style="width:${row.weight / scale * 100}%"></i>` : ''}</div>
+          <strong class="factor-weight">${percentage}</strong><span class="factor-signal" aria-label="${momentum ? '신호' : '팩터 점수'} ${escapeAttribute(formatNumber(row.value))}">${escapeHtml(formatNumber(row.value))}</span>
+        </li>`;
+      }).join('')}</ol>`;
+  }
+
   function renderMomentum(summary, mode, error, project) {
-    renderMetricCards(panelSelector(project, 'metrics'), [
-      ['선택 팩터', summary.factor],
-      ['종합 점수', formatNumber(summary.compositeScore)],
-      ['비중 정책', summary.selectedWeightingPolicy === 'score_liquidity_rank' ? '점수 70%\n거래대금 30%' : summary.selectedWeightingPolicy],
-      ['데이터 기준일', formatMaybeDate(summary.dataAsOf)],
-    ]);
+    renderFactorOverview(summary, project);
     renderRows(panelSelector(project, 'rows'), summary.rows, (row) => [
       row.rank,
       badge(row.symbol),
@@ -3399,24 +3531,16 @@
   }
 
   function renderDram(summary, mode, error, project) {
-    const latestPoint = latestSeriesPoint(summary.series);
     renderMetricBadges(panelSelector(project, 'metrics'), [
       `제품 ${summary.series.length || 0}개`,
       `관측치 ${formatInteger(summary.observationCount)}`,
-      `최근값 ${latestPoint ? `${latestPoint.name} ${formatNumber(latestPoint.value)} USD` : '확인 불가'}`,
-      `업데이트 ${formatFreshness(summary.generatedAt)}`,
     ]);
     renderDramChart(panelSelector(project, 'chart'), summary.series);
     setStatus(panelSelector(project, 'status'), buildStatusText(mode, summary.generatedAt, error, summary.status, summaryDataAsOf(summary)), mode);
   }
 
   function renderBestFactor(summary, mode, error, project) {
-    renderMetricCards(panelSelector(project, 'metrics'), [
-      ['베스트 팩터', summary.factor],
-      ['종합 점수', formatNumber(summary.compositeScore)],
-      ['데이터 기준일', formatMaybeDate(summary.dataEndDate)],
-      ['업데이트', formatFreshness(summary.generatedAt)],
-    ]);
+    renderFactorOverview(summary, project);
     renderRows(panelSelector(project, 'rows'), summary.rows, (row) => [
       row.rank,
       badge(row.ticker),
@@ -3429,19 +3553,8 @@
 
 
   function renderEtfTracking(summary, mode, error, project) {
-    const latestDate = maxString(summary.rows.map((row) => row.date));
-    const signalTotal = summary.rows.reduce((sum, row) => sum + numberOr(row.signalCount, 0), 0);
-    const avgCoverageRows = summary.rows.map((row) => finiteOrNull(row.returnCoverage)).filter((value) => value !== null);
-    const avgCoverage = avgCoverageRows.length ? avgCoverageRows.reduce((sum, value) => sum + value, 0) / avgCoverageRows.length : null;
-    const avgTop10WeightRows = summary.rows.map((row) => finiteOrNull(row.top10Weight)).filter((value) => value !== null);
-    const avgTop10Weight = avgTop10WeightRows.length ? avgTop10WeightRows.reduce((sum, value) => sum + value, 0) / avgTop10WeightRows.length : null;
-    renderMetricCards(panelSelector(project, 'metrics'), [
-      ['추적 ETF', `${summary.rows.length || 0}개`],
-      ['최근 기준일', formatMaybeDate(latestDate)],
-      ['특별 신호', `${signalTotal.toLocaleString('ko-KR')}건`],
-      ['평균 TOP10 비중', formatPercent(avgTop10Weight)],
-      ['평균 종가 커버리지', formatPercent(avgCoverage)],
-    ]);
+    const metrics = $(panelSelector(project, 'metrics'));
+    if (metrics) metrics.innerHTML = '<strong>최근 1개월 편입비중</strong><span>현재 TOP10 종목 · 공통 비중 축</span>';
     renderRows(panelSelector(project, 'rows'), summary.rows, (row) => [
       `${row.name}${row.code ? ` (${row.code})` : ''}`,
       formatMaybeDate(row.date),
@@ -3594,59 +3707,192 @@
   }
 
   function renderSox(summary, mode, error, project) {
-    const topScore = asRecords(summary.rows)[0];
-    const topWeight = summary.topWeight || asRecords(summary.rows).reduce((best, row) => numberOr(row.weight, -1) > numberOr(best?.weight, -1) ? row : best, null);
-    renderMetricCards(panelSelector(project, 'metrics'), [
-      ['구성종목', `${formatInteger(summary.constituentCount || summary.allRows?.length || summary.rows?.length)}개`],
-      ['기준일', formatMaybeDate(summary.dataAsOf)],
-      ['종합 1위', topScore ? `${topScore.ticker} · ${formatNumber(topScore.score)}` : '확인 필요'],
-      ['최대 proxy weight', topWeight ? `${topWeight.ticker} · ${formatPercent(topWeight.weight)}` : '확인 필요'],
-    ]);
-    renderRows(panelSelector(project, 'rows'), asRecords(summary.rows), (row) => [
-      row.rank,
-      badge(row.ticker),
-      formatNumber(row.score),
-      formatPercent(row.weight),
-      `${formatNumber(row.priceMomentum)} / ${formatNumber(row.earningsMomentum)}`,
-      row.status,
+    const quadrant = summary.quadrant, metrics = $(panelSelector(project, 'metrics'));
+    if (metrics) metrics.innerHTML = quadrant
+      ? `<strong>${quadrant.plottedCount === quadrant.count ? `전체 ${quadrant.count}종목` : `표시 ${quadrant.plottedCount} / ${quadrant.count}종목`}</strong><span>상대점수 0–1 · 중앙선 0.5</span>`
+      : '<strong>전체 종목 차트 확인 필요</strong>';
+    renderSoxQuadrant(panelSelector(project, 'details'), quadrant);
+    renderRows(panelSelector(project, 'rows'), asRecords(quadrant?.rows || summary.rows), (row) => [
+      row.rank, badge(row.ticker), formatNumber(row.score), formatPercent(row.weight),
+      `${formatNumber(row.priceMomentum)} / ${formatNumber(row.earningsMomentum)}`, row.status,
     ], 6);
     setStatus(panelSelector(project, 'status'), buildStatusText(mode, summary.generatedAt, error, summary.status, summaryDataAsOf(summary)), mode);
   }
 
+  function soxScore(value) {
+    return typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1 ? value : null;
+  }
+
+  function soxQuadrantGeometry(rows, width = 1000, selectedTicker = '') {
+    const w = Math.max(220, width), compact = w < 600, h = compact ? 360 : 480;
+    const bounds = { left: 34, right: w - 22, top: 46, bottom: h - 42 };
+    const x = (score) => bounds.left + score * (bounds.right - bounds.left);
+    const y = (score) => bounds.bottom - score * (bounds.bottom - bounds.top);
+    const points = asRecords(rows).filter((row) => soxScore(row.priceMomentum) !== null && soxScore(row.earningsMomentum) !== null)
+      .map((row) => ({ ...row, x: x(row.priceMomentum), y: y(row.earningsMomentum) }));
+    const priority = [...points].sort((a, b) => (b.ticker === selectedTicker) - (a.ticker === selectedTicker) || a.rank - b.rank);
+    const labels = [];
+    const overlaps = (a, b, gap = 4) => a.x < b.x + b.width + gap && a.x + a.width + gap > b.x && a.y < b.y + b.height + gap && a.y + a.height + gap > b.y;
+    for (const point of priority) {
+      if (compact && point.rank > 5 && point.ticker !== selectedTicker) continue;
+      const labelWidth = point.ticker.length * (compact ? 6.8 : 8.2) + 20, labelHeight = compact ? 26 : 30;
+      const candidates = [
+        [12, -labelHeight / 2], [-labelWidth - 12, -labelHeight / 2], [-labelWidth / 2, -labelHeight - 12], [-labelWidth / 2, 12],
+        [12, -labelHeight - 8], [-labelWidth - 12, -labelHeight - 8], [12, 8], [-labelWidth - 12, 8],
+        [-labelWidth / 2, -labelHeight - 36], [-labelWidth / 2, 36], [30, -labelHeight / 2], [-labelWidth - 30, -labelHeight / 2],
+      ].map(([dx, dy]) => ({ x: point.x + dx, y: point.y + dy, width: labelWidth, height: labelHeight }));
+      const label = candidates.find((box) => box.x >= bounds.left && box.x + box.width <= bounds.right
+        && box.y >= bounds.top - 20 && box.y + box.height <= bounds.bottom
+        && !labels.some((existing) => overlaps(box, existing))
+        && !points.some((other) => other.ticker !== point.ticker && overlaps(box, { x: other.x - 5, y: other.y - 5, width: 10, height: 10 }, 2)));
+      if (label) labels.push({ ...label, ticker: point.ticker, rank: point.rank, anchorX: point.x, anchorY: point.y });
+    }
+    return { width: w, height: h, compact, bounds, points, labels, centerX: x(0.5), centerY: y(0.5) };
+  }
+
+  function renderSoxQuadrantChart(rows, width, selectedTicker, labelTicker = selectedTicker) {
+    const g = soxQuadrantGeometry(rows, width, labelTicker), b = g.bounds;
+    const grid = [0, 0.5, 1].map((score) => {
+      const x = b.left + score * (b.right - b.left), y = b.bottom - score * (b.bottom - b.top);
+      return `<text class="sox-axis-tick" x="${x}" y="${b.bottom + 20}" text-anchor="middle">${score}</text><text class="sox-axis-tick" x="${b.left - 12}" y="${y + 4}" text-anchor="end">${score}</text>`;
+    }).join('');
+    const points = [...g.points].sort((a, b) => (a.ticker === selectedTicker) - (b.ticker === selectedTicker)).map((point) => {
+      const active = point.ticker === selectedTicker, leader = point.rank <= 5;
+      return `<g class="sox-quadrant-point${leader ? ' is-leader' : ''}${active ? ' is-selected' : ''}" data-sox-ticker="${escapeAttribute(point.ticker)}" data-price="${point.priceMomentum}" data-earnings="${point.earningsMomentum}" transform="translate(${point.x} ${point.y})"><circle class="sox-point-hit" r="13"/><circle class="sox-point-halo" r="15"/><circle class="sox-point-dot" r="${active ? 7 : leader ? 6 : 4.5}"/></g>`;
+    }).join('');
+    const labels = g.labels.map((label) => {
+      const active = label.ticker === selectedTicker, leader = label.rank <= 5;
+      const endX = Math.max(label.x, Math.min(label.x + label.width, label.anchorX));
+      const endY = Math.max(label.y, Math.min(label.y + label.height, label.anchorY));
+      return `<g class="sox-ticker-label${leader ? ' is-leader' : ''}${active ? ' is-selected' : ''}" data-sox-ticker="${escapeAttribute(label.ticker)}"><line x1="${label.anchorX}" y1="${label.anchorY}" x2="${endX}" y2="${endY}"/><rect x="${label.x}" y="${label.y}" width="${label.width}" height="${label.height}" rx="13"/><text x="${label.x + label.width / 2}" y="${label.y + (g.compact ? 17 : 20)}" text-anchor="middle">${escapeHtml(label.ticker)}</text></g>`;
+    }).join('');
+    return `<svg class="sox-quadrant-svg" viewBox="0 0 ${g.width} ${g.height}" role="img" aria-label="가격과 실적 모멘텀 상대점수, ${g.points.length}종목">
+      <rect class="sox-quadrant-surface" x="${b.left}" y="${b.top}" width="${b.right - b.left}" height="${b.bottom - b.top}" rx="8"/>
+      <text class="sox-axis-title" x="${b.left}" y="20">실적 모멘텀 ↑</text><text class="sox-axis-title" x="${b.right}" y="${g.height - 2}" text-anchor="end">가격 모멘텀 →</text>
+      <line class="sox-midline" x1="${g.centerX}" x2="${g.centerX}" y1="${b.top}" y2="${b.bottom}"/><line class="sox-midline" x1="${b.left}" x2="${b.right}" y1="${g.centerY}" y2="${g.centerY}"/>
+      ${grid}${labels}${points}
+    </svg>`;
+  }
+
+  function soxQuadrantReadout(row) {
+    if (!row) return '선택할 종목이 없습니다.';
+    return `<div class="sox-selection-name"><strong>${escapeHtml(row.ticker)}</strong><span>${escapeHtml(row.name)}</span><small>${escapeHtml(row.status)}</small></div><dl class="sox-selection-values">
+      ${[['가격 점수', row.priceMomentum], ['실적 점수', row.earningsMomentum], ['종합 점수', row.score], ['Proxy 비중', row.weight]].map(([label, value], index) => `<div><dt>${label}</dt><dd>${escapeHtml(index === 3 ? formatPercent(value) : formatNumber(value))}</dd></div>`).join('')}</dl>`;
+  }
+
+  let soxQuadrantObserver;
+  function renderSoxQuadrant(selector, quadrant) {
+    const target = $(selector);
+    if (!target) return;
+    soxQuadrantObserver?.disconnect();
+    if (!quadrant) {
+      target.innerHTML = '<div class="sox-quadrant-empty" role="status">전체 구성종목 차트를 표시할 수 없습니다.</div>';
+      return;
+    }
+    const rows = quadrant.rows, drawable = rows.filter((row) => row.priceMomentum !== null && row.earningsMomentum !== null);
+    let pinnedTicker = drawable[0]?.ticker || rows[0]?.ticker || '', currentTicker = pinnedTicker, lastWidth = 0;
+    target.innerHTML = `<div class="sox-quadrant-controls"><div class="sox-leaders" role="group" aria-label="종합 상위 5종목 선택"><span>종합 Top 5</span>${rows.slice(0, 5).map((row) => `<button class="sox-leader-button" type="button" data-sox-select="${escapeAttribute(row.ticker)}" aria-pressed="${row.ticker === pinnedTicker}">${escapeHtml(row.ticker)}</button>`).join('')}</div>
+      <label class="sox-stock-control">종목 선택<select id="sox-stock-select" data-control-kind="display">${rows.map((row) => `<option value="${escapeAttribute(row.ticker)}"${row.ticker === pinnedTicker ? ' selected' : ''}>${row.rank}. ${escapeHtml(row.ticker)}</option>`).join('')}</select></label></div>
+      <div class="sox-quadrant-readout" aria-live="polite">${soxQuadrantReadout(rows.find((row) => row.ticker === pinnedTicker))}</div>
+      <div class="sox-quadrant-frame" tabindex="0" role="group" aria-label="SOX 가격·실적 사분면. 방향키로 종목을 선택합니다." aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown Home End Escape"></div>`;
+    const frame = target.querySelector('.sox-quadrant-frame'), readout = target.querySelector('.sox-quadrant-readout'), select = target.querySelector('#sox-stock-select');
+    const draw = () => {
+      const width = Math.max(220, Math.round(frame.clientWidth || 1000));
+      lastWidth = width;
+      frame.innerHTML = drawable.length ? renderSoxQuadrantChart(rows, width, currentTicker, pinnedTicker) : '<div class="sox-quadrant-empty">가격·실적 점수를 함께 가진 종목이 없습니다.</div>';
+    };
+    const choose = (ticker, pin = false) => {
+      const row = rows.find((item) => item.ticker === ticker);
+      if (!row) return;
+      if (pin) pinnedTicker = ticker;
+      currentTicker = ticker;
+      readout.innerHTML = soxQuadrantReadout(row);
+      frame.setAttribute('aria-label', `SOX 가격·실적 사분면. ${row.ticker} 가격 ${formatNumber(row.priceMomentum)}, 실적 ${formatNumber(row.earningsMomentum)}. 방향키로 종목 선택.`);
+      select.value = pinnedTicker;
+      target.querySelectorAll('[data-sox-select]').forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.soxSelect === pinnedTicker)));
+      draw();
+    };
+    target.querySelectorAll('[data-sox-select]').forEach((button) => {
+      button.addEventListener('click', () => choose(button.dataset.soxSelect, true));
+      button.addEventListener('pointerenter', () => choose(button.dataset.soxSelect));
+      button.addEventListener('pointerleave', () => choose(pinnedTicker));
+      button.addEventListener('focus', () => choose(button.dataset.soxSelect));
+      button.addEventListener('blur', () => choose(pinnedTicker));
+    });
+    select.addEventListener('change', () => choose(select.value, true));
+    frame.addEventListener('pointermove', (event) => {
+      const ticker = event.target.closest('[data-sox-ticker]')?.dataset.soxTicker;
+      if (ticker && ticker !== currentTicker) choose(ticker);
+    });
+    frame.addEventListener('pointerleave', () => { if (currentTicker !== pinnedTicker) choose(pinnedTicker); });
+    frame.addEventListener('click', (event) => {
+      const ticker = event.target.closest('[data-sox-ticker]')?.dataset.soxTicker;
+      if (ticker) choose(ticker, true);
+    });
+    frame.addEventListener('keydown', (event) => {
+      const index = Math.max(0, rows.findIndex((row) => row.ticker === pinnedTicker));
+      let next;
+      if (['ArrowRight', 'ArrowDown'].includes(event.key)) next = rows[(index + 1) % rows.length];
+      else if (['ArrowLeft', 'ArrowUp'].includes(event.key)) next = rows[(index + rows.length - 1) % rows.length];
+      else if (['Home', 'Escape'].includes(event.key)) next = rows[0];
+      else if (event.key === 'End') next = rows.at(-1);
+      if (next) { event.preventDefault(); choose(next.ticker, true); }
+    });
+    draw();
+    if (typeof ResizeObserver !== 'undefined') {
+      soxQuadrantObserver = new ResizeObserver(() => { if (Math.abs(frame.clientWidth - lastWidth) >= 2) draw(); });
+      soxQuadrantObserver.observe(frame);
+    }
+  }
+
+  function etfComparisonDomain(rows) {
+    const points = asRecords(rows).flatMap((row) => asRecords(row.chartSeries).flatMap((series) => asArray(series.points)));
+    const dates = points.map((point) => Date.parse(point?.date ?? point?.[0])).filter(Number.isFinite);
+    const values = points.map((point) => finiteOrNull(point?.value ?? point?.[1])).filter((value) => value !== null);
+    return {
+      minDate: dates.length ? Math.min(...dates) : null,
+      maxDate: dates.length ? Math.max(...dates) : null,
+      yTicks: buildNiceTicks(0, Math.max(0.04, ...values), 6, 0.01),
+    };
+  }
+
+  let etfChartObserver;
   function renderEtfDetailCards(selector, rows) {
     const target = $(selector);
     if (!target) return;
-    const cards = asRecords(rows).map((row) => `
-      <details class="etf-detail-card">
-        <summary class="etf-detail-head">
-          <span>
-            <strong>${escapeHtml(row.name)}</strong>
-            <span>${escapeHtml(row.code || row.fullName || '')} · ${escapeHtml(formatMaybeDate(row.date))}</span>
-          </span>
-          <span class="etf-detail-summary-value">TOP10 ${escapeHtml(formatPercent(row.top10Weight))}</span>
-        </summary>
-        <div class="etf-detail-body">
-          <a class="etf-detail-link" href="https://sonchanggi.github.io/etf-tracking/" aria-label="${escapeAttribute(row.name)} ETF Tracking 원본 열기">ETF 원본 열기</a>
-          ${renderEtfMiniChart(row)}
-          <ol class="etf-top10-list" aria-label="${escapeAttribute(row.name)} 최신 TOP10 보유종목">
-            ${renderEtfTop10Items(row.top10)}
-          </ol>
-        </div>
-      </details>
-    `).join('');
-    target.innerHTML = `
-      <div class="etf-detail-heading">
-        <strong>ETF별 TOP10 비중 · 최근 1개월 비중 변화</strong>
-      </div>
-      <div class="etf-detail-grid">${cards || '<div class="skeleton-line">ETF 상세 요약을 표시할 데이터가 없습니다.</div>'}</div>
-    `;
-    bindChartKeyboardFrames(target, {
-      frameSelector: '.etf-mini-plot',
-      seriesSelector: '.etf-mini-series',
-      pointSelector: '.etf-data-point',
-      readoutSelector: '.etf-chart-readout',
-      navigationLabel: '날짜/종목',
+    etfChartObserver?.disconnect();
+    const records = asRecords(rows), domain = etfComparisonDomain(records);
+    target.innerHTML = `<div class="etf-detail-grid">${records.map((row, index) => `
+      <article class="etf-detail-card" data-etf-index="${index}">
+        <header class="etf-card-heading"><h4>${escapeHtml(row.name)}</h4><p>${escapeHtml(row.code || '')} · ${escapeHtml(formatMaybeDate(row.date))}</p></header>
+        <div class="etf-exposure"><span>TOP10 비중</span><strong>${escapeHtml(formatPercent(row.top10Weight))}</strong></div>
+        <div class="etf-plot-heading"><span>편입비중 추이</span><div class="etf-series-control" role="group" aria-label="${escapeAttribute(row.name)} 표시 종목 수" data-control-kind="display"><button type="button" data-etf-limit="5" aria-pressed="true">Top 5</button><button type="button" data-etf-limit="10" aria-pressed="false">Top 10</button></div></div>
+        <div class="etf-chart-slot">${renderEtfMiniChart(row, { width: 360, domain, limit: 5 })}</div>
+        <details class="etf-holdings-details"><summary>TOP10 보유종목</summary><ol class="etf-top10-list" aria-label="${escapeAttribute(row.name)} 최신 TOP10 보유종목">${renderEtfTop10Items(row.top10)}</ol></details>
+      </article>`).join('') || '<div class="skeleton-line">ETF 상세 요약을 표시할 데이터가 없습니다.</div>'}</div>`;
+    const draws = new Map();
+    target.querySelectorAll?.('.etf-detail-card').forEach((card, index) => {
+      const slot = card.querySelector('.etf-chart-slot');
+      let limit = 5, lastWidth = 0;
+      const draw = (force = false) => {
+        const width = Math.max(220, Math.round(slot.clientWidth || 360));
+        if (!force && Math.abs(width - lastWidth) < 2) return;
+        lastWidth = width;
+        slot.innerHTML = renderEtfMiniChart(records[index], { width, domain, limit });
+        bindChartKeyboardFrames(slot, { frameSelector: '.etf-mini-plot', seriesSelector: '.etf-mini-series', pointSelector: '.etf-data-point', readoutSelector: '.etf-chart-readout', navigationLabel: '날짜/종목', pointerPreview: true, legendSelector: '.etf-legend-button', guideSelector: '.etf-selection-guide' });
+      };
+      card.querySelectorAll('[data-etf-limit]').forEach((button) => button.addEventListener('click', () => {
+        limit = Number(button.dataset.etfLimit);
+        card.querySelectorAll('[data-etf-limit]').forEach((control) => control.setAttribute('aria-pressed', String(Number(control.dataset.etfLimit) === limit)));
+        draw(true);
+      }));
+      draws.set(slot, draw);
+      draw();
     });
+    if (typeof ResizeObserver !== 'undefined') {
+      etfChartObserver = new ResizeObserver((entries) => entries.forEach((entry) => draws.get(entry.target)?.()));
+      draws.forEach((_, slot) => etfChartObserver.observe(slot));
+    }
   }
 
   function renderEtfTop10Items(top10) {
@@ -3665,8 +3911,8 @@
     }).join('');
   }
 
-  function renderEtfMiniChart(row) {
-    const chartSeries = asRecords(row.chartSeries)
+  function renderEtfMiniChart(row, options = {}) {
+    const chartSeries = asRecords(row.chartSeries).slice(0, options.limit || 10)
       .map((item) => ({
         ...item,
         points: asArray(item.points)
@@ -3682,30 +3928,31 @@
     const points = chartSeries.flatMap((item) => item.points);
     const dates = points.map((point) => Date.parse(point.date)).filter(Number.isFinite);
     const values = points.map((point) => point.value).filter(Number.isFinite);
-    const minDate = Math.min(...dates);
-    const maxDate = Math.max(...dates);
+    const minDate = options.domain?.minDate ?? Math.min(...dates);
+    const maxDate = options.domain?.maxDate ?? Math.max(...dates);
     const minValue = Math.min(...values);
     const maxValue = Math.max(...values);
-    const yTicks = buildEtfPercentAxisTicks(minValue, maxValue, 5);
+    const yTicks = options.domain?.yTicks || buildEtfPercentAxisTicks(minValue, maxValue, 5);
     const yMin = yTicks[0] ?? Math.max(0, minValue);
     const yMax = yTicks.at(-1) ?? Math.max(maxValue, yMin + 0.01);
-    const width = 1120;
-    const height = 520;
-    const margin = { top: 52, right: 32, bottom: 68, left: 76 };
+    const width = options.width || 1120;
+    const compact = width < 700;
+    const height = compact ? 245 : 520;
+    const margin = compact ? { top: 28, right: 12, bottom: 36, left: 38 } : { top: 52, right: 32, bottom: 68, left: 76 };
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
     const x = (date) => margin.left + ((Date.parse(date) - minDate) / Math.max(maxDate - minDate, 1)) * innerWidth;
     const y = (value) => margin.top + (1 - ((value - yMin) / Math.max(yMax - yMin, 0.000001))) * innerHeight;
     const grid = yTicks.map((tick) => {
       const yy = y(tick);
-      return `<g><line x1="${margin.left}" x2="${width - margin.right}" y1="${yy.toFixed(1)}" y2="${yy.toFixed(1)}" stroke="#d9e2f1"/><text x="${margin.left - 12}" y="${(yy + 5).toFixed(1)}" text-anchor="end" fill="#aab3c2" font-size="14" font-weight="700">${escapeHtml(formatPercent(tick))}</text></g>`;
+      return `<g><line x1="${margin.left}" x2="${width - margin.right}" y1="${yy.toFixed(1)}" y2="${yy.toFixed(1)}" stroke="#d9e2f1"/><text x="${margin.left - 12}" y="${(yy + 5).toFixed(1)}" text-anchor="end" fill="#aab3c2" font-size="${compact ? 11 : 14}" font-weight="700">${escapeHtml(formatPercent(tick))}</text></g>`;
     }).join('');
     const paths = chartSeries.map((item, index) => {
       const color = COLORS[index % COLORS.length];
       const segments = splitChartPointSegments(item.points);
       const segmentPaths = segments.map((segment) => {
         const pathData = segment.map((point, pointIndex) => `${pointIndex ? 'L' : 'M'} ${x(point.date).toFixed(1)} ${y(point.value).toFixed(1)}`).join(' ');
-        return `<path class="etf-mini-line" d="${pathData}" fill="none" stroke="${color}" stroke-width="${item.rank <= 3 ? 3.8 : 2.8}" stroke-linecap="round" stroke-linejoin="round"/>`;
+        return `<path class="etf-mini-line" d="${pathData}" fill="none" stroke="${color}" stroke-width="${compact ? 2.2 : item.rank <= 3 ? 3.8 : 2.8}"${index >= 6 ? ' stroke-dasharray="5 3"' : ''} stroke-linecap="round" stroke-linejoin="round"/>`;
       }).join('');
       const pointMarks = item.points.filter((point) => Number.isFinite(point.value)).map((point, pointIndex) => {
         const pointX = x(point.date);
@@ -3716,9 +3963,9 @@
         const labelX = pointX > width - margin.right - 70 ? -labelWidth - 9 : 9;
         const labelY = pointY < margin.top + 36 ? 9 : -33;
         return `
-          <g class="etf-data-point" transform="translate(${pointX.toFixed(1)} ${pointY.toFixed(1)})" data-series-index="${index}" data-point-index="${pointIndex}" data-date="${escapeAttribute(point.date)}" data-keyboard-label="${escapeAttribute(keyboardLabel)}">
+          <g class="etf-data-point" transform="translate(${pointX.toFixed(1)} ${pointY.toFixed(1)})" data-series-index="${index}" data-point-index="${pointIndex}" data-date="${escapeAttribute(point.date)}" data-chart-x="${pointX.toFixed(1)}" data-keyboard-label="${escapeAttribute(keyboardLabel)}">
             <circle class="etf-point-hit" r="10" fill="transparent"/>
-            <circle class="etf-mini-point" r="${item.rank <= 3 ? 4.7 : 4}" fill="${color}"/>
+            <circle class="etf-mini-point" r="${compact ? 2.3 : item.rank <= 3 ? 4.7 : 4}" fill="${color}"/>
             <g class="etf-point-label" transform="translate(${labelX} ${labelY})" aria-hidden="true">
               <rect width="${labelWidth}" height="24" rx="5"/>
               <text x="${labelWidth / 2}" y="16" text-anchor="middle">${escapeHtml(valueText)}</text>
@@ -3728,35 +3975,39 @@
       }).join('');
       return `<g class="etf-mini-series series-color-${index % COLORS.length}" aria-label="${escapeAttribute(item.label)}">${segmentPaths}${pointMarks}</g>`;
     }).join('');
-    const legend = chartSeries.map((item, index) => `<span><i class="legend-key" style="background:${COLORS[index % COLORS.length]}"></i>${escapeHtml(item.label)}</span>`).join('');
+    const legend = chartSeries.map((item, index) => {
+      const latest = item.points.at(-1);
+      return `<button type="button" class="etf-legend-button" data-series-index="${index}" aria-pressed="false"><i class="legend-key" style="background:${COLORS[index % COLORS.length]}"></i><span>${escapeHtml(item.label)}</span><strong>${escapeHtml(formatPercent(latest?.value))}</strong></button>`;
+    }).join('');
     const uniqueDates = [...new Set(points.map((point) => point.date))].sort((a, b) => Date.parse(a) - Date.parse(b));
-    const xTickCount = Math.min(6, uniqueDates.length);
+    const xTickCount = Math.min(compact ? 3 : 6, uniqueDates.length);
     const xTickDates = xTickCount <= 1
       ? uniqueDates
       : [...new Set(Array.from({ length: xTickCount }, (_, index) => uniqueDates[Math.round((index * (uniqueDates.length - 1)) / (xTickCount - 1))]))];
     const xTicks = xTickDates.map((date, index) => {
       const anchor = index === 0 ? 'start' : index === xTickDates.length - 1 ? 'end' : 'middle';
-      return `<text x="${x(date).toFixed(1)}" y="${height - 22}" text-anchor="${anchor}" fill="#9aa4b2" font-size="14" font-weight="650">${escapeHtml(formatMaybeDate(date))}</text>`;
+      return `<text x="${x(date).toFixed(1)}" y="${height - 22}" text-anchor="${anchor}" fill="#9aa4b2" font-size="${compact ? 11 : 14}" font-weight="650">${escapeHtml(compact ? date.slice(5).replace('-', '.') : formatMaybeDate(date))}</text>`;
     }).join('');
     const initialSeries = chartSeries[0];
     const initialPoint = asArray(initialSeries?.points).filter((point) => Number.isFinite(point.value)).at(-1);
     const initialReadout = initialSeries && initialPoint
       ? `${initialSeries.label} · ${formatMaybeDate(initialPoint.date)} · ${formatPercent(initialPoint.value)}`
       : '차트 값을 확인할 수 없습니다.';
-    const frameLabel = `${row.name} TOP10 비중 변화. 좌우 방향키로 날짜, 위아래 방향키로 종목을 탐색합니다.`;
+    const frameLabel = `${row.name} 현재 상위 ${chartSeries.length}종목 편입비중 추이. 좌우 방향키로 날짜, 위아래 방향키로 종목을 탐색합니다.`;
     return `
-      <div class="etf-mini-chart">
+      <div class="etf-mini-chart" data-y-min="${yMin}" data-y-max="${yMax}" data-date-start="${minDate}" data-date-end="${maxDate}">
+        <p class="chart-keyboard-readout etf-chart-readout" aria-live="polite">${escapeHtml(initialReadout)}</p>
         <div class="etf-mini-plot" tabindex="0" role="group" aria-label="${escapeAttribute(frameLabel)}" data-base-label="${escapeAttribute(frameLabel)}">
-          <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeAttribute(row.name)} TOP10 비중 변화 미니 그래프">
+          <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeAttribute(row.name)} 현재 상위 ${chartSeries.length}종목 편입비중 추이">
             <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"/>
-            <text x="${margin.left}" y="30" fill="#d8dee8" font-size="16" font-weight="800">최근 1개월 비중(%)</text>
+            <text x="${margin.left}" y="${compact ? 14 : 30}" fill="#d8dee8" font-size="${compact ? 11 : 16}" font-weight="600">최근 1개월 비중(%)</text>
             ${grid}
             <line x1="${margin.left}" x2="${width - margin.right}" y1="${height - margin.bottom}" y2="${height - margin.bottom}" stroke="#3b4556"/>
             ${xTicks}
+            <line class="etf-selection-guide" x1="${margin.left}" x2="${margin.left}" y1="${margin.top}" y2="${height - margin.bottom}" hidden/>
             ${paths}
           </svg>
         </div>
-        <p class="chart-keyboard-readout etf-chart-readout" aria-live="polite">${escapeHtml(initialReadout)} <span>· 방향키: 날짜/종목</span></p>
         <div class="chart-legend etf-mini-legend">${legend}</div>
       </div>
     `;
@@ -4001,6 +4252,19 @@
     }));
   }
 
+  function dramProductLabel(name) {
+    const raw = String(name || '');
+    const clean = raw.replace(/ · TrendForce daily$/, '');
+    const match = clean.match(/^(DDR[345] \d+Gb)\s+\(?([\d.]+[GM]x\d+)\)?\s+(\d+(?:\/\d+)?|eTT)$/);
+    return match ? { name: match[1], spec: `${match[3]} · ${match[2].replace('x', '×')}`, full: raw } : { name: clean, spec: '', full: raw };
+  }
+
+  function dramCompactName(name) {
+    const label = dramProductLabel(name);
+    return [label.name, label.spec].filter(Boolean).join(' · ');
+  }
+
+  let dramChartObserver;
   function renderDramChart(selector, series) {
     const target = $(selector);
     if (!target) return;
@@ -4018,14 +4282,22 @@
       sourceBuckets.get(source).push(item);
     });
     const sourceEntries = [...sourceBuckets.entries()];
-    target.innerHTML = `<div class="dram-source-grid">${sourceEntries
-      .map(([source, sourceSeries]) => renderDramSourceChart(source, sourceSeries))
-      .join('')}</div>`;
-    const cards = [...target.querySelectorAll('.dram-source-card')];
-    sourceEntries.forEach(([source, sourceSeries], index) => bindDramSourceCard(cards[index], source, sourceSeries));
+    dramChartObserver?.disconnect();
+    let lastWidth = 0;
+    const draw = () => {
+      const width = Math.max(220, Math.min(1240, Math.round((target.clientWidth || 980) - 32)));
+      if (Math.abs(width - lastWidth) < 2) return;
+      lastWidth = width;
+      const modes = [...target.querySelectorAll('.dram-source-card')].map((card) => card.dataset.dramScaleMode);
+      target.innerHTML = `<div class="dram-source-grid">${sourceEntries.map(([source, sourceSeries], index) => renderDramSourceChart(source, sourceSeries, modes[index], width)).join('')}</div>`;
+      const cards = [...target.querySelectorAll('.dram-source-card')];
+      sourceEntries.forEach(([source, sourceSeries], index) => bindDramSourceCard(cards[index], source, sourceSeries, width));
+    };
+    draw();
+    if (typeof ResizeObserver !== 'undefined') { dramChartObserver = new ResizeObserver(draw); dramChartObserver.observe(target); }
   }
 
-  function bindDramSourceCard(card, source, chartSeries) {
+  function bindDramSourceCard(card, source, chartSeries, width) {
     if (!card) return;
     bindChartKeyboardFrames(card, {
       frameSelector: '.dram-chart-frame',
@@ -4044,11 +4316,11 @@
         if (nextMode === card.dataset.dramScaleMode) return;
         const restoreFocus = document.activeElement === button;
         const template = document.createElement('template');
-        template.innerHTML = renderDramSourceChart(source, chartSeries, nextMode).trim();
+        template.innerHTML = renderDramSourceChart(source, chartSeries, nextMode, width).trim();
         const replacement = template.content.firstElementChild;
         if (!replacement) return;
         card.replaceWith(replacement);
-        bindDramSourceCard(replacement, source, chartSeries);
+        bindDramSourceCard(replacement, source, chartSeries, width);
         if (restoreFocus) {
           queueMicrotask(() => replacement.querySelector(`[data-dram-scale="${nextMode}"]`)?.focus({ preventScroll: true }));
         }
@@ -4056,7 +4328,7 @@
     });
   }
 
-  function renderDramSourceChart(source, chartSeries, scaleMode = 'price') {
+  function renderDramSourceChart(source, chartSeries, scaleMode = 'price', chartWidth = 920) {
     const normalizedSeries = normalizeChartSeries(chartSeries);
     const canIndex = normalizedSeries.every((item) => Number(item.points[0]?.[1]) !== 0);
     const mode = scaleMode === 'indexed' && canIndex ? 'indexed' : 'price';
@@ -4081,13 +4353,14 @@
     const maxDate = Math.max(...dates);
     const minValue = Math.min(...values);
     const maxValue = Math.max(...values);
-    const yTicks = buildDramAxisTicks(minValue, maxValue, 5);
+    const yTicks = buildDramAxisTicks(minValue, maxValue, 6);
     const yMin = yTicks[0] ?? Math.floor(minValue);
     const yMax = yTicks.at(-1) ?? Math.ceil(maxValue);
 
-    const width = 920;
-    const height = 390;
-    const margin = { top: 28, right: 34, bottom: 62, left: 72 };
+    const width = Math.max(220, chartWidth);
+    const compact = width < 600;
+    const height = compact ? 280 : 330;
+    const margin = { top: 28, right: compact ? 12 : 20, bottom: 40, left: compact ? 38 : 54 };
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
     const x = (date) => margin.left + ((Date.parse(date) - minDate) / Math.max(maxDate - minDate, 1)) * innerWidth;
@@ -4104,7 +4377,7 @@
     const xTicks = tickIndexes.map((dateIndex) => {
       const date = allDates[dateIndex];
       const anchor = dateIndex === 0 ? 'start' : dateIndex === allDates.length - 1 ? 'end' : 'middle';
-      return `<text x="${x(date).toFixed(1)}" y="${height - 22}" text-anchor="${anchor}" fill="#9aa4b2" font-size="12">${escapeHtml(date)}</text>`;
+      return `<text x="${x(date).toFixed(1)}" y="${height - 22}" text-anchor="${anchor}" fill="#9aa4b2" font-size="12">${escapeHtml(compact ? date.slice(5).replace('-', '.') : date)}</text>`;
     }).join('');
 
     const paths = displaySeries.map((item, index) => {
@@ -4113,7 +4386,7 @@
       const pathData = item.points.map((point, pointIndex) => `${pointIndex === 0 ? 'M' : 'L'} ${x(point.date).toFixed(1)} ${y(point.plotValue).toFixed(1)}`).join(' ');
       const circles = item.points.map((point, pointIndex) => {
         const indexContext = mode === 'indexed' ? ` · 시작=100 지수 ${formatNumber(point.plotValue)}` : '';
-        const keyboardLabel = `${item.name} · ${point.date} · ${formatNumber(point.value)} USD${indexContext}`;
+        const keyboardLabel = `${dramCompactName(item.name)} · ${point.date} · ${formatNumber(point.value)} USD${indexContext}`;
         const pointX = x(point.date).toFixed(1);
         const pointY = y(point.plotValue).toFixed(1);
         return `<circle class="dram-data-point${pointIndex === item.points.length - 1 ? ' endpoint' : ''}" cx="${pointX}" cy="${pointY}" r="${pointIndex === item.points.length - 1 ? '4.2' : '3.3'}" fill="${color}" data-series-index="${index}" data-point-index="${pointIndex}" data-date="${escapeAttribute(point.date)}" data-chart-x="${pointX}" data-keyboard-label="${escapeAttribute(keyboardLabel)}"/>`;
@@ -4125,10 +4398,12 @@
     const legend = displaySeries.map((item, index) => {
       const dash = DRAM_DASHES[index % DRAM_DASHES.length];
       const dashAttribute = dash ? ` stroke-dasharray="${dash}"` : '';
+      const label = dramProductLabel(item.name);
+      const latest = item.points.at(-1);
       return `
-      <button type="button" class="dram-legend-button" data-series-index="${index}" aria-pressed="false" aria-label="${escapeAttribute(`${item.name} 계열 선택`)}">
+      <button type="button" class="dram-legend-button" title="${escapeAttribute(item.name)}" data-series-index="${index}" aria-pressed="false" aria-label="${escapeAttribute(`${item.name} 계열 선택`)}">
         <svg viewBox="0 0 30 10" aria-hidden="true"><line x1="1" x2="29" y1="5" y2="5" stroke="${COLORS[index % COLORS.length]}" stroke-width="3"${dashAttribute}/></svg>
-        <span>${escapeHtml(item.name)}</span>
+        <span class="dram-product-name"><strong>${escapeHtml(label.name)}</strong><small>${escapeHtml(label.spec)}</small></span><span class="dram-product-price">${escapeHtml(formatNumber(latest?.value))}<small>USD</small></span>
       </button>
     `;
     }).join('');
@@ -4140,7 +4415,7 @@
     const initialPoint = initialSeries?.points.at(-1);
     const scaleContext = mode === 'indexed' ? ` · 시작=100 지수 ${formatNumber(initialPoint?.plotValue)}` : '';
     const initialReadout = initialSeries && initialPoint
-      ? `${initialSeries.name} · ${initialPoint.date} · ${formatNumber(initialPoint.value)} USD${scaleContext}`
+      ? `${dramCompactName(initialSeries.name)} · ${initialPoint.date} · ${formatNumber(initialPoint.value)} USD${scaleContext}`
       : '차트 값을 확인할 수 없습니다.';
     const modeLabel = mode === 'indexed' ? '변화율 비교, 각 제품 첫 관측 100 기준' : '가격, USD';
     const frameLabel = `${sourceName} D램 일별 ${modeLabel}. 좌우 방향키로 날짜, 위아래 방향키로 제품을 탐색합니다.`;
@@ -4149,14 +4424,13 @@
     const descId = `dram-${sourceId}-${mode}-desc`;
     return `<article class="dram-source-card" data-dram-source="${escapeAttribute(source)}" data-dram-scale-mode="${mode}">
       <div class="dram-source-heading">
-        <div><p class="eyebrow">Data source</p><h4>${escapeHtml(sourceName)}</h4><p>${formatInteger(points.length)}개 관측치 · ${escapeHtml(firstDate)} ~ ${escapeHtml(lastDate)}</p></div>
-        <span>${formatInteger(displaySeries.length)}개 계열</span>
+        <div><h4>${escapeHtml(sourceName)}</h4><p>${escapeHtml(firstDate)} — ${escapeHtml(lastDate)}</p></div>
       </div>
       <div class="dram-chart-toolbar">
-        <p class="chart-keyboard-readout dram-chart-readout" aria-live="polite">${escapeHtml(initialReadout)} <span>· 방향키: 날짜/제품</span></p>
+        <p class="chart-keyboard-readout dram-chart-readout" aria-live="polite">${escapeHtml(initialReadout)}</p>
         <div class="dram-scale-control" role="group" aria-label="D램 차트 표시 방식">
           <button type="button" data-dram-scale="price" aria-pressed="${mode === 'price'}">가격 (USD)</button>
-          <button type="button" data-dram-scale="indexed" aria-pressed="${mode === 'indexed'}">변화율 (시작=100)</button>
+          <button type="button" data-dram-scale="indexed" aria-pressed="${mode === 'indexed'}">첫 관측 = 100</button>
         </div>
       </div>
       <div class="chart-legend dram-legend" role="group" aria-label="D램 제품 계열 선택">${legend}</div>
@@ -4348,7 +4622,7 @@
       const limit = firstLimitation(summary.meta || {});
       return {
         kicker: 'DRAM',
-        title: latest ? `${latest.name} ${formatNumber(latest.value)} USD` : '대표 가격 확인 필요',
+        title: latest ? `${dramCompactName(latest.name)} ${formatNumber(latest.value)} USD` : '대표 가격 확인 필요',
         detail: `관측치 ${formatInteger(summary.observationCount)}개 · ${limit}`,
         tone: summary.meta?.statusState === 'ok' ? '' : 'warning',
       };
@@ -4455,7 +4729,7 @@
           <span>${escapeHtml(healthLabel(record))}</span>
         </div>
         <p>${escapeHtml(recordFreshnessText(record))}</p>
-        <small>${escapeHtml(`${formatBytes(record.payloadBytes)} · ${record.sourceCount}개 JSON · ${record.summary?.meta?.cadence || 'cadence 확인 필요'} · freshness ${formatInteger(expectedFreshnessDays(record))}일${record.error || record.summary?.scatterError || record.summary?.priceError || record.summary?.trendError ? ` · ${record.error || record.summary.scatterError || record.summary.priceError || record.summary.trendError}` : ''}`)}</small>
+        <small>${escapeHtml(`${formatBytes(record.payloadBytes)} · ${record.sourceCount}개 JSON · ${record.summary?.meta?.cadence || 'cadence 확인 필요'} · freshness ${formatInteger(expectedFreshnessDays(record))}일${record.error || record.summary?.scatterError || record.summary?.priceError || record.summary?.trendError || record.summary?.quadrantError ? ` · ${record.error || record.summary.scatterError || record.summary.priceError || record.summary.trendError || record.summary.quadrantError}` : ''}`)}</small>
         <div class="source-links"><a href="${escapeAttribute(record.project.url)}">원본 페이지</a>${Object.entries(PANEL_ADAPTERS[record.project.panelAdapter]?.sourceUrls || {}).map(([key, url]) => `<a href="${escapeAttribute(url)}">${escapeHtml(key)} JSON</a>`).join('')}</div>
         ${safeAutomationUrl(record.summary?.meta?.automation?.workflowUrl) ? `<a class="health-link" href="${escapeAttribute(safeAutomationUrl(record.summary.meta.automation.workflowUrl))}" rel="noopener noreferrer">자동화/수동 실행</a>` : ''}
       </article>
@@ -4464,7 +4738,7 @@
   }
 
   function visibleHealthLabel(record) {
-    if (record.summary?.scatterError || record.summary?.priceError || record.summary?.trendError) return '차트 확인 필요';
+    if (record.summary?.scatterError || record.summary?.priceError || record.summary?.trendError || record.summary?.quadrantError) return '차트 확인 필요';
     if (record.summary?.unavailable || record.summary?.meta?.statusState === 'unavailable') return '산출 불가';
     if (!record.metadataMismatch && record.mode === 'live' && !isRecordStale(record)) {
       if (record.summary?.meta?.statusState === 'degraded') return '데이터 주의';
@@ -4503,7 +4777,7 @@
   }
 
   function healthTone(record) {
-    if (record.summary?.scatterError || record.summary?.priceError || record.summary?.trendError) return 'warn';
+    if (record.summary?.scatterError || record.summary?.priceError || record.summary?.trendError || record.summary?.quadrantError) return 'warn';
     if (record.metadataMismatch) return 'warn';
     if (record.mode !== 'live') return 'warn';
     if (isRecordStale(record)) return 'warn';
@@ -4512,7 +4786,7 @@
   }
 
   function healthLabel(record) {
-    if (record.summary?.scatterError || record.summary?.priceError || record.summary?.trendError) return '차트 확인 필요';
+    if (record.summary?.scatterError || record.summary?.priceError || record.summary?.trendError || record.summary?.quadrantError) return '차트 확인 필요';
     const state = record.summary?.meta?.statusState;
     if (record.metadataMismatch) return '메타데이터 불일치';
     if (record.mode !== 'live') return '대체 데이터';
@@ -4926,6 +5200,9 @@
       parseFearPanel,
       parseFearScatter,
       fearScatterGeometry,
+      factorDisplayName,
+      factorAllocation,
+      factorWeightScale,
       parseFearPrices,
       fearPointState,
       fearPriceGeometry,
@@ -4966,6 +5243,13 @@
       resolveEtfHistoryUrl,
       buildEtfWeightSeries,
       renderEtfMiniChart,
+      etfComparisonDomain,
+      parseSoxPanel,
+      parseSoxQuadrant,
+      soxQuadrantGeometry,
+      renderSoxQuadrantChart,
+      soxScore,
+      dramProductLabel,
       renderEtfDetailCards,
       renderResearchBriefing,
       briefingItemForRecord,
