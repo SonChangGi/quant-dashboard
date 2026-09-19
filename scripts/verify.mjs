@@ -71,8 +71,8 @@ assert(contains(files.app, 'renderDashboardPanels'), 'manifest-driven dashboard 
 assert(contains(files.app, 'loadProjectPanel'), 'shared panel loader exists');
 assert(contains(files.html, 'id="top-nav"'), 'dynamic top navigation mount exists');
 assert(contains(files.html, 'id="summary-grid"'), 'dynamic dashboard mount exists');
-assert(contains(files.html, 'id="research-briefing"'), 'research briefing mount exists');
-assert(contains(files.html, 'id="watchlist-input"'), 'watchlist input exists');
+assert(!contains(files.html, 'id="research-briefing"'), 'duplicated research briefing is removed');
+assert(!contains(files.html, 'id="watchlist-input"'), 'watchlist search is removed');
 assert(contains(files.html, 'id="data-health"'), 'data health mount exists');
 assert(contains(files.html, 'class="skip-link"') && contains(files.html, 'id="main-content"'), 'keyboard users can skip the shared navigation');
 assert(
@@ -128,7 +128,7 @@ assert(contains(files.app, 'asRecords'), 'external arrays are filtered to record
 assert(contains(files.app, 'parseMomentum'), 'momentum parser exists');
 assert(contains(files.app, 'parseFearAndGreed'), 'Fear & Greed parser exists');
 assert(contains(files.app, 'normalizeFearAndGreedUnavailable'), 'Fear & Greed uses unavailable rather than hardcoded market fallback');
-assert(files.html.indexOf('id="news"') < files.html.indexOf('cockpit-section') && files.html.indexOf('cockpit-section') < files.html.indexOf('dashboard-section'), 'News leads the page while other sections retain their order');
+assert(files.html.indexOf('id="news"') < files.html.indexOf('dashboard-section') && !files.html.includes('cockpit-section'), 'News leads the page while other sections retain their order');
 assert(!contains(files.html, 'research-disclaimer') && !contains(files.html, 'operations-lead'), 'repeated instruction and disclaimer copy is removed');
 assert(contains(files.app, "id: 'fearngreed'"), 'Fear & Greed project registry entry exists');
 assert(contains(files.app, 'MOMENTUM_SUMMARY_CONTRACT') && contains(files.app, 'expectedVersion: 5'), 'momentum adapter requires schemaVersion 5 summary contract');

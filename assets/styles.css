@@ -1705,7 +1705,7 @@ html[data-theme="dark"] .panel--best { --factor-color: #80d0c1; --factor-soft: #
 .dram-source-heading p { margin: 0; font-size: 12px; }
 .dram-chart-toolbar { align-items: center; gap: 12px; margin-bottom: 12px; }
 .dram-chart-readout { padding: 0; margin: 0; font-size: 13px; min-width: 0; overflow-wrap: anywhere; }
-.dram-chart-readout > span, .etf-chart-readout > span { display: none; }
+.dram-chart-readout > span { display: none; }
 .dram-legend { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; overflow: visible; margin: 0 0 16px; }
 .dram-legend-button { display: flex; min-width: 0; gap: 10px; padding: 12px; border-radius: 8px; background: var(--surface); text-align: left; }
 .dram-legend-button svg { width: 20px; flex: 0 0 20px; }
@@ -1716,24 +1716,32 @@ html[data-theme="dark"] .panel--best { --factor-color: #80d0c1; --factor-soft: #
 .dram-product-price small { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; font-weight: 400; text-align: right; }
 .dram-chart-frame svg { display: block; width: 100%; min-width: 0; height: auto; }
 
-.etf-detail-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
-.etf-detail-card { min-width: 0; padding: 18px 16px 0; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
-.etf-card-heading h4 { color: var(--ink-strong); margin: 0; font-size: 16px; line-height: 1.4; font-weight: 650; }
+.etf-detail-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; align-items: stretch; }
+.etf-detail-card { min-width: 0; padding: 20px 18px 0; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+.etf-card-heading { min-height: 52px; }
+.etf-card-heading h4 { color: var(--ink-strong); margin: 0; font-size: 17px; line-height: 1.45; font-weight: 600; word-break: keep-all; overflow-wrap: anywhere; }
 .etf-card-heading p { color: var(--muted); margin: 6px 0 0; font-size: 12px; }
-.etf-exposure { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 18px 0; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+.etf-exposure { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 16px 0 20px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
 .etf-exposure span { color: var(--muted-strong); font-size: 13px; }
-.etf-exposure strong { color: var(--ink-strong); font-size: 28px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.etf-exposure strong { color: var(--ink-strong); font-size: 26px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .etf-plot-heading { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .etf-plot-heading > span { font-size: 13px; font-weight: 600; }
-.etf-series-control { display: inline-flex; padding: 3px; background: var(--surface-soft); border-radius: 6px; }
-.etf-series-control button { min-height: 38px; min-width: 52px; padding: 6px 8px; border: 0; border-radius: 4px; background: transparent; color: var(--muted-strong); font-size: 12px; font-weight: 550; cursor: pointer; }
-.etf-series-control button[aria-pressed="true"] { background: var(--surface); color: var(--primary-dark); box-shadow: 0 1px 4px #00000010; }
+.etf-series-control { display: inline-flex; flex: 0 0 auto; padding: 3px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+.etf-series-control button { min-height: 36px; min-width: 56px; padding: 6px 10px; border: 0; border-radius: 5px; background: transparent; color: var(--muted-strong); font: inherit; font-size: 12px; font-weight: 500; cursor: pointer; }
+.etf-series-control button[aria-pressed="true"] { background: var(--panel); color: var(--primary-dark); box-shadow: 0 1px 3px #00000014; font-weight: 600; }
 .etf-mini-chart { padding: 0; border: 0; background: transparent; }
 .etf-mini-plot { overflow: hidden; }
 .etf-mini-plot svg { display: block; min-width: 0; width: 100%; height: auto; }
-.etf-chart-readout { margin: 10px 0 12px; padding: 0; min-height: 36px; line-height: 1.5; font-size: 12px; overflow-wrap: anywhere; }
+.etf-mini-plot svg text { font-family: inherit; font-weight: 500; }
+.etf-chart-readout { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 14px 0 12px; padding: 14px; min-height: 76px; background: var(--surface); border-radius: 8px; color: var(--ink-strong); font-size: 13px; line-height: 1.4; font-variant-numeric: tabular-nums; }
+.etf-selected-asset { display: grid; gap: 5px; min-width: 0; }
+.etf-selected-asset strong { color: var(--primary-dark); font-size: 16px; font-weight: 600; overflow-wrap: anywhere; }
+.etf-selected-asset time { color: var(--muted); font-size: 12px; white-space: nowrap; }
+.etf-selected-weight { display: grid; gap: 2px; flex-shrink: 0; text-align: right; }
+.etf-selected-weight span { color: var(--muted); font-size: 11px; }
+.etf-selected-weight strong { font-size: 22px; font-weight: 600; letter-spacing: -.025em; }
 .etf-mini-legend { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 10px; margin-top: 8px; }
-.etf-legend-button { display: flex; align-items: center; gap: 6px; min-width: 0; min-height: 38px; border: 0; padding: 5px 4px; background: transparent; border-radius: 4px; color: var(--muted-strong); text-align: left; font-size: 12px; cursor: pointer; }
+.etf-legend-button { display: flex; align-items: center; gap: 6px; min-width: 0; min-height: 38px; border: 0; padding: 5px 4px; background: transparent; border-radius: 4px; color: var(--muted-strong); text-align: left; font: inherit; font-size: 12px; cursor: pointer; }
 .etf-legend-button .legend-key { width: 8px; height: 8px; flex: 0 0 8px; }
 .etf-legend-button > span { white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
 .etf-legend-button strong { margin-left: auto; font-weight: 550; font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -1745,14 +1753,8 @@ html[data-theme="dark"] .panel--best { --factor-color: #80d0c1; --factor-soft: #
 .etf-data-point .etf-point-label { display: none !important; }
 .etf-holdings-details { margin-top: 14px; }
 .etf-holdings-details .etf-top10-list { grid-template-columns: 1fr; margin-bottom: 16px; }
-@media (max-width: 1100px) {
-  .etf-detail-grid { grid-template-columns: 1fr; }
-  .etf-detail-card { display: grid; grid-template-columns: minmax(180px, .65fr) minmax(0, 1.35fr); column-gap: 24px; }
-  .etf-card-heading, .etf-exposure { grid-column: 1; }
-  .etf-exposure { align-self: start; margin-top: 14px; }
-  .etf-plot-heading { grid-column: 2; grid-row: 1; }
-  .etf-chart-slot { grid-column: 2; grid-row: 2 / span 2; }
-  .etf-holdings-details { grid-column: 1 / -1; }
+@media (max-width: 1279px) {
+  .etf-detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 760px) {
   .dram-legend { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1764,7 +1766,9 @@ html[data-theme="dark"] .panel--best { --factor-color: #80d0c1; --factor-soft: #
   .dram-chart-toolbar { align-items: stretch; }
   .dram-scale-control { align-self: flex-start; }
   .dram-source-card { padding: 12px; }
-  .etf-detail-card { display: block; padding: 16px 12px 0; }
+  .etf-detail-grid { grid-template-columns: 1fr; }
+  .etf-detail-card { padding: 18px 14px 0; }
+  .etf-card-heading { min-height: 0; }
   .etf-exposure { margin: 16px 0; }
   .etf-series-control button, .etf-legend-button { min-height: 44px; }
 }

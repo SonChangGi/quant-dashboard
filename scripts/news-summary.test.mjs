@@ -100,7 +100,8 @@ test('loader reads archive then the signed briefing and renders only concise con
   assert.equal(state.state, 'ready');
   assert.equal(urls.length, 2);
   assert.match(urls[1], /2026-09-15\/briefing.json$/);
-  assert.match(targets['#news-status'].textContent, /발행일 2026-09-15 · 3개 이슈 · 사후 재구성 · 부분 발행/);
+  assert.equal(targets['#news-status'].textContent, '발행일 2026-09-15 · 3개 이슈');
+  assert.doesNotMatch(targets['#news-health'].innerHTML, /사후 재구성|부분 발행/);
   assert.ok(!targets['#news-summary'].innerHTML.includes(briefing.notice));
   assert.ok(!targets['#news-health'].innerHTML.includes(briefing.notice));
 });

@@ -43,8 +43,8 @@ try {
   if (!app.includes('renderDramSourceChart') || !app.includes('data-dram-scale="indexed"') || app.includes('dram-value-layer')) throw new Error('DRAM chart collision fix missing');
   if (!html.includes('id="top-nav"')) throw new Error('dynamic top navigation mount missing');
   if (!html.includes('id="summary-grid"')) throw new Error('dynamic dashboard mount missing');
-  if (!html.includes('id="research-briefing"') || !html.includes('id="data-health"')) throw new Error('research cockpit mounts missing');
-  if (!html.includes('티커·테마로 모아보기')) throw new Error('watchlist copy missing');
+  if (!html.includes('id="data-health"')) throw new Error('data health mount missing');
+  if (html.includes('id="research-briefing"') || html.includes('id="watchlist-input"')) throw new Error('removed overview must stay absent');
   if (!app.includes('PANEL_ADAPTERS')) throw new Error('panel adapter manifest missing');
   if (!app.includes('quant-research-summary') || !app.includes('summaryEntities')) throw new Error('summary contract support missing');
   if (!app.includes('renderDashboardPanels')) throw new Error('manifest-driven panel renderer missing');

@@ -639,14 +639,7 @@
       newsState = { state: 'error', error: error instanceof Error ? error.message : String(error) };
     }
     renderNewsSummary();
-    renderResearchBriefing(getPanelProjects().map((project) => PANEL_RECORDS.get(project.id)).filter(Boolean));
     return newsState;
-  }
-
-  function newsPublicationLabel(summary) {
-    const mode = { reconstruction: '사후 재구성', scheduled: '정기 발행', manual: '수동 발행' }[summary.mode] || summary.mode;
-    const status = { partial: '부분 발행', complete: '발행 완료', ok: '발행 완료', failed: '발행 실패' }[summary.status] || summary.status;
-    return [mode, status].filter(Boolean).join(' · ');
   }
 
   function renderNewsSummary() {
@@ -656,7 +649,7 @@
     const health = $('#news-health');
     if (!target || !status) return;
     const summary = newsState.summary;
-    status.classList.toggle('warning', newsState.state === 'error' || summary?.status === 'partial');
+    status.classList.toggle('warning', newsState.state === 'error');
     if (link) link.href = summary?.reportUrl || 'https://sonchanggi.github.io/news/';
     if (!summary) {
       const message = { loading: '발행 정보 확인 중', empty: '발행된 브리핑 없음', error: 'News 요약을 불러오지 못했습니다' }[newsState.state];
@@ -665,9 +658,9 @@
       if (health) health.innerHTML = `<article class="health-item ${newsState.state === 'error' ? 'warn' : ''}"><div><strong>News</strong><span>${escapeHtml(message)}</span></div>${newsState.error ? `<p>${escapeHtml(newsState.error)}</p>` : ''}<div class="source-links"><a href="${NEWS_ARCHIVE_URL}">발행 목록 JSON</a></div></article>`;
       return;
     }
-    status.textContent = `발행일 ${summary.date} · ${summary.issue_count}개 이슈 · ${newsPublicationLabel(summary)}`;
+    status.textContent = `발행일 ${summary.date} · ${summary.issue_count}개 이슈`;
     target.innerHTML = summary.headlines.length ? `<ol class="news-headlines">${summary.headlines.map((issue) => `<li><a href="${escapeAttribute(issue.url)}">${escapeHtml(issue.title)} <span aria-hidden="true">↗</span></a>${issue.summary ? `<p>${escapeHtml(issue.summary)}</p>` : ''}</li>`).join('')}</ol>` : '<p class="muted">선정된 이슈 없음</p>';
-    if (health) health.innerHTML = `<article class="health-item ${summary.status === 'partial' ? 'warn' : 'ok'}"><div><strong>News</strong><span>${escapeHtml(newsPublicationLabel(summary))}</span></div><p>자료 마감 ${escapeHtml(formatFreshness(summary.cutoff))} · 생성 ${escapeHtml(formatFreshness(summary.generated_at))}</p><div class="source-links"><a href="${NEWS_ARCHIVE_URL}">발행 목록 JSON</a><a href="${escapeAttribute(summary.jsonUrl)}">브리핑 JSON</a></div></article>`;
+    if (health) health.innerHTML = `<article class="health-item ${summary.status === 'partial' ? 'warn' : 'ok'}"><div><strong>News</strong><span>${escapeHtml(summary.date)} · ${summary.issue_count}개 이슈</span></div><p>자료 마감 ${escapeHtml(formatFreshness(summary.cutoff))} · 생성 ${escapeHtml(formatFreshness(summary.generated_at))}</p><div class="source-links"><a href="${NEWS_ARCHIVE_URL}">발행 목록 JSON</a><a href="${escapeAttribute(summary.jsonUrl)}">브리핑 JSON</a></div></article>`;
   }
 
   function createPanelShell(project) {
@@ -819,10 +812,8 @@
       if (!record) return;
       PANEL_RECORDS.set(record.project.id, record);
       const availableRecords = projects.map((item) => PANEL_RECORDS.get(item.id)).filter(Boolean);
-      renderResearchBriefing(availableRecords);
       renderDataHealth(availableRecords);
       renderHubStatus(availableRecords, projects.length);
-      bindWatchlist(availableRecords);
     }));
     const records = projects.map((project) => PANEL_RECORDS.get(project.id)).filter(Boolean);
     renderHubStatus(records, projects.length);
@@ -3879,7 +3870,7 @@
         if (!force && Math.abs(width - lastWidth) < 2) return;
         lastWidth = width;
         slot.innerHTML = renderEtfMiniChart(records[index], { width, domain, limit });
-        bindChartKeyboardFrames(slot, { frameSelector: '.etf-mini-plot', seriesSelector: '.etf-mini-series', pointSelector: '.etf-data-point', readoutSelector: '.etf-chart-readout', navigationLabel: '날짜/종목', pointerPreview: true, legendSelector: '.etf-legend-button', guideSelector: '.etf-selection-guide' });
+        bindChartKeyboardFrames(slot, { frameSelector: '.etf-mini-plot', seriesSelector: '.etf-mini-series', pointSelector: '.etf-data-point', readoutSelector: '.etf-chart-readout', navigationLabel: '날짜/종목', pointerPreview: true, legendSelector: '.etf-legend-button', guideSelector: '.etf-selection-guide', renderReadout: (point) => renderEtfReadout(point.dataset.seriesLabel, point.dataset.date, finiteOrNull(point.dataset.weight)) });
       };
       card.querySelectorAll('[data-etf-limit]').forEach((button) => button.addEventListener('click', () => {
         limit = Number(button.dataset.etfLimit);
@@ -3963,7 +3954,7 @@
         const labelX = pointX > width - margin.right - 70 ? -labelWidth - 9 : 9;
         const labelY = pointY < margin.top + 36 ? 9 : -33;
         return `
-          <g class="etf-data-point" transform="translate(${pointX.toFixed(1)} ${pointY.toFixed(1)})" data-series-index="${index}" data-point-index="${pointIndex}" data-date="${escapeAttribute(point.date)}" data-chart-x="${pointX.toFixed(1)}" data-keyboard-label="${escapeAttribute(keyboardLabel)}">
+          <g class="etf-data-point" transform="translate(${pointX.toFixed(1)} ${pointY.toFixed(1)})" data-series-index="${index}" data-point-index="${pointIndex}" data-date="${escapeAttribute(point.date)}" data-chart-x="${pointX.toFixed(1)}" data-keyboard-label="${escapeAttribute(keyboardLabel)}" data-series-label="${escapeAttribute(item.label)}" data-weight="${point.value}">
             <circle class="etf-point-hit" r="10" fill="transparent"/>
             <circle class="etf-mini-point" r="${compact ? 2.3 : item.rank <= 3 ? 4.7 : 4}" fill="${color}"/>
             <g class="etf-point-label" transform="translate(${labelX} ${labelY})" aria-hidden="true">
@@ -3991,12 +3982,12 @@
     const initialSeries = chartSeries[0];
     const initialPoint = asArray(initialSeries?.points).filter((point) => Number.isFinite(point.value)).at(-1);
     const initialReadout = initialSeries && initialPoint
-      ? `${initialSeries.label} · ${formatMaybeDate(initialPoint.date)} · ${formatPercent(initialPoint.value)}`
+      ? renderEtfReadout(initialSeries.label, initialPoint.date, initialPoint.value)
       : '차트 값을 확인할 수 없습니다.';
     const frameLabel = `${row.name} 현재 상위 ${chartSeries.length}종목 편입비중 추이. 좌우 방향키로 날짜, 위아래 방향키로 종목을 탐색합니다.`;
     return `
       <div class="etf-mini-chart" data-y-min="${yMin}" data-y-max="${yMax}" data-date-start="${minDate}" data-date-end="${maxDate}">
-        <p class="chart-keyboard-readout etf-chart-readout" aria-live="polite">${escapeHtml(initialReadout)}</p>
+        <div class="etf-chart-readout" aria-live="polite">${initialReadout}</div>
         <div class="etf-mini-plot" tabindex="0" role="group" aria-label="${escapeAttribute(frameLabel)}" data-base-label="${escapeAttribute(frameLabel)}">
           <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeAttribute(row.name)} 현재 상위 ${chartSeries.length}종목 편입비중 추이">
             <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"/>
@@ -4011,6 +4002,10 @@
         <div class="chart-legend etf-mini-legend">${legend}</div>
       </div>
     `;
+  }
+
+  function renderEtfReadout(label, date, weight) {
+    return `<div class="etf-selected-asset"><strong>${escapeHtml(label)}</strong><time datetime="${escapeAttribute(date)}">${escapeHtml(formatMaybeDate(date))}</time></div><div class="etf-selected-weight"><span>편입비중</span><strong>${escapeHtml(formatPercent(weight))}</strong></div>`;
   }
 
   function bindChartKeyboardFrames(root, selectors) {
@@ -4066,7 +4061,9 @@
         point.classList.add('is-keyboard-active');
         frame.classList.add('is-keyboard-active');
         const label = point.dataset.keyboardLabel || '선택값 확인 필요';
-        if (readout) readout.innerHTML = `${escapeHtml(label)} <span>· 방향키: ${escapeHtml(navigationLabel)}</span>`;
+        if (readout) readout.innerHTML = selectors.renderReadout
+          ? selectors.renderReadout(point)
+          : `${escapeHtml(label)} <span>· 방향키: ${escapeHtml(navigationLabel)}</span>`;
         frame.setAttribute('aria-label', `${frame.dataset.baseLabel || '차트'} 현재 선택 ${label}`);
         const chartX = finiteOrNull(point.dataset.chartX);
         if (selectionGuide && chartX !== null) {

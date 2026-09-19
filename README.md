@@ -18,7 +18,7 @@
 - DRAM 제품은 세대·용량과 속도·조직을 두 줄로 구분하고 최근 USD 가격을 함께 표시합니다. 원본 이름은 접근성 이름과 툴팁에 유지합니다. 가격 및 첫 관측=100 비교, 날짜·제품 선택을 제공합니다.
 - SOX는 `sox-analysis.json`의 전체 구성종목을 가격×실적 상대점수(0–1) 사분면에 표시합니다. 중앙선은 0.5이며 원본 상태 분류와 구분합니다. 두 JSON의 발행 시각·기준일·종목수·상위 5종목 값을 대조한 후 연결합니다. 점 좌표를 보존하고 겹치는 티커 라벨만 이동합니다. 상위 5종목·드롭다운·차트·방향키 선택은 정확한 점수와 proxy 비중을 보여주며, 전체 표는 상세에 유지합니다. 보조 데이터 오류는 차트만 닫고 기존 요약을 보존합니다.
 - ETF 세 개의 최근 1개월 편입비중 그래프를 기본 노출하며 날짜·비중 축을 공유합니다. 현재 TOP10 중 Top 5/Top 10 표시 전환과 종목·날짜 선택은 표시 상태만 바꿉니다. 미관측 비중은 선을 끊으며 보유종목과 신호·커버리지는 상세에서 확인합니다.
-- 시장 상태, 팩터 전략, 반도체, ETF 순으로 결과를 묶고 상단 링크로 이동합니다. 티커·테마 검색은 공개 요약 안에서 수행합니다.
+- 시장 상태, 팩터 전략, 반도체, ETF 순으로 결과를 묶고 상단 링크로 이동합니다. 뉴스 다음에 프로젝트 결과를 바로 보여주며 중복 요약·검색 영역은 두지 않습니다.
 - 본문에는 결과·기준일·상태를 표시하고 출처와 운영 정보는 맨 아래 닫힌 상세에 모읍니다. 반복 설명과 서술형 제약 문구는 표시하지 않습니다. 계산·수집·공개 데이터 계약은 유지합니다.
 
 ## 공통 웹 디자인 프롬프트
@@ -54,7 +54,7 @@
 - `https://sonchanggi.github.io/sox/data/summary.json`
 - `https://sonchanggi.github.io/regime/data/regime-core.json` (v5 핵심 결과; 현재 국면 소속도·다음 주 예측 확률·이탈 확률)
 
-`summary.json`의 공통 필드는 `schemaVersion`, `contract`, `projectId`, `generatedAt`, `dataAsOf`, `status`, `coverage`, `primaryEntities`, `limitations`, `automation`입니다. 대형 원본 payload는 원본 프로젝트에 남겨두고 중앙 허브는 ticker/theme dossier와 health 상태에 필요한 작은 요약부터 사용합니다.
+`summary.json`의 공통 필드는 `schemaVersion`, `contract`, `projectId`, `generatedAt`, `dataAsOf`, `status`, `coverage`, `primaryEntities`, `limitations`, `automation`입니다. 대형 원본 payload는 원본 프로젝트에 남겨두고 중앙 허브는 프로젝트 패널과 health 상태에 필요한 작은 요약부터 사용합니다.
 
 허브는 8개 프로젝트 링크와 7개 데이터 패널, News 브리핑을 제공합니다. Regime 상태도 health 집계에 포함합니다. Regime 어댑터는 합성 데모 계약 또는 개인·비상업 live-derived 계약(`alpha_vantage/private_noncommercial`, `alfred/user_confirmed_ml_storage_derived`)을 정확히 만족할 때만 값을 표시합니다.
 
@@ -87,7 +87,7 @@ npm run test:live  # 공개 GitHub Pages JSON 계약을 네트워크로 확인�
 - 공개 summary/detail endpoint 상수 존재
 - Fear & Greed / Momentum / D램(DRAM) / Best Factor / ETF Tracking / SOX / Regime parser와 fallback 존재
 - freshness/status 표시 hook 존재
-- Research Cockpit, 티커·테마 Dossier, Data Health/automation hook 존재
+- 뉴스 다음 프로젝트 결과 배치, Data Health/automation hook 유지
 - 선택형 live contract smoke로 공개 JSON row 수, schema/contract version, 최신성, payload 크기 확인
 - News 우선 배치, 산점도 단위·발행 일치·음수 축·오류 격리
 - sibling 프로젝트 로컬 경로를 참조하지 않음
