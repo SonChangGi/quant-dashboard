@@ -2275,12 +2275,11 @@
   }
 
   function dramMetricValue(values) {
-    const direct = finiteOrNull(values.average ?? values.session_average);
-    if (direct !== null) return direct;
-    const high = finiteOrNull(values.daily_high ?? values.high ?? values.session_high);
-    const low = finiteOrNull(values.daily_low ?? values.low ?? values.session_low);
-    if (high !== null && low !== null) return (high + low) / 2;
-    return high ?? low ?? Number.NaN;
+    for (const key of ['session_average', 'average']) {
+      const value = finiteOrNull(values[key]);
+      if (value !== null && value > 0) return value;
+    }
+    return Number.NaN;
   }
 
   function parseBestFactor(payload) {

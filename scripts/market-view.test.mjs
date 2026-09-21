@@ -58,3 +58,16 @@ test('ETF display controls retain missing history as gaps, exact dates and all s
   assert.ok(compact.includes(`data-y-max="${domain.yTicks.at(-1)}"`));
   assert.equal(JSON.stringify(row), before);
 });
+
+test('DRAM uses source averages without synthesizing prices from highs and lows', () => {
+  const seriesFor = (values) => api.parseDram({observations: [{
+    source: 'trendforce', kind: 'spot', cadence: 'daily',
+    product_id: 'ddr4', product_name: 'DDR4 16Gb (2Gx8) 3200',
+    date: '2026-09-21', values,
+  }]}, {series: []}, {}).series;
+  for (const values of [{high: 80, low: 40}, {session_high: 80}, {average: 0}, {average: -1}, {session_average: NaN}]) {
+    assert.equal(seriesFor(values).length, 0);
+  }
+  assert.equal(seriesFor({session_average: 55.433, average: 999})[0].points[0][1], 55.433);
+  assert.equal(seriesFor({average: 45})[0].points[0][1], 45);
+});
