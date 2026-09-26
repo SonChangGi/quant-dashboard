@@ -385,10 +385,11 @@
         dramPrices: 'https://sonchanggi.github.io/dram-price/data/prices.json',
         dramSeries: 'https://sonchanggi.github.io/dram-price/data/series.json',
         dramStatus: 'https://sonchanggi.github.io/dram-price/data/status.json',
+        dramAutomation: 'https://sonchanggi.github.io/dram-price/data/automation-health.json',
       },
       primarySourceKey: 'summary',
       contracts: { summary: SUMMARY_CONTRACT },
-      parse: (sources) => parseDram(sources.dramPrices, sources.dramSeries, sources.dramStatus, sources.summary),
+      parse: (sources) => parseDram(sources.dramPrices, sources.dramSeries, sources.dramStatus, sources.summary, sources.dramAutomation),
       hasUsableData: (summary) => Boolean(summary?.series?.length || summary?.entities?.length),
       fallback: normalizeDramFallback,
       render: renderDram,
@@ -2188,7 +2189,49 @@
     });
   }
 
-  function parseDram(pricesPayload, seriesPayload, statusPayload, summaryPayload) {
+  function latestDramExpectedRun(now = Date.now()) {
+    // GitHub cron is UTC. Every scheduled slot targets that UTC weekday's
+    // TrendForce price date, including the Saturday-morning KST recovery slots.
+    const firstSlotMinutes = 255;
+    const dayMs = 24 * 60 * 60 * 1000;
+    const start = Math.floor(now / dayMs) * dayMs;
+    for (let daysBack = 0; daysBack < 8; daysBack += 1) {
+      const day = start - daysBack * dayMs;
+      const weekday = new Date(day).getUTCDay();
+      if (weekday < 1 || weekday > 5) continue;
+      // Later slots are retries and can skip after one successful daily run.
+      const scheduledAt = day + firstSlotMinutes * 60 * 1000;
+      if (scheduledAt + 6 * 60 * 60 * 1000 <= now) {
+        return { scheduledAt, targetDate: new Date(day).toISOString().slice(0, 10) };
+      }
+    }
+    return null;
+  }
+
+  function dramAutomationAssessment(health, now = Date.now()) {
+    if (!isRecord(health) || health.contract !== 'dram-automation-health' || health.projectId !== 'dram') {
+      return { state: 'unknown', label: '자동화 상태 확인 불가' };
+    }
+    if (health.status === 'blocked') {
+      const unpublished = Array.isArray(health.details) && health.details.length > 0
+        && health.details.every((detail) => typeof detail === 'string' && detail.startsWith('daily_history error: target date '));
+      return { state: 'blocked', label: unpublished ? '신규 가격 미게시' : '자동화 점검 필요' };
+    }
+    const updatedAt = Date.parse(health.updatedAt);
+    if (!Number.isFinite(updatedAt) || !/^\d{4}-\d{2}-\d{2}$/.test(health.targetDate || '')) {
+      return { state: 'unknown', label: '자동화 상태 확인 불가' };
+    }
+    const expected = latestDramExpectedRun(now);
+    if (expected && (updatedAt < expected.scheduledAt || health.targetDate < expected.targetDate)) {
+      return { state: 'late', label: '자동화 실행 지연' };
+    }
+    if (health.status === 'warning') return { state: 'warning', label: '자동화 주의' };
+    if (health.status === 'no_publication') return { state: 'warning', label: '휴일 · 신규 가격 미게시' };
+    if (health.status !== 'ok') return { state: 'unknown', label: '자동화 상태 확인 불가' };
+    return { state: 'ok', label: '정상' };
+  }
+
+  function parseDram(pricesPayload, seriesPayload, statusPayload, summaryPayload, automationPayload = null) {
     const meta = isResearchSummary(summaryPayload, 'dram') ? summaryMeta(summaryPayload) : {};
     const entities = summaryEntities(summaryPayload);
     const observations = asRecords(pricesPayload?.observations);
@@ -2199,13 +2242,16 @@
     const selected = fallbackSeries.filter((item) => item.points.length >= 2).slice(0, 6);
     const series = selected.length ? selected : fallbackSeries.slice(0, 6);
     const trendforceDailyMode = trendforceDailySeries.length > 0;
+    const automationHealth = isRecord(automationPayload) ? automationPayload : null;
+    const automationState = dramAutomationAssessment(automationHealth);
 
     return {
       generatedAt: stringOr(pricesPayload?.generated_at, statusPayload?.generated_at, ''),
       observationCount: series.reduce((sum, item) => sum + item.points.length, 0) || observations.length || finiteOrNull(statusPayload?.observation_count),
       status: trendforceDailyMode
-        ? appendDramSourceStatus(stringOr(meta.statusLabel, '라이브 공개 JSON 표시 중'), 'TrendForce daily saved prices')
-        : stringOr(meta.statusLabel, '라이브 공개 JSON 표시 중'),
+        ? appendDramSourceStatus(stringOr(meta.statusLabel, '라이브 공개 JSON 표시 중'), 'TrendForce daily saved prices') + (automationState.state === 'ok' ? '' : ` · ${automationState.label}`)
+        : stringOr(meta.statusLabel, '라이브 공개 JSON 표시 중') + (automationState.state === 'ok' ? '' : ` · ${automationState.label}`),
+      automationHealth,
       series,
       entities,
       meta,
@@ -4737,6 +4783,10 @@
     if (record.summary?.scatterError || record.summary?.priceError || record.summary?.trendError || record.summary?.quadrantError) return '차트 확인 필요';
     if (record.summary?.unavailable || record.summary?.meta?.statusState === 'unavailable') return '산출 불가';
     if (!record.metadataMismatch && record.mode === 'live' && !isRecordStale(record)) {
+      if (record.project?.id === 'dram') {
+        const automation = dramAutomationAssessment(record.summary?.automationHealth);
+        if (automation.state !== 'ok') return automation.label;
+      }
       if (record.summary?.meta?.statusState === 'degraded') return '데이터 주의';
       if (record.summary?.meta?.statusState === 'ok') return '정상';
     }
@@ -4777,6 +4827,7 @@
     if (record.metadataMismatch) return 'warn';
     if (record.mode !== 'live') return 'warn';
     if (isRecordStale(record)) return 'warn';
+    if (record.project?.id === 'dram' && dramAutomationAssessment(record.summary?.automationHealth).state !== 'ok') return 'warn';
     if (['demo', 'degraded', 'stale', 'unavailable', 'ruin'].includes(record.summary?.meta?.statusState)) return 'warn';
     return 'ok';
   }
@@ -4787,6 +4838,10 @@
     if (record.metadataMismatch) return '메타데이터 불일치';
     if (record.mode !== 'live') return '대체 데이터';
     if (isRecordStale(record)) return '갱신 지연';
+    if (record.project?.id === 'dram') {
+      const automation = dramAutomationAssessment(record.summary?.automationHealth);
+      if (automation.state !== 'ok') return automation.label;
+    }
     if (record.summary?.meta?.dataModeLabel) return record.summary.meta.dataModeLabel;
     if (state === 'ok') return '정상';
     if (state === 'published') return '게시 데이터';
@@ -5179,6 +5234,8 @@
       parseMomentum,
       parseFearAndGreed,
       parseDram,
+      dramAutomationAssessment,
+      latestDramExpectedRun,
       parseBestFactor,
       parseEtfTracking,
       parseRegime,

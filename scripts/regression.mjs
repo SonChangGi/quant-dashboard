@@ -1493,6 +1493,27 @@ assert(!api.PANEL_ADAPTERS.momentum.hasUsableData(cashOnlyMomentum), 'Momentum p
 
 const validDram = api.parseDram({ observations: [{ product_name: 'DDR5 Fixture', date: '2026-06-10', values: { average: 42 } }] }, { series: [{ product_name: 'DDR5 Fixture', representative: true }] }, { generated_at: '2026-06-10T00:00:00Z' });
 assert(validDram.series.length === 1 && validDram.series[0].points.length === 1, 'recorded valid DRAM fixture produces chart series');
+const blockedDramHealth = {
+  contract: 'dram-automation-health', projectId: 'dram', status: 'blocked',
+  targetDate: '2026-09-25', updatedAt: '2026-09-25T22:50:19Z',
+  details: ['daily_history error: target date 2026-09-25 is missing verified daily prices; source dates are never relabeled'],
+};
+const blockedDram = api.parseDram(
+  { observations: [{ product_name: 'DDR5 Fixture', date: '2026-09-24', values: { average: 42 } }] },
+  { series: [{ product_name: 'DDR5 Fixture', representative: true }] },
+  { generated_at: '2026-09-24T09:15:46Z' }, null, blockedDramHealth,
+);
+const blockedDramRecord = { project: { id: 'dram' }, summary: blockedDram, mode: 'live', generatedAt: blockedDram.generatedAt };
+assert(api.PANEL_ADAPTERS.dram.sourceUrls.dramAutomation.endsWith('/data/automation-health.json'), 'DRAM adapter fetches the separate automation result');
+assert(blockedDram.series.length === 1 && blockedDram.status.includes('신규 가격 미게시'), 'failed DRAM collection retains verified prices and names the missing source publication');
+assert(api.visibleHealthLabel(blockedDramRecord) === '신규 가격 미게시' && api.healthTone(blockedDramRecord) === 'warn', 'missing source publication overrides an otherwise healthy price summary');
+assert(api.dramAutomationAssessment(null).label === '자동화 상태 확인 불가', 'missing automation metadata never appears healthy');
+const freshDramHealth = { ...blockedDramHealth, status: 'ok', targetDate: '2026-09-25', updatedAt: '2026-09-25T05:00:00Z' };
+const saturday = Date.parse('2026-09-26T09:00:00Z');
+assert(api.latestDramExpectedRun(saturday).targetDate === '2026-09-25' && api.dramAutomationAssessment(freshDramHealth, saturday).state === 'ok', 'Saturday checks Friday recovery without inventing a weekend price day');
+assert(api.dramAutomationAssessment(freshDramHealth, Date.parse('2026-09-25T23:00:00Z')).state === 'ok', 'later retry slots can skip after an early complete price-day run');
+assert(api.dramAutomationAssessment({ ...freshDramHealth, updatedAt: '2026-09-24T20:00:00Z' }, saturday).label === '자동화 실행 지연', 'a stopped scheduler cannot leave an old ok state visible');
+assert(api.dramAutomationAssessment({ ...freshDramHealth, status: 'no_publication' }, saturday).label === '휴일 · 신규 가격 미게시', 'documented source holiday remains visible without claiming an automation failure');
 
 const trendforceDram = api.parseDram({
   generated_at: '2026-06-18T00:00:00Z',
@@ -1914,6 +1935,8 @@ statusTarget.classList = { toggle() {} };
 domTargets['#dram-status'] = statusTarget;
 api.renderPanelStatus({ project: { id: 'dram' }, mode: 'fallback', generatedAt: '2026-06-10T00:00:00Z', summary: { meta: {}, series: [{ points: [['2026-06-02', 10]] }] } });
 assert(statusTarget.textContent.startsWith('업데이트 ') && !statusTarget.textContent.includes('기준일'), 'missing observation date does not relabel generation time as a data date');
+api.renderPanelStatus(blockedDramRecord);
+assert(statusTarget.textContent.includes('신규 가격 미게시'), 'DRAM compact panel visibly reports missing source publication');
 assert(api.visibleHealthLabel({ mode: 'live', summary: { meta: { statusState: 'degraded', dataModeLabel: 'Live 파생 결과' } } }) === '데이터 주의', 'compact status preserves degradation alongside a data-mode label');
 const mixedFreshness = api.portfolioFreshnessSummary([
   { project: { shortName: 'A' }, summary: { dataAsOf: '2026-06-22' }, generatedAt: '2026-06-23T00:00:00Z' },
