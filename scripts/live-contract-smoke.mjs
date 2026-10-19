@@ -106,7 +106,9 @@ for (const project of panelProjects) {
   const freshnessSource = api.recordFreshnessDate(record);
   const freshnessAgeDays = ageDays(freshnessSource);
   const expectedFreshnessDays = api.expectedFreshnessDays(record);
-  const staleBySource = api.isRecordStale(record);
+  const freshnessNow = Date.now();
+  const staleBySource = api.isRecordStale(record, freshnessNow);
+  const soxFreshness = project.id === 'sox' ? api.soxFreshnessAssessment(record, freshnessNow) : null;
 
   check(project.id, usable, 'contract', `${project.id} live payload is not usable`);
   check(project.id, payloadBytes > 0, 'contract', `${project.id} payload byte count is missing`);
@@ -148,7 +150,12 @@ for (const project of panelProjects) {
       `${project.id} freshness source incorrectly used generatedAt`,
     );
   }
-  if (freshnessAgeDays !== null && expectedFreshnessDays !== null) {
+  if (soxFreshness) {
+    if (soxFreshness.state !== 'current') {
+      addFinding(project.id, soxFreshness.state === 'invalid' ? 'contract' : 'freshness', 'hard',
+        `sox ${soxFreshness.reason}: observed ${soxFreshness.dataAsOf || 'missing'}; expected US session ${soxFreshness.expectedSession} (06:30 KST)`);
+    }
+  } else if (freshnessAgeDays !== null && expectedFreshnessDays !== null) {
     check(
       project.id,
       freshnessAgeDays <= expectedFreshnessDays || staleBySource,

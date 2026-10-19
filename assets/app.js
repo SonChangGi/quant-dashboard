@@ -4812,7 +4812,7 @@
           <span>${escapeHtml(healthLabel(record))}</span>
         </div>
         <p>${escapeHtml(recordFreshnessText(record))}</p>
-        <small>${escapeHtml(`${formatBytes(record.payloadBytes)} · ${record.sourceCount}개 JSON · ${record.summary?.meta?.cadence || 'cadence 확인 필요'} · freshness ${formatInteger(expectedFreshnessDays(record))}일${record.error || record.summary?.scatterError || record.summary?.priceError || record.summary?.trendError || record.summary?.quadrantError ? ` · ${record.error || record.summary.scatterError || record.summary.priceError || record.summary.trendError || record.summary.quadrantError}` : ''}`)}</small>
+        <small>${escapeHtml(`${formatBytes(record.payloadBytes)} · ${record.sourceCount}개 JSON · ${record.summary?.meta?.cadence || 'cadence 확인 필요'} · ${record.project?.id === 'sox' ? '미국 거래일 · 06:30 KST 기준' : `freshness ${formatInteger(expectedFreshnessDays(record))}일`}${record.error || record.summary?.scatterError || record.summary?.priceError || record.summary?.trendError || record.summary?.quadrantError ? ` · ${record.error || record.summary.scatterError || record.summary.priceError || record.summary.trendError || record.summary.quadrantError}` : ''}`)}</small>
         <div class="source-links"><a href="${escapeAttribute(record.project.url)}">원본 페이지</a>${Object.entries(PANEL_ADAPTERS[record.project.panelAdapter]?.sourceUrls || {}).map(([key, url]) => `<a href="${escapeAttribute(url)}">${escapeHtml(key)} JSON</a>`).join('')}</div>
         ${safeAutomationUrl(record.summary?.meta?.automation?.workflowUrl) ? `<a class="health-link" href="${escapeAttribute(safeAutomationUrl(record.summary.meta.automation.workflowUrl))}" rel="noopener noreferrer">자동화/수동 실행</a>` : ''}
       </article>
@@ -4863,22 +4863,23 @@
     return { oldest, newest, mixed, label, records: dated };
   }
 
-  function healthTone(record) {
+  function healthTone(record, now = Date.now()) {
     if (record.summary?.scatterError || record.summary?.priceError || record.summary?.trendError || record.summary?.quadrantError) return 'warn';
     if (record.metadataMismatch) return 'warn';
     if (record.mode !== 'live') return 'warn';
-    if (isRecordStale(record)) return 'warn';
+    if (isRecordStale(record, now)) return 'warn';
     if (record.project?.id === 'dram' && dramAutomationAssessment(record.summary?.automationHealth).state !== 'ok') return 'warn';
     if (['demo', 'degraded', 'stale', 'unavailable', 'ruin'].includes(record.summary?.meta?.statusState)) return 'warn';
     return 'ok';
   }
 
-  function healthLabel(record) {
+  function healthLabel(record, now = Date.now()) {
     if (record.summary?.scatterError || record.summary?.priceError || record.summary?.trendError || record.summary?.quadrantError) return '차트 확인 필요';
     const state = record.summary?.meta?.statusState;
     if (record.metadataMismatch) return '메타데이터 불일치';
     if (record.mode !== 'live') return '대체 데이터';
-    if (isRecordStale(record)) return '갱신 지연';
+    if (record.project?.id === 'sox' && soxFreshnessAssessment(record, now).state === 'invalid') return '기준일 확인 필요';
+    if (isRecordStale(record, now)) return '갱신 지연';
     if (record.project?.id === 'dram') {
       const automation = dramAutomationAssessment(record.summary?.automationHealth);
       if (automation.state !== 'ok') return automation.label;
@@ -4895,16 +4896,101 @@
     return '실시간 공개본';
   }
 
-  function isRecordStale(record) {
+  // Match SOX check_sox_freshness.py's 06:30 KST publication window.
+  // Regular/early closes (including US DST) precede this fixed KST boundary.
+  // Holiday rules: https://www.nyse.com/markets/hours-calendars
+  // Keep exceptional exchange closures aligned with the producer calendar.
+  const SOX_DAY_MS = 86400000;
+  const soxHolidayCache = new Map();
+
+  function strictSoxDate(value) {
+    if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+    const time = Date.parse(value);
+    return Number.isFinite(time) && new Date(time).toISOString().slice(0, 10) === value ? time : null;
+  }
+
+  function soxHolidays(year) {
+    if (soxHolidayCache.has(year)) return soxHolidayCache.get(year);
+    const iso = (time) => new Date(time).toISOString().slice(0, 10);
+    const nth = (month, weekday, n) => {
+      const first = Date.UTC(year, month - 1, 1);
+      return first + ((weekday - new Date(first).getUTCDay() + 7) % 7 + 7 * (n - 1)) * SOX_DAY_MS;
+    };
+    const observed = (month, day) => {
+      const time = Date.UTC(year, month - 1, day), weekday = new Date(time).getUTCDay();
+      return time + (weekday === 6 ? -1 : weekday === 0 ? 1 : 0) * SOX_DAY_MS;
+    };
+    // Gregorian Easter, for the exchange's Good Friday closure.
+    const a = year % 19, b = Math.floor(year / 100), c = year % 100;
+    const d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);
+    const g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30;
+    const i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7;
+    const m = Math.floor((a + 11 * h + 22 * l) / 451), easter = h + l - 7 * m + 114;
+    const goodFriday = Date.UTC(year, Math.floor(easter / 31) - 1, easter % 31 + 1) - 2 * SOX_DAY_MS;
+    const mayEnd = Date.UTC(year, 4, 31);
+    const memorial = mayEnd - ((new Date(mayEnd).getUTCDay() + 6) % 7) * SOX_DAY_MS;
+    const dates = [nth(1, 1, 3), nth(2, 1, 3), goodFriday, memorial,
+      observed(7, 4), nth(9, 1, 1), nth(11, 4, 4), observed(12, 25)];
+    // Saturday New Year is not observed on Friday by US equity exchanges.
+    if (new Date(Date.UTC(year, 0, 1)).getUTCDay() !== 6) dates.push(observed(1, 1));
+    if (year >= 2022) dates.push(observed(6, 19));
+    if (year === 2025) dates.push(Date.UTC(2025, 0, 9)); // National day of mourning.
+    const holidays = new Set(dates.map(iso));
+    soxHolidayCache.set(year, holidays);
+    return holidays;
+  }
+
+  function isUsEquitySession(date) {
+    const time = strictSoxDate(date);
+    if (time === null) return false;
+    const day = new Date(time), year = day.getUTCFullYear();
+    return ![0, 6].includes(day.getUTCDay()) && !soxHolidays(year).has(date) && !soxHolidays(year + 1).has(date);
+  }
+
+  function latestExpectedSoxSession(now = Date.now()) {
+    if (!Number.isFinite(now)) return '';
+    // Subtract the 06:30 boundary after shifting to KST, then select the prior US date.
+    let time = Math.floor((now + (9 - 6.5) * 3600000) / SOX_DAY_MS) * SOX_DAY_MS - SOX_DAY_MS;
+    for (let offset = 0; offset < 14; offset++, time -= SOX_DAY_MS) {
+      const date = new Date(time).toISOString().slice(0, 10);
+      if (isUsEquitySession(date)) return date;
+    }
+    return '';
+  }
+
+  function soxFreshnessAssessment(record, now = Date.now()) {
+    const summary = record?.summary || {};
+    // Never let a recent generatedAt substitute for an observation date.
+    const dataAsOf = stringOr(summary.meta?.minDataAsOf, summary.minDataAsOf,
+      summaryDataAsOf(summary), record?.dataAsOf, '');
+    const expectedSession = latestExpectedSoxSession(now);
+    const result = (state, reason) => ({ state, reason, dataAsOf, expectedSession });
+    if (!expectedSession || !isUsEquitySession(dataAsOf)) return result('invalid', 'invalid_observation_date');
+    if (dataAsOf > expectedSession) return result('invalid', 'future_session');
+    const generatedAt = stringOr(record?.generatedAt, summary.generatedAt, '');
+    const generatedTime = Date.parse(generatedAt);
+    const timestampFormat = /^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$/;
+    if (!timestampFormat.test(generatedAt) || strictSoxDate(generatedAt.slice(0, 10)) === null
+        || !Number.isFinite(generatedTime)) return result('invalid', 'invalid_generation');
+    if (generatedTime > now) return result('invalid', 'future_generation');
+    if (dataAsOf < expectedSession) return result('stale', 'missing_expected_session');
+    const publicationWindow = strictSoxDate(expectedSession) + SOX_DAY_MS - 2.5 * 3600000;
+    if (generatedTime < publicationWindow) return result('stale', 'before_publication_window');
+    return result('current', 'current_us_session');
+  }
+
+  function isRecordStale(record, now = Date.now()) {
+    if (record.project?.id === 'sox') return soxFreshnessAssessment(record, now).state !== 'current';
     const expectedDays = expectedFreshnessDays(record);
     const freshnessDate = Date.parse(recordFreshnessDate(record));
     if (expectedDays === null || !Number.isFinite(freshnessDate)) return false;
-    const days = (Date.now() - freshnessDate) / (24 * 60 * 60 * 1000);
+    const days = (now - freshnessDate) / (24 * 60 * 60 * 1000);
     return days > expectedDays;
   }
 
   function recordFreshnessDate(record) {
     const summary = isRecord(record?.summary) ? record.summary : {};
+    if (record?.project?.id === 'sox') return stringOr(summary.meta?.minDataAsOf, summary.minDataAsOf, summaryDataAsOf(summary), record?.dataAsOf, '');
     return stringOr(
       summary.meta?.minDataAsOf,
       summary.minDataAsOf,
@@ -5362,6 +5448,9 @@
       summaryMeta,
       summaryEntities,
       entitySummaryLine,
+      latestExpectedSoxSession,
+      isUsEquitySession,
+      soxFreshnessAssessment,
       isRecordStale,
       expectedFreshnessDays,
       recordFreshnessDate,
