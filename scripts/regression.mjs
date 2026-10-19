@@ -11,6 +11,15 @@ const context = vm.createContext({ console, URL });
 vm.runInContext(source, context, { filename: 'assets/app.js' });
 const api = context.__QUANT_DASHBOARD_TESTS__;
 
+// Time-dependent status fixtures must be observed at their recorded test time.
+function withFixtureClock(isoTimestamp, callback) {
+  const contextDate = vm.runInContext('Date', context);
+  const realNow = contextDate.now;
+  contextDate.now = () => Date.parse(isoTimestamp);
+  try { return callback(); } finally { contextDate.now = realNow; }
+}
+
+
 const checks = [];
 const assert = (condition, label) => checks.push({ ok: Boolean(condition), label });
 const fallbackFor = (parsed, hasUsableData, reason) => api.resolveLoadState({ ok: true, data: {} }, hasUsableData, reason);
@@ -41,7 +50,7 @@ assert(
 );
 assert(
   api.NAVIGATION_PROJECTS.map((project) => project.shortName).join('|')
-    === 'Fear & Greed|Momentum|DRAM|Best Factor|ETF|SOX|Regime|News',
+    === 'Fear & Greed|Momentum|DRAM|Best Factor|ETF|SOX|Regime|News|SPO|연구 관측소',
   'project manifest preserves the canonical navigation order after Hub',
 );
 assert(
@@ -1506,7 +1515,9 @@ const blockedDram = api.parseDram(
 const blockedDramRecord = { project: { id: 'dram' }, summary: blockedDram, mode: 'live', generatedAt: blockedDram.generatedAt };
 assert(api.PANEL_ADAPTERS.dram.sourceUrls.dramAutomation.endsWith('/data/automation-health.json'), 'DRAM adapter fetches the separate automation result');
 assert(blockedDram.series.length === 1 && blockedDram.status.includes('신규 가격 미게시'), 'failed DRAM collection retains verified prices and names the missing source publication');
-assert(api.visibleHealthLabel(blockedDramRecord) === '신규 가격 미게시' && api.healthTone(blockedDramRecord) === 'warn', 'missing source publication overrides an otherwise healthy price summary');
+withFixtureClock('2026-09-26T09:00:00Z', () => {
+  assert(api.visibleHealthLabel(blockedDramRecord) === '신규 가격 미게시' && api.healthTone(blockedDramRecord) === 'warn', 'missing source publication overrides an otherwise healthy price summary');
+});
 assert(api.dramAutomationAssessment(null).label === '자동화 상태 확인 불가', 'missing automation metadata never appears healthy');
 const freshDramHealth = { ...blockedDramHealth, status: 'ok', targetDate: '2026-09-25', updatedAt: '2026-09-25T05:00:00Z' };
 const saturday = Date.parse('2026-09-26T09:00:00Z');
@@ -1871,7 +1882,7 @@ context.document = {
 };
 api.renderProjectNavigation();
 api.renderDashboardPanels();
-assert(domTargets['#top-nav'].children.length === 8, 'manifest renderer creates eight project links including News');
+assert(domTargets['#top-nav'].children.length === 10, 'manifest renderer creates ten project links including SPO and 연구 관측소');
 const renderedPanels = domTargets['#summary-grid'].children.filter((child) => child.dataset.projectId);
 assert(renderedPanels.length === 7 && new Set(renderedPanels.map((child) => child.dataset.projectId)).size === 7, 'grouped renderer preserves every public summary panel exactly once');
 assert(renderedPanels.map((child) => child.dataset.projectId).join('|') === 'fearngreed|regime|momentum|best|dram|sox|etf', 'display groups keep related research panels adjacent');
@@ -1935,8 +1946,10 @@ statusTarget.classList = { toggle() {} };
 domTargets['#dram-status'] = statusTarget;
 api.renderPanelStatus({ project: { id: 'dram' }, mode: 'fallback', generatedAt: '2026-06-10T00:00:00Z', summary: { meta: {}, series: [{ points: [['2026-06-02', 10]] }] } });
 assert(statusTarget.textContent.startsWith('업데이트 ') && !statusTarget.textContent.includes('기준일'), 'missing observation date does not relabel generation time as a data date');
-api.renderPanelStatus(blockedDramRecord);
-assert(statusTarget.textContent.includes('신규 가격 미게시'), 'DRAM compact panel visibly reports missing source publication');
+withFixtureClock('2026-09-26T09:00:00Z', () => {
+  api.renderPanelStatus(blockedDramRecord);
+  assert(statusTarget.textContent.includes('신규 가격 미게시'), 'DRAM compact panel visibly reports missing source publication');
+});
 assert(api.visibleHealthLabel({ mode: 'live', summary: { meta: { statusState: 'degraded', dataModeLabel: 'Live 파생 결과' } } }) === '데이터 주의', 'compact status preserves degradation alongside a data-mode label');
 const mixedFreshness = api.portfolioFreshnessSummary([
   { project: { shortName: 'A' }, summary: { dataAsOf: '2026-06-22' }, generatedAt: '2026-06-23T00:00:00Z' },

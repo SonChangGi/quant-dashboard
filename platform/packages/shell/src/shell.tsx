@@ -16,7 +16,11 @@ export interface SharedNavigationProps {
 }
 
 export function SharedNavigation({ currentProject }: SharedNavigationProps) {
-  const navigation = getCanonicalNavigation(currentProject);
+  const navigation = [
+    ...getCanonicalNavigation(currentProject),
+  { id: "spo", label: "SPO", url: "https://sonchanggi.github.io/SPO/", current: false },
+  { id: "observatory", label: "연구 관측소", url: "https://research-observatory-changgi.changgi-son.chatgpt.site/", current: false },
+  ];
   return (
     <header className="qr-nav-shell">
       <a className="qr-skip-link" href="#main-content">
