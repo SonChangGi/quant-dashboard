@@ -1,5 +1,6 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
+import { createHash } from 'node:crypto';
 import vm from 'node:vm';
 import {
   operationalFindingsFor,
@@ -48,6 +49,8 @@ for (const project of panelProjects) {
         await fetchJson(url),
       ]),
     );
+    const failed = entries.find(([, result]) => !result.ok);
+    if (failed) throw new PublicFetchError(failed[1].category, failed[1].error);
   } catch (error) {
     const category = error instanceof PublicFetchError ? error.category : 'transport';
     addFinding(project.id, category, category === 'transport' ? 'transient' : 'hard', error.message);
@@ -59,10 +62,17 @@ for (const project of panelProjects) {
   }
 
   const projectFindingStart = findings.length;
-  const payloadBytes = entries.reduce((sum, [, result]) => sum + result.bytes, 0);
-  const dataSources = Object.fromEntries(
+  let dataSources = Object.fromEntries(
     entries.map(([sourceKey, result]) => [sourceKey, result.data]),
   );
+  // Regime's current core intentionally omits its historical chart rows. Use
+  // the same manifest, SHA and identity checks as the browser before parsing.
+  if (project.id === 'regime') {
+    const enrichment = await api.enrichPanelSources(adapter, dataSources, fetchJson);
+    dataSources = enrichment.dataSources;
+    entries.push(...Object.entries(enrichment.fetchResults));
+  }
+  const payloadBytes = entries.reduce((sum, [, result]) => sum + (result.bytes || 0), 0);
   const contractError = api.validateAdapterContract(adapter, dataSources);
   if (contractError) {
     addFinding(project.id, 'contract', 'hard', contractError);
@@ -111,6 +121,9 @@ for (const project of panelProjects) {
   const soxFreshness = project.id === 'sox' ? api.soxFreshnessAssessment(record, freshnessNow) : null;
 
   check(project.id, usable, 'contract', `${project.id} live payload is not usable`);
+  if (project.id === 'regime' && summary?.trendError) {
+    addFinding(project.id, 'contract', 'hard', `Regime history validation failed: ${summary.trendError}`);
+  }
   check(project.id, payloadBytes > 0, 'contract', `${project.id} payload byte count is missing`);
   check(
     project.id,
@@ -262,9 +275,10 @@ console.log(
 if (hardFindings.length) process.exitCode = 1;
 else if (transientFindings.length) process.exitCode = 2;
 
-async function fetchJson(url) {
+async function fetchJson(url, timeoutMs = 12_000, expectedSha256 = '') {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 12_000);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  let bytes = 0;
   try {
     const response = await fetch(url, { signal: controller.signal, cache: 'no-store' });
     if (!response.ok) {
@@ -273,19 +287,23 @@ async function fetchJson(url) {
         : 'contract';
       throw new PublicFetchError(category, `${url} returned HTTP ${response.status}`);
     }
-    const text = await response.text();
-    const bytes = Buffer.byteLength(text, 'utf8');
+    const body = Buffer.from(await response.arrayBuffer());
+    bytes = body.length;
+    if (expectedSha256 && createHash('sha256').update(body).digest('hex') !== expectedSha256) {
+      throw new PublicFetchError('contract', `${url} published JSON SHA-256 mismatch`);
+    }
     try {
-      return { url, bytes, data: JSON.parse(text) };
+      return { ok: true, url, bytes, data: JSON.parse(body.toString('utf8')) };
     } catch {
       throw new PublicFetchError('contract', `${url} returned invalid JSON`);
     }
   } catch (error) {
-    if (error instanceof PublicFetchError) throw error;
-    throw new PublicFetchError(
-      'transport',
-      `${url} fetch failed: ${error instanceof Error ? error.message : String(error)}`,
-    );
+    return {
+      ok: false, url, bytes, data: null,
+      category: error instanceof PublicFetchError ? error.category : 'transport',
+      error: error instanceof PublicFetchError ? error.message
+        : `${url} fetch failed: ${error instanceof Error ? error.message : String(error)}`,
+    };
   } finally {
     clearTimeout(timeout);
   }

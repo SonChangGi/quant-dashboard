@@ -2931,6 +2931,7 @@
       : '합성 데모';
     const summary = {
       publicPayloadValid: true,
+      healthAssessment: regimeHealthAssessment(payload, latest),
       generatedAt,
       dataAsOf: date,
       nextDate,
@@ -2955,7 +2956,8 @@
         dataAsOf: date,
         cadence: 'weekly',
         expectedFreshnessDays: PROJECT_EXPECTED_FRESHNESS_DAYS.regime,
-        limitations: [],
+        limitations: asArray(meta.warnings).filter((value) => typeof value === 'string'),
+        degradedReasons: asArray(payload.model?.model_health?.reasons).filter((value) => typeof value === 'string'),
         sourceCount: sources.length,
       },
     };
@@ -2969,7 +2971,7 @@
       themes: ['Regime', '미국 증시'],
       metrics: { ...summary },
       signals: [`현재 ${summary.currentStateLabel}`, `다음 주 ${summary.nextStateLabel}`],
-      warnings: [],
+      warnings: [...summary.meta.limitations, ...summary.meta.degradedReasons],
       status: statusState,
     }];
     return summary;
@@ -3037,6 +3039,80 @@
     return requireRegimeDate(value.slice(0, 10), context);
   }
 
+  // Qualify an upstream warning only when the same publication includes the
+  // evidence for it. Never change upstream status or waive freshness failures.
+  function fearHealthAssessment(summary, dashboard) {
+    if (summary?.status?.state !== 'degraded' || dashboard?.status?.state !== 'degraded'
+        || !summary.dataAsOf || summary.dataAsOf !== dashboard.dataAsOf
+        || !summary.generatedAt || summary.generatedAt !== dashboard.generatedAt) return null;
+    const reasons = summary.status.degradedReasons;
+    if (!Array.isArray(reasons) || !reasons.length || !Array.isArray(dashboard.status.degradedReasons)
+        || JSON.stringify([...reasons].sort()) !== JSON.stringify([...dashboard.status.degradedReasons].sort())) return null;
+    const etfs = ['226490', '069500', '114800', '122630', '252670'];
+    const stocks = ['000660', '005930'];
+    const fallbackReasons = ['krx_open_api_target_session_lag', 'stock_crosscheck_authenticated_pykrx_fallback'];
+    if (reasons.some((reason) => !fallbackReasons.includes(reason)
+        && !etfs.some((ticker) => reason === `adjusted_history_gap_reconciled_${ticker}`))) return null;
+    if (fallbackReasons.some((reason) => reasons.includes(reason))
+        && !asArray(summary.sources).some((source) => source?.id === 'krx' && source.mode === 'authenticated_pykrx_fallback')) return null;
+    const q = dashboard.quality;
+    if (!isRecord(q) || q.state !== 'ok' || !Array.isArray(q.issues) || q.issues.length
+        || summary.status.sourceFreshnessPassed !== true || summary.status.expectedDataAsOf !== summary.dataAsOf
+        || q.expectedAsOf !== summary.dataAsOf || q.latestKospiDate !== summary.dataAsOf || q.latestFlowDate !== summary.dataAsOf
+        || q.sourceContractPassed !== true || q.sourceSessionCoveragePassed !== true || q.sourceFreshnessPassed !== true
+        || q.sourceDateAfterExpected !== false || q.latestSourceDateMatches !== true
+        || ['sourceCompleteness', 'dateOverlapRatio', 'kospiSessionCoverageRatio', 'flowSessionCoverageRatio'].some((key) => q[key] !== 1)
+        || ['invalidPriceRows', 'invalidTurnoverRows', 'invalidFlowRows', 'sourceGapCount', 'dataFreshnessLagDays', 'sourceFreshnessLagDays'].some((key) => q[key] !== 0)) return null;
+    const checks = dashboard.crosschecks;
+    const currentChecks = [checks?.kospi, ...etfs.map((ticker) => checks?.etf?.[ticker]), ...stocks.map((ticker) => checks?.stock?.[ticker])];
+    if (currentChecks.some((check) => !isRecord(check) || check.state !== 'ok'
+        || ['date', 'expectedDate', 'primaryLatestDate', 'secondaryLatestDate'].some((key) => check[key] !== summary.dataAsOf)
+        || typeof check.relativeDifference !== 'number' || !Number.isFinite(check.relativeDifference) || check.relativeDifference < 0
+        || typeof check.tolerance !== 'number' || !Number.isFinite(check.tolerance) || check.tolerance < 0 || check.tolerance > 0.005
+        || check.relativeDifference > check.tolerance
+        || typeof check.historicalAnchorGatesPublication !== 'boolean'
+        || (check.historicalAnchorGatesPublication === true && check.historicalAnchors?.state !== 'ok'))) return null;
+    let filledRows = 0, filledEtfs = 0;
+    for (const ticker of etfs) {
+      const r = checks.etf[ticker].historyReconciliation;
+      if (!isRecord(r) || r.state !== 'ok' || r.unresolvedCount !== 0 || r.missingCount !== 0 || r.extraCount !== 0
+          || !Number.isInteger(r.filledCount) || r.filledCount < 0
+          || r.source !== (r.filledCount > 0 ? 'yfinance_adjusted_plus_scaled_krx_gap_rows' : 'yfinance_adjusted_checked_against_krx_calendar')
+          || r.method !== 'adjacent_close_factor_then_scaled_krx_ohlc'
+          || r.officialSessionCount !== r.researchSessionCount
+          || !Number.isInteger(r.officialSessionCount) || r.officialSessionCount <= 0
+          || (r.filledCount > 0) !== reasons.includes(`adjusted_history_gap_reconciled_${ticker}`)) return null;
+      filledRows += r.filledCount;
+      if (r.filledCount) filledEtfs++;
+    }
+    const usesFallback = fallbackReasons.some((reason) => reasons.includes(reason));
+    return {
+      kind: 'provenance', label: filledRows ? '과거 보정 포함' : '대체 출처 확인',
+      detail: `해당 기준일 자료 교차검증 통과.${usesFallback ? ' 인증 KRX 대체 출처 사용.' : ''}${filledRows ? ` ETF ${filledEtfs}종의 과거 ${filledRows}개 종목·일자 가격에 조정계수 보정 포함, 미해결 누락 0건.` : ''}`,
+    };
+  }
+
+  function regimeHealthAssessment(payload, latest) {
+    const meta = payload?.meta, model = payload?.model;
+    const exactReason = (value) => Array.isArray(value) && value.length === 1 && value[0] === 'low_transition_recall';
+    if (meta?.mode !== 'live' || meta.status !== 'degraded' || meta.freshness?.status !== 'current'
+        || latest?.health?.status !== 'ok' || !Array.isArray(payload.sources) || !payload.sources.length
+        || payload.sources.some((source) => source.status !== 'ok' || !Array.isArray(source.issues) || source.issues.length)
+        || model?.model_health?.status !== 'review_due' || !exactReason(model.model_health.reasons)
+        || model.probability_health?.status !== 'ok' || model.holdout_diagnostic?.status !== 'ok') return null;
+    const early = model.early_warning_health;
+    if (early?.status !== 'review_due' || !exactReason(early.reasons) || early.evaluation_split !== 'retrospective_diagnostic'
+        || !Number.isInteger(early.event_count) || early.event_count < 12
+        || !Number.isInteger(early.on_time_departure_count) || early.on_time_departure_count < 0 || early.on_time_departure_count > early.event_count
+        || typeof early.on_time_recall !== 'number' || !Number.isFinite(early.on_time_recall)
+        || early.on_time_recall < 0 || early.on_time_recall >= 0.2
+        || Math.abs(early.on_time_recall - early.on_time_departure_count / early.event_count) > 1e-6) return null;
+    return {
+      kind: 'model_quality', label: '조기경보 성능 주의',
+      detail: `수집·주간 데이터 확인 통과. 사후 진단에서 전환 ${early.event_count}건 중 적시 경보 ${early.on_time_departure_count}건(${(100 * early.on_time_recall).toFixed(1)}%, 진단 기준 20% 미만). 확률 건전성 진단은 정상.`,
+    };
+  }
+
   function parseFearPanel(sources) {
     const summary = parseFearAndGreed(sources.summary);
     if (summary.unavailable) return summary;
@@ -3047,7 +3123,8 @@
       return { ...summary, scatter: null, scatterError: error.message };
     }
     try {
-      return { ...summary, scatter: { ...scatter, pricePoints: parseFearPrices(sources.history, sources.summary, scatter) } };
+      return { ...summary, healthAssessment: fearHealthAssessment(sources.summary, sources.dashboard),
+        scatter: { ...scatter, pricePoints: parseFearPrices(sources.history, sources.summary, scatter) } };
     } catch (error) {
       return { ...summary, scatter, priceError: error.message };
     }
@@ -4812,6 +4889,7 @@
           <span>${escapeHtml(healthLabel(record))}</span>
         </div>
         <p>${escapeHtml(recordFreshnessText(record))}</p>
+        ${record.summary?.healthAssessment?.detail ? `<p>${escapeHtml(record.summary.healthAssessment.detail)}</p>` : ''}
         <small>${escapeHtml(`${formatBytes(record.payloadBytes)} · ${record.sourceCount}개 JSON · ${record.summary?.meta?.cadence || 'cadence 확인 필요'} · ${record.project?.id === 'sox' ? '미국 거래일 · 06:30 KST 기준' : `freshness ${formatInteger(expectedFreshnessDays(record))}일`}${record.error || record.summary?.scatterError || record.summary?.priceError || record.summary?.trendError || record.summary?.quadrantError ? ` · ${record.error || record.summary.scatterError || record.summary.priceError || record.summary.trendError || record.summary.quadrantError}` : ''}`)}</small>
         <div class="source-links"><a href="${escapeAttribute(record.project.url)}">원본 페이지</a>${Object.entries(PANEL_ADAPTERS[record.project.panelAdapter]?.sourceUrls || {}).map(([key, url]) => `<a href="${escapeAttribute(url)}">${escapeHtml(key)} JSON</a>`).join('')}</div>
         ${safeAutomationUrl(record.summary?.meta?.automation?.workflowUrl) ? `<a class="health-link" href="${escapeAttribute(safeAutomationUrl(record.summary.meta.automation.workflowUrl))}" rel="noopener noreferrer">자동화/수동 실행</a>` : ''}
@@ -4828,7 +4906,7 @@
         const automation = dramAutomationAssessment(record.summary?.automationHealth);
         if (automation.state !== 'ok') return automation.label;
       }
-      if (record.summary?.meta?.statusState === 'degraded') return '데이터 주의';
+      if (record.summary?.meta?.statusState === 'degraded') return record.summary?.healthAssessment?.label || '데이터 주의';
       if (record.summary?.meta?.statusState === 'ok') return '정상';
     }
     return healthLabel(record);
@@ -4869,7 +4947,7 @@
     if (record.mode !== 'live') return 'warn';
     if (isRecordStale(record, now)) return 'warn';
     if (record.project?.id === 'dram' && dramAutomationAssessment(record.summary?.automationHealth).state !== 'ok') return 'warn';
-    if (['demo', 'degraded', 'stale', 'unavailable', 'ruin'].includes(record.summary?.meta?.statusState)) return 'warn';
+    if (['demo', 'degraded', 'stale', 'unavailable', 'ruin', 'blocked', 'error'].includes(record.summary?.meta?.statusState)) return 'warn';
     return 'ok';
   }
 
@@ -4884,14 +4962,13 @@
       const automation = dramAutomationAssessment(record.summary?.automationHealth);
       if (automation.state !== 'ok') return automation.label;
     }
+    if (state === 'degraded') return record.summary?.healthAssessment?.label || '주의';
+    if (['blocked', 'error'].includes(state)) return '데이터 확인 필요';
+    if (['stale', 'unavailable', 'ruin'].includes(state)) return state === 'stale' ? '갱신 지연' : state === 'unavailable' ? '산출 불가' : '파산 경로';
     if (record.summary?.meta?.dataModeLabel) return record.summary.meta.dataModeLabel;
     if (state === 'ok') return '정상';
     if (state === 'published') return '게시 데이터';
     if (state === 'live_api') return '즉시조회';
-    if (state === 'degraded') return '주의';
-    if (state === 'stale') return '갱신 지연';
-    if (state === 'unavailable') return '산출 불가';
-    if (state === 'ruin') return '파산 경로';
     if (state) return state;
     return '실시간 공개본';
   }
@@ -5377,6 +5454,8 @@
       windowedRegimeRows,
       regimeTrendGeometry,
       renderFearAndGreed,
+      fearHealthAssessment,
+      regimeHealthAssessment,
       parseFearPanel,
       parseFearScatter,
       fearScatterGeometry,

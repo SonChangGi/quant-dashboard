@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import test from 'node:test';
 import vm from 'node:vm';
 
@@ -24,6 +27,53 @@ const core = { schema_version:'regime-dashboard-core/2', generation_id:history.g
   payload:{meta:{mode:'demo',result_version:'weekly-regime-result-v5',generation_id:history.generation_id,generated_at:'2026-09-12T12:00:00Z',data_as_of:'2026-09-11',status:'ok'},
     sources:[{id:'synthetic_test',license_class:'synthetic_fixture'}],weekly:recent} };
 const sources = {summary:core,regimeHistory:{[descriptor.path]:history}};
+
+test('public smoke verifies actual history bytes and keeps sidecar failures as hard contracts', (t) => {
+  const directory = mkdtempSync(join(tmpdir(), 'quant-regime-smoke-'));
+  t.after(() => rmSync(directory, { recursive: true, force: true }));
+  const cases = [
+    { name: 'valid', text: body },
+    { name: 'hash mismatch', text: `${body}\n`, expected: /SHA-256 mismatch/ },
+    { name: 'schema mismatch', text: JSON.stringify({ ...history, generation_id: 'wrong' }), rehash: true, expected: /identity or range mismatch/ },
+    { name: 'invalid JSON', text: '{invalid', rehash: true, expected: /invalid JSON/ },
+    { name: 'network failure', text: body, networkFailure: true, expected: /fetch failed/ },
+  ];
+  for (const scenario of cases) {
+    const document = clone(core);
+    if (scenario.rehash) document.history_sidecars[0].sha256 = createHash('sha256').update(scenario.text).digest('hex');
+    const coreBody = JSON.stringify(document);
+    const reportPath = join(directory, `${scenario.name}.json`);
+    const run = spawnSync(process.execPath, ['--input-type=module'], {
+      encoding: 'utf8', timeout: 15_000,
+      input: `
+        const coreBody = ${JSON.stringify(coreBody)};
+        const historyBody = ${JSON.stringify(scenario.text)};
+        globalThis.fetch = async (url) => {
+          if (url === 'https://sonchanggi.github.io/regime/data/regime-core.json') return new Response(coreBody);
+          if (url === 'https://sonchanggi.github.io/regime/data/regime-history-000.json') {
+            if (${Boolean(scenario.networkFailure)}) throw new Error('fixture network failure');
+            return new Response(historyBody);
+          }
+          return new Response('', { status: 503 });
+        };
+        process.argv.push('--report', ${JSON.stringify(reportPath)});
+        await import('./scripts/live-contract-smoke.mjs');
+      `,
+    });
+    assert.ifError(run.error);
+    const report = JSON.parse(readFileSync(reportPath, 'utf8'));
+    const row = report.projects.find((item) => item.project === 'regime');
+    const contracts = report.findings.filter((item) => item.project === 'regime' && item.category === 'contract');
+    assert.equal(row.sources, 2, `${scenario.name}: include the sidecar source`);
+    assert.equal(row.payloadBytes, Buffer.byteLength(coreBody) + (scenario.networkFailure ? 0 : Buffer.byteLength(scenario.text)), `${scenario.name}: count fetched bytes`);
+    if (scenario.expected) {
+      assert.equal(row.state, 'hard', scenario.name);
+      assert.ok(contracts.some((item) => item.severity === 'hard' && scenario.expected.test(item.message)), `${scenario.name}: ${JSON.stringify(contracts)}`);
+    } else {
+      assert.deepEqual(contracts, [], 'valid history must not create the previous missing-sidecar error');
+    }
+  }
+});
 
 test('trend preserves membership, forecast probability, hysteresis state and forecast entropy',()=>{
   const trend=api.parseRegimePanel(sources).trend;

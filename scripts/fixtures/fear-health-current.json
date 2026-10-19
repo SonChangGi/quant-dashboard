@@ -1,0 +1,364 @@
+{
+  "provenance": {
+    "capturedAt": "2026-10-19T12:23:25.710674+00:00",
+    "publishedDataAsOf": "2026-10-19",
+    "sourceCommit": "2ab26ffaee0e93860bd8c3b7ec9847786389d8f0",
+    "sources": [
+      {
+        "url": "https://sonchanggi.github.io/fearNgreed/data/summary.json",
+        "sha256": "a2e1e0263b8180ffd0843eb7ede40efaf5e04f51901caf8bd03e4e785dc05aa7"
+      },
+      {
+        "url": "https://sonchanggi.github.io/fearNgreed/data/dashboard.json",
+        "sha256": "337f816328b9a2a4b3c50ed577423c7a9c11c41293692a386e639692dc962747"
+      }
+    ],
+    "note": "Public payload subset for current-source and historical-repair classification; no raw credentials or private inputs."
+  },
+  "summary": {
+    "schemaVersion": 1,
+    "contract": "quant-research-summary",
+    "projectId": "fearngreed",
+    "methodologyVersion": "fear-flow-v5",
+    "generatedAt": "2026-10-19T11:30:17.956220Z",
+    "dataAsOf": "2026-10-19",
+    "status": {
+      "state": "degraded",
+      "label": "데이터 저하",
+      "cadence": "weekdays-18:15-18:45-20:30-KST",
+      "expectedFreshnessDays": 3,
+      "freshnessBasis": "official_krx_latest_completed_session",
+      "expectedDataAsOf": "2026-10-19",
+      "sourceFreshnessPassed": true,
+      "degradedReasons": [
+        "krx_open_api_target_session_lag",
+        "stock_crosscheck_authenticated_pykrx_fallback",
+        "adjusted_history_gap_reconciled_226490",
+        "adjusted_history_gap_reconciled_069500",
+        "adjusted_history_gap_reconciled_114800",
+        "adjusted_history_gap_reconciled_122630",
+        "adjusted_history_gap_reconciled_252670"
+      ]
+    },
+    "coverage": {
+      "historyStart": "2010-01-04",
+      "historyEnd": "2026-10-19",
+      "observationCount": 4132,
+      "eventCount": 124,
+      "tradeCount": 123,
+      "dateOverlapRatio": 1.0,
+      "sourceCompleteness": 1.0
+    },
+    "sources": [
+      {
+        "id": "krx",
+        "label": "한국거래소 통계정보",
+        "url": "https://openapi.krx.co.kr/",
+        "mode": "authenticated_pykrx_fallback"
+      },
+      {
+        "id": "pykrx",
+        "label": "pykrx authenticated KRX adapter",
+        "url": "https://github.com/sharebook-kr/pykrx"
+      },
+      {
+        "id": "yfinance",
+        "label": "yfinance adjusted-price research source",
+        "url": "https://github.com/ranaroussi/yfinance"
+      }
+    ]
+  },
+  "dashboard": {
+    "schemaVersion": 1,
+    "methodologyVersion": "fear-flow-v5",
+    "generatedAt": "2026-10-19T11:30:17.956220Z",
+    "dataAsOf": "2026-10-19",
+    "status": {
+      "state": "degraded",
+      "label": "데이터 저하",
+      "degradedReasons": [
+        "krx_open_api_target_session_lag",
+        "stock_crosscheck_authenticated_pykrx_fallback",
+        "adjusted_history_gap_reconciled_226490",
+        "adjusted_history_gap_reconciled_069500",
+        "adjusted_history_gap_reconciled_114800",
+        "adjusted_history_gap_reconciled_122630",
+        "adjusted_history_gap_reconciled_252670"
+      ]
+    },
+    "quality": {
+      "state": "ok",
+      "issues": [],
+      "kospiRows": 4132,
+      "flowRows": 4132,
+      "kospiStart": "2010-01-04",
+      "kospiEnd": "2026-10-19",
+      "flowStart": "2010-01-04",
+      "flowEnd": "2026-10-19",
+      "invalidPriceRows": 0,
+      "invalidTurnoverRows": 0,
+      "invalidFlowRows": 0,
+      "commonRows": 4132,
+      "dateOverlapRatio": 1.0,
+      "sourceCompleteness": 1.0,
+      "flowSessionCoverageRatio": 1.0,
+      "kospiSessionCoverageRatio": 1.0,
+      "latestKospiDate": "2026-10-19",
+      "latestFlowDate": "2026-10-19",
+      "earliestKospiDate": "2010-01-04",
+      "earliestFlowDate": "2010-01-04",
+      "latestSourceDateMatches": true,
+      "sourceFreshnessLagDays": 0,
+      "kospiOnlyDateCount": 0,
+      "flowOnlyDateCount": 0,
+      "sourceGapCount": 0,
+      "expectedAsOf": "2026-10-19",
+      "dataFreshnessLagDays": 0,
+      "sourceDateAfterExpected": false,
+      "sourceContractPassed": true,
+      "sourceSessionCoveragePassed": true,
+      "sourceFreshnessPassed": true
+    },
+    "crosschecks": {
+      "kospi": {
+        "state": "ok",
+        "reason": null,
+        "date": "2026-10-19",
+        "expectedDate": "2026-10-19",
+        "primaryLatestDate": "2026-10-19",
+        "secondaryLatestDate": "2026-10-19",
+        "relativeDifference": 0.0,
+        "tolerance": 0.005,
+        "historicalAnchorGatesPublication": false,
+        "historicalAnchors": {
+          "state": "unavailable",
+          "reason": "secondary_history_reconstructed"
+        }
+      },
+      "etf": {
+        "226490": {
+          "state": "ok",
+          "reason": null,
+          "date": "2026-10-19",
+          "expectedDate": "2026-10-19",
+          "primaryLatestDate": "2026-10-19",
+          "secondaryLatestDate": "2026-10-19",
+          "relativeDifference": 0.0,
+          "tolerance": 0.005,
+          "historyReconciliation": {
+            "state": "ok",
+            "source": "yfinance_adjusted_plus_scaled_krx_gap_rows",
+            "method": "adjacent_close_factor_then_scaled_krx_ohlc",
+            "factorTolerance": 0.005,
+            "officialSessionCount": 2734,
+            "researchSessionCount": 2734,
+            "missingCount": 0,
+            "filledCount": 29,
+            "unresolvedCount": 0,
+            "extraCount": 0,
+            "reconciliationStart": "2026-10-12",
+            "frozenSessionCount": 2728,
+            "reconciledSessionCount": 2734,
+            "inheritedFilledCount": 29,
+            "currentRunFilledCount": 0,
+            "provenance": "published_history_plus_current_reconciliation",
+            "filledDateSample": [
+              "2015-09-25",
+              "2017-09-22",
+              "2017-12-20"
+            ]
+          },
+          "historicalAnchorGatesPublication": false,
+          "historicalAnchors": {
+            "state": "mismatch",
+            "reason": "historical_anchor_difference_exceeded"
+          }
+        },
+        "069500": {
+          "state": "ok",
+          "reason": null,
+          "date": "2026-10-19",
+          "expectedDate": "2026-10-19",
+          "primaryLatestDate": "2026-10-19",
+          "secondaryLatestDate": "2026-10-19",
+          "relativeDifference": 0.0,
+          "tolerance": 0.005,
+          "historyReconciliation": {
+            "state": "ok",
+            "source": "yfinance_adjusted_plus_scaled_krx_gap_rows",
+            "method": "adjacent_close_factor_then_scaled_krx_ohlc",
+            "factorTolerance": 0.005,
+            "officialSessionCount": 4132,
+            "researchSessionCount": 4132,
+            "missingCount": 0,
+            "filledCount": 29,
+            "unresolvedCount": 0,
+            "extraCount": 0,
+            "reconciliationStart": "2026-10-12",
+            "frozenSessionCount": 4126,
+            "reconciledSessionCount": 4132,
+            "inheritedFilledCount": 29,
+            "currentRunFilledCount": 0,
+            "provenance": "published_history_plus_current_reconciliation",
+            "filledDateSample": [
+              "2015-09-25",
+              "2017-09-22",
+              "2017-12-20"
+            ]
+          },
+          "historicalAnchorGatesPublication": false,
+          "historicalAnchors": {
+            "state": "mismatch",
+            "reason": "historical_anchor_difference_exceeded"
+          }
+        },
+        "114800": {
+          "state": "ok",
+          "reason": null,
+          "date": "2026-10-19",
+          "expectedDate": "2026-10-19",
+          "primaryLatestDate": "2026-10-19",
+          "secondaryLatestDate": "2026-10-19",
+          "relativeDifference": 0.0,
+          "tolerance": 0.005,
+          "historyReconciliation": {
+            "state": "ok",
+            "source": "yfinance_adjusted_plus_scaled_krx_gap_rows",
+            "method": "adjacent_close_factor_then_scaled_krx_ohlc",
+            "factorTolerance": 0.005,
+            "officialSessionCount": 4132,
+            "researchSessionCount": 4132,
+            "missingCount": 0,
+            "filledCount": 29,
+            "unresolvedCount": 0,
+            "extraCount": 0,
+            "reconciliationStart": "2026-10-12",
+            "frozenSessionCount": 4126,
+            "reconciledSessionCount": 4132,
+            "inheritedFilledCount": 29,
+            "currentRunFilledCount": 0,
+            "provenance": "published_history_plus_current_reconciliation",
+            "filledDateSample": [
+              "2015-09-25",
+              "2017-09-22",
+              "2017-12-20"
+            ]
+          },
+          "historicalAnchorGatesPublication": false,
+          "historicalAnchors": {
+            "state": "ok",
+            "reason": null
+          }
+        },
+        "122630": {
+          "state": "ok",
+          "reason": null,
+          "date": "2026-10-19",
+          "expectedDate": "2026-10-19",
+          "primaryLatestDate": "2026-10-19",
+          "secondaryLatestDate": "2026-10-19",
+          "relativeDifference": 0.0,
+          "tolerance": 0.005,
+          "historyReconciliation": {
+            "state": "ok",
+            "source": "yfinance_adjusted_plus_scaled_krx_gap_rows",
+            "method": "adjacent_close_factor_then_scaled_krx_ohlc",
+            "factorTolerance": 0.005,
+            "officialSessionCount": 4098,
+            "researchSessionCount": 4098,
+            "missingCount": 0,
+            "filledCount": 29,
+            "unresolvedCount": 0,
+            "extraCount": 0,
+            "reconciliationStart": "2026-10-12",
+            "frozenSessionCount": 4092,
+            "reconciledSessionCount": 4098,
+            "inheritedFilledCount": 29,
+            "currentRunFilledCount": 0,
+            "provenance": "published_history_plus_current_reconciliation",
+            "filledDateSample": [
+              "2015-09-25",
+              "2017-09-22",
+              "2017-12-20"
+            ]
+          },
+          "historicalAnchorGatesPublication": false,
+          "historicalAnchors": {
+            "state": "ok",
+            "reason": null
+          }
+        },
+        "252670": {
+          "state": "ok",
+          "reason": null,
+          "date": "2026-10-19",
+          "expectedDate": "2026-10-19",
+          "primaryLatestDate": "2026-10-19",
+          "secondaryLatestDate": "2026-10-19",
+          "relativeDifference": 0.0,
+          "tolerance": 0.005,
+          "historyReconciliation": {
+            "state": "ok",
+            "source": "yfinance_adjusted_plus_scaled_krx_gap_rows",
+            "method": "adjacent_close_factor_then_scaled_krx_ohlc",
+            "factorTolerance": 0.005,
+            "officialSessionCount": 2469,
+            "researchSessionCount": 2469,
+            "missingCount": 0,
+            "filledCount": 29,
+            "unresolvedCount": 0,
+            "extraCount": 0,
+            "reconciliationStart": "2026-10-12",
+            "frozenSessionCount": 2463,
+            "reconciledSessionCount": 2469,
+            "inheritedFilledCount": 29,
+            "currentRunFilledCount": 0,
+            "provenance": "published_history_plus_current_reconciliation",
+            "filledDateSample": [
+              "2017-07-11",
+              "2017-09-22",
+              "2017-12-20"
+            ]
+          },
+          "historicalAnchorGatesPublication": false,
+          "historicalAnchors": {
+            "state": "ok",
+            "reason": null
+          }
+        }
+      },
+      "stock": {
+        "000660": {
+          "state": "ok",
+          "reason": null,
+          "date": "2026-10-19",
+          "expectedDate": "2026-10-19",
+          "primaryLatestDate": "2026-10-19",
+          "secondaryLatestDate": "2026-10-19",
+          "relativeDifference": 0.0,
+          "tolerance": 0.005,
+          "historicalAnchorGatesPublication": false,
+          "historicalAnchors": {
+            "state": "ok",
+            "reason": null
+          }
+        },
+        "005930": {
+          "state": "ok",
+          "reason": null,
+          "date": "2026-10-19",
+          "expectedDate": "2026-10-19",
+          "primaryLatestDate": "2026-10-19",
+          "secondaryLatestDate": "2026-10-19",
+          "relativeDifference": 0.0,
+          "tolerance": 0.005,
+          "historicalAnchorGatesPublication": false,
+          "historicalAnchors": {
+            "state": "ok",
+            "reason": null
+          }
+        }
+      }
+    }
+  }
+}

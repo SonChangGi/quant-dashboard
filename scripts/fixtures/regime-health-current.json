@@ -1,0 +1,168 @@
+{
+  "provenance": {
+    "url": "https://sonchanggi.github.io/regime/data/regime-core.json",
+    "sha256": "1563ccbd914e1454c1bb40cf3750889aee79a0f519731cf699b5ec8d60e6f47c",
+    "retrievedAt": "2026-10-19T12:23:15.760930+00:00",
+    "generationId": "20261018T014631.771629Z",
+    "sourcePayloadSha256": "2b0cb9aab788bbddcaf574d33fb75b7fc62691c2f32d6155c35479ca6b8141b7",
+    "projection": "Selected fields copied verbatim from public core payload; latest weekly observation only."
+  },
+  "payload": {
+    "meta": {
+      "mode": "live",
+      "result_version": "weekly-regime-result-v5",
+      "generated_at": "2026-10-18T01:46:31.771629+00:00",
+      "generation_id": "20261018T014631.771629Z",
+      "data_as_of": "2026-10-16T20:00:00+00:00",
+      "status": "degraded",
+      "freshness": {
+        "age_days": 1,
+        "cadence": "weekly",
+        "data_as_of": "2026-10-16T20:00:00+00:00",
+        "maximum_age_days": 10,
+        "status": "current"
+      },
+      "warnings": [
+        "Alpha Vantage adjusted history는 현재 제공된 조정계수 기준이며 신규 snapshot부터 변경을 추적합니다.",
+        "ALFRED는 일자 단위 vintage이므로 정확한 발표시각이 없으면 18:00 ET proxy를 적용해 다음 주부터 사용합니다."
+      ]
+    },
+    "sources": [
+      {
+        "id": "alpha_vantage",
+        "license_class": "private_noncommercial",
+        "status": "ok",
+        "issues": []
+      },
+      {
+        "id": "alfred",
+        "license_class": "user_confirmed_ml_storage_derived",
+        "status": "ok",
+        "issues": []
+      },
+      {
+        "id": "frb_h10",
+        "license_class": "federal_reserve_board_public_domain_citation_requested",
+        "status": "ok",
+        "issues": []
+      }
+    ],
+    "model": {
+      "model_health": {
+        "reasons": [
+          "low_transition_recall"
+        ],
+        "status": "review_due"
+      },
+      "probability_health": {
+        "brier": 0.29929956,
+        "calibration_drift": 0.01148644,
+        "calibration_error": 0.05226385,
+        "calibration_method": "top_label_ece_10_equal_width_bins",
+        "champion": "causal_dynamic_ensemble",
+        "evaluation_split": "retrospective_diagnostic",
+        "log_loss": 0.49313361,
+        "n_predictions": 197,
+        "reasons": [],
+        "selection_calibration_error": 0.04077741,
+        "status": "ok"
+      },
+      "holdout_diagnostic": {
+        "absolute_regret": 0.00295939,
+        "applicable": true,
+        "best_log_loss": 0.49017422,
+        "best_model": "recency_weighted_xgboost_208w",
+        "champion_log_loss": 0.49313361,
+        "champion_model": "causal_dynamic_ensemble",
+        "champion_rank": 2,
+        "material_regret_threshold": 0.05,
+        "metric": "multiclass_log_loss",
+        "model_count": 11,
+        "selection_locked": true,
+        "status": "ok"
+      },
+      "early_warning_health": {
+        "champion": "causal_dynamic_ensemble",
+        "detected_event_count": 34,
+        "evaluation_split": "retrospective_diagnostic",
+        "event_count": 41,
+        "event_definition": "actual_next_state_differs_from_current_state",
+        "exposure_years": 3.77557376,
+        "false_alarm_count": 2,
+        "false_alarms_per_year": 0.52972081,
+        "mean_detection_delay_forecast_weeks": 0.91176471,
+        "minimum_event_count": 12,
+        "n_predictions": 197,
+        "on_time_departure_count": 3,
+        "on_time_recall": 0.07317073,
+        "precision": 0.6,
+        "reasons": [
+          "low_transition_recall"
+        ],
+        "status": "review_due"
+      }
+    },
+    "weekly": [
+      {
+        "date": "2026-10-16",
+        "current": {
+          "membership_entropy": 0.78295225,
+          "memberships": {
+            "risk_off": 0.06227913,
+            "risk_on": 0.36541829,
+            "transition": 0.57230258
+          },
+          "method": "risk_score_anchor_membership",
+          "primary_membership": 0.57230258,
+          "state": "transition"
+        },
+        "next_week": {
+          "confidence": 0.68287495,
+          "date": "2026-10-23",
+          "entropy": 0.63191492,
+          "fallback": false,
+          "fallback_reason": "",
+          "method": "champion_walk_forward_probability",
+          "model": "causal_dynamic_ensemble",
+          "probabilities": {
+            "risk_off": 0.01815191,
+            "risk_on": 0.29897314,
+            "transition": 0.68287495
+          },
+          "state": "transition"
+        },
+        "transition_probability": 0.31712505,
+        "transition_risk": {
+          "13w": {
+            "fallback": false,
+            "fallback_reason": "",
+            "model": "markov_hazard",
+            "probability": 0.89832275,
+            "target_end": "2027-01-15",
+            "threshold": 0.81
+          },
+          "1w": {
+            "fallback": false,
+            "fallback_reason": "",
+            "model": "causal_dynamic_ensemble",
+            "probability": 0.31712505,
+            "target_end": "2026-10-23",
+            "threshold": 0.5
+          },
+          "4w": {
+            "fallback": false,
+            "fallback_reason": "",
+            "model": "markov_hazard",
+            "probability": 0.55877612,
+            "target_end": "2026-11-13",
+            "threshold": 0.38
+          }
+        },
+        "health": {
+          "reason": "모든 required series가 cutoff 이전 값으로 결합됨",
+          "status": "ok"
+        }
+      }
+    ]
+  }
+}
