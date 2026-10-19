@@ -587,7 +587,29 @@
     if (matches.length !== 1) throw new Error('News latest publication is missing or duplicated.');
     const entry = matches[0];
     const report = new URL(entry.report_url, NEWS_ARCHIVE_URL);
-    if (report.origin !== 'https://sonchanggi.github.io' || report.pathname !== `/news/daily/${date}/index.html`
+    let reportPath = `/news/daily/${date}/index.html`;
+    if (entry.edition_kind === 'weekend') {
+      const owner = entry.owner_date ?? date;
+      const ownerTime = typeof owner === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(owner) ? Date.parse(owner) : NaN;
+      if (!Number.isFinite(ownerTime) || new Date(ownerTime).toISOString().slice(0, 10) !== owner
+          || owner > date || ![0, 6].includes(new Date(ownerTime).getUTCDay())
+          || (entry.edition_phase === 'sunday_weekly' && new Date(ownerTime).getUTCDay() !== 0)) {
+        throw new Error('News weekend owner date is invalid.');
+      }
+      const mondayTime = ownerTime - ((new Date(ownerTime).getUTCDay() + 6) % 7) * 86400000;
+      const monday = new Date(mondayTime).toISOString().slice(0, 10);
+      if (entry.period_id !== `weekend:${monday}` || typeof entry.run_id !== 'string'
+          || !/^[A-Za-z0-9_-]+$/.test(entry.run_id)) throw new Error('News weekend identity is invalid.');
+      if (['recap_policy', 'period_start', 'period_end'].some((key) => key in entry)
+          && (entry.recap_policy !== 'published_mon_sat_v1' || entry.period_start !== monday
+              || entry.period_end !== new Date(mondayTime + 5 * 86400000).toISOString().slice(0, 10))) {
+        throw new Error('News weekly recap period is invalid.');
+      }
+      reportPath = `/news/weekend/${monday}/index.html`;
+    } else if (entry.edition_kind !== undefined && entry.edition_kind !== 'daily') {
+      throw new Error('News edition kind is unsupported.');
+    }
+    if (report.origin !== 'https://sonchanggi.github.io' || report.pathname !== reportPath
         || report.username || report.password || report.search || report.hash
         || !LOWERCASE_SHA256.test(entry.sha256?.json || '')
         || typeof entry.generated_at !== 'string' || !Number.isFinite(Date.parse(entry.generated_at))
@@ -598,12 +620,27 @@
   }
 
   function parseNewsBriefing(entry, payload) {
-    if (!isRecord(payload) || String(payload.schema_version) !== '1' || payload.publication?.visibility !== 'public'
+    if (!isRecord(payload) || !['1', '2', 1, 2].includes(payload.schema_version)) {
+      throw new Error('News briefing schema is unsupported.');
+    }
+    if (payload.publication?.visibility !== 'public'
         || payload.synthetic !== false || payload.report_date !== entry.date
         || payload.generated_at !== entry.generated_at || payload.cutoff !== entry.cutoff
         || payload.mode !== entry.mode || payload.status !== entry.status
+        || (entry.run_id !== undefined && payload.run_id !== entry.run_id)
+        || (entry.edition_phase !== undefined && payload.edition_phase !== entry.edition_phase)
+        || (payload.edition_kind ?? 'daily') !== (entry.edition_kind ?? 'daily')
         || !Array.isArray(payload.issues) || payload.issues.length !== entry.issue_count
         || !Array.isArray(payload.highlights)) throw new Error('News briefing does not match the publication.');
+    if (entry.edition_kind === 'weekend'
+        && (payload.period_id !== entry.period_id || payload.edition?.owner_date !== entry.owner_date
+            || ['recap_policy', 'period_start', 'period_end'].some((key) => key in entry && payload.edition?.[key] !== entry[key]))) {
+      throw new Error('News weekend briefing does not match the publication.');
+    }
+    if (['reviewable_draft', 'normal_editorial_approval'].some((key) => key in payload && typeof payload[key] !== 'boolean')
+        || (payload.reviewable_draft === true && payload.normal_editorial_approval === true)) {
+      throw new Error('News editorial approval metadata is invalid.');
+    }
     if (payload.issues.some((issue) => !isRecord(issue) || typeof issue.title !== 'string' || !issue.title.trim()
         || !/^issue-[a-f0-9]{16}$/.test(issue.anchor || '') || !Array.isArray(issue.summary)
         || issue.summary.some((line) => typeof line !== 'string'))) throw new Error('News issue schema is invalid.');
@@ -616,6 +653,8 @@
     if (selected.some((issue) => !issue)) throw new Error('News highlight has no matching issue.');
     return {
       ...entry,
+      reviewable_draft: payload.reviewable_draft ?? null,
+      normal_editorial_approval: payload.normal_editorial_approval ?? null,
       headlines: selected.slice(0, 4).map((issue) => ({
         title: issue.title,
         summary: issue.evidence_expired ? '' : (issue.summary.find((line) => line.trim()) || ''),
@@ -663,7 +702,7 @@
     }
     status.textContent = `발행일 ${summary.date} · ${summary.issue_count}개 이슈`;
     target.innerHTML = summary.headlines.length ? `<ol class="news-headlines">${summary.headlines.map((issue) => `<li><a href="${escapeAttribute(issue.url)}">${escapeHtml(issue.title)} <span aria-hidden="true">↗</span></a>${issue.summary ? `<p>${escapeHtml(issue.summary)}</p>` : ''}</li>`).join('')}</ol>` : '<p class="muted">선정된 이슈 없음</p>';
-    if (health) health.innerHTML = `<article class="health-item ${summary.status === 'partial' ? 'warn' : 'ok'}"><div><strong>News</strong><span>${escapeHtml(summary.date)} · ${summary.issue_count}개 이슈</span></div><p>자료 마감 ${escapeHtml(formatFreshness(summary.cutoff))} · 생성 ${escapeHtml(formatFreshness(summary.generated_at))}</p><div class="source-links"><a href="${NEWS_ARCHIVE_URL}">발행 목록 JSON</a><a href="${escapeAttribute(summary.jsonUrl)}">브리핑 JSON</a></div></article>`;
+    if (health) health.innerHTML = `<article class="health-item ${summary.status === 'partial' || summary.reviewable_draft ? 'warn' : 'ok'}"><div><strong>News</strong><span>${escapeHtml(summary.date)} · ${summary.issue_count}개 이슈${summary.reviewable_draft ? ' · 검토용 초안' : ''}</span></div><p>자료 마감 ${escapeHtml(formatFreshness(summary.cutoff))} · 생성 ${escapeHtml(formatFreshness(summary.generated_at))}</p><div class="source-links"><a href="${NEWS_ARCHIVE_URL}">발행 목록 JSON</a><a href="${escapeAttribute(summary.jsonUrl)}">브리핑 JSON</a></div></article>`;
   }
 
   function createPanelShell(project) {
