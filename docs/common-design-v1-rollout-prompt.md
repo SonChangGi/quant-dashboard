@@ -1,10 +1,12 @@
 # 공통 디자인 v1.2 프로젝트 적용 프롬프트
 
-> 새 작업에는 6개 구현 사이트를 최우선 참조 스위트로 확장한 [Quant Research Web Design Prompt](web-design.md)의 복사용 실행 프롬프트를 사용합니다. 아래 내용은 v1.2 파일럿 적용 이력입니다.
+> **역사 기록 · 2026-07 파일럿**: 당시 절차와 메뉴는 현재 운영 지침이 아닙니다. 현재 메뉴는 `shared/navigation/v1/menu.json`과 [공통 메뉴 계약](shared-navigation.md)을 따르고, 현재 디자인·검증 대상은 [web-design.md](web-design.md)의 활성 프로젝트입니다. Best는 종료됐으며 과거 예시로만 남깁니다.
+
+> 새 작업에는 활성 프로젝트를 검증 대상으로 삼는 [Quant Research Web Design Prompt](web-design.md)의 복사용 실행 프롬프트를 사용합니다. 아래 내용은 v1.2 파일럿 적용 이력입니다.
 
 아래 프롬프트는 v1.2 파일럿 당시 사용한 역사적 template이다. 새 프로젝트의 plan-goal은 [Quant Research Web Design Prompt](web-design.md)의 최신 복사용 실행 프롬프트로 시작한다.
 
-## 복사용 프롬프트
+## 당시 복사용 프롬프트 · 새 작업에 직접 사용하지 않음
 
 ```text
 [프로젝트 이름]에 Quant Research 공통 디자인 v1.2를 적용해줘.

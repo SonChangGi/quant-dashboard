@@ -1,5 +1,7 @@
-# Six-dashboard control audit
+# Six-dashboard control audit · historical record
 
+> **역사 기록**: 아래 표와 구현 상태는 2026-07-24 당시의 읽기 전용 감사입니다. 현재 활성 프로젝트·실행 지원·배포 상태를 뜻하지 않습니다. Best는 종료됐고 과거 표기는 감사 근거로만 보존합니다. 현재 계약은 [Control API README](../platform/services/control-api/README.md), [공통 메뉴](shared-navigation.md), [현행 디자인 계약](web-design.md)을 따릅니다.
+>
 > Read-only source audit completed 2026-07-24.
 >
 > Local implementation status updated 2026-07-24. Nothing in this document

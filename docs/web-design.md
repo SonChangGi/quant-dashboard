@@ -2,7 +2,9 @@
 
 > 버전: `2.2.1`
 >
-> 기준일: `2026-07-24`
+> 시각 원칙 기준일: `2026-07-24`
+>
+> 운영·검증 대상 갱신: `2026-10-21`
 >
 > 상태: 앞으로의 기존 페이지 개선과 신규 프로젝트에 사용하는 최우선 웹 디자인 프롬프트
 > 적용 범위: Quant Research Hub와 연결되는 모든 공개 웹페이지
@@ -14,7 +16,7 @@
 규칙이 충돌하면 아래 순서대로 판단한다.
 
 1. **분석·결과 보호 경계**
-2. **현재 공개된 6개 기준 사이트의 실제 디자인과 상호작용**
+2. **현재 활성 6개 데이터 사이트의 실제 디자인과 상호작용**
 3. **이 문서에서 추출한 공통 디자인 계약**
 4. **프로젝트 고유의 분석 목적과 필요한 예외**
 5. **Toss 공개 자료에서 참고한 일반적인 디자인 원칙**
@@ -27,29 +29,36 @@
 | Fear & Greed Flow Lab | [fearNgreed](https://sonchanggi.github.io/fearNgreed/) | 결과 우선 결론, 날짜 역할 분리, 계열·날짜 탐색, 외부 정확값 readout | KOSPI·신호·선택 전략 3패널, 연구 트랙, ETF 1X/2X, 사건 연구·백테스트·거래표 |
 | ETF TOP10 Tracking | [etf-tracking](https://sonchanggi.github.io/etf-tracking/) | 고밀도 다중 계열 차트의 강조·끝 라벨·충돌 방지, 선택일·종목 readout | TOP10 비중, 편입·편출·잔차·가격효과 신호, ETF별 표와 저장 결과 |
 | SOX Semiconductor | [sox](https://sonchanggi.github.io/sox/) | constituent 비교, 연동 선택, 막대·사분면 차트, 검색·정렬 고밀도 표 | snapshot date selector, source status, proxy weight, 가격·실적 모멘텀, coordinated selection, leaders, 원래 표 열 |
-| Momentum Factor Lab | [momentum-factor-lab](https://sonchanggi.github.io/momentum-factor-lab/) | 결과→차트→입력→상세 구조, 선택 계열 강조, 프레젠테이션 상태 격리 | schema v5, 64 factors, 고정 70/30, best·selected·benchmark, preset·grid manifest, 입력·URL·local API, result-unavailable fail-closed |
-| Best Factor Lab | [best-factor](https://sonchanggi.github.io/best-factor/) | 공식 결과와 표시 설정·재실행 입력의 분리, 고밀도 팩터 비교, 결과 결합 상태, 입력 panel의 단계적 공개 | 공식 ranking·holdout·보유 종목, best·selected·Nasdaq 비교, 11개 실제 분석 입력, `result_binding`, 입력별 CLI 전달, 기존 결과·표·JSON 계약 |
+| Factor | [factor](https://sonchanggi.github.io/factor/) | 현재 선택·단일 팩터·비교·실험·데이터 탐색, 연동 날짜 readout, 비중 내림차순 모형 보유 | `integrated-factor/v1`, 32개 정의와 투자 후보 구분, 월별 선택 전략과 고정 팩터의 구분, 신호·체결·보유 기준일, 비용·현금·수취권, URL·입력·결과 binding |
+| Regime | [regime](https://sonchanggi.github.io/regime/) | 관측 소속도와 예측확률의 분리, 기간 탐색, 상태 배경과 t+1 결과 마커 | 주간 관측·예측 시점, 결과 ID·SHA-256, core·이력 일치, source status·fail-closed |
 
 ### 0.1 검증 기준선
 
-이 문서의 규범은 계속 변하는 공개 화면을 자동 추종하지 않는다. 아래 `2026-07-24` UI 기준 commit과 공개 asset을 대조해 확정했다. 데이터 자동 갱신으로 원격 main이 앞으로 이동해도 UI 파일이 같으면 이 기준은 유지한다. UI가 바뀌면 이 문서를 검토·version-up한 뒤에만 새 기준으로 채택한다.
+새 작업은 위 활성 6개 프로젝트와 Hub의 현재 검증된 소스를 기준으로 시작한다. 같은 실행·기간·단위의 결과, 원본 표 행과 차트 관측, 라이트·다크, 1440·1024·768·390px를 대조한다. Factor는 `factor_lab/web/integrated.*`, 나머지는 각 저장소의 실제 배포 원본을 확인한다. 공통 메뉴 기준은 `shared/navigation/v1/menu.json`이다.
 
-| 사이트 | UI 기준 commit | 기준 UI source |
+아래 표는 색상·밀도·상호작용 원칙을 추출한 **2026-07-24 역사 기록**이다. 종료된 Best나 이전 Momentum UI를 현재 서비스·필수 검증 대상으로 되살리는 근거가 아니다. 과거 commit과 다른 프로젝트의 Git 이력은 유지한다.
+
+<details>
+<summary>2026-07-24 UI 근거 commit · 비규범 역사 기록</summary>
+
+| 당시 사이트 | 당시 UI 기준 commit | 당시 기준 UI source |
 | --- | --- | --- |
 | DRAM | `7808d1400ae1ada880ff9ee3103fe417a0196e7a` | `frontend/src/index.css`, `App.tsx`, `components/shared-nav.tsx`, `components/price-chart.tsx` |
 | Fear & Greed | `e1e1e720cf1ab406320379afadc522870e3c3032` | `index.html`, `assets/styles.css`, `assets/app.js` |
 | ETF Tracking | `a11f9aa7cda743767eb4ca1781e826565778a084` | `index.html`, `assets/styles.css`, `assets/app.js` |
 | SOX | `f570adf16554d8e006ee8d8b703335288ea3ce78` | `index.html`, `assets/styles.css`, `assets/app.js` |
 | Momentum | `a6ef9c6ac086590e5400c6d17ef107071adfcd65` | `docs/index.html`, `docs/assets/styles.css`, `docs/assets/dashboard.js` |
-| Best Factor | `269f8d4c872f5fd3275cf43747ad3a5ac4fbc8e2` | `docs/index.html`, `docs/styles.css`, `docs/app.js`, `docs/data/dashboard-config.json` |
+| Best Factor (종료) | `269f8d4c872f5fd3275cf43747ad3a5ac4fbc8e2` | `docs/index.html`, `docs/styles.css`, `docs/app.js`, `docs/data/dashboard-config.json` |
 
-### 0.2 여섯 사이트가 서로 다를 때
+</details>
+
+### 0.2 활성 사이트가 서로 다를 때
 
 - 3개 이상에서 반복되고 분석 의미와 충돌하지 않는 패턴은 공통 기본값으로 채택한다.
-- 단, 8개 메뉴·theme·입력 상태·결과 binding처럼 이 문서가 명시한 canonical contract는 기존 구현의 다수결이 아니라 **모든 페이지가 이동할 목표 규칙**이다.
+- 단, 공통 메뉴·theme·입력 상태·결과 binding처럼 이 문서가 명시한 canonical contract는 기존 구현의 다수결이 아니라 **모든 페이지가 이동할 목표 규칙**이다.
 - 프로젝트 분석 의미 때문에 필요한 차이는 허용된 variant로 기록한다.
 - 단순히 과거 구현이 달랐다는 이유로 새 variant를 만들지 않는다.
-- 한 사이트를 통째로 복사하지 않는다. **여섯 사이트의 공통 문법**을 사용한다.
+- 한 사이트를 통째로 복사하지 않는다. **활성 사이트의 공통 문법**을 사용한다.
 
 ## 1. 절대 보호 경계
 
@@ -125,9 +134,11 @@ Python 파일 안에 HTML/CSS presentation template이 들어 있는 프로젝�
 | DRAM | 8개 `display`, 차트 관찰일 1개 `result_selector` | 저장 관측만 사용한다. 사용자 분석 API를 만들거나 관찰일 선택을 재계산으로 표현하지 않는다. |
 | ETF Tracking | 15개 `display`, 5개 `result_selector`, 인증된 1개 `operation` | 저장 이력 탐색과 수집 작업을 분리한다. 공개 표시·선택 control은 분석 run을 만들지 않는다. |
 | SOX | 공개 5개 `display`, 1개 `result_selector`, 별도 인증 운영 작업 2개 | 저장 기준일·종목을 선택한다. 기준일 선택과 owner operation을 재계산 form으로 표현하지 않는다. |
-| Momentum | 26개 독립 `analysis` ResearchInputs → 정적 preset 또는 Python job API | `analysis` 전 구간과 `resultKey` binding을 보존하고 공용 API·worker로 확장한다. |
-| Best Factor | 11개 `analysis` 입력 → workflow/CLI → Python | command 생성만으로 완료 처리하지 않는다. 실제 run 제출·상태·결과 binding을 연결하기 전에는 `적용`·`재계산` CTA로 표현하지 않는다. 시가총액 metadata 부족처럼 요청값이 미적용되는 fallback은 `allow_fallback` 동의 없이 성공시키지 않는다. |
-| Fear & Greed | 5개 `display`, 브라우저 13개 `analysis`, 3개 `operation` | `browser_scenario` engine을 명시하고 Python 공식 결과로 표현하지 않는다. Python 이전 전에는 JS/Python parity fixture를 통과한다. |
+| Factor | 통합 결과 조회와 로컬 실험·Python 실행을 구분 | 차트 날짜·신호월·저장 결과 선택은 `display` 또는 `result_selector`다. 새 계산은 실제 Python 실행과 입력·데이터·코드 identity에 결합한다. 공통 Control API의 안정 ID `momentum`·26개 `ResearchInputs` 계약은 capability를 확인하고 사용하며 통합 실행 입력으로 묵시적으로 바꾸지 않는다. |
+| Fear & Greed | 표시·저장 이력 탐색, 선언된 browser scenario 또는 controlled Python run | 각 결과의 engine을 명시한다. 공통 API의 16개 가시 입력·17개 wire field를 실제 capability와 대조하며 JS/Python parity 없는 결과를 같은 계산으로 표현하지 않는다. |
+| Regime | 저장 core·주간 이력·기간·관찰일·상태 선택 | 조회와 표시만 바꾼다. 공개 조회를 새 예측 계산으로 표현하지 않고 core·이력 발행 ID와 SHA-256을 검증한다. |
+
+입력 개수는 과거 감사표를 고정값으로 복사하지 않는다. 현재 control registry와 capability에서 확인한다. command 생성만으로 완료 처리하지 않는다. Best의 독립 입력·실행 경로는 종료됐으며 새 작업의 연결 대상이 아니다.
 
 ### 1.6 입력 → 권위 분석 engine → 결과 계약
 
@@ -275,24 +286,27 @@ Quant Research 제품군은 다음처럼 보여야 한다.
 
 ## 4. 9개 공통 메뉴
 
-아래 registry의 label·순서·URL은 모든 사이트에서 동일해야 한다.
+메뉴 원본은 `shared/navigation/v1/menu.json`이다. Hub 브랜드 하나와 프로젝트 링크 8개로 구성하며 현재 순서는 다음과 같다.
+
+`Hub → Fear & Greed → Factor → DRAM → ETF → SOX → Regime → News → 알파 하우스`
 
 | 순서 | Label | URL |
 | ---: | --- | --- |
 | 1 | Hub | `https://sonchanggi.github.io/quant-dashboard/` |
 | 2 | Fear & Greed | `https://sonchanggi.github.io/fearNgreed/` |
-| 3 | Momentum | `https://sonchanggi.github.io/momentum-factor-lab/` |
+| 3 | Factor | `https://sonchanggi.github.io/factor/` |
 | 4 | DRAM | `https://sonchanggi.github.io/dram-price/` |
-| 5 | Best Factor | `https://sonchanggi.github.io/best-factor/` |
-| 6 | ETF | `https://sonchanggi.github.io/etf-tracking/` |
-| 7 | SOX | `https://sonchanggi.github.io/sox/` |
-| 8 | Regime | `https://sonchanggi.github.io/regime/` |
+| 5 | ETF | `https://sonchanggi.github.io/etf-tracking/` |
+| 6 | SOX | `https://sonchanggi.github.io/sox/` |
+| 7 | Regime | `https://sonchanggi.github.io/regime/` |
+| 8 | News | `https://sonchanggi.github.io/news/` |
+| 9 | 알파 하우스 | `https://research-observatory-changgi.changgi-son.chatgpt.site/` |
 
 ### 4.1 Canonical navigation
 
-이 항목은 기존 여섯 구현에서 가장 많은 모양을 고르는 규칙이 아니라, 기존·신규 모든 페이지가 이동할 목표 contract다.
+이 항목은 과거 구현에서 가장 많은 모양을 고르는 규칙이 아니라, 기존·신규 모든 페이지가 이동할 목표 contract다.
 
-- full-width sticky shell, 기본 높이 `58px`
+- full-width fixed shell, 기본 높이 `59px`·내부 행 `58px`
 - 내부 content 최대 폭 `1320px`
 - brand `14px / 700`
 - link `12px / 650`
@@ -307,7 +321,7 @@ Quant Research 제품군은 다음처럼 보여야 한다.
 
 `760px` 이하에서는 brand와 theme control을 첫 행에 유지하고, 8개 링크를 두 번째 행의 **메뉴 자체 horizontal rail**로 제공한다. 링크를 문서 밖으로 넘기거나 일부만 숨기지 않는다.
 
-각 저장소는 메뉴를 자체 구현할 수 있지만 위 registry를 그대로 사용한다. 다른 저장소의 runtime CSS·JavaScript를 외부 import하지 않는다.
+모든 페이지는 Hub의 공통 `nav.js`·`nav.css`와 중앙 메뉴 JSON을 사용한다. 정적 페이지는 링크 영역만 갱신하고 React는 같은 데이터를 hook으로 받아 직접 렌더링한다. 조회 실패 시 검증된 로컬 fallback을 유지한다. 생성·검증·CSP 연결은 [공통 메뉴 계약](shared-navigation.md)을 따른다. 다른 분석 코드나 결과를 메뉴와 함께 공통 런타임으로 옮기지 않는다.
 
 ## 5. Layout·Spacing·Shape
 
@@ -345,7 +359,7 @@ Quant Research 제품군은 다음처럼 보여야 한다.
 
 ## 6. Semantic Color
 
-색 이름이 아니라 역할을 공유한다. 아래 값은 `2026-07-24`에 현재 6개 공개 사이트와 최신 source의 computed style·CSS token을 대조한 뒤, 반복된 역할에서 선택한 **신규 프로젝트·누락 token용 fallback 팔레트**다. 기존 사이트는 의미 역할만 mapping하고 승인된 값을 이 표로 일괄 교체하지 않는다. 일부 neutral·blue 값은 기존 사이트가 채택해 온 Toss-inspired 색감 때문에 TDS 공개 팔레트와 일치한다. 이 문서는 TDS에서 신규 값을 가져오는 근거가 아니라 이미 구현·검증된 6개 사이트의 호환성을 유지하는 근거다.
+색 이름이 아니라 역할을 공유한다. 아래 값은 `2026-07-24` 당시 6개 공개 사이트와 source의 computed style·CSS token을 대조한 뒤, 반복된 역할에서 선택한 **신규 프로젝트·누락 token용 fallback 팔레트**다. 기존 사이트는 의미 역할만 mapping하고 승인된 값을 이 표로 일괄 교체하지 않는다. 일부 neutral·blue 값은 기존 사이트가 채택해 온 Toss-inspired 색감 때문에 TDS 공개 팔레트와 일치한다. 이 문서는 TDS에서 신규 값을 가져오는 근거가 아니라 활성 프로젝트의 승인된 시각 역할과 과거 검증 근거 사이의 호환성을 유지하는 근거다.
 
 | Token | Light | Dark | 용도 |
 | --- | --- | --- | --- |
@@ -380,7 +394,7 @@ Quant Research 제품군은 다음처럼 보여야 한다.
 규칙:
 
 - 실제 저장소의 기존 변수명은 위 역할에 alias할 수 있다.
-- 기존 6개 사이트의 값을 fallback hex로 강제 교체하지 않는다.
+- 활성 사이트의 값을 fallback hex로 강제 교체하지 않는다.
 - 프로젝트 고유 의미색은 유지한다.
 - blue는 기본 선택·주 동작, green·teal은 긍정 또는 대안, amber는 주의, red는 부정·오류에만 사용한다.
 - 색만으로 신호를 구분하지 않는다. label, marker, dash, icon 중 하나를 함께 쓴다.
@@ -477,7 +491,7 @@ font-family:
 
 현재 결과를 사용할 수 없게 만드는 warning·error는 접지 않는다. 상세 원인만 접는다.
 
-결과 해석에 필요한 분석 설정·신호 계산·전략 방법·팩터 선정 근거는 운영 정보와 합치지 않는다. Fear & Greed와 Momentum처럼 도메인상 필요한 방법론은 해당 결과 가까이의 별도 접힌 section으로 유지한다.
+결과 해석에 필요한 분석 설정·신호 계산·전략 방법·팩터 선정 근거는 운영 정보와 합치지 않는다. Fear & Greed와 Factor처럼 도메인상 필요한 방법론은 해당 결과 가까이의 별도 접힌 section으로 유지한다.
 
 ### 8.8 Loading·empty·degraded
 
@@ -489,7 +503,7 @@ font-family:
 
 ### 8.9 긴 페이지 빠른 이동
 
-Fear & Greed, ETF Tracking, SOX, Momentum처럼 긴 페이지에는 기존 상단·하단 빠른 이동을 유지할 수 있다. 짧은 페이지에는 억지로 추가하지 않는다.
+Fear & Greed, ETF Tracking, SOX, Factor처럼 긴 페이지에는 기존 상단·하단 빠른 이동을 유지할 수 있다. 짧은 페이지에는 억지로 추가하지 않는다.
 
 - `맨 위로`, `맨 아래로`를 예측 가능한 accessible name으로 제공한다.
 - 같은 `44×44px` icon button을 `8px` 간격의 세로 묶음으로 사용한다.
@@ -660,8 +674,8 @@ DRAM처럼 단순 관측 목록은 모바일 카드로 바꿀 수 있다. 사건
 2. 성격이 가까운 기준 패턴을 선택한다.
    - 가격·보유비중 모니터링: DRAM·ETF
    - 신호·사건·전략 검증: Fear & Greed
-   - 팩터·구성종목 비교: Momentum·SOX·Best Factor
-   - 사용자 입력 기반 재실행: Momentum·Best Factor
+   - 팩터·구성종목 비교: Factor·SOX
+   - 사용자 입력 기반 재실행: Factor의 실제 Python 실행·실험 경로
 3. 이 문서의 nav·token·typography·spacing·상태·table·chart 계약으로 시작한다.
 4. 도메인에 없는 신호·날짜·interaction을 억지로 추가하지 않는다.
 5. 새 frontend stack은 기존 분석 계약과 배포 구조를 바꿀 이유가 아니다.
@@ -750,7 +764,7 @@ Toss 자료에서는 일관된 정보 위계, semantic token, 간결한 문구, 
 - `TDS 기반`, `TDS 호환`이라고 표현하지 않는다.
 - 앱인토스 전용 navigation·light-mode 제약을 이 프로젝트군에 적용하지 않는다.
 
-공개 UI Kit 라이선스는 앱인토스 애플리케이션 개발·디자인·prototype으로 사용 범위를 제한하고, 다른 프로젝트에서의 사용·복사·수정·재가공·재배포를 금지한다. 따라서 UI Kit를 사용하지 않으며, 실제 디자인 값과 component의 source of truth는 위 6개 사이트의 현재 구현과 이 문서다. 향후에도 Toss 자료에서 새 값을 직접 가져오지 않는다.
+공개 UI Kit 라이선스는 앱인토스 애플리케이션 개발·디자인·prototype으로 사용 범위를 제한하고, 다른 프로젝트에서의 사용·복사·수정·재가공·재배포를 금지한다. 따라서 UI Kit를 사용하지 않으며, 실제 디자인 값과 component의 source of truth는 위 활성 프로젝트의 현재 구현과 이 문서다. 향후에도 Toss 자료에서 새 값을 직접 가져오지 않는다.
 
 공식 참고자료:
 
@@ -769,12 +783,12 @@ Toss 자료에서는 일관된 정보 위계, semantic token, 간결한 문구, 
 [프로젝트 이름] 웹페이지에 Quant Research 공통 디자인을 적용해줘.
 
 반드시 먼저 로컬 quant-dashboard/docs/web-design.md 또는 공개
-https://sonchanggi.github.io/quant-dashboard/docs/web-design.md
+https://github.com/SonChangGi/quant-dashboard/blob/main/docs/web-design.md
 전체를 읽고 그 문서를 최우선 디자인 계약으로 사용해.
 
 우선순위
 1. Python·분석·결과·데이터·자동화 보호
-2. 현재 DRAM, Fear & Greed, ETF Tracking, SOX, Momentum Factor, Best Factor 공개 페이지와의 디자인 통일성
+2. 현재 DRAM, Fear & Greed, ETF Tracking, SOX, Factor, Regime 공개 페이지와의 디자인 통일성
 3. web-design.md의 nav·색상·타이포그래피·간격·컴포넌트·표·차트·접근성 계약
 4. 현재 프로젝트의 고유 분석 목적과 기존 결과 구조
 

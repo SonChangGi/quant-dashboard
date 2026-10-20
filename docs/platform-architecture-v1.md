@@ -1,10 +1,10 @@
 # Quant Research Platform Architecture v1
 
-> Status: implementation contract
+> Status: implementation contract; current project boundaries updated 2026-10-21
 >
 > Audited: 2026-07-24
 >
-> Scope: Quant Research Hub and the six completed dashboards
+> Scope: Quant Research Hub and the six active data dashboards
 
 This document separates presentation, calculation, orchestration, and publication without replacing the existing Python analysis or GitHub Pages contracts.
 
@@ -19,11 +19,11 @@ Do not force every project through FastAPI:
 | DRAM Price | Python collection → validated static JSON | TypeScript UI + static result adapter |
 | ETF Tracking | Python collection/analysis → validated static JSON | TypeScript UI + static result adapter |
 | SOX | Python collection/analysis → validated static JSON | TypeScript UI + static result adapter |
-| Best Factor | 11 inputs → GitHub Actions → existing Python CLI | First control-API and remote-worker pilot |
-| Momentum Factor | preset or local job API → existing Python analysis | Adapt existing run identity behind the common API |
-| Fear & Greed | published history + browser scenario engine | Preserve current engine until JS/Python parity is proven |
+| Factor | integrated Python research and monthly selection → `integrated-factor/v1` | Preserve the public result; keep the existing controlled `momentum/v3` adapter explicit |
+| Fear & Greed | published history, declared browser scenarios and controlled Python runs | Bind the requested engine and inputs; require parity before equating runtimes |
+| Regime | validated weekly core and history JSON | Read-only public result adapter |
 
-The existing GitHub Pages URLs and `/data/*.json` endpoints remain canonical public snapshots and permanent fallbacks during the migration.
+The active GitHub Pages URLs and `/data/*.json` endpoints remain canonical public snapshots. Factor uses `https://sonchanggi.github.io/factor/`. Best is retired: its standalone repository, dispatch adapter, parser, fallback and database registration are removed; its Control API project routes return `410 project_retired` without reinterpreting requests as Factor. Other projects’ Git histories are preserved.
 
 ## 2. Protected boundaries
 
@@ -64,8 +64,10 @@ Until the shared packages have a tagged, immutable distribution, an existing
 repository may vendor only the compatible frontend seam. That snapshot must
 record the shared version, upstream source hashes, every vendored-file SHA-256,
 and one aggregate fingerprint. Its build must verify the fingerprint and remain
-independent: no `file:` dependency on another worktree and no runtime import
-from another Pages origin. After a tagged package or release archive exists,
+independent: no `file:` dependency on another worktree. The explicit shared
+navigation runtime is the exception: all pages consume the Hub-owned menu
+JSON, JS and CSS described in [shared-navigation.md](shared-navigation.md).
+Financial calculations and result adapters are not loaded through that menu runtime. After a tagged package or release archive exists,
 projects may replace the snapshot with a lockfile- and integrity-pinned release.
 This changes delivery code only; it never moves a project calculation into the
 shared package.
@@ -89,9 +91,8 @@ Platform identities are stable and do not require rewriting an existing public
 | Dashboard | Platform project id | Existing public summary id |
 | --- | --- | --- |
 | Fear & Greed | `fear-greed` | `fearngreed` |
-| Momentum Factor | `momentum` | `momentum` |
+| Factor | `momentum` (controlled API), `factor` (navigation) | `momentum` (legacy summary); integrated results use `integrated-factor/v1` |
 | DRAM Price | `dram` | `dram` |
-| Best Factor | `best-factor` | `best` |
 | ETF Tracking | `etf` | `etf` |
 | SOX | `sox` | `sox` |
 
@@ -105,9 +106,9 @@ A run binds all of the following:
 
 ```json
 {
-  "projectId": "best-factor",
+  "projectId": "momentum",
   "runId": "uuid",
-  "inputSchemaVersion": "best-factor/v1",
+  "inputSchemaVersion": "momentum/v3",
   "requestedInputs": {},
   "normalizedInputs": {},
   "effectiveInputs": {},
@@ -189,7 +190,7 @@ Supabase Postgres stores:
 - `analysis_runs`
 - `analysis_artifacts`
 
-Large JSON/CSV artifacts use content-addressed Supabase Storage paths. PostgreSQL rows contain only the immutable object location, SHA-256, byte size, contract version, and a bounded summary.
+Large JSON/CSV artifacts remain immutable files in the project publication path or content-addressed Supabase Storage where enabled. PostgreSQL rows contain only the immutable object location, SHA-256, byte size, contract version, and a bounded summary.
 
 Anonymous users may read only published project, snapshot, run, and artifact views. Authenticated owners may request runs. Only a worker or server secret role may update worker state or publish artifacts. A Supabase secret key (or legacy service-role key), provider credential, or GitHub token must never enter a browser bundle.
 
@@ -205,7 +206,7 @@ During dual-write, a Supabase failure does not destroy or replace a valid Pages 
 
 ## 9. Preview and production
 
-Vercel is initially a pull-request preview surface only:
+Pages hosts the public dashboards; the Control API is a separately deployed service. Its exact supported adapters and readiness contract are in the [Control API README](../platform/services/control-api/README.md). Vercel configuration is optional preview scaffolding, not evidence of an active preview deployment:
 
 - preview data origin points to the current read-only GitHub Pages data;
 - a preview cannot update production records or current pointers;
@@ -214,7 +215,9 @@ Vercel is initially a pull-request preview surface only:
 
 No deployment secret or provider account id is committed. Project linking is an explicit environment step after local tests pass.
 
-## 10. Delivery order
+## 10. Initial delivery order · 2026-07-24 historical record
+
+The following was the initial roadmap. Retired Best steps are not current work or requirements.
 
 1. Freeze `web-design.md` input/result rules and the six-project control inventory.
 2. Build shared TypeScript packages, a reference app, and a new-dashboard template.
@@ -227,7 +230,9 @@ No deployment secret or provider account id is committed. Project linking is an 
 9. Let the Hub read published metadata first with existing `summary.json` fallback.
 10. Reconsider production hosting only after public parity, rollback, and cost evidence.
 
-## 11. Local implementation status
+## 11. Local implementation status · 2026-07-24 historical record
+
+This table records the original isolated implementation stage. It is not the current deployment or activation checklist; Best entries describe a retired service. Current support is defined by the active registry and Control API capability contract.
 
 The ordered implementation is complete in isolated, uncommitted worktrees.
 External activation is intentionally separate from implementation:

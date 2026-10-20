@@ -12,3 +12,5 @@ Public paths:
 - `https://sonchanggi.github.io/quant-dashboard/shared/navigation/v1/nav.css`
 
 Navigation ids are separate from legacy calculation/API ids. `momentum` remains an explicit navigation alias for `factor`; the old public summary schema is not relabelled.
+
+Current navigation contains the Hub brand and eight project links: Fear & Greed, Factor, DRAM, ETF, SOX, Regime, News, and 알파 하우스. Best and SPO are not navigation entries. Retired ids are rejected; they are never aliases for Factor. The central JSON remains the authority when this list changes.

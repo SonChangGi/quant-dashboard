@@ -1,5 +1,7 @@
 # Quant Research 공통 디자인 v1.2
 
+> **역사 기록 · 2026-07 파일럿**: 당시 절차와 메뉴는 현재 운영 지침이 아닙니다. 현재 메뉴는 `shared/navigation/v1/menu.json`과 [공통 메뉴 계약](shared-navigation.md)을 따르고, 현재 디자인·검증 대상은 [web-design.md](web-design.md)의 활성 프로젝트입니다. Best는 종료됐으며 과거 예시로만 남깁니다.
+
 > 최신 최우선 규범과 복사용 실행 프롬프트는 [Quant Research Web Design Prompt](web-design.md)입니다. 이 문서는 DRAM·Fear & Greed 파일럿에서 확립한 정보 구조·차트 상태·보호 경계의 근거 문서로 유지합니다.
 
 ## 상태와 적용 범위
@@ -171,7 +173,7 @@ FastAPI, Supabase, Vercel, React 또는 TypeScript 전환은 별도 아키텍처
 - 신호일과 체결일처럼 경제적 의미가 다른 사건은 도형·레이블·설명으로 구분한다.
 - 정확값 표나 제한된 원시 관측 목록을 키보드·스크린리더 대안으로 제공한다.
 
-## 5. 공통 탐색·테마 셸
+## 5. 파일럿 당시 탐색·테마 셸 · 비규범 역사 기록
 
 - 프로젝트 메뉴의 기준 순서는 `Hub → Fear & Greed → Momentum → DRAM → Best Factor → ETF → SOX → Regime`다.
 - 위 8개 항목과 공개 URL을 공통 메뉴 registry로 취급한다. 완료된 일부 프로젝트나 현재 프로젝트와 Hub만 따로 하드코딩하지 않는다.
