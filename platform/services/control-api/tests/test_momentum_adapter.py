@@ -170,6 +170,7 @@ def _manifest(
     run: dict[str, object],
     full_artifact: dict[str, object],
     artifact_bytes: bytes,
+    repository: str = "momentum-factor-lab",
 ) -> WorkerResultManifest:
     data_identity = {
         "source": "momentum-live-market-input-hashes",
@@ -206,11 +207,11 @@ def _manifest(
         fallback_used=False,
         data_as_of=date(2026, 7, 23),
         calculated_at=datetime.fromisoformat(str(full_artifact["generatedAtUtc"])),
-        code_version=f"github:SonChangGi/momentum-factor-lab@{'c' * 40}",
+        code_version=f"github:SonChangGi/{repository}@{'c' * 40}",
         data_identity=DataIdentity.model_validate(data_identity),
         artifact=ArtifactIdentity(
             url=(
-                "https://sonchanggi.github.io/momentum-factor-lab/data/"
+                f"https://sonchanggi.github.io/{repository}/data/"
                 f"control-runs/v1/{run['runId']}/{full_artifact['resultKey']}.json"
             ),
             sha256=hashlib.sha256(artifact_bytes).hexdigest(),
@@ -459,7 +460,8 @@ def test_momentum_v2_stored_artifact_still_passes_late_callback_validation() -> 
     MomentumAdapter().validate_result_binding(record, manifest, artifact_bytes)
 
 
-def test_momentum_callback_binds_full_artifact_to_bounded_summary() -> None:
+@pytest.mark.parametrize("repository", ["factor", "momentum-factor-lab"])
+def test_momentum_callback_binds_full_artifact_to_bounded_summary(repository: str) -> None:
     client, _, fetcher = _client()
     calculated_at = datetime(2026, 7, 24, 1, 2, 3, tzinfo=UTC)
     with client:
@@ -482,6 +484,7 @@ def test_momentum_callback_binds_full_artifact_to_bounded_summary() -> None:
             run=created,
             full_artifact=full,
             artifact_bytes=artifact_bytes,
+            repository=repository,
         )
         fetcher.artifacts[str(manifest.artifact.url)] = artifact_bytes
         callback = client.post(
@@ -610,7 +613,8 @@ def test_momentum_callback_rejects_tampered_derived_evaluation_gate(
     )
 
 
-def test_project_idempotency_and_artifact_allowlists_are_isolated() -> None:
+@pytest.mark.parametrize("repository", ["factor", "momentum-factor-lab"])
+def test_project_idempotency_and_artifact_allowlists_are_isolated(repository: str) -> None:
     client, provider, fetcher = _client()
     with client:
         best = client.post(
@@ -632,7 +636,7 @@ def test_project_idempotency_and_artifact_allowlists_are_isolated() -> None:
         best_envelope = provider.dispatched[best["providerRunId"]]
         best_manifest = provider.make_manifest(best_envelope)
         cross_project_url = (
-            "https://sonchanggi.github.io/momentum-factor-lab/data/"
+            f"https://sonchanggi.github.io/{repository}/data/"
             f"control-runs/v1/{best['runId']}/{'f' * 64}.json"
         )
         cross_project_artifact = ArtifactIdentity(

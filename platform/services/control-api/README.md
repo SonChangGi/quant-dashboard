@@ -10,7 +10,7 @@ The adapter registry currently contains:
 | projectId | input contract | hash contract | worker |
 | --- | --- | --- | --- |
 | `best-factor` | exactly 11 fields, `best-factor/v1` | `best-factor-python-json-v1` | `SonChangGi/best-factor`, `update-dashboard.yml` |
-| `momentum` | exactly 26 `ResearchInputs`, `momentum/v3` | `momentum-research-inputs-rfc8785-v1` | `SonChangGi/momentum-factor-lab`, `controlled-analysis.yml` |
+| `momentum` | exactly 26 `ResearchInputs`, `momentum/v3` | `momentum-research-inputs-rfc8785-v1` | `SonChangGi/factor`, `controlled-analysis.yml` |
 | `fear-greed` | 16 visible inputs serialized as exactly 17 fields, `fear-greed/control-inputs-v1` | `fear-greed-json-sort-keys-sha256-v1` | `SonChangGi/fearNgreed`, `controlled-analysis.yml` |
 
 Project adapters own normalization, hashing, fallback policy, workflow input
@@ -106,13 +106,15 @@ The allowlisted summary fields are:
 summary fields are not copied. The API reconstructs this object from the fetched
 artifact and requires exact equality.
 
-Momentum accepts only:
+Factor uses the existing `momentum` API ID and accepts only these immutable paths:
 
-`https://sonchanggi.github.io/momentum-factor-lab/data/control-runs/v1/<safeRunId>/<64hexResultKey>.json`
+- `https://sonchanggi.github.io/factor/data/control-runs/v1/<safeRunId>/<64hexResultKey>.json`
+- Historical `https://sonchanggi.github.io/momentum-factor-lab/data/control-runs/v1/<safeRunId>/<64hexResultKey>.json`
 
 Its artifact contract is `momentum/schema-v5-control-result-v1`, and
 `codeVersion` must be
-`github:SonChangGi/momentum-factor-lab@<40hex>`. The callback payload is the
+`github:SonChangGi/factor@<40hex>`; the historical
+`github:SonChangGi/momentum-factor-lab@<40hex>` remains valid. The callback payload is the
 worker's bounded schema-v5 summary: schema/version identity, `resultKey`,
 `resultIdentity`, complete derived `researchInputs`, selected factor and
 weighting policy, data identity, selected-security count, and at most 50
@@ -224,3 +226,21 @@ through `VITE_*`, `NEXT_PUBLIC_*`, static JSON, or browser JavaScript.
 ## Optional local integrated research bridge
 
 In development or test only, `QUANT_CONTROL_INTEGRATED_ENGINE_URL=http://127.0.0.1:50073` enables `/v2/momentum-integrated/capabilities` and `/v2/momentum-integrated/runs`. This route accepts the explicit integrated request contract and rejects legacy Best inputs. It does not change the existing Momentum adapter or enable a production provider. Without this environment variable the routes are absent.
+
+### Factor repository transition
+
+The current worker repository is `SonChangGi/factor`, its exact run title is
+`Controlled Factor · <runId>`, and its static fallback is `/factor/data/dashboard.json`.
+`QUANT_CONTROL_MOMENTUM_GITHUB_REPO` keeps its existing environment variable name;
+set its value to `factor` in an existing deployment. The API project ID, all
+`momentum/*` schemas, canonical input hashes, and historical artifact identities
+remain unchanged. An explicitly configured previous worker repository is not silently
+rewritten by the server. For stored immutable artifacts only, an unavailable old
+Pages URL (404/410), or its exact Factor redirect, can be fetched from the identical
+`/factor/` path. The stored identity stays unchanged and byte/SHA verification
+remains mandatory; unrelated redirects and server errors fail closed.
+
+Deploy this API code and apply `202610200001_allow_factor_repository.sql` before
+accepting callbacks with the new repository code version. The additive migration
+preserves the old repository and other projects. These are separate operator
+steps; a static Pages deployment does not deploy the API or apply SQL.

@@ -50,7 +50,7 @@ assert(
 );
 assert(
   api.NAVIGATION_PROJECTS.map((project) => project.shortName).join('|')
-    === 'Fear & Greed|Momentum|DRAM|Best Factor|ETF|SOX|Regime|News|SPO|알파 하우스',
+    === 'Fear & Greed|Factor|DRAM|ETF|SOX|Regime|News|SPO|알파 하우스',
   'project manifest preserves the canonical navigation order after Hub',
 );
 assert(
@@ -1774,7 +1774,7 @@ assert(
   'Regime unavailable fallback contains no hardcoded market state, probability, or date',
 );
 
-assert(Object.keys(api.PANEL_ADAPTERS).length === 6 && !api.PANEL_ADAPTERS.best && api.PROJECTS.find(project => project.id === 'best')?.integrationUrl, 'panel adapter manifest has six active panels and a Best integration link');
+assert(Object.keys(api.PANEL_ADAPTERS).length === 6 && !api.PANEL_ADAPTERS.best && !api.PROJECTS.some(project => project.id === 'best'), 'panel adapter manifest has six active panels without a retired Best card');
 assert(Object.keys(api.PANEL_ADAPTERS.regime.sourceUrls).length === 1, 'Regime adapter reads only its public result JSON');
 
 const nullEntryMomentum = api.parseMomentum({
@@ -1882,10 +1882,10 @@ context.document = {
 };
 api.renderProjectNavigation();
 api.renderDashboardPanels();
-assert(domTargets['#top-nav'].children.length === 10, 'manifest renderer creates ten project links including SPO and 알파 하우스');
+assert(domTargets['#top-nav'].children.length === 9, 'manifest renderer creates nine project links including SPO and 알파 하우스');
 const renderedPanels = domTargets['#summary-grid'].children.filter((child) => child.dataset.projectId);
-assert(renderedPanels.length === 7 && new Set(renderedPanels.map((child) => child.dataset.projectId)).size === 7, 'grouped renderer preserves every public summary panel exactly once');
-assert(renderedPanels.map((child) => child.dataset.projectId).join('|') === 'fearngreed|regime|momentum|best|dram|sox|etf', 'display groups keep related research panels adjacent');
+assert(renderedPanels.length === 6 && new Set(renderedPanels.map((child) => child.dataset.projectId)).size === 6, 'grouped renderer preserves every public summary panel exactly once');
+assert(renderedPanels.map((child) => child.dataset.projectId).join('|') === 'fearngreed|regime|momentum|dram|sox|etf', 'display groups keep related research panels adjacent');
 assert(renderedPanels.every((child) => /열기|통합 팩터 탐색/.test(child.innerHTML)), 'dashboard panel shells preserve project page links');
 assert(domTargets['#summary-grid'].children.some((child) => /panel-detail/.test(child.innerHTML)), 'ETF panel shell includes detail mount for TOP10 cards');
 assert(domTargets['#summary-grid'].children.some((child) => /SOX 구성종목/.test(child.innerHTML)), 'SOX panel shell appears in the central summary grid');
@@ -1933,7 +1933,7 @@ assert(/SOX/.test(domTargets['#research-briefing'].innerHTML) && /AAA/.test(domT
 assert(/selected_mom/.test(domTargets['#research-briefing'].innerHTML) && /0\.87/.test(domTargets['#research-briefing'].innerHTML), 'research briefing renders the schema v4 selected Momentum factor and composite score');
 assert(/합성 데모/.test(domTargets['#research-briefing'].innerHTML) && /briefing-item warning/.test(domTargets['#research-briefing'].innerHTML), 'research briefing labels demo evidence without hiding the Momentum result');
 assert(/갱신 지연/.test(domTargets['#data-health'].innerHTML), 'data health renders localized stale state from project-level freshness defaults');
-assert(/Momentum<\/strong>\s*<span>갱신 지연<\/span>/.test(domTargets['#data-health'].innerHTML) && /health-item warn/.test(domTargets['#data-health'].innerHTML), 'data health prioritizes stale Momentum data over its demo evidence label');
+assert(/Factor<\/strong>\s*<span>갱신 지연<\/span>/.test(domTargets['#data-health'].innerHTML) && /health-item warn/.test(domTargets['#data-health'].innerHTML), 'data health prioritizes stale Momentum data over its demo evidence label');
 assert(/전체 기준일/.test(domTargets['#data-health'].innerHTML), 'data health renders localized portfolio freshness snapshot');
 const evidenceNote = 'Fixture research limitation retained only in operations';
 const notesRecord = { ...records[0], summary: { ...records[0].summary, meta: { ...records[0].summary.meta, limitations: [evidenceNote] } } };

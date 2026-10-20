@@ -60,7 +60,8 @@ jobs:
           mkdir -p dist
           cp index.html dist/index.html
           cp -R assets dist/assets
-          test "$(find dist -type f | wc -l | tr -d ' ')" -eq 5
+          cp -R shared dist/shared
+          test "$(find dist -type f | wc -l | tr -d ' ')" -eq 8
           test ! -e dist/platform
           test ! -e dist/codex-skills
       - name: Configure GitHub Pages
@@ -102,6 +103,9 @@ jobs:
             assets/styles.css
             assets/shared-nav.css
             assets/theme.js
+            shared/navigation/v1/menu.json
+            shared/navigation/v1/nav.js
+            shared/navigation/v1/nav.css
           )
           for attempt in {1..12}; do
             matched=true

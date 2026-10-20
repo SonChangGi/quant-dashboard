@@ -189,17 +189,17 @@
     },
     {
       id: 'momentum',
-      shortName: 'Momentum',
-      title: '모멘텀 팩터 랩',
+      shortName: 'Factor',
+      title: 'Factor',
       description: '월별 팩터 선택 성과와 현재 모형 보유를 확인합니다.',
-      url: 'https://sonchanggi.github.io/momentum-factor-lab/',
+      url: 'https://sonchanggi.github.io/factor/',
       accent: 'MF',
       panelAdapter: 'momentum',
       panel: {
         eyebrow: 'Integrated Factor Research',
         title: '월별 팩터 선택',
         contentType: 'table',
-        metricLoading: '모멘텀 데이터를 불러오는 중...',
+        metricLoading: '팩터 데이터를 불러오는 중...',
         table: {
           caption: '월별 선택 전략의 전체 모형 보유 · 비중 내림차순',
           columns: ['순위', '종목', '모형 비중'],
@@ -222,15 +222,6 @@
         metricLoading: 'D램 가격 데이터를 불러오는 중...',
         chartLabel: 'TrendForce 일별 저장 D램(DRAM) 가격 추이 그래프',
       },
-    },
-    {
-      id: 'best',
-      shortName: 'Best Factor',
-      title: '팩터 탐색 · Momentum 통합',
-      description: '가격·거래량 팩터 연구와 비교는 Momentum에서 확인합니다.',
-      url: 'https://sonchanggi.github.io/best-factor/',
-      integrationUrl: 'https://sonchanggi.github.io/momentum-factor-lab/?view=explore',
-      accent: 'BF',
     },
     {
       id: 'etf',
@@ -355,7 +346,7 @@
       emptyReason: 'Fear & Greed summary did not contain a usable KOSPI entity.',
     },
     momentum: {
-      sourceUrls: { integrated: 'https://sonchanggi.github.io/momentum-factor-lab/data/integrated-result.json' },
+      sourceUrls: { integrated: 'https://sonchanggi.github.io/factor/data/integrated-result.json' },
       maxPayloadBytes: 20_000_000, // Complete factor histories and research diagnostics; other adapters keep 8 MB.
       primarySourceKey: 'integrated',
       contracts: { integrated: { versionField: 'schemaVersion', expectedVersion: 'integrated-factor/v1', requiredKeys: ['resultIdentity', 'selection', 'factors', 'settings', 'data', 'generatedAt'] } },
@@ -530,7 +521,7 @@
     // Display groups only: the source registry, loaders and result identities stay unchanged.
     const groups = [
       { id: 'market', title: '시장 상태', label: '심리와 국면', projects: ['fearngreed', 'regime'] },
-      { id: 'factors', title: '팩터 전략', label: '연구 결과와 모델 포트폴리오', projects: ['momentum', 'best'] },
+      { id: 'factors', title: '팩터 전략', label: '연구 결과와 모델 포트폴리오', projects: ['momentum'] },
       { id: 'semiconductors', title: '반도체', label: '메모리 가격과 SOX 구성종목', projects: ['dram', 'sox'] },
       { id: 'holdings', title: 'ETF 보유종목', label: 'TOP10 비중과 변화', projects: ['etf'] },
     ];
@@ -1085,7 +1076,7 @@
   }
 
   function parseIntegratedMomentum(payload) {
-    const fail = (reason) => momentumUnavailable('통합 Momentum 결과를 확인하세요.', reason);
+    const fail = (reason) => momentumUnavailable('Factor 결과를 확인하세요.', reason);
     if (!isRecord(payload) || payload.schemaVersion !== 'integrated-factor/v1'
         || payload.resultIdentity?.strategyType !== 'monthly_selection'
         || !/^[a-f0-9]{24}$/.test(payload.resultIdentity?.resultId || '')

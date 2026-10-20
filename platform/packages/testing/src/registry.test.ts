@@ -9,24 +9,17 @@ import {
 } from "@quant-research/project-registry";
 
 describe("canonical project registry", () => {
-  it("keeps all 9 platform labels and URLs in the approved order", () => {
-    expect(canonicalProjectRegistry).toEqual([
-      { id: "hub", label: "Hub", url: "https://sonchanggi.github.io/quant-dashboard/" },
-      { id: "fear-greed", label: "Fear & Greed", url: "https://sonchanggi.github.io/fearNgreed/" },
-      { id: "momentum", label: "Momentum", url: "https://sonchanggi.github.io/momentum-factor-lab/" },
-      { id: "dram", label: "DRAM", url: "https://sonchanggi.github.io/dram-price/" },
-      { id: "best-factor", label: "Best Factor", url: "https://sonchanggi.github.io/best-factor/" },
-      { id: "etf", label: "ETF", url: "https://sonchanggi.github.io/etf-tracking/" },
-      { id: "sox", label: "SOX", url: "https://sonchanggi.github.io/sox/" },
-      { id: "regime", label: "Regime", url: "https://sonchanggi.github.io/regime/" },
-      { id: "news", label: "News", url: "https://sonchanggi.github.io/news/" },
-    ]);
+  it("keeps the shared public labels and URLs in the approved order", () => {
+    expect(canonicalProjectRegistry.map(row => row.id)).toEqual(["hub","fear-greed","factor","dram","etf","sox","regime","news","spo","observatory"]);
+    expect(getProject("factor").label).toBe("Factor");
+    expect(getProject("factor").url).toBe("https://sonchanggi.github.io/factor/");
+    expect(canonicalProjectRegistry.some(row => String(row.id) === "best-factor")).toBe(false);
   });
 
   it("marks exactly one project as current", () => {
-    const navigation = getCanonicalNavigation("best-factor");
+    const navigation = getCanonicalNavigation("factor");
     expect(navigation.filter((item) => item.current)).toEqual([
-      expect.objectContaining({ id: "best-factor" }),
+      expect.objectContaining({ id: "factor" }),
     ]);
   });
 

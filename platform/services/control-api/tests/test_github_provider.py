@@ -137,7 +137,7 @@ def test_provider_registry_keeps_project_targets_and_workflow_mappers_isolated()
         momentum.ref,
     ) == (
         "SonChangGi",
-        "momentum-factor-lab",
+        "factor",
         "controlled-analysis.yml",
         "main",
     )
@@ -152,6 +152,10 @@ def test_provider_registry_keeps_project_targets_and_workflow_mappers_isolated()
         "controlled-analysis.yml",
         "main",
     )
+    assert momentum.correlation_builder(  # type: ignore[attr-defined]
+        "11111111-1111-4111-8111-111111111111"
+    ) == "Controlled Factor · 11111111-1111-4111-8111-111111111111"
+    assert momentum.correlation_requires_exact_title is True  # type: ignore[attr-defined]
     assert fear.correlation_builder(  # type: ignore[attr-defined]
         "11111111-1111-4111-8111-111111111111"
     ) == (

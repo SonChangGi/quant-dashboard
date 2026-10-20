@@ -32,9 +32,8 @@ for (const path of ['index.html', 'assets/styles.css', 'assets/shared-nav.css', 
 
 const projectUrls = [
   'https://sonchanggi.github.io/fearNgreed/',
-  'https://sonchanggi.github.io/momentum-factor-lab/',
+  'https://sonchanggi.github.io/factor/',
   'https://sonchanggi.github.io/dram-price/',
-  'https://sonchanggi.github.io/best-factor/',
   'https://sonchanggi.github.io/etf-tracking/',
   'https://sonchanggi.github.io/sox/',
   'https://sonchanggi.github.io/regime/',
@@ -45,7 +44,7 @@ for (const url of projectUrls) {
 
 const dataUrls = [
   'https://sonchanggi.github.io/fearNgreed/data/summary.json',
-  'https://sonchanggi.github.io/momentum-factor-lab/data/integrated-result.json',
+  'https://sonchanggi.github.io/factor/data/integrated-result.json',
   'https://sonchanggi.github.io/dram-price/data/summary.json',
   'https://sonchanggi.github.io/dram-price/data/prices.json',
   'https://sonchanggi.github.io/dram-price/data/series.json',

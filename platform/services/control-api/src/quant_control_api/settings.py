@@ -53,7 +53,7 @@ class Settings:
     github_workflow: str = "update-dashboard.yml"
     github_ref: str = "main"
     momentum_github_owner: str = "SonChangGi"
-    momentum_github_repo: str = "momentum-factor-lab"
+    momentum_github_repo: str = "factor"
     momentum_github_workflow: str = "controlled-analysis.yml"
     momentum_github_ref: str = "main"
     fear_github_owner: str = "SonChangGi"
@@ -100,7 +100,7 @@ class Settings:
             ).strip(),
             momentum_github_repo=os.getenv(
                 "QUANT_CONTROL_MOMENTUM_GITHUB_REPO",
-                "momentum-factor-lab",
+                "factor",
             ).strip(),
             momentum_github_workflow=os.getenv(
                 "QUANT_CONTROL_MOMENTUM_GITHUB_WORKFLOW",

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from typing import Protocol
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 import httpx
 
@@ -11,7 +11,7 @@ from .models import ArtifactIdentity
 MAX_ARTIFACT_BYTES = 15 * 1024 * 1024
 BEST_FACTOR_IMMUTABLE_PATH = re.compile(r"^/SonChangGi/best-factor/[0-9a-f]{40}/docs/data/latest-results\.json$")
 MOMENTUM_IMMUTABLE_PATH = re.compile(
-    r"^/momentum-factor-lab/data/control-runs/v1/"
+    r"^/(?:factor|momentum-factor-lab)/data/control-runs/v1/"
     r"[A-Za-z0-9][A-Za-z0-9._-]{7,127}/[0-9a-f]{64}\.json$"
 )
 FEAR_GREED_IMMUTABLE_PATH = re.compile(
@@ -71,25 +71,40 @@ class HttpArtifactFetcher:
         if artifact.byte_size > self.max_bytes:
             raise ArtifactVerificationError("artifact byteSize exceeds the verification limit")
 
-        async with self._client.stream("GET", url) as response:
-            if response.status_code != 200:
-                raise ArtifactVerificationError(f"artifact fetch failed with status {response.status_code}")
-            content_length = response.headers.get("Content-Length")
-            if content_length is not None:
-                try:
-                    declared_length = int(content_length)
-                except ValueError as exc:
-                    raise ArtifactVerificationError("artifact Content-Length is malformed") from exc
-                if declared_length < 0 or declared_length > self.max_bytes:
-                    raise ArtifactVerificationError("artifact Content-Length exceeds the verification limit")
-            chunks: list[bytes] = []
-            received = 0
-            async for chunk in response.aiter_bytes():
-                received += len(chunk)
-                if received > self.max_bytes:
-                    raise ArtifactVerificationError("artifact response exceeds the verification limit")
-                chunks.append(chunk)
-        return b"".join(chunks)
+        # A repository rename does not rewrite stored artifact identities. Only
+        # this exact, previously allowlisted immutable path has a current alias.
+        alias = None
+        if parsed.hostname == "sonchanggi.github.io" and parsed.path.startswith("/momentum-factor-lab/"):
+            alias = parsed._replace(path=parsed.path.replace("/momentum-factor-lab/", "/factor/", 1)).geturl()
+        for candidate in (url, alias) if alias else (url,):
+            async with self._client.stream("GET", candidate) as response:
+                if candidate == url and alias:
+                    if response.status_code in (404, 410):
+                        continue
+                    if response.status_code in (301, 302, 303, 307, 308):
+                        target = urljoin(url, response.headers.get("Location", ""))
+                        if target == alias:
+                            continue
+                        raise ArtifactVerificationError("artifact redirect is not the exact Factor repository alias")
+                if response.status_code != 200:
+                    raise ArtifactVerificationError(f"artifact fetch failed with status {response.status_code}")
+                content_length = response.headers.get("Content-Length")
+                if content_length is not None:
+                    try:
+                        declared_length = int(content_length)
+                    except ValueError as exc:
+                        raise ArtifactVerificationError("artifact Content-Length is malformed") from exc
+                    if declared_length < 0 or declared_length > self.max_bytes:
+                        raise ArtifactVerificationError("artifact Content-Length exceeds the verification limit")
+                chunks: list[bytes] = []
+                received = 0
+                async for chunk in response.aiter_bytes():
+                    received += len(chunk)
+                    if received > self.max_bytes:
+                        raise ArtifactVerificationError("artifact response exceeds the verification limit")
+                    chunks.append(chunk)
+            return b"".join(chunks)
+        raise ArtifactVerificationError("artifact fetch did not resolve an immutable result")
 
     async def close(self) -> None:
         if self._owns_client:

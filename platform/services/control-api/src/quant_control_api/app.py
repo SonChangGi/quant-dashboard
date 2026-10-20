@@ -53,7 +53,7 @@ def _providers_from_settings(
                     workflow=settings.momentum_github_workflow,
                     ref=settings.momentum_github_ref,
                     workflow_inputs_builder=adapter.workflow_inputs,
-                    correlation_builder=lambda run_id: f"Controlled Momentum · {run_id}",
+                    correlation_builder=lambda run_id: f"Controlled Factor · {run_id}",
                     correlation_requires_exact_title=True,
                 )
             elif adapter.project_id == "fear-greed":

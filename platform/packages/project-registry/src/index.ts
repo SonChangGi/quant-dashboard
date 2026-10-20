@@ -1,53 +1,16 @@
+import { sharedNavigationFallback } from "./navigation.generated";
+
+export { sharedNavigationFallback };
 export const canonicalProjectRegistry = [
-  {
-    id: "hub",
-    label: "Hub",
-    url: "https://sonchanggi.github.io/quant-dashboard/",
-  },
-  {
-    id: "fear-greed",
-    label: "Fear & Greed",
-    url: "https://sonchanggi.github.io/fearNgreed/",
-  },
-  {
-    id: "momentum",
-    label: "Momentum",
-    url: "https://sonchanggi.github.io/momentum-factor-lab/",
-  },
-  {
-    id: "dram",
-    label: "DRAM",
-    url: "https://sonchanggi.github.io/dram-price/",
-  },
-  {
-    id: "best-factor",
-    label: "Best Factor",
-    url: "https://sonchanggi.github.io/best-factor/",
-  },
-  {
-    id: "etf",
-    label: "ETF",
-    url: "https://sonchanggi.github.io/etf-tracking/",
-  },
-  {
-    id: "sox",
-    label: "SOX",
-    url: "https://sonchanggi.github.io/sox/",
-  },
-  {
-    id: "regime",
-    label: "Regime",
-    url: "https://sonchanggi.github.io/regime/",
-  },
-  {
-    id: "news",
-    label: "News",
-    url: "https://sonchanggi.github.io/news/",
-  },
+  { ...sharedNavigationFallback.brand, label: "Hub" },
+  ...sharedNavigationFallback.projects,
 ] as const;
 
-export type ProjectId = (typeof canonicalProjectRegistry)[number]["id"];
+export type NavigationProjectId = (typeof canonicalProjectRegistry)[number]["id"];
+/** Legacy calculation/API ids remain distinct from visible navigation. */
+export type ProjectId = NavigationProjectId | "momentum" | "best-factor";
 export type ProjectRegistryEntry = (typeof canonicalProjectRegistry)[number];
+export function normalizeNavigationId(id: string): string { return id === "momentum" ? "factor" : id; }
 
 /**
  * Existing public summary ids are protected data contracts. Keep translation
@@ -77,18 +40,18 @@ export type NavigationEntry = ProjectRegistryEntry & {
 };
 
 export function getCanonicalNavigation(currentId: ProjectId): NavigationEntry[] {
-  if (!canonicalProjectRegistry.some((project) => project.id === currentId)) {
+  if (!canonicalProjectRegistry.some((project) => project.id === normalizeNavigationId(currentId))) {
     throw new RangeError(`Unknown project id: ${currentId}`);
   }
   return canonicalProjectRegistry.map((project) => ({
     ...project,
-    current: project.id === currentId,
+    current: project.id === normalizeNavigationId(currentId),
   }));
 }
 
 export function getProject(currentId: ProjectId): ProjectRegistryEntry {
   const project = canonicalProjectRegistry.find(
-    (candidate) => candidate.id === currentId,
+    (candidate) => candidate.id === normalizeNavigationId(currentId),
   );
   if (!project) {
     throw new RangeError(`Unknown project id: ${currentId}`);
@@ -112,8 +75,8 @@ export function getLocalIntegratedNavigation(origin: string) {
       || base.username || base.password || base.search || base.hash || base.pathname !== "/") {
     throw new RangeError("Integrated runtime must be a loopback HTTP origin");
   }
-  return canonicalProjectRegistry.filter(project => project.id !== "best-factor").map(project => ({
+  return canonicalProjectRegistry.map(project => ({
     ...project,
-    url: project.id === "momentum" ? base.href : project.id === "hub" ? new URL("hub/", base).href : project.url,
+    url: project.id === "factor" ? base.href : project.id === "hub" ? new URL("hub/", base).href : project.url,
   }));
 }

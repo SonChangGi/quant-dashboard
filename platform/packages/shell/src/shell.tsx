@@ -1,6 +1,6 @@
 import type { PropsWithChildren, ReactNode } from "react";
+import { useSharedNavigation } from "./use-shared-navigation";
 import {
-  getCanonicalNavigation,
   type ProjectId,
 } from "@quant-research/project-registry";
 import {
@@ -16,33 +16,27 @@ export interface SharedNavigationProps {
 }
 
 export function SharedNavigation({ currentProject }: SharedNavigationProps) {
-  const navigation = [
-    ...getCanonicalNavigation(currentProject),
-  { id: "spo", label: "SPO", url: "https://sonchanggi.github.io/SPO/", current: false },
-  { id: "observatory", label: "알파 하우스", url: "https://research-observatory-changgi.changgi-son.chatgpt.site/", current: false },
-  ];
+  const { brand, navigation } = useSharedNavigation(currentProject);
   return (
-    <header className="qr-nav-shell">
+    <header className="qr-nav-shell quant-shared-nav" data-quant-navigation-managed="react">
       <a className="qr-skip-link" href="#main-content">
         본문으로 건너뛰기
       </a>
-      <div className="qr-nav-shell__inner">
-        <div className="qr-nav-shell__primary">
+      <div className="qr-nav-shell__inner quant-shared-nav__inner">
           <a
-            className="qr-nav-shell__brand"
-            href="https://sonchanggi.github.io/quant-dashboard/"
+            className="qr-nav-shell__brand quant-shared-nav__brand"
+            href={brand.url}
+            aria-current={brand.current ? "page" : undefined}
           >
-            Quant Research Hub
+            {brand.label}
           </a>
-          <ThemeToggle />
-        </div>
-        <nav aria-label="프로젝트" className="qr-project-nav">
+        <nav aria-label="프로젝트" className="qr-project-nav quant-shared-nav__links">
           {navigation.map((project) => (
             <a
               aria-current={project.current ? "page" : undefined}
               className={classNames(
-                "qr-project-nav__link",
-                project.current && "qr-project-nav__link--current",
+                "qr-project-nav__link quant-shared-nav__link",
+                project.current && "qr-project-nav__link--current is-active",
               )}
               href={project.url}
               key={project.id}
@@ -51,6 +45,7 @@ export function SharedNavigation({ currentProject }: SharedNavigationProps) {
             </a>
           ))}
         </nav>
+        <span className="quant-shared-nav__theme"><ThemeToggle /></span>
       </div>
     </header>
   );

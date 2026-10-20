@@ -377,7 +377,7 @@ def test_authoritative_store_project_publisher_never_writes_run_state() -> None:
             artifact_fetcher=MappingArtifactFetcher(),
         )
         capability = service.capabilities("momentum")
-        assert capability.project_name == "Momentum Factor Lab"
+        assert capability.project_name == "Factor"
         await service.create_run(
             "best-factor",
             RunCreateRequest(
@@ -397,7 +397,7 @@ def test_authoritative_store_project_publisher_never_writes_run_state() -> None:
     }
     project_payloads = [json.loads(request.content) for request in requests]
     momentum = next(payload for payload in project_payloads if payload["id"] == "momentum")
-    assert momentum["display_name"] == "Momentum Factor Lab"
+    assert momentum["display_name"] == "Factor"
     assert momentum["capability"]["projectId"] == "momentum"
 
 

@@ -21,21 +21,21 @@ from ..store import RunRecord
 from .base import NormalizedAnalysisInputs, ProjectRequestError
 
 PROJECT_ID = "momentum"
-PROJECT_NAME = "Momentum Factor Lab"
+PROJECT_NAME = "Factor"
 INPUT_SCHEMA_VERSION = "momentum/v3"
 INPUT_SCHEMA_HASH = "7a135e791a3269486b540c9ab02ca712077558598cc08982ba57113cff816327"
 CONFIG_HASH_ALGORITHM = "momentum-research-inputs-rfc8785-v1"
 RESULT_CONTRACT_VERSION = "momentum/schema-v5-control-result-v1"
 LEGACY_INPUT_SCHEMA_VERSION = "momentum/v1"
 PREVIOUS_INPUT_SCHEMA_VERSION = "momentum/v2"
-STATIC_FALLBACK_URL = "https://sonchanggi.github.io/momentum-factor-lab/data/dashboard.json"
+STATIC_FALLBACK_URL = "https://sonchanggi.github.io/factor/data/dashboard.json"
 CODE_VERSION_PATTERN = re.compile(
-    r"^github:SonChangGi/momentum-factor-lab@[0-9a-f]{40}$"
+    r"^github:SonChangGi/(?:factor|momentum-factor-lab)@[0-9a-f]{40}$"
 )
 SAFE_RUN_ID_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{7,127}$")
 SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 ARTIFACT_PATH_PATTERN = re.compile(
-    r"^/momentum-factor-lab/data/control-runs/v1/"
+    r"^/(?:factor|momentum-factor-lab)/data/control-runs/v1/"
     r"(?P<run_id>[A-Za-z0-9][A-Za-z0-9._-]{7,127})/"
     r"(?P<result_key>[0-9a-f]{64})\.json$"
 )
@@ -517,7 +517,7 @@ class MomentumAdapter:
             errors.append("dataIdentity.dataAsOf does not match dataAsOf")
         if not CODE_VERSION_PATTERN.fullmatch(manifest.code_version):
             errors.append(
-                "codeVersion must be github:SonChangGi/momentum-factor-lab@<40hex>"
+                "codeVersion must bind SonChangGi/factor or the historical momentum-factor-lab repository at <40hex>"
             )
         if manifest.artifact.contract_version != RESULT_CONTRACT_VERSION:
             errors.append("artifact contractVersion is not the Momentum control contract")
