@@ -1110,7 +1110,7 @@
     return { integrated:true, factor:current.factorId || '현금', factorLabel:current.label || factor?.label || '현금', selectedWeightingPolicy:payload.settings?.weighting, compositeScore:current.score ?? null,
       resultIdentity:payload.resultIdentity, resultKey:payload.resultIdentity.resultId, generatedAt:payload.generatedAt,
       dataAsOf:payload.data.asOf, holdingsAsOf:holdingDate, evaluationStart:selection.nav.find(point => momentumFiniteNumber(point.value))?.date || '', cashWeight:cash, liquidCashWeight:liquid, receivableWeight:receivable,
-      metrics:selection.metrics || {}, rows, entities:rows.map(row=>({id:row.symbol,symbol:row.symbol,label:row.symbol,name:row.symbol,metrics:{factor:current.factorId,modelWeight:row.modelWeight},signals:['월별 선택 모형 보유'],warnings:[]})),
+      performance:factorPerformanceData(selection.nav, payload.comparisons), metrics:selection.metrics || {}, rows, entities:rows.map(row=>({id:row.symbol,symbol:row.symbol,label:row.symbol,name:row.symbol,metrics:{factor:current.factorId,modelWeight:row.modelWeight},signals:['월별 선택 모형 보유'],warnings:[]})),
       status:state, dataMode:'live_market', dataModeLabel:'실제 시장 데이터', sourceLabel:'무료 시장자료 · 통합 회계', evidenceStatus:'sequential_monthly_selection',
       meta:{schemaVersion:'integrated-factor/v1',statusState:state.includes('보류')||state.includes('대기')?'blocked':'ok',dataAsOf:payload.data.asOf,resultIdentity:payload.resultIdentity,holdingCount:rows.length,cadence:'월별 선택 · 일별 평가',expectedFreshnessDays:5,degradedReasons:[],statusLabel:state} };
   }
@@ -3625,6 +3625,88 @@
     return Math.max(.4, Math.ceil(Math.max(0, ...weights) * 10 - 1e-9) / 10);
   }
 
+  // Rebase only on a shared observed date; missing prices remain gaps.
+  function factorPerformanceData(nav, comparisons = []) {
+    const valid = point => /^\d{4}-\d{2}-\d{2}$/.test(point?.date || '') && momentumFiniteNumber(point.value) && point.value > 0;
+    const source = asRecords(nav), spy = asRecords(comparisons).find(row => row.id === 'SPY');
+    const benchmark = new Map(asRecords(spy?.nav).map(point => [point.date, point.value]));
+    const start = source.find(point => valid(point) && (!spy || (momentumFiniteNumber(benchmark.get(point.date)) && benchmark.get(point.date) > 0)));
+    if (!start) return { rows: [], benchmark: false };
+    const bases = [start.value, benchmark.get(start.date)], peaks = [100, 100];
+    const rows = source.filter(point => point.date >= start.date).map(point => {
+      const values = [point.value, benchmark.get(point.date)].map((value, i) => momentumFiniteNumber(value) && value > 0 && bases[i] > 0 ? value / bases[i] * 100 : null);
+      const drawdowns = values.map((value, i) => { if (value === null) return null; peaks[i] = Math.max(peaks[i], value); return value / peaks[i] - 1; });
+      return { date:point.date, values, drawdowns };
+    });
+    return { rows, benchmark: !!spy };
+  }
+
+  function integratedWeightScale(allocation) {
+    const weights = allocation.rows.map(row => row.weight).filter(value => momentumFiniteNumber(value) && value >= 0 && value <= 1);
+    const max = Math.max(0, ...weights);
+    if (!max) return .1;
+    const step = max <= .1 ? .02 : max <= .3 ? .05 : .1;
+    return Math.min(1, Math.ceil((max - 1e-10) / step) * step);
+  }
+
+  function factorPerformanceGeometry(performance, width) {
+    const w = Math.max(280, width), left = 48, right = w - 16;
+    const rows = performance.rows, first = Date.parse(rows[0].date), last = Date.parse(rows.at(-1).date);
+    const max = Math.max(100, ...rows.flatMap(row => row.values).filter(Number.isFinite));
+    const step = max <= 200 ? 50 : max <= 500 ? 100 : 200, ceiling = Math.ceil(max / step) * step;
+    const floor = Math.min(0, ...rows.flatMap(row => row.drawdowns).filter(Number.isFinite));
+    const ddFloor = Math.min(-.1, Math.floor(floor * 10) / 10);
+    return { w, h:390, left, right, top:14, bottom:225, ddTop:270, ddBottom:350,
+      ceiling, step, ddFloor,
+      x:i => left + (Date.parse(rows[i].date) - first) / Math.max(1, last - first) * (right - left),
+      y:value => 225 - value / ceiling * 211,
+      dy:value => 270 + value / ddFloor * 80 };
+  }
+
+  let factorPerformanceObserver;
+  function renderFactorPerformance(performance, project) {
+    factorPerformanceObserver?.disconnect();
+    const target = $(panelSelector(project, 'performance'));
+    if (!target) return;
+    if (!performance?.rows?.length) { target.innerHTML = '<p class="empty-state">성과 자료가 없습니다.</p>'; return; }
+    const rows = performance.rows;
+    target.innerHTML = `<figure class="factor-performance"><div class="factor-performance-heading"><h5>누적성과 · 낙폭</h5><span>시작일 = 100</span></div><div class="factor-performance-legend"><span><i></i>월별 선택</span>${performance.benchmark ? '<span class="benchmark"><i></i>SPY</span>' : ''}</div><figcaption class="factor-performance-readout" aria-live="polite"></figcaption><div class="factor-performance-frame" tabindex="0" role="group" aria-label="월별 선택 전략 성과. 좌우 방향키로 날짜 이동"></div><p class="factor-performance-period">${escapeHtml(rows[0].date)}–${escapeHtml(rows.at(-1).date)} · 비용 후 전략</p></figure>`;
+    const frame = target.querySelector?.('.factor-performance-frame'), readout = target.querySelector?.('.factor-performance-readout');
+    if (!frame || !readout) return;
+    let selected = rows.length - 1, pinned = selected, previousWidth = 0;
+    const draw = () => {
+      const width = Math.round(target.clientWidth || 580);
+      if (width === previousWidth) return; previousWidth = width;
+      const g = factorPerformanceGeometry(performance, width);
+      const line = (x1,y1,x2,y2,cls) => `<line class="${cls}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
+      const grid = [];
+      for (let tick=0;tick<=g.ceiling;tick+=g.step) grid.push(`${line(g.left,g.y(tick),g.right,g.y(tick),'factor-performance-grid')}<text x="${g.left-8}" y="${g.y(tick)+4}" text-anchor="end">${tick}</text>`);
+      const ddTicks = [0,g.ddFloor/2,g.ddFloor].map(value => `${line(g.left,g.dy(value),g.right,g.dy(value),'factor-performance-grid')}<text x="${g.left-8}" y="${g.dy(value)+4}" text-anchor="end">${Math.round(value*100)}%</text>`).join('');
+      const path = (field,i,y) => { let open=false; return rows.map((row,index) => { const value=row[field][i];if(!Number.isFinite(value)){open=false;return '';}const command=open?'L':'M';open=true;return `${command}${g.x(index).toFixed(2)},${y(value).toFixed(2)}`; }).join(' '); };
+      const curves = [0,...(performance.benchmark?[1]:[])].map(i => `<path class="factor-performance-line ${i?'benchmark':''}" d="${path('values',i,g.y)}"/><path class="factor-performance-line ${i?'benchmark':''}" d="${path('drawdowns',i,g.dy)}"/><circle class="factor-performance-point ${i?'benchmark':''}" data-series="${i}" data-field="values" r="3.5"/><circle class="factor-performance-point ${i?'benchmark':''}" data-series="${i}" data-field="drawdowns" r="3.5"/>`).join('');
+      const count = g.w < 400 ? 3 : 4;
+      const ticks = Array.from({length:count},(_,i)=>Math.round(i*(rows.length-1)/(count-1)));
+      const dates = [...new Set(ticks)].map(i=>`<text x="${g.x(i)}" y="377" text-anchor="${i===0?'start':i===rows.length-1?'end':'middle'}">${rows[i].date.slice(0,7).replace('-','.')}</text>`).join('');
+      frame.innerHTML = `<svg viewBox="0 0 ${g.w} ${g.h}" role="img" aria-label="월별 선택과 SPY의 누적성과 및 낙폭">${grid.join('')}${ddTicks}<text class="factor-performance-caption" x="${g.left}" y="253">낙폭</text>${curves}${dates}${line(g.x(selected),g.top,g.x(selected),g.ddBottom,'factor-performance-cursor')}</svg>`;
+      const svg = frame.querySelector('svg'), cursor = frame.querySelector('.factor-performance-cursor');
+      const show = index => {
+        selected=index;const row=rows[index];cursor.setAttribute('x1',g.x(index));cursor.setAttribute('x2',g.x(index));
+        for (const point of frame.querySelectorAll('.factor-performance-point')) { const value=row[point.dataset.field][Number(point.dataset.series)];point.style.display=Number.isFinite(value)?'':'none';point.setAttribute('cx',g.x(index));point.setAttribute('cy',point.dataset.field==='values'?g.y(value):g.dy(value)); }
+        const value = i => Number.isFinite(row.values[i]) ? row.values[i].toLocaleString('ko-KR', {minimumFractionDigits:2, maximumFractionDigits:2}) : '—';
+        const dd = i => Number.isFinite(row.drawdowns[i]) ? formatPercent(row.drawdowns[i]) : '—';
+        readout.innerHTML = `<time datetime="${row.date}">${row.date}</time><span>월별 선택 <b>${value(0)}</b><small>낙폭 ${dd(0)}</small></span>${performance.benchmark?`<span class="benchmark">SPY <b>${value(1)}</b><small>낙폭 ${dd(1)}</small></span>`:''}`;
+      };
+      const nearest = event => { const rect=svg.getBoundingClientRect(),px=(event.clientX-rect.left)*g.w/rect.width;let index=0;for(let i=1;i<rows.length;i++)if(Math.abs(g.x(i)-px)<Math.abs(g.x(index)-px))index=i;return index; };
+      frame.onpointermove=event=>{if(event.pointerType!=='touch')show(nearest(event));};
+      frame.onclick=event=>{pinned=nearest(event);show(pinned);frame.focus({preventScroll:true});};
+      frame.onpointerleave=()=>show(pinned);
+      frame.onkeydown=event=>{const moves={ArrowLeft:Math.max(0,selected-1),ArrowRight:Math.min(rows.length-1,selected+1),Home:0,End:rows.length-1,Escape:rows.length-1};if(Object.hasOwn(moves,event.key)){event.preventDefault();pinned=moves[event.key];show(pinned);}};
+      show(selected);
+    };
+    draw();
+    if (typeof ResizeObserver !== 'undefined') { factorPerformanceObserver=new ResizeObserver(draw);factorPerformanceObserver.observe(target); }
+  }
+
   const FACTOR_VIEWS = new Map();
   function renderFactorOverview(summary, project) {
     const target = $(panelSelector(project, 'metrics'));
@@ -3658,7 +3740,7 @@
     const momentum = project.id === 'momentum', integrated = allocation.integrated === true;
     target.classList.toggle('integrated-allocation', integrated);
     if (!allocation.rows.length) { target.innerHTML = '<p class="empty-state">표시할 종목이 없습니다.</p>'; return; }
-    const ticks = [0, scale / 2, scale].map((value) => `${Math.round(value * 100)}%`);
+    const ticks = [0, scale / 2, scale].map((value) => `${Number((value * 100).toFixed(1))}%`);
     target.innerHTML = `<div class="factor-columns" aria-hidden="true"><span>#</span><span>종목</span><span>모델 비중</span><span></span>${integrated ? '' : `<span>${momentum ? '신호' : '팩터 점수'}</span>`}</div>
       <div class="factor-axis" aria-hidden="true"><div>${ticks.map((value) => `<span>${value}</span>`).join('')}</div></div>
       <ol class="factor-holdings" aria-label="${momentum && !integrated ? '모멘텀 신호' : '모델 비중'} 순위. 비중 막대 공통 범위 0에서 ${Math.round(scale * 100)}퍼센트">
@@ -3675,6 +3757,7 @@
 
   function renderIntegratedMomentum(summary, mode, error, project) {
     if (summary.unavailable) {
+      factorPerformanceObserver?.disconnect();
       const target = $(panelSelector(project,'metrics'));if(target)target.innerHTML='<p class="empty-state">통합 결과를 불러오지 못했습니다.</p>';
       const sourceMeta = $(panelSelector(project,'factor-meta'));if(sourceMeta)sourceMeta.innerHTML='';
       renderRows(panelSelector(project,'rows'),[],()=>[],3);
@@ -3683,8 +3766,10 @@
     const allocation = factorAllocation(summary, 'momentum');allocation.integrated = true;
     const target = $(panelSelector(project, 'metrics'));
     const cashLabel = `현금 ${formatPercent(summary.liquidCashWeight)}${summary.receivableWeight > 0 ? ` · 현금 수취권 ${formatPercent(summary.receivableWeight)}` : ''}`;
-    if (target) target.innerHTML = `<div class="factor-identity"><span>이번 선택</span><strong>${escapeHtml(summary.factorLabel)}</strong><small>${escapeHtml(summary.factor)}</small></div><div class="factor-stats"><div><span>월별 선택 CAGR</span><strong>${escapeHtml(formatPercent(summary.metrics.cagr))}</strong></div><div class="factor-composite"><span>MDD</span><strong>${escapeHtml(formatPercent(summary.metrics.mdd))}</strong></div></div><div class="factor-holdings-heading"><h5>비중 상위 ${allocation.rows.length}종목</h5><span>모형 보유 ${summary.rows.length}종목 · ${escapeHtml(cashLabel)}</span></div><div class="factor-allocation" id="${escapeAttribute(panelDomId(project,'allocation'))}"></div>`;
-    renderFactorAllocation(allocation, project, factorWeightScale([allocation]));
+    if (target) target.innerHTML = `<div class="factor-summary-column"><div class="factor-identity"><span>이번 선택</span><strong>${escapeHtml(summary.factorLabel)}</strong><small>${escapeHtml(summary.factor)}</small></div><div class="factor-stats"><div><span>월별 선택 CAGR</span><strong>${escapeHtml(formatPercent(summary.metrics.cagr))}</strong></div><div class="factor-composite"><span>MDD</span><strong>${escapeHtml(formatPercent(summary.metrics.mdd))}</strong></div></div><div class="factor-holdings-heading"><h5>비중 상위 ${allocation.rows.length}종목</h5><span>모형 보유 ${summary.rows.length}종목 · ${escapeHtml(cashLabel)}</span></div><div class="factor-allocation" id="${escapeAttribute(panelDomId(project,'allocation'))}"></div></div><div class="factor-performance-column" id="${escapeAttribute(panelDomId(project,'performance'))}"></div>`;
+    target?.classList?.toggle('integrated-factor-overview', true);
+    renderFactorAllocation(allocation, project, integratedWeightScale(allocation));
+    renderFactorPerformance(summary.performance, project);
     const sourceMeta = $(panelSelector(project,'factor-meta'));
     if(sourceMeta) sourceMeta.innerHTML = [['실행',summary.resultKey],['성과 기간',`${summary.evaluationStart}–${summary.holdingsAsOf}`],['보유 기준일',summary.holdingsAsOf],['선택점수',formatNumber(summary.compositeScore)],['입력 기준일',summary.dataAsOf]].map(([label,value])=>`<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value || '—')}</dd></div>`).join('');
     renderRows(panelSelector(project,'rows'),summary.rows,row=>[row.rank,badge(row.symbol),formatPercent(row.modelWeight)],3);
@@ -5488,6 +5573,9 @@
       factorDisplayName,
       factorAllocation,
       factorWeightScale,
+      integratedWeightScale,
+      factorPerformanceData,
+      factorPerformanceGeometry,
       parseFearPrices,
       fearPointState,
       fearPriceGeometry,

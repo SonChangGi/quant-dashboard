@@ -50,3 +50,29 @@ test('both strategies use one untruncated weight scale independent of loading or
   assert.equal(api.factorWeightScale([{rows:[{weight:1}]}]), 1);
   assert.equal(api.factorWeightScale([{rows:[{weight:null},{weight:NaN}]}]), .4);
 });
+
+test('integrated holdings use a zero-based scale that fits observed weights without clipping', () => {
+  assert.equal(api.integratedWeightScale({rows:[{weight:.0847},{weight:.0701}]}), .1);
+  assert.equal(api.integratedWeightScale({rows:[{weight:.021}]}), .04);
+  assert.equal(api.integratedWeightScale({rows:[]}), .1);
+  for (const weight of [.1,.10001,.30001,.61,1]) assert(api.integratedWeightScale({rows:[{weight}]}) >= weight);
+});
+
+test('strategy and SPY rebase on their first common actual observation, retaining gaps and drawdowns', () => {
+  const nav = [{date:'2020-01-01',value:1},{date:'2020-01-02',value:2},{date:'2020-01-03',value:null},{date:'2020-01-04',value:1.5},{date:'2020-01-05',value:3}];
+  const comparisons = [{id:'SPY',nav:[{date:'2020-01-02',value:4},{date:'2020-01-03',value:5},{date:'2020-01-04',value:3}]}];
+  const before=JSON.stringify([nav,comparisons]);
+  const p=api.factorPerformanceData(nav,comparisons);
+  assert.equal(p.rows[0].date,'2020-01-02');
+  assert.deepEqual(Array.from(p.rows[0].values),[100,100]);
+  assert.equal(p.rows[1].values[0],null);
+  assert.equal(p.rows[1].values[1],125);
+  assert.deepEqual(Array.from(p.rows[2].drawdowns),[-.25,-.4]);
+  assert.equal(p.rows[3].values[1],null);
+  assert.equal(JSON.stringify([nav,comparisons]),before);
+  const g=api.factorPerformanceGeometry(p,580);
+  assert(g.ceiling>=150);assert(g.ddFloor<=-.4);
+  assert.equal(g.x(0),g.left);assert.equal(g.x(p.rows.length-1),g.right);
+  assert.equal(api.factorPerformanceData(nav).benchmark,false);
+  assert.equal(api.factorPerformanceData([],comparisons).rows.length,0);
+});
