@@ -128,7 +128,7 @@ def test_repository_rename_does_not_relax_run_or_result_binding(repository: str)
     ],
 )
 def test_new_additive_sql_and_api_allow_the_same_exact_repository_identities(code_version: str, accepted: bool) -> None:
-    path = Path(__file__).resolve().parents[3] / "infra/supabase/migrations/202610200001_allow_factor_repository.sql"
+    path = Path(__file__).resolve().parents[3] / "infra/supabase/migrations/20261020071642_allow_factor_repository.sql"
     migration = path.read_text()
     sql_pattern = next(pattern for pattern in re.findall(r"code_version ~ '([^']+)'", migration) if "(factor|" in pattern)
     assert bool(CODE_VERSION_PATTERN.fullmatch(code_version)) is accepted

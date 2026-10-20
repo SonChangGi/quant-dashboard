@@ -240,7 +240,17 @@ Pages URL (404/410), or its exact Factor redirect, can be fetched from the ident
 `/factor/` path. The stored identity stays unchanged and byte/SHA verification
 remains mandatory; unrelated redirects and server errors fail closed.
 
-Deploy this API code and apply `202610200001_allow_factor_repository.sql` before
+Deploy this API code and apply `20261020071642_allow_factor_repository.sql` before
 accepting callbacks with the new repository code version. The additive migration
 preserves the old repository and other projects. These are separate operator
 steps; a static Pages deployment does not deploy the API or apply SQL.
+
+Operational application on 2026-10-20 used the official Management API migration
+endpoint with name `allow_factor_repository`; Supabase registered version
+`20261020071642`. The source draft was `202610200001` in commit `580d415`;
+only its filename changed to match the registered version, preventing a later CLI
+run from treating it as pending. The registered SQL and repository file share
+SHA-256 `72445af79da9bde8bbfb0a804dcc28fcd6386bd7f2f8b2d2b3c54cfb2256f46d`.
+Read-only checks confirmed the migration history, both repository prefixes,
+rejection of unrelated identities, and unchanged fingerprints for all seven
+existing analysis runs. No new analysis run was created for this verification.
