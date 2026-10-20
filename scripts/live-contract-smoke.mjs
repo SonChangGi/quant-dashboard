@@ -9,7 +9,8 @@ import {
 
 const MAX_PAYLOAD_BYTES = 8_000_000;
 const MAX_GENERATION_AGE_DAYS = 21;
-const REQUIRED_PROJECT_COUNT = 7;
+const REQUIRED_PROJECT_IDS = ['fearngreed', 'momentum', 'dram', 'etf', 'sox', 'regime'];
+const REQUIRED_PROJECT_COUNT = REQUIRED_PROJECT_IDS.length;
 const reportPath = argumentValue('--report');
 
 class PublicFetchError extends Error {
@@ -35,7 +36,7 @@ const panelProjects = PROJECTS.filter(
 const results = [];
 const findings = [];
 
-if (panelProjects.length !== REQUIRED_PROJECT_COUNT) {
+if (panelProjects.length !== REQUIRED_PROJECT_COUNT || REQUIRED_PROJECT_IDS.some(id => !panelProjects.some(project => project.id === id))) {
   addFinding('hub', 'contract', 'hard', `Expected ${REQUIRED_PROJECT_COUNT} panel projects, found ${panelProjects.length}.`);
 }
 
@@ -127,9 +128,9 @@ for (const project of panelProjects) {
   check(project.id, payloadBytes > 0, 'contract', `${project.id} payload byte count is missing`);
   check(
     project.id,
-    payloadBytes <= MAX_PAYLOAD_BYTES,
+    payloadBytes <= (adapter.maxPayloadBytes || MAX_PAYLOAD_BYTES),
     'contract',
-    `${project.id} payload exceeds ${MAX_PAYLOAD_BYTES.toLocaleString('en-US')} bytes`,
+    `${project.id} payload exceeds ${(adapter.maxPayloadBytes || MAX_PAYLOAD_BYTES).toLocaleString('en-US')} bytes`,
   );
   check(
     project.id,

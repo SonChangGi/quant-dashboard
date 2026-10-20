@@ -191,18 +191,18 @@
       id: 'momentum',
       shortName: 'Momentum',
       title: '모멘텀 팩터 랩',
-      description: '선정 모멘텀 팩터와 현재 연구 포트폴리오를 확인합니다.',
+      description: '월별 팩터 선택 성과와 현재 모형 보유를 확인합니다.',
       url: 'https://sonchanggi.github.io/momentum-factor-lab/',
       accent: 'MF',
       panelAdapter: 'momentum',
       panel: {
-        eyebrow: 'Momentum Factor',
-        title: '모멘텀 팩터',
+        eyebrow: 'Integrated Factor Research',
+        title: '월별 팩터 선택',
         contentType: 'table',
         metricLoading: '모멘텀 데이터를 불러오는 중...',
         table: {
-          caption: '동일 입력 Python 최고 모멘텀 팩터의 모델 포트폴리오 상위 종목',
-          columns: ['순위', '종목', '신호', '모델 비중'],
+          caption: '월별 선택 전략의 전체 모형 보유 · 비중 내림차순',
+          columns: ['순위', '종목', '모형 비중'],
           loadingText: '데이터를 불러오는 중...',
         },
       },
@@ -226,22 +226,11 @@
     {
       id: 'best',
       shortName: 'Best Factor',
-      title: 'Best Factor Lab',
-      description: '미국 주식 팩터 랭킹과 최신 편입 종목·비중을 확인합니다.',
+      title: '팩터 탐색 · Momentum 통합',
+      description: '가격·거래량 팩터 연구와 비교는 Momentum에서 확인합니다.',
       url: 'https://sonchanggi.github.io/best-factor/',
+      integrationUrl: 'https://sonchanggi.github.io/momentum-factor-lab/?view=explore',
       accent: 'BF',
-      panelAdapter: 'best',
-      panel: {
-        eyebrow: 'Best Factor',
-        title: '베스트 팩터',
-        contentType: 'table',
-        metricLoading: '베스트 팩터 데이터를 불러오는 중...',
-        table: {
-          caption: '베스트 팩터 상위 5개 종목과 모델 비중',
-          columns: ['순위', '종목', '점수', '모델 비중', '보유 기준일'],
-          loadingText: '데이터를 불러오는 중...',
-        },
-      },
     },
     {
       id: 'etf',
@@ -348,6 +337,8 @@
     requiredKeys: ['resultIdentity', 'bestFactor', 'weightingPolicy', 'bestFactorReason', 'factorAccounting', 'bestFactorPortfolio', 'allocationMethod', 'compositeScore', 'weights', 'cashWeight', 'maxWeight', 'dataAsOf', 'dataMode', 'sourceLabel', 'evidenceStatus', 'researchOnly', 'notInvestmentRecommendation'],
   };
 
+  const LEGACY_MOMENTUM_ADAPTER = { contracts: { summary: MOMENTUM_SUMMARY_CONTRACT } };
+
   const PANEL_ADAPTERS = {
     fearngreed: {
       sourceUrls: {
@@ -364,22 +355,15 @@
       emptyReason: 'Fear & Greed summary did not contain a usable KOSPI entity.',
     },
     momentum: {
-      sourceUrls: {
-        summary: 'https://sonchanggi.github.io/momentum-factor-lab/data/summary.json',
-        momentumDashboard: 'https://sonchanggi.github.io/momentum-factor-lab/data/dashboard.json',
-      },
-      primarySourceKey: 'summary',
-      contracts: { summary: MOMENTUM_SUMMARY_CONTRACT },
-      parse: (sources) => parseMomentum(sources.summary, sources.momentumDashboard),
-      hasUsableData: (summary) => Boolean(
-        summary
-          && summary.unavailable !== true
-          && Array.isArray(summary.rows)
-          && finiteOrNull(summary.cashWeight) !== null,
-      ),
+      sourceUrls: { integrated: 'https://sonchanggi.github.io/momentum-factor-lab/data/integrated-result.json' },
+      maxPayloadBytes: 20_000_000, // Complete factor histories and research diagnostics; other adapters keep 8 MB.
+      primarySourceKey: 'integrated',
+      contracts: { integrated: { versionField: 'schemaVersion', expectedVersion: 'integrated-factor/v1', requiredKeys: ['resultIdentity', 'selection', 'factors', 'settings', 'data', 'generatedAt'] } },
+      parse: (sources) => parseIntegratedMomentum(sources.integrated),
+      hasUsableData: (summary) => Boolean(summary && summary.unavailable !== true && summary.integrated === true && Array.isArray(summary.rows) && momentumFiniteNumber(summary.cashWeight)),
       fallback: normalizeMomentumFallback,
       render: renderMomentum,
-      emptyReason: 'Momentum summary did not contain usable top rows.',
+      emptyReason: '통합 Momentum 결과의 보유·회계 계약을 확인하세요.',
     },
     dram: {
       sourceUrls: {
@@ -396,18 +380,6 @@
       fallback: normalizeDramFallback,
       render: renderDram,
       emptyReason: 'DRAM summary/details did not contain usable price points.',
-    },
-    best: {
-      sourceUrls: {
-        summary: 'https://sonchanggi.github.io/best-factor/data/summary.json',
-      },
-      primarySourceKey: 'summary',
-      contracts: { summary: SUMMARY_CONTRACT },
-      parse: (sources) => parseBestFactor(sources.summary),
-      hasUsableData: (summary) => Boolean(summary?.rows?.length),
-      fallback: normalizeBestFallback,
-      render: renderBestFactor,
-      emptyReason: 'Best Factor summary did not contain usable holdings.',
     },
     etf: {
       sourceUrls: {
@@ -730,7 +702,7 @@
           <p class="eyebrow">${escapeHtml(panel.eyebrow || project.shortName)}</p>
           <h4 id="${escapeAttribute(panelDomId(project, 'title'))}">${escapeHtml(panel.title || project.title)}</h4>
         </div>
-        <a class="panel-link" href="${escapeAttribute(project.url)}">${escapeHtml(project.shortName)} 열기</a>
+        <a class="panel-link" href="${escapeAttribute(project.integrationUrl || project.url)}">${escapeHtml(project.integrationUrl ? '통합 팩터 탐색' : project.shortName + ' 열기')}</a>
       </div>
       <p class="status-line" id="${escapeAttribute(panelDomId(project, 'status'))}">업데이트 확인 중</p>
       ${content}
@@ -754,7 +726,7 @@
           </div>
         </div>
         <p>${escapeHtml(project.description)}</p>
-        <a class="panel-link" href="${escapeAttribute(project.url)}">${escapeHtml(project.shortName)} 열기</a>
+        <a class="panel-link" href="${escapeAttribute(project.integrationUrl || project.url)}">${escapeHtml(project.integrationUrl ? '통합 팩터 탐색' : project.shortName + ' 열기')}</a>
       </div>
     `;
     return article;
@@ -1110,6 +1082,47 @@
 
   function firstLimitation(meta) {
     return asArray(meta.limitations).find(Boolean) || '원본 프로젝트의 방법론과 한계를 함께 확인하세요.';
+  }
+
+  function parseIntegratedMomentum(payload) {
+    const fail = (reason) => momentumUnavailable('통합 Momentum 결과를 확인하세요.', reason);
+    if (!isRecord(payload) || payload.schemaVersion !== 'integrated-factor/v1'
+        || payload.resultIdentity?.strategyType !== 'monthly_selection'
+        || !/^[a-f0-9]{24}$/.test(payload.resultIdentity?.resultId || '')
+        || !/^[a-f0-9]{64}$/.test(payload.resultIdentity?.inputHash || '')
+        || !/^[a-f0-9]{64}$/.test(payload.resultIdentity?.codeHash || '')
+        || !Array.isArray(payload.factors) || !Array.isArray(payload.selection?.history)
+        || !Array.isArray(payload.selection?.holdings) || !Array.isArray(payload.selection?.nav)
+        || !Number.isFinite(Date.parse(payload.generatedAt || ''))
+        || !/^\d{4}-\d{2}-\d{2}$/.test(payload.data?.asOf || '')) return fail('invalid_integrated_identity');
+    const selection = payload.selection, current = selection.current || {}, nav = selection.nav.at(-1);
+    if (!['selected', 'cash', 'deferred'].includes(current.status)) return fail('invalid_integrated_selection_state');
+    const holdingDate = selection.holdingsAsOf || payload.data.asOf;
+    if (!nav || nav.date !== holdingDate || !momentumFiniteNumber(nav.value)
+        || !/^\d{4}-\d{2}-\d{2}$/.test(holdingDate) || holdingDate > payload.data.asOf) return fail('unconfirmed_integrated_nav');
+    const cash = selection.cashWeight, receivable = selection.receivableWeight ?? 0;
+    const liquid = selection.liquidCashWeight ?? (cash - receivable);
+    if (![cash, receivable, liquid].every(v => momentumFiniteNumber(v) && v >= 0 && v <= 1)
+        || Math.abs(liquid + receivable - cash) > 1e-8) return fail('invalid_integrated_cash');
+    const seen = new Set(), holdings = [];
+    for (const row of selection.holdings) {
+      if (!isRecord(row) || typeof row.symbol !== 'string' || !row.symbol.trim()
+          || seen.has(row.symbol.toUpperCase()) || !momentumFiniteNumber(row.weight)
+          || row.weight <= 0 || row.weight > 1) return fail('invalid_integrated_holdings');
+      seen.add(row.symbol.toUpperCase());holdings.push(row);
+    }
+    if (Math.abs(holdings.reduce((total, row) => total + row.weight, cash) - 1) > 1e-7) return fail('invalid_integrated_allocation_sum');
+    const factor = payload.factors.find(row => row?.id === current.factorId);
+    if (current.status === 'selected' && !factor) return fail('missing_integrated_selected_factor');
+    const rows = holdings.slice().sort((a,b) => b.weight-a.weight || a.symbol.localeCompare(b.symbol)).map((row,index) => ({ rank:index+1, symbol:row.symbol, name:row.symbol, signal:null, modelWeight:row.weight }));
+    const execution = current.executionStatus || '';
+    const state = execution === 'blocked_unsettled_corporate_cash' ? '현금 수취 대기' : execution.startsWith('blocked_') ? '체결 보류' : current.status === 'deferred' ? '선택 보류' : execution === 'pending' ? '체결 예정' : current.status === 'cash' ? '현금' : '모형 보유';
+    return { integrated:true, factor:current.factorId || '현금', factorLabel:current.label || factor?.label || '현금', selectedWeightingPolicy:payload.settings?.weighting, compositeScore:current.score ?? null,
+      resultIdentity:payload.resultIdentity, resultKey:payload.resultIdentity.resultId, generatedAt:payload.generatedAt,
+      dataAsOf:payload.data.asOf, holdingsAsOf:holdingDate, evaluationStart:selection.nav.find(point => momentumFiniteNumber(point.value))?.date || '', cashWeight:cash, liquidCashWeight:liquid, receivableWeight:receivable,
+      metrics:selection.metrics || {}, rows, entities:rows.map(row=>({id:row.symbol,symbol:row.symbol,label:row.symbol,name:row.symbol,metrics:{factor:current.factorId,modelWeight:row.modelWeight},signals:['월별 선택 모형 보유'],warnings:[]})),
+      status:state, dataMode:'live_market', dataModeLabel:'실제 시장 데이터', sourceLabel:'무료 시장자료 · 통합 회계', evidenceStatus:'sequential_monthly_selection',
+      meta:{schemaVersion:'integrated-factor/v1',statusState:state.includes('보류')||state.includes('대기')?'blocked':'ok',dataAsOf:payload.data.asOf,resultIdentity:payload.resultIdentity,holdingCount:rows.length,cadence:'월별 선택 · 일별 평가',expectedFreshnessDays:5,degradedReasons:[],statusLabel:state} };
   }
 
   function parseMomentum(payload, detailPayload = null) {
@@ -3652,24 +3665,44 @@
   function renderFactorAllocation(allocation, project, scale) {
     const target = $(panelSelector(project, 'allocation'));
     if (!target) return;
-    const momentum = project.id === 'momentum';
+    const momentum = project.id === 'momentum', integrated = allocation.integrated === true;
+    target.classList.toggle('integrated-allocation', integrated);
     if (!allocation.rows.length) { target.innerHTML = '<p class="empty-state">표시할 종목이 없습니다.</p>'; return; }
     const ticks = [0, scale / 2, scale].map((value) => `${Math.round(value * 100)}%`);
-    target.innerHTML = `<div class="factor-columns" aria-hidden="true"><span>#</span><span>종목</span><span>모델 비중</span><span></span><span>${momentum ? '신호' : '팩터 점수'}</span></div>
+    target.innerHTML = `<div class="factor-columns" aria-hidden="true"><span>#</span><span>종목</span><span>모델 비중</span><span></span>${integrated ? '' : `<span>${momentum ? '신호' : '팩터 점수'}</span>`}</div>
       <div class="factor-axis" aria-hidden="true"><div>${ticks.map((value) => `<span>${value}</span>`).join('')}</div></div>
-      <ol class="factor-holdings" aria-label="${momentum ? '모멘텀 신호' : '모델 비중'} 순위. 비중 막대 공통 범위 0에서 ${Math.round(scale * 100)}퍼센트">
+      <ol class="factor-holdings" aria-label="${momentum && !integrated ? '모멘텀 신호' : '모델 비중'} 순위. 비중 막대 공통 범위 0에서 ${Math.round(scale * 100)}퍼센트">
       ${allocation.rows.map((row) => {
         const valid = typeof row.weight === 'number' && Number.isFinite(row.weight) && row.weight >= 0 && row.weight <= 1;
         const percentage = valid ? formatPercent(row.weight) : '—';
         return `<li data-symbol="${escapeAttribute(row.symbol)}">
           <span class="factor-rank">${escapeHtml(row.rank)}</span><strong class="factor-symbol" title="${escapeAttribute(row.name || row.symbol)}">${escapeHtml(row.symbol)}</strong>
           <div class="factor-bar-track" role="img" aria-label="모델 비중 ${percentage}" data-weight="${valid ? row.weight : ''}" data-scale="${scale}">${valid ? `<i style="width:${row.weight / scale * 100}%"></i>` : ''}</div>
-          <strong class="factor-weight">${percentage}</strong><span class="factor-signal" aria-label="${momentum ? '신호' : '팩터 점수'} ${escapeAttribute(formatNumber(row.value))}">${escapeHtml(formatNumber(row.value))}</span>
+          <strong class="factor-weight">${percentage}</strong>${integrated ? '' : `<span class="factor-signal" aria-label="${momentum ? '신호' : '팩터 점수'} ${escapeAttribute(formatNumber(row.value))}">${escapeHtml(formatNumber(row.value))}</span>`}
         </li>`;
       }).join('')}</ol>`;
   }
 
+  function renderIntegratedMomentum(summary, mode, error, project) {
+    if (summary.unavailable) {
+      const target = $(panelSelector(project,'metrics'));if(target)target.innerHTML='<p class="empty-state">통합 결과를 불러오지 못했습니다.</p>';
+      const sourceMeta = $(panelSelector(project,'factor-meta'));if(sourceMeta)sourceMeta.innerHTML='';
+      renderRows(panelSelector(project,'rows'),[],()=>[],3);
+      setStatus(panelSelector(project,'status'),error || summary.status,'error');return;
+    }
+    const allocation = factorAllocation(summary, 'momentum');allocation.integrated = true;
+    const target = $(panelSelector(project, 'metrics'));
+    const cashLabel = `현금 ${formatPercent(summary.liquidCashWeight)}${summary.receivableWeight > 0 ? ` · 현금 수취권 ${formatPercent(summary.receivableWeight)}` : ''}`;
+    if (target) target.innerHTML = `<div class="factor-identity"><span>이번 선택</span><strong>${escapeHtml(summary.factorLabel)}</strong><small>${escapeHtml(summary.factor)}</small></div><div class="factor-stats"><div><span>월별 선택 CAGR</span><strong>${escapeHtml(formatPercent(summary.metrics.cagr))}</strong></div><div class="factor-composite"><span>MDD</span><strong>${escapeHtml(formatPercent(summary.metrics.mdd))}</strong></div></div><div class="factor-holdings-heading"><h5>비중 상위 ${allocation.rows.length}종목</h5><span>모형 보유 ${summary.rows.length}종목 · ${escapeHtml(cashLabel)}</span></div><div class="factor-allocation" id="${escapeAttribute(panelDomId(project,'allocation'))}"></div>`;
+    renderFactorAllocation(allocation, project, factorWeightScale([allocation]));
+    const sourceMeta = $(panelSelector(project,'factor-meta'));
+    if(sourceMeta) sourceMeta.innerHTML = [['실행',summary.resultKey],['성과 기간',`${summary.evaluationStart}–${summary.holdingsAsOf}`],['보유 기준일',summary.holdingsAsOf],['선택점수',formatNumber(summary.compositeScore)],['입력 기준일',summary.dataAsOf]].map(([label,value])=>`<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value || '—')}</dd></div>`).join('');
+    renderRows(panelSelector(project,'rows'),summary.rows,row=>[row.rank,badge(row.symbol),formatPercent(row.modelWeight)],3);
+    setStatus(panelSelector(project,'status'),`${summary.holdingsAsOf} · ${summary.status}${error ? ' · '+error : ''}`, mode);
+  }
+
   function renderMomentum(summary, mode, error, project) {
+    if (summary.integrated) return renderIntegratedMomentum(summary, mode, error, project);
     renderFactorOverview(summary, project);
     renderRows(panelSelector(project, 'rows'), summary.rows, (row) => [
       row.rank,
@@ -4653,10 +4686,10 @@
   }
 
   function normalizeMomentumFallback() {
-    return momentumUnavailable(
+    return { ...momentumUnavailable(
       'Momentum 공개 JSON을 읽지 못해 보유 종목을 표시하지 않습니다.',
       'momentum_public_json_unavailable',
-    );
+    ), integrated: true };
   }
 
   function normalizeDramFallback() {
@@ -5435,6 +5468,9 @@
 
   if (typeof globalThis !== 'undefined') {
     globalThis.__QUANT_DASHBOARD_TESTS__ = {
+      parseIntegratedMomentum,
+      LEGACY_MOMENTUM_ADAPTER,
+      renderMomentum,
       parseMomentum,
       parseFearAndGreed,
       parseDram,

@@ -220,3 +220,7 @@ bearer header.
 
 Never expose GitHub tokens, owner/worker tokens, or either Supabase server key
 through `VITE_*`, `NEXT_PUBLIC_*`, static JSON, or browser JavaScript.
+
+## Optional local integrated research bridge
+
+In development or test only, `QUANT_CONTROL_INTEGRATED_ENGINE_URL=http://127.0.0.1:50073` enables `/v2/momentum-integrated/capabilities` and `/v2/momentum-integrated/runs`. This route accepts the explicit integrated request contract and rejects legacy Best inputs. It does not change the existing Momentum adapter or enable a production provider. Without this environment variable the routes are absent.

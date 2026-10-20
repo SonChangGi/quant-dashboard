@@ -550,18 +550,18 @@ const validMomentumV5 = api.parseMomentum(momentumSummaryV5, momentumDashboardV5
 assert(validMomentumV5.factor === 'selected_mom' && validMomentumV5.selectedWeightingPolicy === momentumV5Policy, 'Momentum schema-v5 parser keeps the Python best factor and fixed method aligned');
 assert(validMomentumV5.weightSource === 'dashboard.bestFactorPortfolio.weights' && validMomentumV5.rows[0].symbol === 'SEL', 'Momentum schema-v5 parser reads bestFactorPortfolio without a browser-side proxy');
 const momentumContractError = api.validateAdapterContract(
-  api.PANEL_ADAPTERS.momentum,
+  api.LEGACY_MOMENTUM_ADAPTER,
   { summary: momentumSummaryV5, momentumDashboard: momentumDashboardV4 },
 );
 assert(!momentumContractError, 'Momentum adapter accepts schemaVersion 5 summary contract');
 const oldMomentumContractError = api.validateAdapterContract(
-  api.PANEL_ADAPTERS.momentum,
+  api.LEGACY_MOMENTUM_ADAPTER,
   { summary: { ...momentumSummaryV5, schemaVersion: 4 }, momentumDashboard: momentumDashboardV4 },
 );
 assert(/expected 5/.test(oldMomentumContractError), 'Momentum adapter rejects the retired summary schema version');
 const { dataMode: omittedMomentumDataMode, ...momentumSummaryWithoutMode } = momentumSummaryV5;
 const missingModeContractError = api.validateAdapterContract(
-  api.PANEL_ADAPTERS.momentum,
+  api.LEGACY_MOMENTUM_ADAPTER,
   { summary: momentumSummaryWithoutMode, momentumDashboard: momentumDashboardV4 },
 );
 assert(omittedMomentumDataMode === 'demo' && /dataMode/.test(missingModeContractError), 'Momentum contract requires an explicit dataMode field');
@@ -1774,7 +1774,7 @@ assert(
   'Regime unavailable fallback contains no hardcoded market state, probability, or date',
 );
 
-assert(Object.keys(api.PANEL_ADAPTERS).length === 7, 'panel adapter manifest has seven active public summary adapters including Regime');
+assert(Object.keys(api.PANEL_ADAPTERS).length === 6 && !api.PANEL_ADAPTERS.best && api.PROJECTS.find(project => project.id === 'best')?.integrationUrl, 'panel adapter manifest has six active panels and a Best integration link');
 assert(Object.keys(api.PANEL_ADAPTERS.regime.sourceUrls).length === 1, 'Regime adapter reads only its public result JSON');
 
 const nullEntryMomentum = api.parseMomentum({
@@ -1886,7 +1886,7 @@ assert(domTargets['#top-nav'].children.length === 10, 'manifest renderer creates
 const renderedPanels = domTargets['#summary-grid'].children.filter((child) => child.dataset.projectId);
 assert(renderedPanels.length === 7 && new Set(renderedPanels.map((child) => child.dataset.projectId)).size === 7, 'grouped renderer preserves every public summary panel exactly once');
 assert(renderedPanels.map((child) => child.dataset.projectId).join('|') === 'fearngreed|regime|momentum|best|dram|sox|etf', 'display groups keep related research panels adjacent');
-assert(renderedPanels.every((child) => /열기/.test(child.innerHTML)), 'dashboard panel shells preserve project page links');
+assert(renderedPanels.every((child) => /열기|통합 팩터 탐색/.test(child.innerHTML)), 'dashboard panel shells preserve project page links');
 assert(domTargets['#summary-grid'].children.some((child) => /panel-detail/.test(child.innerHTML)), 'ETF panel shell includes detail mount for TOP10 cards');
 assert(domTargets['#summary-grid'].children.some((child) => /SOX 구성종목/.test(child.innerHTML)), 'SOX panel shell appears in the central summary grid');
 assert(domTargets['#summary-grid'].children.some((child) => /국면 추이/.test(child.innerHTML)), 'Regime public result panel appears in the central summary grid');
@@ -1940,7 +1940,7 @@ const notesRecord = { ...records[0], summary: { ...records[0].summary, meta: { .
 api.renderResearchBriefing([notesRecord]);
 api.renderDataHealth([notesRecord]);
 assert(!domTargets['#research-briefing'].innerHTML.includes(evidenceNote) && !domTargets['#data-health'].innerHTML.includes(evidenceNote), 'narrative limitations are omitted while source payloads remain inspectable');
-assert(/source-links/.test(domTargets['#data-health'].innerHTML) && /summary\.json/.test(domTargets['#data-health'].innerHTML), 'operations includes inspectable public source links');
+assert(/source-links/.test(domTargets['#data-health'].innerHTML) && /integrated-result\.json/.test(domTargets['#data-health'].innerHTML), 'operations includes inspectable public source links');
 const statusTarget = new ElementStub('p');
 statusTarget.classList = { toggle() {} };
 domTargets['#dram-status'] = statusTarget;

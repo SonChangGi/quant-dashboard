@@ -42,6 +42,7 @@ def _supabase_server_key() -> str:
 
 @dataclass(frozen=True)
 class Settings:
+    integrated_engine_url: str = ""
     environment: str = "development"
     provider: str = "disabled"
     store_backend: str = "memory"
@@ -83,6 +84,7 @@ class Settings:
     @classmethod
     def from_env(cls) -> Settings:
         return cls(
+            integrated_engine_url=os.getenv("QUANT_CONTROL_INTEGRATED_ENGINE_URL", "").strip(),
             environment=os.getenv("QUANT_CONTROL_ENV", "development").strip().lower(),
             provider=os.getenv("QUANT_CONTROL_PROVIDER", "disabled").strip().lower(),
             store_backend=os.getenv("QUANT_CONTROL_STORE", "memory").strip().lower(),
@@ -168,6 +170,8 @@ class Settings:
         )
 
     def validate(self) -> None:
+        if self.integrated_engine_url and self.environment not in {"development", "test"}:
+            raise ValueError("Integrated local execution is restricted to development or test")
         if self.environment not in {
             "development",
             "test",

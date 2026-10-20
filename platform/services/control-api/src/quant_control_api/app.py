@@ -320,6 +320,8 @@ def create_app(
         tags=["projects"],
     )
     async def capabilities(project_id: str) -> ProjectCapabilities:
+        if resolved_settings.integrated_engine_url and project_id == "best-factor":
+            raise ControlPlaneError(status_code=410, code="best_factor_integrated", message="Use /v2/momentum-integrated/capabilities")
         return service.capabilities(project_id)
 
     @application.post(
@@ -335,6 +337,12 @@ def create_app(
         body: RunCreateRequest,
         idempotency_key: Annotated[str, Header(alias="Idempotency-Key")],
     ) -> RunStatusResponse:
+        if resolved_settings.integrated_engine_url and project_id == "best-factor":
+            raise ControlPlaneError(
+                status_code=410,
+                code="best_factor_integrated",
+                message="Use /v2/momentum-integrated/runs with the integrated input contract",
+            )
         return await service.create_run(project_id, body, idempotency_key)
 
     @application.get(
@@ -381,6 +389,9 @@ def create_app(
     ) -> RunStatusResponse:
         return await service.accept_worker_failure(run_id, body)
 
+    if resolved_settings.integrated_engine_url:
+        from .integrated import integrated_router
+        application.include_router(integrated_router(resolved_settings.integrated_engine_url, authorize))
     return application
 
 

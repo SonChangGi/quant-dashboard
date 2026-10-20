@@ -45,13 +45,11 @@ for (const url of projectUrls) {
 
 const dataUrls = [
   'https://sonchanggi.github.io/fearNgreed/data/summary.json',
-  'https://sonchanggi.github.io/momentum-factor-lab/data/summary.json',
-  'https://sonchanggi.github.io/momentum-factor-lab/data/dashboard.json',
+  'https://sonchanggi.github.io/momentum-factor-lab/data/integrated-result.json',
   'https://sonchanggi.github.io/dram-price/data/summary.json',
   'https://sonchanggi.github.io/dram-price/data/prices.json',
   'https://sonchanggi.github.io/dram-price/data/series.json',
   'https://sonchanggi.github.io/dram-price/data/status.json',
-  'https://sonchanggi.github.io/best-factor/data/summary.json',
   'https://sonchanggi.github.io/etf-tracking/data/summary.json',
   'https://sonchanggi.github.io/etf-tracking/data/dashboard.json',
   'https://sonchanggi.github.io/etf-tracking/data/history.json',
@@ -125,13 +123,15 @@ assert(contains(files.app, 'parsePanelSafely'), 'parser exception fallback guard
 assert(contains(files.app, 'validateAdapterContract'), 'versioned public JSON contract validator exists');
 assert(contains(files.app, 'expectedVersion') && contains(files.app, 'schemaVersion') && contains(files.app, 'quant-research-summary'), 'public data contract versions are explicit');
 assert(contains(files.app, 'asRecords'), 'external arrays are filtered to records');
-assert(contains(files.app, 'parseMomentum'), 'momentum parser exists');
+assert(contains(files.app, 'parseMomentum'), 'legacy momentum parser exists');
+assert(contains(files.app, 'parseIntegratedMomentum') && contains(files.app, "expectedVersion: 'integrated-factor/v1'"), 'public momentum adapter uses the integrated result contract');
+assert(!contains(files.app, 'best-factor/data/summary.json'), 'retired Best JSON is not fetched');
 assert(contains(files.app, 'parseFearAndGreed'), 'Fear & Greed parser exists');
 assert(contains(files.app, 'normalizeFearAndGreedUnavailable'), 'Fear & Greed uses unavailable rather than hardcoded market fallback');
 assert(files.html.indexOf('id="news"') < files.html.indexOf('dashboard-section') && !files.html.includes('cockpit-section'), 'News leads the page while other sections retain their order');
 assert(!contains(files.html, 'research-disclaimer') && !contains(files.html, 'operations-lead'), 'repeated instruction and disclaimer copy is removed');
 assert(contains(files.app, "id: 'fearngreed'"), 'Fear & Greed project registry entry exists');
-assert(contains(files.app, 'MOMENTUM_SUMMARY_CONTRACT') && contains(files.app, 'expectedVersion: 5'), 'momentum adapter requires schemaVersion 5 summary contract');
+assert(contains(files.app, 'MOMENTUM_SUMMARY_CONTRACT') && contains(files.app, 'expectedVersion: 5'), 'legacy momentum fixtures retain their schemaVersion 5 contract');
 assert(contains(files.app, 'bestFactor') && contains(files.app, 'compositeScore'), 'momentum adapter reads Python best factor and composite score fields');
 assert(contains(files.app, 'weightingPolicy') && contains(files.app, 'bestFactorReason'), 'momentum adapter reads the fixed weighting method and Python best-factor reason');
 assert(contains(files.app, 'researchOnly') && contains(files.app, 'notInvestmentRecommendation'), 'momentum adapter requires research-only safety flags');
@@ -155,7 +155,7 @@ assert(contains(files.app, 'bestFactorPortfolio') && contains(files.app, 'summar
 assert(contains(files.app, 'validateMomentumAllocation') && contains(files.app, 'symbols.has(symbolKey)') && contains(files.app, 'Math.abs(totalWeight - 1)'), 'momentum consumer validates duplicate symbols and the weights-plus-cash contract');
 assert(contains(files.app, 'row.modelWeight > maxWeight') && contains(files.app, 'row.modelWeight < 0'), 'momentum consumer rejects cap violations and negative weights');
 assert(contains(files.app, 'appendMomentumContractConflict') && contains(files.app, "'data_mode'"), 'momentum consumer keeps supported metadata conflicts visible');
-assert(contains(files.app, 'momentumDashboard') && contains(files.app, 'momentumRowsFromModelWeights'), 'momentum adapter loads schema-v5 model holdings');
+assert(contains(files.app, 'selection.holdings') && contains(files.app, 'parseIntegratedMomentum'), 'public momentum adapter loads sequential strategy holdings');
 assert(contains(files.app, 'dashboard.bestFactorPortfolio.weights') && contains(files.app, 'weightingPolicyId'), 'momentum dashboard parser consumes the Python best-factor portfolio');
 assert(contains(files.app, '모델 비중'), 'momentum allocation column uses the model-weight label');
 assert(!contains(files.app, 'latest_output_rows') && !contains(files.app, 'production_recommendation'), 'retired momentum output and production allocation fields are not consumed');
@@ -324,7 +324,7 @@ assert(contains(files.pagesWorkflow, 'Build an allowlisted Pages artifact') && c
 assert(contains(files.pagesWorkflow, 'public-site-health:') && contains(files.pagesWorkflow, 'Fail only when the existing public Hub is unusable'), 'automatic Pages failures are notification-gated by live Hub usability');
 assert(!contains(files.pagesWorkflow, 'actions/checkout@v') && !contains(files.pagesWorkflow, 'actions/deploy-pages@v'), 'Pages workflow pins third-party Actions by commit SHA');
 assert(contains(files.liveSmoke, 'validateAdapterContract'), 'live contract smoke rejects incompatible contract versions');
-assert(contains(files.liveSmoke, 'REQUIRED_PROJECT_COUNT = 7'), 'live contract smoke requires all seven active public summary panels');
+assert(contains(files.liveSmoke, "['fearngreed', 'momentum', 'dram', 'etf', 'sox', 'regime']") && contains(files.liveSmoke, 'REQUIRED_PROJECT_IDS'), 'live contract smoke requires all six active panels after Best integration');
 assert(
   files.liveSmoke.indexOf('class PublicFetchError') >= 0
     && files.liveSmoke.indexOf('class PublicFetchError') < files.liveSmoke.indexOf('for (const project of panelProjects)'),

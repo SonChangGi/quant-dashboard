@@ -1,0 +1,311 @@
+{
+  "schemaVersion": "integrated-factor/v1",
+  "generatedAt": "2026-10-20T02:07:43.416751+00:00",
+  "resultIdentity": {
+    "resultId": "67ea7e8d49e15fe361eca79b",
+    "inputHash": "b401d465ca841c7016da1809cb91b2d467cb70f8a772de999f78002b5bd3d330",
+    "registryVersion": "integrated-32-v1",
+    "engineVersion": "integrated-accounting-v4",
+    "strategyType": "monthly_selection",
+    "codeHash": "bd69496d1a6746ee3cde5c9a6fc1246b382b4971c032ba0269e21305b87c749d",
+    "codeHashFiles": {
+      "integrated_data.py": "17249031595989068d7da22587e24e2d61ddc96325364acdb52b844166b1f471",
+      "integrated_factors.py": "0da5af49fecc6a225b416b55029a2c75c32fccbf89a5af40a5d7208c6b68a555",
+      "integrated_engine.py": "2b6453050b425d13cf27d036a6ddfb36c787b658277e742211fc3ea8da89d3a2",
+      "integrated_research.py": "606b3bf9ac3f423713ed7d7e9a5562b0bc9fd0ab908d98457300978a055c62bc",
+      "integrated_service.py": "d0ce9dc37fe601814d9b38fbbb9a33e87cdec8e98fea7064294eb3a84c89dae2",
+      "backtest.py": "aead5dd8eb6dc94819d977a5f6484dc74e2ffa36887921cc9fe369d1ff3ee3b9",
+      "portfolio.py": "a2640080470772978fb2d7f5444f843c31b72111bd6ec5e653ee9bc977b166a9",
+      "metrics.py": "c7f0b074eea368ca201259a24000b194b10095051864192b6481146792b390bb",
+      "config.py": "e957c1eee8e272897f88f81ef600fe53595c22f00faf49bd70dfb37829655654",
+      "integrated_variants.py": "56c64445469de6155a61094ef87f72827c2f70d14f8a727d34de79c85899c620",
+      "integrated_legacy_best.py": "2d1e8da754f60c8ea399999641f40a405137e4218d8a2196f34b091afb8fbc95",
+      "integrated_repairs.py": "8eb14947d012368bc417cd03e0557e4b6a78fcb22aaf60f9439abffbf6122d05",
+      "factors.py": "3221f5b6e10087135f782d2349def6a6a761933c9bcd2d5766d95be680dcb6ab",
+      "advanced_factors.py": "a0ff9a6cf3e547178836679c9cdec7b0db22dcb2fb80a9e179f871222cbeb768",
+      "universe.py": "205a3c8aa0fbf454cb869658b38aeceb522734c502c808052af33b19b7530385",
+      "resources/integrated_legacy_map.json": "c98b3e26fc947f39ac833827a2a1356fa86dae299103d44e3edd417768307c43",
+      "resources/integrated_universe.json": "3bc62b6516d30d937a2726ec617e127f0abfc4b5ad27b225d79e30df8f35fc25"
+    },
+    "baseResultId": "70d7ee1c4d0e1451f5c88fba",
+    "researchManifestHash": "3cb9323616551c49d8d310e57670fec30c218df11072075e90356bb846fd5e2a"
+  },
+  "settings": {
+    "start_date": "2016-01-01",
+    "end_date": null,
+    "evaluation_window_days": 756,
+    "top_n": 20,
+    "max_weight": 0.1,
+    "transaction_cost_bps": 5.0,
+    "slippage_bps": 5.0,
+    "bootstrap_repetitions": 2000,
+    "execution_delay_sessions": 1,
+    "weighting": "score_liquidity_rank",
+    "comparison_factors": [],
+    "common_universe": false,
+    "run_stress": false
+  },
+  "data": {
+    "asOf": "2026-10-16"
+  },
+  "factors": [
+    {
+      "id": "MOM12_1",
+      "label": "12–1 모멘텀"
+    },
+    {
+      "id": "STREV1",
+      "label": "1개월 반전"
+    },
+    {
+      "id": "LTREV13_60",
+      "label": "장기 반전"
+    },
+    {
+      "id": "SEASON5Y",
+      "label": "동일 달 계절성"
+    },
+    {
+      "id": "HIGH52",
+      "label": "52주 고점 근접"
+    },
+    {
+      "id": "MA200GAP",
+      "label": "200일 평균 괴리"
+    },
+    {
+      "id": "BREAKOUT126",
+      "label": "126일 고가 돌파"
+    },
+    {
+      "id": "ACCEL3_6",
+      "label": "수익 가속"
+    },
+    {
+      "id": "CONSISTENCY12_1",
+      "label": "상승일 비율"
+    },
+    {
+      "id": "EFFICIENCY12_1",
+      "label": "추세 효율"
+    },
+    {
+      "id": "RANGEPOS126",
+      "label": "가격 범위 위치"
+    },
+    {
+      "id": "RAMOM12_1",
+      "label": "위험조정 모멘텀"
+    },
+    {
+      "id": "BETA_SPY252",
+      "label": "시장 베타"
+    },
+    {
+      "id": "IDVOL_SPY252",
+      "label": "고유 변동성"
+    },
+    {
+      "id": "RESMOM_SPY36M_12_1",
+      "label": "잔차 모멘텀"
+    },
+    {
+      "id": "VOL252",
+      "label": "변동성"
+    },
+    {
+      "id": "DOWNSIDEDEV252",
+      "label": "하방편차"
+    },
+    {
+      "id": "REL_DOWNSIDEBETA252",
+      "label": "상대 하방 베타"
+    },
+    {
+      "id": "MAX1M",
+      "label": "최대 일수익"
+    },
+    {
+      "id": "ES10_252",
+      "label": "하위 10% 수익"
+    },
+    {
+      "id": "SKEW252",
+      "label": "왜도"
+    },
+    {
+      "id": "EXKURT252",
+      "label": "초과첨도"
+    },
+    {
+      "id": "PARKINSON126",
+      "label": "고저 변동성"
+    },
+    {
+      "id": "RANGECONTRACT21_126",
+      "label": "가격범위 수축"
+    },
+    {
+      "id": "ONMOM12_1",
+      "label": "야간 수익"
+    },
+    {
+      "id": "IDMOM12_1",
+      "label": "장중 수익"
+    },
+    {
+      "id": "AMIHUD252",
+      "label": "비유동성"
+    },
+    {
+      "id": "LOGADV63",
+      "label": "거래대금 규모"
+    },
+    {
+      "id": "DV_TREND21_126",
+      "label": "거래대금 추세"
+    },
+    {
+      "id": "DV_SHOCK21_126",
+      "label": "거래대금 충격"
+    },
+    {
+      "id": "SIGNED_VP63",
+      "label": "방향 거래대금"
+    },
+    {
+      "id": "PV_CORR126",
+      "label": "가격·거래대금 상관"
+    }
+  ],
+  "selection": {
+    "holdings": [
+      {
+        "symbol": "ADUR",
+        "weight": 0.03325892832947537
+      },
+      {
+        "symbol": "ATS",
+        "weight": 0.06658589342982588
+      },
+      {
+        "symbol": "BMWKY",
+        "weight": 0.05113892961987651
+      },
+      {
+        "symbol": "CAAP",
+        "weight": 0.05506224534646942
+      },
+      {
+        "symbol": "CMRE",
+        "weight": 0.053889272492070504
+      },
+      {
+        "symbol": "CYD",
+        "weight": 0.048855187746496456
+      },
+      {
+        "symbol": "ELPC",
+        "weight": 0.07046336385734464
+      },
+      {
+        "symbol": "GILT",
+        "weight": 0.04095068608990862
+      },
+      {
+        "symbol": "ICL",
+        "weight": 0.03688935867863197
+      },
+      {
+        "symbol": "IMTX",
+        "weight": 0.0541096836728994
+      },
+      {
+        "symbol": "KYIV",
+        "weight": 0.047472740811731605
+      },
+      {
+        "symbol": "LTBR",
+        "weight": 0.032115381113198
+      },
+      {
+        "symbol": "LXFR",
+        "weight": 0.04597116080894799
+      },
+      {
+        "symbol": "MBUU",
+        "weight": 0.041296979602193924
+      },
+      {
+        "symbol": "NBTX",
+        "weight": 0.0434611776214537
+      },
+      {
+        "symbol": "OCSL",
+        "weight": 0.042628690626708245
+      },
+      {
+        "symbol": "RGR",
+        "weight": 0.05469028889632421
+      },
+      {
+        "symbol": "SAFE",
+        "weight": 0.06176386365315537
+      },
+      {
+        "symbol": "TGS",
+        "weight": 0.03672617031671279
+      },
+      {
+        "symbol": "WTKWY",
+        "weight": 0.08266999728657534
+      }
+    ],
+    "cashWeight": 0.0,
+    "liquidCashWeight": 0.0,
+    "receivableWeight": 0.0,
+    "metrics": {
+      "cagr": 0.1446532803480005,
+      "sortino": 0.7516978116073633,
+      "calmar": 0.22818173431698152,
+      "mdd": -0.6339389118107657,
+      "sharpe": 0.5412008425024121,
+      "stability": 0.06714194094607714,
+      "calendarObservations": 1938,
+      "observedReturnCount": 1938,
+      "dailyRiskObservations": 1938,
+      "multiSessionReturnObservations": 0,
+      "valuationCoverageRatio": 1.0,
+      "dailyRiskCoverageRatio": 1.0,
+      "endingNavAvailable": true,
+      "riskMetricsComplete": true,
+      "riskMetricsExact": true
+    },
+    "holdingsAsOf": "2026-10-16",
+    "current": {
+      "date": "2026-09-30",
+      "factorId": "LOGADV63",
+      "label": "거래대금 규모",
+      "status": "selected",
+      "score": 85.48076923076923,
+      "executionStatus": "executed"
+    },
+    "history": [],
+    "nav": [
+      {
+        "date": "2026-10-15",
+        "value": 2.844648162779536
+      },
+      {
+        "date": "2026-10-16",
+        "value": 2.826380778758543
+      }
+    ]
+  },
+  "fixtureReceipt": {
+    "sourceUrl": "https://sonchanggi.github.io/momentum-factor-lab/data/integrated-result.json",
+    "sha256": "e00b401f4b426add24a0ca55cb911e5758f86405d497575a9e6400817fa73765",
+    "sourceBytes": 15104115,
+    "projection": "identity, dates, settings, definitions, actual holdings, monthly strategy metrics, last two NAV rows"
+  }
+}

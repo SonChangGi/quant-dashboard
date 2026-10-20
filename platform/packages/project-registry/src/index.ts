@@ -95,3 +95,25 @@ export function getProject(currentId: ProjectId): ProjectRegistryEntry {
   }
   return project;
 }
+
+/** Explicit local integration contract; public summaries retain their own schemas. */
+export const integratedMomentumContract = {
+  projectId: "momentum",
+  inputSchemaVersion: "momentum-integrated/v1",
+  resultSchemaVersion: "integrated-factor/v1",
+  strategyTypes: ["monthly_selection", "fixed_factor_experiment"],
+  retiredProjectId: "best-factor",
+  acceptsLegacyBestInputs: false,
+} as const;
+
+export function getLocalIntegratedNavigation(origin: string) {
+  const base = new URL(origin);
+  if (base.protocol !== "http:" || !["127.0.0.1", "localhost", "[::1]"].includes(base.hostname)
+      || base.username || base.password || base.search || base.hash || base.pathname !== "/") {
+    throw new RangeError("Integrated runtime must be a loopback HTTP origin");
+  }
+  return canonicalProjectRegistry.filter(project => project.id !== "best-factor").map(project => ({
+    ...project,
+    url: project.id === "momentum" ? base.href : project.id === "hub" ? new URL("hub/", base).href : project.url,
+  }));
+}
