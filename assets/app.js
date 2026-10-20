@@ -347,7 +347,7 @@
     },
     momentum: {
       sourceUrls: { integrated: 'https://sonchanggi.github.io/factor/data/integrated-result.json' },
-      maxPayloadBytes: 20_000_000, // Complete factor histories and research diagnostics; other adapters keep 8 MB.
+      maxPayloadBytes: 32_000_000, // v2 embeds 26 monthly holdings histories (2026-10-19: 23,462,282 bytes); other adapters keep 8 MB.
       primarySourceKey: 'integrated',
       contracts: { integrated: { versionField: 'schemaVersion', expectedVersion: 'integrated-factor/v1', requiredKeys: ['resultIdentity', 'selection', 'factors', 'settings', 'data', 'generatedAt'] } },
       parse: (sources) => parseIntegratedMomentum(sources.integrated),
