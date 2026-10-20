@@ -50,7 +50,7 @@ assert(
 );
 assert(
   api.NAVIGATION_PROJECTS.map((project) => project.shortName).join('|')
-    === 'Fear & Greed|Factor|DRAM|ETF|SOX|Regime|News|SPO|알파 하우스',
+    === 'Fear & Greed|Factor|DRAM|ETF|SOX|Regime|News|알파 하우스',
   'project manifest preserves the canonical navigation order after Hub',
 );
 assert(
@@ -1882,7 +1882,7 @@ context.document = {
 };
 api.renderProjectNavigation();
 api.renderDashboardPanels();
-assert(domTargets['#top-nav'].children.length === 9, 'manifest renderer creates nine project links including SPO and 알파 하우스');
+assert(domTargets['#top-nav'].children.length === 8, 'manifest renderer creates eight project links including 알파 하우스');
 const renderedPanels = domTargets['#summary-grid'].children.filter((child) => child.dataset.projectId);
 assert(renderedPanels.length === 6 && new Set(renderedPanels.map((child) => child.dataset.projectId)).size === 6, 'grouped renderer preserves every public summary panel exactly once');
 assert(renderedPanels.map((child) => child.dataset.projectId).join('|') === 'fearngreed|regime|momentum|dram|sox|etf', 'display groups keep related research panels adjacent');

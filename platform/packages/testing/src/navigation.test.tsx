@@ -15,7 +15,7 @@ it("renders Regime in shared navigation and moves the active page to it", () => 
   const navigation = getByRole("navigation", { name: "프로젝트" });
   const links = within(navigation).getAllByRole("link");
   expect(links.map((link) => link.textContent)).toEqual([
-    "Fear & Greed", "Factor", "DRAM", "ETF", "SOX", "Regime", "News", "SPO", "알파 하우스",
+    "Fear & Greed", "Factor", "DRAM", "ETF", "SOX", "Regime", "News", "알파 하우스",
   ]);
   const regime = within(navigation).getByRole("link", { name: "Regime" });
   expect(regime.getAttribute("href")).toBe("https://sonchanggi.github.io/regime/");

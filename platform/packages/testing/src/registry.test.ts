@@ -10,7 +10,7 @@ import {
 
 describe("canonical project registry", () => {
   it("keeps the shared public labels and URLs in the approved order", () => {
-    expect(canonicalProjectRegistry.map(row => row.id)).toEqual(["hub","fear-greed","factor","dram","etf","sox","regime","news","spo","observatory"]);
+    expect(canonicalProjectRegistry.map(row => row.id)).toEqual(["hub","fear-greed","factor","dram","etf","sox","regime","news","observatory"]);
     expect(getProject("factor").label).toBe("Factor");
     expect(getProject("factor").url).toBe("https://sonchanggi.github.io/factor/");
     expect(canonicalProjectRegistry.some(row => String(row.id) === "best-factor")).toBe(false);

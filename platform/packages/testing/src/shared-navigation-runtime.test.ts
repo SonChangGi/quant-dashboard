@@ -17,8 +17,8 @@ it('replaces links atomically while preserving theme element, handler and ETF co
  await new Promise(resolve=>dom.window.setTimeout(resolve,10));
  expect(d.querySelector('.quant-shared-nav__links')!.textContent).toContain('Central update');
  expect(d.querySelector('.quant-shared-nav__links')!.textContent).not.toContain('Best Factor');
- expect(d.querySelectorAll('.quant-shared-nav__links a')).toHaveLength(9);
- expect(d.querySelectorAll('[data-control-id="project_navigation"]')).toHaveLength(9);
+ expect(d.querySelectorAll('.quant-shared-nav__links a')).toHaveLength(8);
+ expect(d.querySelectorAll('[data-control-id="project_navigation"]')).toHaveLength(8);
  expect(d.querySelector('[aria-current="page"]')!.textContent).toBe('ETF');
  expect(d.querySelector('#theme')).toBe(button);(button as HTMLButtonElement).click();expect(clicks).toBe(1);
  // A legacy renderer cannot reintroduce its retired menu later.
@@ -30,7 +30,7 @@ it('keeps a usable fallback on malformed response and never edits a React-owned 
  const dom=create(async()=>({ok:true,text:async()=>JSON.stringify({schemaVersion:'bad'})}));
  const d=dom.window.document;
  await new Promise(resolve=>dom.window.setTimeout(resolve,10));
- expect(d.querySelectorAll('.quant-shared-nav__links a')).toHaveLength(9);
+ expect(d.querySelectorAll('.quant-shared-nav__links a')).toHaveLength(8);
  expect(d.querySelector('.quant-shared-nav__links')!.textContent).toContain('Factor');
  const nav=d.createElement('nav');nav.className='quant-shared-nav';nav.dataset.quantNavigationManaged='react';nav.innerHTML='<div class="quant-shared-nav__links"><a>React state</a></div>';d.body.append(nav);
  await new Promise(resolve=>dom.window.setTimeout(resolve,5));expect(nav.textContent).toBe('React state');
