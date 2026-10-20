@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Callable
-from typing import Any
 
 import httpx
 
@@ -16,35 +15,10 @@ from .base import (
 )
 
 
-def _number(value: Any) -> str:
-    number = float(value)
-    return str(int(number)) if number.is_integer() else format(number, ".15g")
-
-
 def workflow_inputs(envelope: DispatchEnvelope) -> dict[str, str]:
-    """Map the exact 11 inputs plus fallback and control identity to the worker."""
-
-    effective = envelope.effective_inputs
-    factor_allowlist = effective["factor_allowlist"]
-    return {
-        "period": str(effective["period"]),
-        "rebalance": str(effective["rebalance"]),
-        "top_n": str(effective["top_n"]),
-        "weighting": str(effective["weighting"]),
-        "factor_preset": str(effective["factor_preset"]),
-        "factor_allowlist": ",".join(factor_allowlist) if factor_allowlist else "__preset__",
-        "min_market_cap": _number(effective["min_market_cap"]),
-        "min_dollar_volume": _number(effective["min_dollar_volume"]),
-        "eligibility_adv_window": str(effective["eligibility_adv_window"]),
-        "transaction_cost_bps": _number(effective["transaction_cost_bps"]),
-        "transaction_cost_model": str(effective["transaction_cost_model"]),
-        "allow_fallback": "true" if envelope.allow_fallback else "false",
-        "control_run_id": envelope.run_id,
-        "control_input_schema_version": envelope.input_schema_version,
-        "control_input_schema_hash": envelope.input_schema_hash,
-        "control_config_hash_algorithm": envelope.config_hash_algorithm,
-        "control_config_hash": envelope.config_hash,
-    }
+    """Delegate wire inputs to the registered project-owned contract."""
+    from ..adapters.registry import default_project_adapters
+    return default_project_adapters().require(envelope.project_id).workflow_inputs(envelope)
 
 
 class GitHubActionsWorkerProvider:

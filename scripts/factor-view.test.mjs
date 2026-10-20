@@ -22,24 +22,24 @@ test('displayed allocation sums signal-ranked holdings without replacing them wi
 });
 
 test('holdings dates remain separate from a later data date and each original rank is preserved', () => {
-  const view = api.factorAllocation({dataEndDate:'2026-09-17',rows:[
-    {rank:1,ticker:'AAA',score:500,weight:.3,date:'2026-08-31'},
-    {rank:2,ticker:'BBB',score:300,weight:.17,date:'2026-08-31'},
-  ]}, 'best');
+  const view = api.factorAllocation({dataEndDate:'2026-09-17',dataAsOf:'2026-08-31',rows:[
+    {rank:1,symbol:'AAA',signal:500,modelWeight:.3},
+    {rank:2,symbol:'BBB',signal:300,modelWeight:.17},
+  ]}, 'momentum');
   assert.equal(view.dateLabel, '2026-08-31');
   assert.equal(view.rows[0].rank, 1);
   assert.equal(view.rows[0].value, 500);
   view.rows[1].date = '2026-09-01';
-  assert.equal(api.factorAllocation({rows:[{date:'2026-08-31'},{date:'2026-09-01'}]},'best').dateLabel, '종목별 상이');
+  assert.equal(api.factorAllocation({rows:[{date:'2026-08-31'},{date:'2026-09-01'}]}).dateLabel, '종목별 상이');
 });
 
 test('missing, empty and invalid allocations cannot become measured zero exposure', () => {
-  assert.equal(api.factorAllocation({rows:[]},'best').total, null);
+  assert.equal(api.factorAllocation({rows:[]},'momentum').total, null);
   for(const weight of [null,undefined,NaN,'0.1',-.1,1.1]) {
-    assert.equal(api.factorAllocation({rows:[{weight}]},'best').total, null);
+    assert.equal(api.factorAllocation({rows:[{modelWeight:weight}]},'momentum').total, null);
   }
-  assert.equal(api.factorAllocation({rows:[{weight:.6},{weight:.5}]},'best').total, null);
-  assert.equal(api.factorAllocation({rows:[{weight:0}]},'best').total, 0);
+  assert.equal(api.factorAllocation({rows:[{modelWeight:.6},{modelWeight:.5}]},'momentum').total, null);
+  assert.equal(api.factorAllocation({rows:[{modelWeight:0}]},'momentum').total, 0);
 });
 
 test('both strategies use one untruncated weight scale independent of loading order', () => {

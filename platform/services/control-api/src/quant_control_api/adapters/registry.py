@@ -3,7 +3,6 @@ from __future__ import annotations
 from collections.abc import Iterable, Iterator
 
 from .base import AnalysisProjectAdapter
-from .best_factor import BestFactorAdapter
 from .fear_greed import FearGreedAdapter
 from .momentum import MomentumAdapter
 
@@ -12,6 +11,8 @@ class ProjectAdapterRegistry:
     def __init__(self, adapters: Iterable[AnalysisProjectAdapter]) -> None:
         by_project: dict[str, AnalysisProjectAdapter] = {}
         for adapter in adapters:
+            if adapter.project_id == "best-factor":
+                raise ValueError("Best Factor is retired and cannot be registered")
             if adapter.project_id in by_project:
                 raise ValueError(f"duplicate project adapter: {adapter.project_id}")
             by_project[adapter.project_id] = adapter
@@ -38,5 +39,5 @@ class ProjectAdapterRegistry:
 
 def default_project_adapters() -> ProjectAdapterRegistry:
     return ProjectAdapterRegistry(
-        (BestFactorAdapter(), MomentumAdapter(), FearGreedAdapter())
+        (MomentumAdapter(), FearGreedAdapter())
     )

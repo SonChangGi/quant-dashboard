@@ -9,7 +9,6 @@ import httpx
 from .models import ArtifactIdentity
 
 MAX_ARTIFACT_BYTES = 15 * 1024 * 1024
-BEST_FACTOR_IMMUTABLE_PATH = re.compile(r"^/SonChangGi/best-factor/[0-9a-f]{40}/docs/data/latest-results\.json$")
 MOMENTUM_IMMUTABLE_PATH = re.compile(
     r"^/(?:factor|momentum-factor-lab)/data/control-runs/v1/"
     r"[A-Za-z0-9][A-Za-z0-9._-]{7,127}/[0-9a-f]{64}\.json$"
@@ -57,9 +56,6 @@ class HttpArtifactFetcher:
         if parsed.query or parsed.fragment:
             raise ArtifactVerificationError("artifact URL must not contain a query or fragment")
         allowlisted = (
-            parsed.hostname == "raw.githubusercontent.com"
-            and BEST_FACTOR_IMMUTABLE_PATH.fullmatch(parsed.path)
-        ) or (
             parsed.hostname == "sonchanggi.github.io"
             and MOMENTUM_IMMUTABLE_PATH.fullmatch(parsed.path)
         ) or (

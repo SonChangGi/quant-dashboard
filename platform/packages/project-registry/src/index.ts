@@ -8,7 +8,7 @@ export const canonicalProjectRegistry = [
 
 export type NavigationProjectId = (typeof canonicalProjectRegistry)[number]["id"];
 /** Legacy calculation/API ids remain distinct from visible navigation. */
-export type ProjectId = NavigationProjectId | "momentum" | "best-factor";
+export type ProjectId = NavigationProjectId | "momentum";
 export type ProjectRegistryEntry = (typeof canonicalProjectRegistry)[number];
 export function normalizeNavigationId(id: string): string { return id === "momentum" ? "factor" : id; }
 
@@ -21,7 +21,6 @@ export const publicSummaryProjectIds = {
   "fear-greed": "fearngreed",
   momentum: "momentum",
   dram: "dram",
-  "best-factor": "best",
   etf: "etf",
   sox: "sox",
 } as const satisfies Partial<Record<ProjectId, string>>;

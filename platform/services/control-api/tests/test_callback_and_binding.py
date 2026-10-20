@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 
 from quant_control_api.app import create_app
 from quant_control_api.artifacts import MappingArtifactFetcher
-from quant_control_api.best_factor import canonical_json_bytes
+from quant_control_api.canonical import canonical_json_bytes
 from quant_control_api.dual_write import NullDualWritePublisher
 from quant_control_api.models import FallbackEvent
 from quant_control_api.providers.base import ProviderObservation
@@ -35,7 +35,7 @@ def create_manifest(
     submission: dict[str, object],
 ) -> tuple[dict[str, object], object, str]:
     created = client.post(
-        "/v1/projects/best-factor/runs",
+        "/v1/projects/fear-greed/runs",
         headers={"Idempotency-Key": "callback-test-001"},
         json=submission,
     ).json()
@@ -52,7 +52,7 @@ def test_authenticated_callback_fetches_exact_bytes_and_publishes(
     with client:
         created, manifest, _ = create_manifest(client, worker, submission)
         exact_bytes = json.dumps(
-            manifest.payload,
+            json.loads(worker.artifact_bytes(manifest)),
             ensure_ascii=False,
             indent=2,
             sort_keys=False,
@@ -89,14 +89,14 @@ def test_authenticated_callback_fetches_exact_bytes_and_publishes(
         assert replay.json()["replayed"] is True
 
 
-def test_best_callback_keeps_only_bounded_summary_of_large_artifact(
+def test_callback_keeps_only_bounded_summary_of_large_artifact(
     submission: dict[str, object],
 ) -> None:
     client, worker, fetcher = callback_client()
     with client:
         created, manifest, _ = create_manifest(client, worker, submission)
         full_payload = {
-            **manifest.payload,
+            **json.loads(worker.artifact_bytes(manifest)),
             "rankings": [
                 {"rank": index, "factor": f"factor_{index}", "series": [0.1] * 200}
                 for index in range(200)
@@ -242,7 +242,7 @@ def test_callback_rejects_noncommit_code_version(
     client, worker, fetcher = callback_client()
     with client:
         created, manifest, _ = create_manifest(client, worker, submission)
-        fetcher.artifacts[str(manifest.artifact.url)] = canonical_json_bytes(manifest.payload)
+        fetcher.artifacts[str(manifest.artifact.url)] = FakeWorkerProvider.artifact_bytes(manifest)
         invalid_manifest = manifest.model_copy(update={"code_version": "main"})
         response = client.post(
             f"/v1/internal/runs/{created['runId']}/result-manifest",
@@ -250,7 +250,7 @@ def test_callback_rejects_noncommit_code_version(
             json=invalid_manifest.model_dump(mode="json", by_alias=True),
         )
         assert response.status_code == 409
-        assert "40-character worker commit SHA" in response.json()["error"]["message"]
+        assert "github:SonChangGi/fearNgreed@<40hex>" in response.json()["error"]["message"]
 
 
 def test_provider_manifest_with_changed_input_requires_matching_fallback(
@@ -259,7 +259,7 @@ def test_provider_manifest_with_changed_input_requires_matching_fallback(
     client, worker, _ = callback_client()
     with client:
         created, manifest, provider_run_id = create_manifest(client, worker, submission)
-        changed = {**manifest.effective_inputs, "min_market_cap": 0.0}
+        changed = {**manifest.effective_inputs, "signalLookback": 0.0}
         invalid_manifest = manifest.model_copy(
             update={
                 "effective_inputs": changed,
@@ -271,7 +271,7 @@ def test_provider_manifest_with_changed_input_requires_matching_fallback(
             ProviderObservation(
                 status="validating",  # type: ignore[arg-type]
                 manifest=invalid_manifest,
-                artifact_bytes=canonical_json_bytes(invalid_manifest.payload),
+                artifact_bytes=FakeWorkerProvider.artifact_bytes(invalid_manifest),
             ),
         )
         import asyncio
@@ -279,7 +279,7 @@ def test_provider_manifest_with_changed_input_requires_matching_fallback(
         asyncio.run(awaitable)
         response = client.get(f"/v1/runs/{created['runId']}")
         assert response.json()["status"] == "failed"
-        assert "fallbacks must explain" in response.json()["errorMessage"]
+        assert "effectiveInputs do not exactly match" in response.json()["errorMessage"]
 
 
 def test_binding_rejects_fallback_without_request_consent(
@@ -288,11 +288,11 @@ def test_binding_rejects_fallback_without_request_consent(
     client, worker, _ = callback_client()
     with client:
         created, manifest, provider_run_id = create_manifest(client, worker, submission)
-        changed = {**manifest.effective_inputs, "min_market_cap": 0.0}
+        changed = {**manifest.effective_inputs, "signalLookback": 0.0}
         fallback = FallbackEvent(
-            input="min_market_cap",
-            code="market_cap_metadata_insufficient_preflight",
-            requested=manifest.normalized_inputs["min_market_cap"],
+            input="signalLookback",
+            code="unsupported_fixture_fallback",
+            requested=manifest.normalized_inputs["signalLookback"],
             effective=0.0,
             reason="fixture fallback",
         )
@@ -313,10 +313,10 @@ def test_binding_rejects_fallback_without_request_consent(
                 ProviderObservation(
                     status="validating",  # type: ignore[arg-type]
                     manifest=invalid_manifest,
-                    artifact_bytes=canonical_json_bytes(invalid_manifest.payload),
+                    artifact_bytes=FakeWorkerProvider.artifact_bytes(invalid_manifest),
                 ),
             )
         )
         response = client.get(f"/v1/runs/{created['runId']}")
         assert response.json()["status"] == "failed"
-        assert "without explicit consent" in response.json()["errorMessage"]
+        assert "must not contain fallbacks" in response.json()["errorMessage"]

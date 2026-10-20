@@ -71,15 +71,7 @@ def _providers_from_settings(
                     correlation_requires_exact_title=True,
                 )
             else:
-                providers[adapter.project_id] = GitHubActionsWorkerProvider(
-                    enabled=settings.github_enabled,
-                    token=settings.github_token,
-                    owner=settings.github_owner,
-                    repo=settings.github_repo,
-                    workflow=settings.github_workflow,
-                    ref=settings.github_ref,
-                    workflow_inputs_builder=adapter.workflow_inputs,
-                )
+                raise ValueError(f"No production provider configured for {adapter.project_id}")
         return providers
     disabled = DisabledWorkerProvider()
     return {project_id: disabled for project_id in adapters.project_ids}
@@ -313,6 +305,11 @@ def create_app(
             )
         return JSONResponse(status_code=200, content={"status": "ready"})
 
+    @application.post("/v1/projects/best-factor/runs", include_in_schema=False)
+    async def retired_best_run() -> None:
+        # A permanent tombstone precedes body/auth validation; it cannot dispatch.
+        raise ControlPlaneError(status_code=410, code="project_retired", message="Best Factor has been retired; use Factor")
+
     @application.get(
         "/v1/projects/{project_id}/capabilities",
         response_model=ProjectCapabilities,
@@ -320,8 +317,6 @@ def create_app(
         tags=["projects"],
     )
     async def capabilities(project_id: str) -> ProjectCapabilities:
-        if resolved_settings.integrated_engine_url and project_id == "best-factor":
-            raise ControlPlaneError(status_code=410, code="best_factor_integrated", message="Use /v2/momentum-integrated/capabilities")
         return service.capabilities(project_id)
 
     @application.post(
@@ -337,12 +332,6 @@ def create_app(
         body: RunCreateRequest,
         idempotency_key: Annotated[str, Header(alias="Idempotency-Key")],
     ) -> RunStatusResponse:
-        if resolved_settings.integrated_engine_url and project_id == "best-factor":
-            raise ControlPlaneError(
-                status_code=410,
-                code="best_factor_integrated",
-                message="Use /v2/momentum-integrated/runs with the integrated input contract",
-            )
         return await service.create_run(project_id, body, idempotency_key)
 
     @application.get(

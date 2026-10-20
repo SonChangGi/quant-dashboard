@@ -5,8 +5,8 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
+from quant_control_api.adapters.fear_greed import DEFAULT_INPUTS as DEFAULT_CONFIG
 from quant_control_api.artifacts import MappingArtifactFetcher
-from quant_control_api.best_factor import DEFAULT_CONFIG
 from quant_control_api.dual_write import NullDualWritePublisher
 from quant_control_api.models import RunCreateRequest, RunStatus
 from quant_control_api.providers.base import (
@@ -78,7 +78,7 @@ class SimulatedProcessCrash(BaseException):
 
 def submission() -> RunCreateRequest:
     return RunCreateRequest(
-        input_schema_version="best-factor/v1",
+        input_schema_version="fear-greed/control-inputs-v1",
         inputs=DEFAULT_CONFIG,
         allow_fallback=False,
     )
@@ -129,7 +129,7 @@ def test_atomic_outbox_recovers_crash_before_provider_dispatch() -> None:
         )
         with pytest.raises(SimulatedProcessCrash):
             await crashed.create_run(
-                "best-factor",
+                "fear-greed",
                 submission(),
                 "crash-before-dispatch-001",
             )
@@ -179,7 +179,7 @@ def test_crash_after_provider_dispatch_reconciles_without_duplicate_dispatch() -
         )
         with pytest.raises(SimulatedProcessCrash):
             await crashed.create_run(
-                "best-factor",
+                "fear-greed",
                 submission(),
                 "crash-after-dispatch-001",
             )
@@ -220,7 +220,7 @@ def test_expired_lease_has_only_one_concurrent_reclaimer() -> None:
                 dispatcher_id="initial-claimer",
                 before_hook=crash_before,
                 clock=clock,
-            ).create_run("best-factor", submission(), "concurrent-reclaim-001")
+            ).create_run("fear-greed", submission(), "concurrent-reclaim-001")
 
         clock.advance(seconds=5)
         shared_external: dict[str, DispatchEnvelope] = {}
@@ -262,7 +262,7 @@ def test_retry_backoff_exhaustion_dead_letters_and_fails_run() -> None:
             clock=clock,
         )
         created = await control.create_run(
-            "best-factor",
+            "fear-greed",
             submission(),
             "retry-exhaustion-001",
         )
@@ -286,7 +286,7 @@ def test_retry_backoff_exhaustion_dead_letters_and_fails_run() -> None:
         assert provider.dispatch_calls == 3
 
         replay = await control.create_run(
-            "best-factor",
+            "fear-greed",
             submission(),
             "retry-exhaustion-001",
         )
@@ -309,7 +309,7 @@ def test_acknowledged_run_expires_without_result_or_failure_callback() -> None:
             clock=clock,
         )
         created = await control.create_run(
-            "best-factor",
+            "fear-greed",
             submission(),
             "stuck-run-expiry-001",
         )
@@ -326,7 +326,7 @@ def test_acknowledged_run_expires_without_result_or_failure_callback() -> None:
         assert expired[0].error_code == "worker_result_timeout"
 
         replay = await control.create_run(
-            "best-factor",
+            "fear-greed",
             submission(),
             "stuck-run-expiry-001",
         )
@@ -367,18 +367,14 @@ def test_callback_closes_crash_after_provider_before_ack_window() -> None:
         )
         with pytest.raises(SimulatedProcessCrash):
             await crashed.create_run(
-                "best-factor",
+                "fear-greed",
                 submission(),
                 "callback-crash-window-001",
             )
 
         provider_run_id, envelope = next(iter(provider.dispatched.items()))
         manifest = provider.make_manifest(envelope)
-        from quant_control_api.best_factor import canonical_json_bytes
-
-        fetcher.artifacts[str(manifest.artifact.url)] = canonical_json_bytes(
-            manifest.payload
-        )
+        fetcher.artifacts[str(manifest.artifact.url)] = provider.artifact_bytes(manifest)
         recovered = service(
             provider=provider,  # type: ignore[arg-type]
             store=store,
@@ -415,7 +411,7 @@ def test_validating_run_never_regresses_and_can_resume_or_expire() -> None:
             clock=clock,
         )
         first = await control.create_run(
-            "best-factor",
+            "fear-greed",
             submission(),
             "validating-resume-001",
         )
@@ -426,16 +422,12 @@ def test_validating_run_never_regresses_and_can_resume_or_expire() -> None:
 
         envelope = provider.dispatched[first.provider_run_id]
         manifest = provider.make_manifest(envelope)
-        from quant_control_api.best_factor import canonical_json_bytes
-
-        fetcher.artifacts[str(manifest.artifact.url)] = canonical_json_bytes(
-            manifest.payload
-        )
+        fetcher.artifacts[str(manifest.artifact.url)] = provider.artifact_bytes(manifest)
         resumed = await control.accept_result_manifest(first.run_id, manifest)
         assert resumed.status == RunStatus.PUBLISHED
 
         second = await control.create_run(
-            "best-factor",
+            "fear-greed",
             submission(),
             "validating-expiry-001",
         )

@@ -7,6 +7,7 @@ from datetime import UTC, date, datetime
 import pytest
 from fastapi.testclient import TestClient
 
+from quant_control_api.adapters.fear_greed import DEFAULT_INPUTS as DEFAULT_CONFIG
 from quant_control_api.adapters.momentum import (
     CONFIG_HASH_ALGORITHM,
     DEFAULT_INPUTS,
@@ -21,7 +22,6 @@ from quant_control_api.adapters.momentum import (
 )
 from quant_control_api.app import create_app
 from quant_control_api.artifacts import MappingArtifactFetcher
-from quant_control_api.best_factor import DEFAULT_CONFIG
 from quant_control_api.dual_write import NullDualWritePublisher
 from quant_control_api.models import (
     ArtifactIdentity,
@@ -617,11 +617,11 @@ def test_momentum_callback_rejects_tampered_derived_evaluation_gate(
 def test_project_idempotency_and_artifact_allowlists_are_isolated(repository: str) -> None:
     client, provider, fetcher = _client()
     with client:
-        best = client.post(
-            "/v1/projects/best-factor/runs",
+        fear = client.post(
+            "/v1/projects/fear-greed/runs",
             headers={"Idempotency-Key": "shared-project-key-001"},
             json={
-                "inputSchemaVersion": "best-factor/v1",
+                "inputSchemaVersion": "fear-greed/control-inputs-v1",
                 "inputs": DEFAULT_CONFIG,
                 "allowFallback": False,
             },
@@ -631,31 +631,31 @@ def test_project_idempotency_and_artifact_allowlists_are_isolated(repository: st
             headers={"Idempotency-Key": "shared-project-key-001"},
             json=_submission(),
         ).json()
-        assert best["runId"] != momentum["runId"]
+        assert fear["runId"] != momentum["runId"]
 
-        best_envelope = provider.dispatched[best["providerRunId"]]
-        best_manifest = provider.make_manifest(best_envelope)
+        fear_envelope = provider.dispatched[fear["providerRunId"]]
+        fear_manifest = provider.make_manifest(fear_envelope)
         cross_project_url = (
             f"https://sonchanggi.github.io/{repository}/data/"
-            f"control-runs/v1/{best['runId']}/{'f' * 64}.json"
+            f"control-runs/v1/{fear['runId']}/{'f' * 64}.json"
         )
         cross_project_artifact = ArtifactIdentity(
             url=cross_project_url,
-            sha256=best_manifest.artifact.sha256,
-            byte_size=best_manifest.artifact.byte_size,
-            contract_version=best_manifest.artifact.contract_version,
+            sha256=fear_manifest.artifact.sha256,
+            byte_size=fear_manifest.artifact.byte_size,
+            contract_version=fear_manifest.artifact.contract_version,
         )
-        best_manifest = best_manifest.model_copy(
+        fear_manifest = fear_manifest.model_copy(
             update={"artifact": cross_project_artifact}
         )
         fetcher.artifacts[cross_project_url] = json.dumps(
-            best_manifest.payload,
+            fear_manifest.payload,
             separators=(",", ":"),
         ).encode()
         rejected = client.post(
-            f"/v1/internal/runs/{best['runId']}/result-manifest",
+            f"/v1/internal/runs/{fear['runId']}/result-manifest",
             headers={"Authorization": "Bearer worker-secret"},
-            json=best_manifest.model_dump(mode="json", by_alias=True),
+            json=fear_manifest.model_dump(mode="json", by_alias=True),
         )
         calculated_at = datetime(2026, 7, 24, 1, 2, 3, tzinfo=UTC)
         full = _full_artifact(
@@ -668,28 +668,28 @@ def test_project_idempotency_and_artifact_allowlists_are_isolated(repository: st
             full_artifact=full,
             artifact_bytes=momentum_bytes,
         )
-        best_url = (
-            "https://raw.githubusercontent.com/SonChangGi/best-factor/"
-            f"{'d' * 40}/docs/data/latest-results.json"
+        fear_url = (
+            "https://sonchanggi.github.io/fearNgreed/data/control-runs/v1/"
+            f"{fear['runId']}/{'d' * 64}.json"
         )
         momentum_manifest = momentum_manifest.model_copy(
             update={
                 "artifact": ArtifactIdentity(
-                    url=best_url,
+                    url=fear_url,
                     sha256=hashlib.sha256(momentum_bytes).hexdigest(),
                     byte_size=len(momentum_bytes),
                     contract_version=RESULT_CONTRACT_VERSION,
                 )
             }
         )
-        fetcher.artifacts[best_url] = momentum_bytes
+        fetcher.artifacts[fear_url] = momentum_bytes
         reverse_rejected = client.post(
             f"/v1/internal/runs/{momentum['runId']}/result-manifest",
             headers={"Authorization": "Bearer worker-secret"},
             json=momentum_manifest.model_dump(mode="json", by_alias=True),
         )
     assert rejected.status_code == 409
-    assert "Best Factor" in rejected.json()["error"]["message"]
+    assert "Fear & Greed" in rejected.json()["error"]["message"]
     assert reverse_rejected.status_code == 409
     assert "Momentum" in reverse_rejected.json()["error"]["message"]
 

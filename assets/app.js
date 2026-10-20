@@ -163,7 +163,6 @@
 
   const ENTITY_METRIC_RENDERERS = {
     etf: (metrics) => `${metrics.etf || 'ETF'} TOP10 비중 ${formatPercent(metrics.weight)} · 기준일 ${formatMaybeDate(metrics.date)}`,
-    best: (metrics) => `팩터 ${metrics.factor || '-'} · 비중 ${formatPercent(metrics.weight)} · 점수 ${formatNumber(metrics.score)}`,
     momentum: (metrics) => `${metrics.dataModeLabel || '연구 데이터'} · 팩터 ${metrics.factor || '-'} · 정책 ${metrics.weightingPolicyId || '-'} · 현금 ${formatPercent(metrics.cashWeight)} · 신호 ${formatNumber(metrics.signal)} · 모델 비중 ${formatPercent(metrics.modelWeight)}`,
     dram: (metrics) => `${metrics.kind || '가격'} · ${formatMaybeDate(metrics.date)} · ${metrics.source || 'source N/A'}`,
     sox: (metrics) => `SOX proxy ${formatPercent(metrics.weight)} · 가격 ${formatNumber(metrics.priceMomentum)} · 실적 ${formatNumber(metrics.earningsMomentum)}`,
@@ -289,7 +288,6 @@
     fearngreed: 'fear-greed',
     momentum: 'momentum',
     dram: 'dram',
-    best: 'best-factor',
     etf: 'etf',
     sox: 'sox',
     regime: 'regime',
@@ -298,7 +296,6 @@
     fearngreed: 5,
     momentum: 5,
     dram: 5,
-    best: 5,
     etf: 5,
     sox: 5,
     regime: 10,
@@ -434,20 +431,6 @@
             ['2026-03-03', 47.0], ['2026-04-07', 50.0], ['2026-05-05', 54.0], ['2026-06-02', 58.0],
           ],
         },
-      ],
-    },
-    best: {
-      generatedAt: '2026-06-10T14:10:53Z',
-      dataEndDate: '2026-06-10',
-      factor: 'momentum_12_1',
-      compositeScore: 0.9497823609,
-      status: '마지막 확인 스냅샷 표시 중',
-      rows: [
-        { rank: 1, ticker: 'AMD', score: 1.986974867, weight: 0.3207175943, date: '2026-05-29' },
-        { rank: 2, ticker: 'AMAT', score: 1.382066239, weight: 0.1907071998, date: '2026-05-29' },
-        { rank: 3, ticker: 'CAT', score: 1.342891001, weight: 0.1822874356, date: '2026-05-29' },
-        { rank: 4, ticker: 'GOOGL', score: 1.037325583, weight: 0.1166135822, date: '2026-05-29' },
-        { rank: 5, ticker: 'GOOG', score: 1.010097312, weight: 0.1107615278, date: '2026-05-29' },
       ],
     },
     etf: {
@@ -736,7 +719,7 @@
     const table = panel.table || { columns: [], caption: '', loadingText: '데이터를 불러오는 중...' };
     const columns = table.columns.map((label) => `<th scope="col">${escapeHtml(label)}</th>`).join('');
     const colspan = Math.max(table.columns.length, 1);
-    if (['momentum', 'best'].includes(project.id)) return `
+    if (project.id === 'momentum') return `
       <div class="factor-overview" id="${escapeAttribute(panelDomId(project, 'metrics'))}" aria-live="polite"><div class="skeleton-line">${escapeHtml(panel.metricLoading)}</div></div>
       <details class="factor-details">
         <summary>팩터 · 데이터 상세</summary>
@@ -798,10 +781,6 @@
 
   async function loadDramPanel() {
     return loadProjectPanel('dram');
-  }
-
-  async function loadBestPanel() {
-    return loadProjectPanel('best');
   }
 
   async function loadEtfPanel() {
@@ -2372,59 +2351,6 @@
     return Number.NaN;
   }
 
-  function parseBestFactor(payload) {
-    if (isResearchSummary(payload, 'best')) {
-      const meta = summaryMeta(payload);
-      const entities = summaryEntities(payload);
-      const rows = entities
-        .sort((a, b) => numberOr(a.metrics.rank, 9999) - numberOr(b.metrics.rank, 9999))
-        .map((entity, index) => ({
-          rank: numberOr(entity.metrics.rank, index + 1),
-          ticker: stringOr(entity.symbol, entity.name, '-'),
-          score: finiteOrNull(entity.metrics.score),
-          weight: finiteOrNull(entity.metrics.weight),
-          date: stringOr(entity.metrics.rebalanceDate, meta.dataAsOf, ''),
-          themes: entity.themes,
-          warnings: entity.warnings,
-        }));
-      return {
-        factor: stringOr(highlightValue(meta, 'factor'), FALLBACK_SNAPSHOT.best.factor),
-        generatedAt: meta.generatedAt,
-        dataEndDate: meta.dataAsOf,
-        compositeScore: finiteOrNull(highlightValue(meta, 'composite')),
-        status: stringOr(meta.statusLabel, '공통 summary contract 표시 중'),
-        rows: rows.slice(0, 5),
-        entities,
-        meta,
-      };
-    }
-    const summary = isRecord(payload?.summary) ? payload.summary : {};
-    const bestRanking = asRecords(payload?.rankings).slice().sort((a, b) => numberOr(a.rank, 9999) - numberOr(b.rank, 9999))[0] || {};
-    const factor = stringOr(summary.best_factor, bestRanking.factor, FALLBACK_SNAPSHOT.best.factor);
-    const rows = asRecords(payload?.latest_holdings)
-      .filter((row) => !factor || row.factor === factor)
-      .slice()
-      .sort((a, b) => numberOr(b.weight, -1) - numberOr(a.weight, -1))
-      .map((row, index) => ({
-        rank: index + 1,
-        ticker: stringOr(row.ticker, row.symbol, '-'),
-        score: finiteOrNull(row.score),
-        weight: finiteOrNull(row.weight),
-        date: stringOr(row.rebalance_date, row.price_date_used, summary.data_end_date, ''),
-      }));
-
-    return {
-      factor,
-      generatedAt: stringOr(payload?.generated_at, summary.fetched_at, ''),
-      dataEndDate: stringOr(summary.data_end_date, payload?.metadata?.data_end_date, ''),
-      compositeScore: finiteOrNull(summary.best_composite_score ?? bestRanking.composite_score),
-      status: stringOr(summary.static_data_warning, '라이브 공개 JSON 표시 중'),
-      rows: rows.slice(0, 5),
-      meta: {},
-    };
-  }
-
-
   function parseEtfTracking(payload, summaryPayload, historySources = {}, historyLoadStatus = {}) {
     const meta = isResearchSummary(summaryPayload, 'etf') ? summaryMeta(summaryPayload) : {};
     const entities = summaryEntities(summaryPayload);
@@ -3801,19 +3727,6 @@
     setStatus(panelSelector(project, 'status'), buildStatusText(mode, summary.generatedAt, error, summary.status, summaryDataAsOf(summary)), mode);
   }
 
-  function renderBestFactor(summary, mode, error, project) {
-    renderFactorOverview(summary, project);
-    renderRows(panelSelector(project, 'rows'), summary.rows, (row) => [
-      row.rank,
-      badge(row.ticker),
-      formatNumber(row.score),
-      formatPercent(row.weight),
-      formatMaybeDate(row.date),
-    ], 5);
-    setStatus(panelSelector(project, 'status'), buildStatusText(mode, summary.generatedAt, error, summary.status, summaryDataAsOf(summary)), mode);
-  }
-
-
   function renderEtfTracking(summary, mode, error, project) {
     const metrics = $(panelSelector(project, 'metrics'));
     if (metrics) metrics.innerHTML = '<strong>최근 1개월 편입비중</strong><span>현재 TOP10 종목 · 공통 비중 축</span>';
@@ -4776,10 +4689,6 @@
     };
   }
 
-  function normalizeBestFallback() {
-    return { ...FALLBACK_SNAPSHOT.best };
-  }
-
   function normalizeEtfFallback() {
     return {
       generatedAt: FALLBACK_SNAPSHOT.etf.generatedAt,
@@ -4893,14 +4802,6 @@
         title: latest ? `${dramCompactName(latest.name)} ${formatNumber(latest.value)} USD` : '대표 가격 확인 필요',
         detail: `관측치 ${formatInteger(summary.observationCount)}개 · ${limit}`,
         tone: summary.meta?.statusState === 'ok' ? '' : 'warning',
-      };
-    }
-    if (record.project.id === 'best') {
-      const limit = firstLimitation(summary.meta || {});
-      return {
-        kicker: 'Best Factor',
-        title: `${summary.factor || '-'} · 점수 ${formatNumber(summary.compositeScore)}`,
-        detail: `데이터 기준일 ${formatMaybeDate(summary.dataEndDate)} · ${limit}`,
       };
     }
     if (record.project.id === 'etf') {
@@ -5314,12 +5215,6 @@
             matches.push({ project, matchKey: matchIdentity(record.project.id, row.symbol), label: `${row.symbol} · rank ${row.rank}`, detail: `${record.summary.dataModeLabel || '연구 데이터'}, Python 최고 팩터 ${record.summary.factor}, 고정 비중 방법 ${record.summary.selectedWeightingPolicy || '-'}, 현금 ${formatPercent(record.summary.cashWeight)}, 모멘텀 신호 ${formatNumber(row.signal)}, 모델 비중 ${formatPercent(row.modelWeight)}`, limit: firstLimitation(meta), tone: meta.statusState === 'ok' ? '' : 'warning' });
           }
         });
-      } else if (record.project.id === 'best') {
-        asRecords(record.summary.rows).forEach((row) => {
-          if (String(row.ticker || '').toUpperCase().includes(token)) {
-            matches.push({ project, matchKey: matchIdentity(record.project.id, row.ticker), label: `${row.ticker} · rank ${row.rank}`, detail: `팩터 ${record.summary.factor}, 비중 ${formatPercent(row.weight)}, 점수 ${formatNumber(row.score)}`, limit: firstLimitation(meta) });
-          }
-        });
       } else if (record.project.id === 'sox') {
         asRecords(record.summary.rows).forEach((row) => {
           const haystack = [row.ticker, row.name, row.status].join(' ').toUpperCase();
@@ -5551,7 +5446,6 @@
       parseDram,
       dramAutomationAssessment,
       latestDramExpectedRun,
-      parseBestFactor,
       parseEtfTracking,
       parseRegime,
       parseSox,

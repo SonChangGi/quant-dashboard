@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import asyncio
 from datetime import UTC, date, datetime
-from typing import Any
+from typing import Any, ClassVar
 
-from ..best_factor import RESULT_CONTRACT_VERSION, canonical_json_bytes
+from ..canonical import canonical_json_bytes
 from ..models import (
     ArtifactIdentity,
     DataIdentity,
@@ -38,7 +38,7 @@ class FakeWorkerProvider:
                 self.observations[provider_run_id] = ProviderObservation(
                     status=RunStatus.VALIDATING,
                     manifest=manifest,
-                    artifact_bytes=canonical_json_bytes(manifest.payload),
+                    artifact_bytes=self.artifact_bytes(manifest),
                 )
             else:
                 self.observations[provider_run_id] = ProviderObservation(status=RunStatus.DISPATCHED)
@@ -65,21 +65,82 @@ class FakeWorkerProvider:
         async with self._lock:
             self.observations[provider_run_id] = observation
 
-    @staticmethod
+    _artifact_bytes: ClassVar[dict[str, bytes]] = {}
+
+    @classmethod
+    def artifact_bytes(cls, manifest: WorkerResultManifest) -> bytes:
+        return cls._artifact_bytes[str(manifest.artifact.url)]
+
+    @classmethod
     def make_manifest(
+        cls,
         envelope: DispatchEnvelope,
         *,
         payload_overrides: dict[str, Any] | None = None,
     ) -> WorkerResultManifest:
+        from ..adapters.fear_greed import (
+            CANONICAL_JSON_VERSION,
+            METHODOLOGY_VERSION,
+            RESULT_CONTRACT_VERSION,
+            RESULT_IDENTITY_VERSION,
+            _bounded_result_payload,
+            canonical_sha256,
+        )
+
+        if envelope.project_id != "fear-greed":
+            raise ValueError("The automatic fixture models Fear & Greed; use a project-owned fixture otherwise")
         calculated_at = datetime(2026, 7, 24, 0, 0, tzinfo=UTC)
         data_as_of = date(2026, 7, 23)
+        data = {
+            "source": "fearngreed-python-control-inputs",
+            "sourceHash": "a" * 64,
+            "dataAsOf": data_as_of.isoformat(),
+        }
+        binding = ResultBinding(
+            project_id=envelope.project_id,
+            run_id=envelope.run_id,
+            input_schema_version=envelope.input_schema_version,
+            input_schema_hash=envelope.input_schema_hash,
+            config_hash_algorithm=envelope.config_hash_algorithm,
+            config_hash=envelope.config_hash,
+        )
+        key_parts = {
+            "identityVersion": RESULT_IDENTITY_VERSION,
+            "canonicalJsonVersion": CANONICAL_JSON_VERSION,
+            "binding": {**binding.model_dump(mode="json", by_alias=True), "effectiveConfigHash": envelope.config_hash},
+            "dataIdentity": data,
+            "codeIdentity": {
+                "repository": "SonChangGi/fearNgreed",
+                "commitSha": "d" * 40,
+                "methodologyVersion": METHODOLOGY_VERSION,
+            },
+        }
+        result_key = canonical_sha256(key_parts)
         payload: dict[str, Any] = {
-            "schema_version": 1,
-            "generated_at": calculated_at.isoformat().replace("+00:00", "Z"),
+            "schemaVersion": 1,
+            "contract": RESULT_CONTRACT_VERSION,
+            "projectId": "fear-greed",
+            "resultKey": result_key,
+            "resultIdentity": {
+                "identityVersion": RESULT_IDENTITY_VERSION,
+                "resultKey": result_key,
+                "keyParts": key_parts,
+            },
+            "requestedInputs": envelope.requested_inputs,
+            "normalizedInputs": envelope.normalized_inputs,
+            "effectiveInputs": envelope.effective_inputs,
+            "data": data,
+            "calculatedAt": calculated_at.isoformat(),
+            "signals": [],
+            "event": {
+                "asset": envelope.effective_inputs["eventAsset"],
+                "sample": envelope.effective_inputs["eventSample"],
+            },
+            "strategy": {"position": "cash"},
             "summary": {
-                "best_factor": "momentum_6m",
-                "data_end_date": data_as_of.isoformat(),
-                "source_hash": "a54e4adee3d58bc3",
+                "eventAsset": envelope.effective_inputs["eventAsset"],
+                "eventSample": envelope.effective_inputs["eventSample"],
+                "methodologyVersion": METHODOLOGY_VERSION,
             },
         }
         if payload_overrides:
@@ -87,16 +148,10 @@ class FakeWorkerProvider:
         artifact_bytes = canonical_json_bytes(payload)
         import hashlib
 
-        artifact_sha = hashlib.sha256(artifact_bytes).hexdigest()
+        url = f"https://sonchanggi.github.io/fearNgreed/data/control-runs/v1/{envelope.run_id}/{result_key}.json"
+        cls._artifact_bytes[url] = artifact_bytes
         return WorkerResultManifest(
-            binding=ResultBinding(
-                project_id=envelope.project_id,
-                run_id=envelope.run_id,
-                input_schema_version=envelope.input_schema_version,
-                input_schema_hash=envelope.input_schema_hash,
-                config_hash_algorithm=envelope.config_hash_algorithm,
-                config_hash=envelope.config_hash,
-            ),
+            binding=binding,
             requested_inputs=envelope.requested_inputs,
             normalized_inputs=envelope.normalized_inputs,
             effective_inputs=envelope.effective_inputs,
@@ -106,20 +161,13 @@ class FakeWorkerProvider:
             fallback_used=False,
             data_as_of=data_as_of,
             calculated_at=calculated_at,
-            code_version="d" * 40,
-            data_identity=DataIdentity(
-                source="fake-best-factor-fixture",
-                source_hash="a54e4adee3d58bc3",
-                data_as_of=data_as_of,
-            ),
+            code_version=f"github:SonChangGi/fearNgreed@{'d' * 40}",
+            data_identity=DataIdentity.model_validate(data),
             artifact=ArtifactIdentity(
-                url=(
-                    "https://raw.githubusercontent.com/SonChangGi/best-factor/"
-                    f"{'d' * 40}/docs/data/latest-results.json"
-                ),
-                sha256=artifact_sha,
+                url=url,
+                sha256=hashlib.sha256(artifact_bytes).hexdigest(),
                 byte_size=len(artifact_bytes),
                 contract_version=RESULT_CONTRACT_VERSION,
             ),
-            payload=payload,
+            payload=_bounded_result_payload(payload),
         )

@@ -48,10 +48,6 @@ class Settings:
     store_backend: str = "memory"
     github_enabled: bool = False
     github_token: str = ""
-    github_owner: str = "SonChangGi"
-    github_repo: str = "best-factor"
-    github_workflow: str = "update-dashboard.yml"
-    github_ref: str = "main"
     momentum_github_owner: str = "SonChangGi"
     momentum_github_repo: str = "factor"
     momentum_github_workflow: str = "controlled-analysis.yml"
@@ -90,10 +86,6 @@ class Settings:
             store_backend=os.getenv("QUANT_CONTROL_STORE", "memory").strip().lower(),
             github_enabled=_boolean("QUANT_CONTROL_GITHUB_ENABLED"),
             github_token=os.getenv("QUANT_CONTROL_GITHUB_TOKEN", "").strip(),
-            github_owner=os.getenv("QUANT_CONTROL_GITHUB_OWNER", "SonChangGi").strip(),
-            github_repo=os.getenv("QUANT_CONTROL_GITHUB_REPO", "best-factor").strip(),
-            github_workflow=os.getenv("QUANT_CONTROL_GITHUB_WORKFLOW", "update-dashboard.yml").strip(),
-            github_ref=os.getenv("QUANT_CONTROL_GITHUB_REF", "main").strip(),
             momentum_github_owner=os.getenv(
                 "QUANT_CONTROL_MOMENTUM_GITHUB_OWNER",
                 "SonChangGi",
@@ -210,10 +202,6 @@ class Settings:
                 label
                 for label, value in (
                     ("QUANT_CONTROL_GITHUB_TOKEN", self.github_token),
-                    ("QUANT_CONTROL_GITHUB_OWNER", self.github_owner),
-                    ("QUANT_CONTROL_GITHUB_REPO", self.github_repo),
-                    ("QUANT_CONTROL_GITHUB_WORKFLOW", self.github_workflow),
-                    ("QUANT_CONTROL_GITHUB_REF", self.github_ref),
                     (
                         "QUANT_CONTROL_MOMENTUM_GITHUB_OWNER",
                         self.momentum_github_owner,

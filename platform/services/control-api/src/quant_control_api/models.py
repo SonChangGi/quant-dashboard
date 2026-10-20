@@ -36,7 +36,6 @@ TERMINAL_STATUSES = {RunStatus.PUBLISHED, RunStatus.FAILED, RunStatus.CANCELLED}
 
 class RunCreateRequest(APIModel):
     input_schema_version: Literal[
-        "best-factor/v1",
         "momentum/v3",
         "fear-greed/control-inputs-v1",
     ]

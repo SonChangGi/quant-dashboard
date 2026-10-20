@@ -58,7 +58,6 @@ assert(
     fearngreed: 'fear-greed',
     momentum: 'momentum',
     dram: 'dram',
-    best: 'best-factor',
     etf: 'etf',
     sox: 'sox',
     regime: 'regime',
@@ -77,22 +76,22 @@ context.document = {
 context.setTimeout = setTimeout;
 context.clearTimeout = clearTimeout;
 context.AbortController = AbortController;
-const publishedMetadata = await api.getPublishedSnapshotMetadata('best-factor', 100, async (url, options) => {
+const publishedMetadata = await api.getPublishedSnapshotMetadata('momentum', 100, async (url, options) => {
   metadataFetches.push({ url, options });
   return {
     ok: true,
     async json() {
       return [{
         id: 'snapshot-1',
-        project_id: 'best-factor',
+        project_id: 'momentum',
         run_id: 'run-1',
         data_as_of: '2026-07-23',
-        source: 'best-factor-live',
+        source: 'factor-integrated',
         source_hash: '1234567890abcdef',
-        artifact_url: 'https://raw.githubusercontent.com/SonChangGi/best-factor/0123456789012345678901234567890123456789/docs/data/latest-results.json',
+        artifact_url: 'https://raw.githubusercontent.com/SonChangGi/factor/0123456789012345678901234567890123456789/site/data/integrated-result.json',
         artifact_sha256: 'a'.repeat(64),
         byte_size: 1024,
-        contract_version: 'best-factor/latest-results/v1',
+        contract_version: 'integrated-factor/v1',
         created_at: '2026-07-24T01:00:00Z',
       }];
     },
@@ -102,7 +101,7 @@ assert(publishedMetadata.ok && publishedMetadata.data.dataAsOf === '2026-07-23',
 assert(
   metadataFetches.length === 1
     && metadataFetches[0].url.includes('/rest/v1/published_project_snapshots?')
-    && metadataFetches[0].url.includes('project_id=eq.best-factor')
+    && metadataFetches[0].url.includes('project_id=eq.momentum')
     && metadataFetches[0].options.headers.apikey === 'sb_publishable_test_key'
     && !Object.hasOwn(metadataFetches[0].options.headers, 'Authorization'),
   'Hub metadata lookup uses the public view and publishable key only',
@@ -174,10 +173,10 @@ assert(dramState.mode === 'fallback', 'HTTP 200 malformed DRAM payload resolves 
 assert(api.normalizeChartSeries([{ name: 'bad', points: [['not-a-date', 1.2], ['2026-06-10', Number.NaN]] }]).length === 0, 'DRAM chart drops invalid dates and invalid numeric values');
 assert(api.isValidChartPoint('2026-06-10', 1.2), 'DRAM chart accepts valid dated numeric point');
 
-const malformedBest = api.parseBestFactor({ summary: { best_factor: 'schema_drift' }, latest_holdings: [] });
-const bestState = fallbackFor(malformedBest, malformedBest.rows.length > 0, 'Best Factor payload did not contain usable holdings.');
-assert(bestState.mode === 'fallback', 'HTTP 200 malformed Best Factor payload resolves to fallback mode');
-assert(/Best Factor payload/.test(bestState.error), 'Best Factor fallback keeps explicit schema reason');
+const malformedFactor = api.parseIntegratedMomentum({schemaVersion:'integrated-factor/v1', selection:{holdings:[]}});
+const factorState = fallbackFor(malformedFactor, api.PANEL_ADAPTERS.momentum.hasUsableData(malformedFactor), 'Factor payload did not satisfy its result contract.');
+assert(factorState.mode === 'fallback' && malformedFactor.unavailable, 'HTTP 200 malformed Factor payload resolves to an unavailable fallback');
+assert(/Factor payload/.test(factorState.error), 'Factor fallback keeps the explicit contract failure reason');
 
 const malformedEtf = api.parseEtfTracking({ generatedAt: '2026-06-17T00:00:00Z', etfs: [{ id: 'bad', latest: { top10: [] } }] });
 const etfState = fallbackFor(malformedEtf, malformedEtf.rows.length > 0, 'ETF Tracking payload did not contain usable ETF rows.');
@@ -1557,8 +1556,9 @@ assert(/data-dram-scale-mode="indexed"/.test(dramIndexedMarkup) && /상대 변�
 assert(/72 USD · 시작=100 지수 120/.test(dramIndexedMarkup) && /12 USD · 시작=100 지수 120/.test(dramIndexedMarkup), 'DRAM indexed view keeps raw USD exact values alongside rebased display values');
 assert((dramIndexedMarkup.match(/class="dram-data-point/g) || []).length === 6 && dramIndexedMarkup !== dramPriceMarkup, 'DRAM scale switching changes only presentation while retaining all points');
 
-const validBest = api.parseBestFactor({ summary: { best_factor: 'quality', data_end_date: '2026-06-10' }, latest_holdings: [{ factor: 'quality', ticker: 'BBB', score: 1, weight: 0.3, rebalance_date: '2026-06-01' }] });
-assert(validBest.rows.length === 1 && validBest.factor === 'quality', 'recorded valid Best Factor fixture produces holding row');
+const integratedFactorFixture = JSON.parse(readFileSync('scripts/fixtures/momentum-integrated-current.json', 'utf8'));
+const validIntegratedFactor = api.parseIntegratedMomentum(integratedFactorFixture);
+assert(validIntegratedFactor.rows.length === 20 && validIntegratedFactor.factor === 'LOGADV63', 'recorded integrated Factor fixture preserves all actual holdings and the selected factor');
 
 const validEtf = api.parseEtfTracking({
   generatedAt: '2026-06-17T00:00:00Z',
@@ -1789,9 +1789,11 @@ const nullEntryDram = api.parseDram({ observations: [null, 'bad', { product_name
 const nullDramState = fallbackFor(nullEntryDram, nullEntryDram.series.length > 0, 'DRAM payload did not contain usable dated price points.');
 assert(nullDramState.mode === 'fallback', 'DRAM null/non-object entries resolve to fallback without throwing');
 
-const nullEntryBest = api.parseBestFactor({ summary: { best_factor: 'null_drift' }, rankings: [null], latest_holdings: [null, 'bad'] });
-const nullBestState = fallbackFor(nullEntryBest, nullEntryBest.rows.length > 0, 'Best Factor payload did not contain usable holdings.');
-assert(nullBestState.mode === 'fallback', 'Best Factor null/non-object entries resolve to fallback without throwing');
+const nullEntryFactor = structuredClone(integratedFactorFixture);
+nullEntryFactor.selection.holdings = [null, 'bad'];
+const parsedNullFactor = api.parseIntegratedMomentum(nullEntryFactor);
+const nullFactorState = fallbackFor(parsedNullFactor, api.PANEL_ADAPTERS.momentum.hasUsableData(parsedNullFactor), 'Factor holdings failed validation.');
+assert(nullFactorState.mode === 'fallback' && parsedNullFactor.rows.length === 0, 'Factor null/non-object holdings fail closed without throwing or inventing positions');
 
 const nullEntryEtf = api.parseEtfTracking({ etfs: [null, 'bad', { latest: { top10: [null] } }] });
 const nullEtfState = fallbackFor(nullEntryEtf, nullEntryEtf.rows.length > 0, 'ETF Tracking payload did not contain usable ETF rows.');
@@ -1897,7 +1899,7 @@ assert(/현재 상위 2종목 편입비중 추이/.test(domTargets['#etf-details
 
 
 const staleByDataAsOfRecord = {
-  project: api.PROJECTS.find((project) => project.id === 'best'),
+  project: api.PROJECTS.find((project) => project.id === 'momentum'),
   summary: {
     generatedAt: new Date().toISOString(),
     dataEndDate: '2000-01-01',

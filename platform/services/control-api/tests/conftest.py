@@ -8,7 +8,7 @@ import pytest
 
 @pytest.fixture
 def golden_contract() -> dict[str, object]:
-    path = Path(__file__).resolve().parents[3] / "fixtures" / "contracts" / "best-factor-v1.json"
+    path = Path(__file__).resolve().parents[3] / "fixtures" / "contracts" / "fear-greed-v1.json"
     return json.loads(path.read_text(encoding="utf-8"))
 
 

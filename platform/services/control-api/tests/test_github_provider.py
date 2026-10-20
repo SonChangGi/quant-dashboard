@@ -7,24 +7,24 @@ import httpx
 import pytest
 
 from quant_control_api.adapters import default_project_adapters
-from quant_control_api.app import _providers_from_settings
-from quant_control_api.best_factor import (
+from quant_control_api.adapters.fear_greed import (
     CONFIG_HASH_ALGORITHM,
     INPUT_SCHEMA_HASH,
     INPUT_SCHEMA_VERSION,
     normalize_inputs,
 )
+from quant_control_api.app import _providers_from_settings
 from quant_control_api.providers.base import DispatchEnvelope, ProviderUnavailableError
 from quant_control_api.providers.github_actions import GitHubActionsWorkerProvider, workflow_inputs
 from quant_control_api.settings import Settings
 
 
 def envelope() -> DispatchEnvelope:
-    from quant_control_api.best_factor import DEFAULT_CONFIG
+    from quant_control_api.adapters.fear_greed import DEFAULT_INPUTS as DEFAULT_CONFIG
 
     normalized = normalize_inputs(DEFAULT_CONFIG)
     return DispatchEnvelope(
-        project_id="best-factor",
+        project_id="fear-greed",
         run_id="11111111-1111-4111-8111-111111111111",
         input_schema_version=INPUT_SCHEMA_VERSION,
         input_schema_hash=INPUT_SCHEMA_HASH,
@@ -37,18 +37,14 @@ def envelope() -> DispatchEnvelope:
     )
 
 
-def test_workflow_input_mapping_has_11_analysis_and_control_identity_fields() -> None:
+def test_workflow_input_mapping_uses_project_owned_wire_and_control_identity_fields() -> None:
     values = workflow_inputs(envelope())
-    assert values["period"] == "5y"
-    assert values["top_n"] == "20"
-    assert values["factor_allowlist"] == "__preset__"
-    assert values["min_market_cap"] == "10000000000"
-    assert values["transaction_cost_bps"] == "5"
-    assert values["allow_fallback"] == "false"
+    from quant_control_api.adapters.fear_greed import FearGreedAdapter
+    assert values == FearGreedAdapter.workflow_inputs(envelope())
+    assert json.loads(values["analysis_inputs_json"]) == envelope().effective_inputs
     assert values["control_run_id"] == envelope().run_id
     assert values["control_input_schema_hash"] == INPUT_SCHEMA_HASH
     assert values["control_config_hash_algorithm"] == CONFIG_HASH_ALGORITHM
-    assert len(values) == 17
 
 
 def test_github_provider_is_gated_and_dispatches_without_running_analysis() -> None:
@@ -57,7 +53,7 @@ def test_github_provider_is_gated_and_dispatches_without_running_analysis() -> N
             enabled=False,
             token="secret",
             owner="SonChangGi",
-            repo="best-factor",
+            repo="fear-greed",
             workflow="update-dashboard.yml",
             ref="main",
         )
@@ -81,7 +77,7 @@ def test_github_provider_is_gated_and_dispatches_without_running_analysis() -> N
             enabled=True,
             token="server-only-token",
             owner="SonChangGi",
-            repo="best-factor",
+            repo="fear-greed",
             workflow="update-dashboard.yml",
             ref="main",
             client=client,
@@ -92,7 +88,7 @@ def test_github_provider_is_gated_and_dispatches_without_running_analysis() -> N
             enabled=True,
             token="server-only-token",
             owner="SonChangGi",
-            repo="best-factor",
+            repo="fear-greed",
             workflow="update-dashboard.yml",
             ref="main",
             client=client,
@@ -120,16 +116,9 @@ def test_provider_registry_keeps_project_targets_and_workflow_mappers_isolated()
         worker_callback_token="worker",
     )
     providers = _providers_from_settings(settings, default_project_adapters())
-    assert set(providers) == {"best-factor", "momentum", "fear-greed"}
-    best = providers["best-factor"]
+    assert set(providers) == {"momentum", "fear-greed"}
     momentum = providers["momentum"]
     fear = providers["fear-greed"]
-    assert (best.owner, best.repo, best.workflow, best.ref) == (  # type: ignore[attr-defined]
-        "SonChangGi",
-        "best-factor",
-        "update-dashboard.yml",
-        "main",
-    )
     assert (  # type: ignore[attr-defined]
         momentum.owner,
         momentum.repo,
@@ -164,7 +153,6 @@ def test_provider_registry_keeps_project_targets_and_workflow_mappers_isolated()
     assert fear.correlation_requires_exact_title is True  # type: ignore[attr-defined]
 
     async def close() -> None:
-        await best.close()  # type: ignore[attr-defined]
         await momentum.close()  # type: ignore[attr-defined]
         await fear.close()  # type: ignore[attr-defined]
 

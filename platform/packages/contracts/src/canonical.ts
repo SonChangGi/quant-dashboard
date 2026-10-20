@@ -165,7 +165,7 @@ export type ClientHashAlgorithm = typeof supportedClientHashAlgorithm;
 /**
  * Optional fingerprint for projects that explicitly adopt js-stable-json-v1.
  * It is never a substitute for a server-issued configHash. Existing Python
- * schemas such as best-factor-python-json-v1 serialize typed floats differently.
+ * schemas can serialize typed floats differently from JavaScript.
  */
 export async function hashCanonicalInputsForAlgorithm(
   inputs: InputMap,

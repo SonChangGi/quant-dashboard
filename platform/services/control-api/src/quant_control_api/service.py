@@ -97,8 +97,6 @@ class ControlPlaneService:
                 f"(missing={sorted(missing_providers)}, unknown={sorted(unknown_providers)})"
             )
         self.providers = dict(providers)
-        # Backward-compatible handle for existing Best-only integration code.
-        self.provider = self.providers["best-factor"]
         self.store = store
         self.publisher = publisher
         self.artifact_fetcher = artifact_fetcher
@@ -255,6 +253,10 @@ class ControlPlaneService:
         )
         if lease is None:
             return None
+        if lease.run.project_id == "best-factor":
+            # A pre-retirement outbox row must never reach a retired repository.
+            return await self.store.update(lease.run.run_id, status=RunStatus.FAILED,
+                error_code="project_retired", error_message="Best Factor has been retired")
         if self.dispatch_before_provider_hook is not None:
             self.dispatch_before_provider_hook(lease)
         envelope = self._dispatch_envelope(lease.run)
@@ -530,7 +532,10 @@ class ControlPlaneService:
 
     async def _get_run(self, run_id: str) -> RunRecord:
         try:
-            return await self.store.get(run_id)
+            record = await self.store.get(run_id)
+            if record.project_id == "best-factor":
+                self._adapter_for(record.project_id)
+            return record
         except RunNotFoundError as exc:
             raise ControlPlaneError(
                 status_code=404,
@@ -676,6 +681,8 @@ class ControlPlaneService:
         )
 
     def _adapter_for(self, project_id: str) -> AnalysisProjectAdapter:
+        if project_id == "best-factor":
+            raise ControlPlaneError(status_code=410, code="project_retired", message="Best Factor has been retired; use Factor")
         adapter = self.adapters.get(project_id)
         if adapter is None:
             raise ControlPlaneError(

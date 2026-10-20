@@ -9,7 +9,6 @@ The adapter registry currently contains:
 
 | projectId | input contract | hash contract | worker |
 | --- | --- | --- | --- |
-| `best-factor` | exactly 11 fields, `best-factor/v1` | `best-factor-python-json-v1` | `SonChangGi/best-factor`, `update-dashboard.yml` |
 | `momentum` | exactly 26 `ResearchInputs`, `momentum/v3` | `momentum-research-inputs-rfc8785-v1` | `SonChangGi/factor`, `controlled-analysis.yml` |
 | `fear-greed` | 16 visible inputs serialized as exactly 17 fields, `fear-greed/control-inputs-v1` | `fear-greed-json-sort-keys-sha256-v1` | `SonChangGi/fearNgreed`, `controlled-analysis.yml` |
 
@@ -34,12 +33,12 @@ Run creation requires a client-generated 8-128 character `Idempotency-Key` and,
 when configured, `Authorization: Bearer <owner token>`. Idempotency is isolated
 by project and covers the complete normalized request.
 
-Best Factor requires all 11 inputs. Momentum requires all 26 public
+Factor uses the stable `momentum` API ID and requires all 26 public
 `ResearchInputs`; `evaluationWindowDays` is an authoritative integer from 21
 through 2520 sessions, while derived `version` is rejected as a duplicate
 source of truth. Fear & Greed's 16 visible controls serialize to 17
 wire fields because the composite evaluation-window control binds `window`,
-`historyStart`, `historyEnd`, and `historyEndMode` independently. All three
+`historyStart`, `historyEnd`, and `historyEndMode` independently. Both
 controlled-run adapters require `allowFallback=false`.
 
 ## Dispatch durability
@@ -79,32 +78,11 @@ The API fetches the full immutable artifact without redirects, query strings,
 userinfo, or non-standard ports, then verifies SHA-256 and byte size before
 project-specific semantic binding.
 
-Best Factor accepts only:
-
-`https://raw.githubusercontent.com/SonChangGi/best-factor/<40hex>/docs/data/latest-results.json`
-
-Its `codeVersion` is a bare 40-character worker commit SHA. The callback
-`payload` is not the 5+ MiB artifact. It must exactly equal:
-
-```json
-{
-  "schema_version": 1,
-  "generated_at": "<artifact generated_at>",
-  "summary": {
-    "...": "only allowlisted scalar fields copied from artifact.summary"
-  }
-}
-```
-
-The allowlisted summary fields are:
-`best_composite_score`, `best_factor`, `best_factor_holdout_cagr`,
-`best_factor_holdout_rank`, `best_factor_holdout_sharpe`, `data_end_date`,
-`effective_factor_count`, `factor_library_size`, `factor_preset`, `fetched_at`,
-`holding_count`, `interpretation_label`, `provider`, `ranking_count`,
-`selected_factor_count`, `source_hash`, `tested_factor_count`, and
-`universe_as_of_date`. Missing optional fields are omitted; extra artifact
-summary fields are not copied. The API reconstructs this object from the fetched
-artifact and requires exact equality.
+Best Factor is permanently retired. Its capabilities and run creation return
+HTTP 410, independently of the optional integrated engine. It has no adapter,
+worker provider, readiness dependency, accepted input schema, or artifact URL
+allowlist. Legacy generic `QUANT_CONTROL_GITHUB_OWNER/REPO/WORKFLOW/REF`
+settings are ignored; only the explicit Factor and Fear & Greed targets are used.
 
 Factor uses the existing `momentum` API ID and accepts only these immutable paths:
 

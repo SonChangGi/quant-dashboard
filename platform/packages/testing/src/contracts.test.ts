@@ -5,6 +5,7 @@ import {
   assessResultBinding,
   buildCanonicalAnalysisInputs,
   hashCanonicalInputsForAlgorithm,
+  sha256Hex,
   runRecordSchema,
   runResultEnvelopeSchema,
 } from "@quant-research/contracts";
@@ -96,28 +97,29 @@ describe("published result binding", () => {
     ).toBe(false);
   });
 
-  it("uses the server-issued legacy Best hash without browser recomputation", async () => {
+  it("uses the server-issued Fear and Greed hash without browser recomputation", async () => {
     const fixtureUrl = new URL(
-      "../../../fixtures/contracts/best-factor-v1.json",
+      "../../../fixtures/contracts/fear-greed-v1.json",
       import.meta.url,
     );
-    const fixture = JSON.parse(
-      await readFile(fileURLToPath(fixtureUrl), "utf8"),
-    ) as {
+    const fixtureSource = await readFile(fileURLToPath(fixtureUrl), "utf8");
+    const fixture = JSON.parse(fixtureSource) as {
       projectId: string;
       inputSchemaVersion: string;
+      inputSchemaHash: string;
       inputs: Record<string, unknown>;
-      configHash: string;
+      configHashAlgorithm: string;
+      defaultConfigHash: string;
     };
     const common = {
       projectId: fixture.projectId,
-      runId: "best-golden-run",
+      runId: "fear-golden-run",
       status: "published" as const,
       inputSchemaVersion: fixture.inputSchemaVersion,
-      inputSchemaHash: "5".repeat(64),
-      configHashAlgorithm: "best-factor-python-json-v1",
-      configHash: fixture.configHash,
-      effectiveConfigHash: fixture.configHash,
+      inputSchemaHash: fixture.inputSchemaHash,
+      configHashAlgorithm: fixture.configHashAlgorithm,
+      configHash: fixture.defaultConfigHash,
+      effectiveConfigHash: fixture.defaultConfigHash,
       requestedInputs: fixture.inputs,
       normalizedInputs: fixture.inputs,
       effectiveInputs: fixture.inputs,
@@ -127,17 +129,17 @@ describe("published result binding", () => {
       fallbacks: [],
       dataAsOf: "2026-07-23",
       calculatedAt: "2026-07-24T00:00:00.000Z",
-      codeVersion: "269f8d4",
+      codeVersion: "fear-fixture-v1",
       dataIdentity: {
-        source: "best-factor/docs/data/dashboard-config.json",
-        sourceHash: "269f8d4c872f5fd3",
+        source: "frontend-test-fixture/fear-greed-v1",
+        sourceHash: await sha256Hex(fixtureSource),
         dataAsOf: "2026-07-23",
       },
       artifact: {
-        url: "https://sonchanggi.github.io/best-factor/data/result.json",
+        url: "https://sonchanggi.github.io/fearNgreed/data/result.json",
         sha256: testArtifactHash,
         byteSize: 2048,
-        contractVersion: "best-factor/result-v1",
+        contractVersion: "fear-greed/result-v1",
       },
     };
     const run = runRecordSchema.parse({
@@ -152,8 +154,8 @@ describe("published result binding", () => {
       payload: { fixture: true },
     });
 
-    expect(fixture.configHash).toBe(
-      "082b5dbbe2c6cdf08d669733f9eacbc1518b0c88693d091f27574c8bc2f50750",
+    expect(fixture.defaultConfigHash).toBe(
+      "cf8d60da8b6ad43c6849c553b953302721857cfccd1f0d49973f032bada922db",
     );
     await expect(assessResultBinding(run, result)).resolves.toMatchObject({
       accepted: true,

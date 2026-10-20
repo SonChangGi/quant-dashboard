@@ -169,7 +169,7 @@ assert(!contains(files.app, 'dram-value-layer') && !contains(files.app, 'dram-va
 assert(contains(files.app, 'TrendForce daily'), 'DRAM chart prioritizes saved TrendForce daily prices');
 assert(contains(files.app, 'D램 가격'), 'Korean D램 price label exists');
 assert(contains(files.app, 'isValidChartPoint'), 'DRAM chart validates date/value points');
-assert(contains(files.app, 'parseBestFactor'), 'best factor parser exists');
+assert(!/parseBestFactor|loadBestPanel|renderBestFactor|normalizeBestFallback|FALLBACK_SNAPSHOT\.best/.test(files.app), 'retired standalone Best parsing, loading, rendering and fallback code are removed');
 assert(contains(files.app, 'parseEtfTracking'), 'ETF Tracking parser exists');
 assert(contains(files.app, 'parseSox'), 'SOX summary parser exists');
 assert(contains(files.app, 'renderSox'), 'SOX dashboard panel renderer exists');
@@ -210,7 +210,7 @@ assert(
     && !contains(files.css, 'th:not(:first-child)'),
   'table alignment is project-aware so numeric cells align right without moving ticker or status text',
 );
-assert(contains(files.app, 'latest_holdings'), 'best factor holdings optional field is handled');
+assert(contains(files.app, 'parseIntegratedMomentum') && contains(files.app, 'selection.holdings'), 'Factor holdings use the integrated result contract');
 assert(contains(files.app, 'formatFreshness'), 'freshness formatter exists');
 assert(contains(files.app, 'renderResearchBriefing'), 'research briefing renderer exists');
 assert(contains(files.app, 'renderDataHealth'), 'data health renderer exists');
@@ -232,17 +232,15 @@ assert(
     && contains(files.controlAudit, 'Analysis controls'),
   'README links the audited frontend/backend boundary and implementation architecture',
 );
-assert(contains(files.readme, 'Momentum Factor, Best Factor') && contains(files.readme, '여섯 기준 프로젝트'), 'README names the complete six-site design reference suite');
+assert(['fearngreed', 'momentum', 'dram', 'etf', 'sox', 'regime'].every(id => contains(files.app, `id: '${id}'`)), 'Hub keeps the six active research panels');
 assert(
   [
     'https://sonchanggi.github.io/dram-price/',
     'https://sonchanggi.github.io/fearNgreed/',
     'https://sonchanggi.github.io/etf-tracking/',
     'https://sonchanggi.github.io/sox/',
-    'https://sonchanggi.github.io/momentum-factor-lab/',
-    'https://sonchanggi.github.io/best-factor/',
   ].every((url) => contains(files.webDesign, url)),
-  'web design prompt fixes the six-site reference suite',
+  'web design prompt retains the active price and market reference sites',
 );
 assert(contains(files.webDesign, '버전: `2.2.1`'), 'web design prompt version is pinned');
 assert(contains(files.webDesign, '## 1. 절대 보호 경계') && contains(files.webDesign, '계산·normalization·selection·aggregation 함수는 동결'), 'web design prompt protects analysis and result behavior');

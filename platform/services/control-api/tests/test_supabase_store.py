@@ -11,9 +11,9 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 
+from quant_control_api.adapters.fear_greed import DEFAULT_INPUTS as DEFAULT_CONFIG
 from quant_control_api.app import create_app
 from quant_control_api.artifacts import MappingArtifactFetcher
-from quant_control_api.best_factor import DEFAULT_CONFIG, canonical_json_bytes
 from quant_control_api.dual_write import NullDualWritePublisher
 from quant_control_api.models import RunCreateRequest, RunStatus
 from quant_control_api.providers.fake import FakeWorkerProvider
@@ -485,14 +485,14 @@ def test_supabase_store_survives_restart_restores_result_and_idempotency() -> No
             artifact_fetcher=artifacts,
         )
         submission = RunCreateRequest(
-            input_schema_version="best-factor/v1",
+            input_schema_version="fear-greed/control-inputs-v1",
             inputs=DEFAULT_CONFIG,
             allow_fallback=False,
         )
-        created = await service_one.create_run("best-factor", submission, "durable-run-0001")
+        created = await service_one.create_run("fear-greed", submission, "durable-run-0001")
         envelope = worker_one.dispatched[created.provider_run_id]
         manifest = worker_one.make_manifest(envelope)
-        exact_bytes = canonical_json_bytes(manifest.payload)
+        exact_bytes = FakeWorkerProvider.artifact_bytes(manifest)
         artifacts.artifacts[str(manifest.artifact.url)] = exact_bytes
         published = await service_one.accept_result_manifest(created.run_id, manifest)
         assert published.status == RunStatus.PUBLISHED
@@ -511,18 +511,18 @@ def test_supabase_store_survives_restart_restores_result_and_idempotency() -> No
         assert restored_result.payload == manifest.payload
         assert restored_result.artifact.sha256 == manifest.artifact.sha256
 
-        replayed = await service_two.create_run("best-factor", submission, "durable-run-0001")
+        replayed = await service_two.create_run("fear-greed", submission, "durable-run-0001")
         assert replayed.replayed is True
         assert replayed.run_id == created.run_id
         assert worker_two.dispatched == {}
 
         changed = RunCreateRequest(
-            input_schema_version="best-factor/v1",
-            inputs={**DEFAULT_CONFIG, "top_n": 21},
+            input_schema_version="fear-greed/control-inputs-v1",
+            inputs={**DEFAULT_CONFIG, "signalLookback": 197},
             allow_fallback=False,
         )
         with pytest.raises(ControlPlaneError, match="different normalized request"):
-            await service_two.create_run("best-factor", changed, "durable-run-0001")
+            await service_two.create_run("fear-greed", changed, "durable-run-0001")
 
         assert all("payload" not in row for row in state.runs.values())
         assert all("payload" not in row for row in state.snapshots.values())
@@ -546,9 +546,9 @@ def test_supabase_store_retries_optimistic_update_conflict() -> None:
             artifact_fetcher=MappingArtifactFetcher(),
         )
         created = await service.create_run(
-            "best-factor",
+            "fear-greed",
             RunCreateRequest(
-                input_schema_version="best-factor/v1",
+                input_schema_version="fear-greed/control-inputs-v1",
                 inputs=DEFAULT_CONFIG,
                 allow_fallback=False,
             ),

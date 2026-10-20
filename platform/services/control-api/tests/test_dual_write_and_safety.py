@@ -8,6 +8,7 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 
+from quant_control_api.adapters.fear_greed import DEFAULT_INPUTS as DEFAULT_CONFIG
 from quant_control_api.app import create_app
 from quant_control_api.artifacts import (
     ArtifactIdentity,
@@ -15,7 +16,6 @@ from quant_control_api.artifacts import (
     HttpArtifactFetcher,
     MappingArtifactFetcher,
 )
-from quant_control_api.best_factor import DEFAULT_CONFIG
 from quant_control_api.dual_write import (
     SupabaseDualWritePublisher,
     SupabaseProjectMetadataPublisher,
@@ -135,7 +135,7 @@ def test_artifact_fetcher_rejects_non_allowlisted_url_before_network() -> None:
             url="https://attacker.example/result.json",
             sha256="0" * 64,
             byte_size=2,
-            contract_version="best-factor/latest-results/v1",
+            contract_version="fear-greed/control-result-v1",
         )
         with pytest.raises(ArtifactVerificationError, match="host"):
             await fetcher.fetch(artifact)
@@ -158,12 +158,12 @@ def test_artifact_fetcher_rejects_malformed_content_length() -> None:
         fetcher = HttpArtifactFetcher(client=client)
         artifact = ArtifactIdentity(
             url=(
-                "https://raw.githubusercontent.com/SonChangGi/best-factor/"
-                "0123456789abcdef0123456789abcdef01234567/docs/data/latest-results.json"
+                "https://sonchanggi.github.io/fearNgreed/data/control-runs/v1/"
+                "test-run-01234567/" + "a" * 64 + ".json"
             ),
             sha256="0" * 64,
             byte_size=2,
-            contract_version="best-factor/latest-results/v1",
+            contract_version="fear-greed/control-result-v1",
         )
         with pytest.raises(ArtifactVerificationError, match="malformed"):
             await fetcher.fetch(artifact)
@@ -178,10 +178,10 @@ def test_mutable_pages_latest_url_is_never_a_control_artifact() -> None:
             client=httpx.AsyncClient(transport=httpx.MockTransport(lambda request: httpx.Response(200)))
         )
         artifact = ArtifactIdentity(
-            url="https://sonchanggi.github.io/best-factor/data/latest-results.json",
+            url="https://sonchanggi.github.io/fearNgreed/data/dashboard.json",
             sha256="0" * 64,
             byte_size=2,
-            contract_version="best-factor/latest-results/v1",
+            contract_version="fear-greed/control-result-v1",
         )
         with pytest.raises(ArtifactVerificationError, match="host"):
             await fetcher.fetch(artifact)
@@ -263,15 +263,15 @@ def test_artifact_fetcher_rejects_fear_greed_url_near_misses(url: str) -> None:
     [
         (
             (
-                "https://raw.githubusercontent.com/SonChangGi/best-factor/"
-                "0123456789abcdef0123456789abcdef01234567/docs/data/latest-results.json?raw=1"
+                "https://sonchanggi.github.io/fearNgreed/data/control-runs/v1/"
+                "test-run-01234567/" + "a" * 64 + ".json?raw=1"
             ),
             "query or fragment",
         ),
         (
             (
-                "https://user@raw.githubusercontent.com/SonChangGi/best-factor/"
-                "0123456789abcdef0123456789abcdef01234567/docs/data/latest-results.json"
+                "https://user@sonchanggi.github.io/fearNgreed/data/control-runs/v1/"
+                "test-run-01234567/" + "a" * 64 + ".json"
             ),
             "user information",
         ),
@@ -285,7 +285,7 @@ def test_artifact_fetcher_rejects_ambiguous_immutable_urls(url: str, message: st
             url=url,
             sha256="0" * 64,
             byte_size=2,
-            contract_version="best-factor/latest-results/v1",
+            contract_version="fear-greed/control-result-v1",
         )
         with pytest.raises(ArtifactVerificationError, match=message):
             await fetcher.fetch(artifact)
@@ -317,11 +317,11 @@ def test_supabase_dual_write_is_queued_and_stores_bounded_identity_only() -> Non
             publisher=publisher,
             artifact_fetcher=MappingArtifactFetcher(),
         )
-        service.capabilities("best-factor")
+        service.capabilities("fear-greed")
         created = await service.create_run(
-            "best-factor",
+            "fear-greed",
             RunCreateRequest(
-                input_schema_version="best-factor/v1",
+                input_schema_version="fear-greed/control-inputs-v1",
                 inputs=DEFAULT_CONFIG,
                 allow_fallback=False,
             ),
@@ -342,15 +342,8 @@ def test_supabase_dual_write_is_queued_and_stores_bounded_identity_only() -> Non
     assert snapshot_requests
     snapshot_body = json.loads(snapshot_requests[-1].content)
     assert "payload" not in snapshot_body
-    assert set(snapshot_body["summary"]) == {
-        "schema_version",
-        "generated_at",
-        "summary",
-    }
-    assert set(snapshot_body["summary"]["summary"]) >= {
-        "data_end_date",
-        "source_hash",
-    }
+    assert set(snapshot_body["summary"]) >= {"schemaVersion", "resultIdentity", "summary", "data"}
+    assert set(snapshot_body["summary"]["summary"]) >= {"eventAsset", "eventSample", "methodologyVersion"}
 
 
 def test_authoritative_store_project_publisher_never_writes_run_state() -> None:
@@ -379,9 +372,9 @@ def test_authoritative_store_project_publisher_never_writes_run_state() -> None:
         capability = service.capabilities("momentum")
         assert capability.project_name == "Factor"
         await service.create_run(
-            "best-factor",
+            "fear-greed",
             RunCreateRequest(
-                input_schema_version="best-factor/v1",
+                input_schema_version="fear-greed/control-inputs-v1",
                 inputs=DEFAULT_CONFIG,
                 allow_fallback=False,
             ),

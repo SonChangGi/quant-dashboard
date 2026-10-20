@@ -30,20 +30,20 @@ def make_client(
 def test_capabilities_expose_server_authority_and_static_fallback() -> None:
     client, _ = make_client()
     with client:
-        response = client.get("/v1/projects/best-factor/capabilities")
+        response = client.get("/v1/projects/fear-greed/capabilities")
     assert response.status_code == 200
     payload = response.json()
-    assert payload["projectId"] == "best-factor"
-    assert payload["inputSchemaVersion"] == "best-factor/v1"
+    assert payload["projectId"] == "fear-greed"
+    assert payload["inputSchemaVersion"] == "fear-greed/control-inputs-v1"
     assert len(payload["inputSchemaHash"]) == 64
-    assert payload["configHashAlgorithm"] == "best-factor-python-json-v1"
-    assert payload["defaultConfigHash"] == "082b5dbbe2c6cdf08d669733f9eacbc1518b0c88693d091f27574c8bc2f50750"
+    assert payload["configHashAlgorithm"] == "fear-greed-json-sort-keys-sha256-v1"
+    assert payload["defaultConfigHash"] == "cf8d60da8b6ad43c6849c553b953302721857cfccd1f0d49973f032bada922db"
     assert payload["acceptsRuns"] is True
     assert payload["provider"]["executesHeavyAnalysisInApi"] is False
     assert payload["fallback"]["analysisRunAllowFallback"] is False
-    assert payload["fallback"]["scheduledOwnerOperationMayFallback"] is True
-    assert payload["staticFallbackUrl"].endswith("/best-factor/data/latest-results.json")
-    assert len(payload["inputs"]) == 11
+    assert payload["fallback"]["scheduledOwnerOperationMayFallback"] is False
+    assert payload["staticFallbackUrl"].endswith("/fearNgreed/data/dashboard.json")
+    assert len(payload["inputs"]) == 17
     assert all(field["required"] is True for field in payload["inputs"])
 
 
@@ -54,7 +54,7 @@ def test_create_status_and_result_are_fully_bound(
     client, _ = make_client()
     with client:
         created = client.post(
-            "/v1/projects/best-factor/runs",
+            "/v1/projects/fear-greed/runs",
             headers=idempotency_headers,
             json=submission,
         )
@@ -74,7 +74,7 @@ def test_create_status_and_result_are_fully_bound(
         published = status.json()
         assert published["status"] == "published"
         assert published["dataAsOf"] == "2026-07-23"
-        assert published["codeVersion"] == "d" * 40
+        assert published["codeVersion"] == "github:SonChangGi/fearNgreed@" + "d" * 40
         assert len(published["artifact"]["sha256"]) == 64
 
         result = client.get(f"/v1/runs/{queued['runId']}/result")
@@ -104,12 +104,12 @@ def test_idempotency_replays_same_request_and_rejects_collision(
     client, _ = make_client(FakeWorkerProvider(auto_complete=False))
     with client:
         first = client.post(
-            "/v1/projects/best-factor/runs",
+            "/v1/projects/fear-greed/runs",
             headers=idempotency_headers,
             json=submission,
         )
         second = client.post(
-            "/v1/projects/best-factor/runs",
+            "/v1/projects/fear-greed/runs",
             headers=idempotency_headers,
             json=submission,
         )
@@ -118,9 +118,9 @@ def test_idempotency_replays_same_request_and_rejects_collision(
         assert second.json()["replayed"] is True
 
         changed = dict(submission)
-        changed["inputs"] = {**submission["inputs"], "top_n": 21}  # type: ignore[dict-item]
+        changed["inputs"] = {**submission["inputs"], "signalLookback": 197}  # type: ignore[dict-item]
         conflict = client.post(
-            "/v1/projects/best-factor/runs",
+            "/v1/projects/fear-greed/runs",
             headers=idempotency_headers,
             json=changed,
         )
@@ -136,13 +136,13 @@ def test_request_validation_and_owner_auth(
     client, _ = make_client(settings=settings)
     with client:
         unauthorized = client.post(
-            "/v1/projects/best-factor/runs",
+            "/v1/projects/fear-greed/runs",
             headers=idempotency_headers,
             json=submission,
         )
         assert unauthorized.status_code == 401
         accepted = client.post(
-            "/v1/projects/best-factor/runs",
+            "/v1/projects/fear-greed/runs",
             headers={**idempotency_headers, "Authorization": "Bearer owner-secret"},
             json=submission,
         )
@@ -152,7 +152,7 @@ def test_request_validation_and_owner_auth(
     with public_client:
         assert (
             public_client.post(
-                "/v1/projects/best-factor/runs",
+                "/v1/projects/fear-greed/runs",
                 json=submission,
             ).status_code
             == 422
@@ -165,10 +165,10 @@ def test_schema_unknown_input_and_fallback_rejections(
 ) -> None:
     client, _ = make_client()
     with client:
-        mismatched = {**submission, "inputSchemaVersion": "best-factor/v2"}
+        mismatched = {**submission, "inputSchemaVersion": "fear-greed/control-inputs-v2"}
         assert (
             client.post(
-                "/v1/projects/best-factor/runs",
+                "/v1/projects/fear-greed/runs",
                 headers=idempotency_headers,
                 json=mismatched,
             ).status_code
@@ -180,7 +180,7 @@ def test_schema_unknown_input_and_fallback_rejections(
             "inputs": {**submission["inputs"], "mystery": 1},  # type: ignore[dict-item]
         }
         response = client.post(
-            "/v1/projects/best-factor/runs",
+            "/v1/projects/fear-greed/runs",
             headers={**idempotency_headers, "Idempotency-Key": "test-request-0002"},
             json=invalid,
         )
@@ -189,7 +189,7 @@ def test_schema_unknown_input_and_fallback_rejections(
 
         fallback = {**submission, "allowFallback": True}
         response = client.post(
-            "/v1/projects/best-factor/runs",
+            "/v1/projects/fear-greed/runs",
             headers={**idempotency_headers, "Idempotency-Key": "test-request-0003"},
             json=fallback,
         )
@@ -204,7 +204,7 @@ def test_result_is_unavailable_before_publication(
     client, _ = make_client(FakeWorkerProvider(auto_complete=False))
     with client:
         created = client.post(
-            "/v1/projects/best-factor/runs",
+            "/v1/projects/fear-greed/runs",
             headers=idempotency_headers,
             json=submission,
         ).json()

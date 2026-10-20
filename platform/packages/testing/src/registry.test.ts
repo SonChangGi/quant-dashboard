@@ -28,7 +28,6 @@ describe("canonical project registry", () => {
       "fear-greed": "fearngreed",
       momentum: "momentum",
       dram: "dram",
-      "best-factor": "best",
       etf: "etf",
       sox: "sox",
     });
@@ -45,6 +44,8 @@ describe("canonical project registry", () => {
     ]);
     expect(publicSummaryProjectIds).not.toHaveProperty("regime");
     expectTypeOf<Extract<ProjectId, "regime">>().toEqualTypeOf<"regime">();
+    expectTypeOf<Extract<ProjectId, "best-factor">>().toEqualTypeOf<never>();
+    expectTypeOf<Extract<CompletedDashboardId, "best-factor">>().toEqualTypeOf<never>();
     expectTypeOf<Extract<CompletedDashboardId, "regime">>().toEqualTypeOf<never>();
   });
 });
