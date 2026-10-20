@@ -1844,5 +1844,6 @@ html[data-theme="dark"] .panel--best { --factor-color: #80d0c1; --factor-soft: #
 
 @media (max-width: 660px) { .sox-ticker-label text { font-size: 12px; } }
 
-.factor-allocation.integrated-allocation{--factor-columns:24px 56px minmax(0,1fr) 62px}
-@media(max-width:600px){.factor-allocation.integrated-allocation{--factor-columns:18px 46px minmax(0,1fr) 58px}}
+.factor-allocation.integrated-allocation{--factor-columns:24px 72px minmax(0,1fr) 62px}
+.integrated-allocation .factor-symbol{white-space:nowrap;overflow-wrap:normal;word-break:normal}
+@media(max-width:600px){.factor-allocation.integrated-allocation{--factor-columns:18px 64px minmax(0,1fr) 58px}}
