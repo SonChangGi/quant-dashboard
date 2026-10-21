@@ -7,7 +7,8 @@ const require=createRequire(import.meta.url);
 const api=require('../shared/navigation/v1/nav.js');
 const source=JSON.parse(fs.readFileSync(new URL('../shared/navigation/v1/menu.json',import.meta.url),'utf8'));
 test('all generated navigation fallbacks match the central source',()=>{
- assert.deepEqual(api.fallbackMenu,source); assert.equal(source.projects.length,8);
+ assert.deepEqual(api.fallbackMenu,source);
+ assert.deepEqual(source.projects.map(project=>project.id),['factor','etf','dram','sox','fear-greed','regime','news','observatory']);
  assert.equal(source.projects.find(p=>p.id==='factor').url,'https://sonchanggi.github.io/factor/');
  assert(!source.projects.some(p=>p.id==='best-factor'||p.id==='spo'));
  assert(!JSON.stringify(api.fallbackMenu).includes('/SPO/'));
@@ -30,4 +31,12 @@ test('a stalled transport or response body has a bounded deadline',async()=>{
  await assert.rejects(api.loadMenu(async()=>({ok:true,text:()=>new Promise(()=>{})}),10),/timeout/);
  await assert.rejects(api.loadMenu(async()=>({ok:true,text:async()=>JSON.stringify({})})),/schema/);
  assert.deepEqual(api.fallbackMenu,source);
+});
+
+test('future projects follow the latest project while Alpha House remains last',()=>{
+ const changed=structuredClone(source);
+ changed.projects.splice(-1,0,{id:'next-project',label:'Next project',url:'https://sonchanggi.github.io/next-project/'});
+ const links=api.getLinks(api.validateMenu(changed),'next-project');
+ assert.deepEqual(links.slice(-3).map(project=>project.id),['news','next-project','observatory']);
+ assert.equal(links.find(project=>project.current).id,'next-project');
 });

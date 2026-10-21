@@ -51,7 +51,7 @@ try {
   if (!css.includes('.panel')) throw new Error('panel CSS missing');
   if (!css.includes('.etf-detail-grid') || !css.includes('.etf-top10-list')) throw new Error('ETF detail CSS missing');
   if (!css.includes('.health-link')) throw new Error('automation health link CSS missing');
-  if (!sharedNav.includes('position: fixed !important') || !sharedNav.includes('--quant-shared-nav-height: 101px')) throw new Error('fixed shared navigation CSS missing');
+  if (!sharedNav.includes('position: fixed !important') || !sharedNav.includes('grid-template-rows: 58px !important')) throw new Error('fixed shared navigation CSS missing');
   console.log('PASS static server smoke served index.html, app/styles, and fixed shared navigation CSS');
 } finally {
   await new Promise((resolve) => server.close(resolve));

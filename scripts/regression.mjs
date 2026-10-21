@@ -50,7 +50,7 @@ assert(
 );
 assert(
   api.NAVIGATION_PROJECTS.map((project) => project.shortName).join('|')
-    === 'Fear & Greed|Factor|DRAM|ETF|SOX|Regime|News|알파 하우스',
+    === 'Factor|ETF|DRAM|SOX|Fear & Greed|Regime|News|알파 하우스',
   'project manifest preserves the canonical navigation order after Hub',
 );
 assert(

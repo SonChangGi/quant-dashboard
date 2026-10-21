@@ -79,7 +79,7 @@ assert(
   contains(files.html, 'quant-shared-nav')
     && contains(files.html, 'assets/shared-nav.css')
     && contains(files.sharedNav, 'position: fixed !important')
-    && contains(files.sharedNav, '--quant-shared-nav-height: 101px'),
+    && contains(files.sharedNav, 'grid-template-rows: 58px !important'),
   'shared navigation stays fixed and reserves desktop/mobile document space',
 );
 assert(

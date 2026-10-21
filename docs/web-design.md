@@ -288,16 +288,16 @@ Quant Research 제품군은 다음처럼 보여야 한다.
 
 메뉴 원본은 `shared/navigation/v1/menu.json`이다. Hub 브랜드 하나와 프로젝트 링크 8개로 구성하며 현재 순서는 다음과 같다.
 
-`Hub → Fear & Greed → Factor → DRAM → ETF → SOX → Regime → News → 알파 하우스`
+`Hub → Factor → ETF → DRAM → SOX → Fear & Greed → Regime → News → 알파 하우스`
 
 | 순서 | Label | URL |
 | ---: | --- | --- |
 | 1 | Hub | `https://sonchanggi.github.io/quant-dashboard/` |
-| 2 | Fear & Greed | `https://sonchanggi.github.io/fearNgreed/` |
-| 3 | Factor | `https://sonchanggi.github.io/factor/` |
+| 2 | Factor | `https://sonchanggi.github.io/factor/` |
+| 3 | ETF | `https://sonchanggi.github.io/etf-tracking/` |
 | 4 | DRAM | `https://sonchanggi.github.io/dram-price/` |
-| 5 | ETF | `https://sonchanggi.github.io/etf-tracking/` |
-| 6 | SOX | `https://sonchanggi.github.io/sox/` |
+| 5 | SOX | `https://sonchanggi.github.io/sox/` |
+| 6 | Fear & Greed | `https://sonchanggi.github.io/fearNgreed/` |
 | 7 | Regime | `https://sonchanggi.github.io/regime/` |
 | 8 | News | `https://sonchanggi.github.io/news/` |
 | 9 | 알파 하우스 | `https://research-observatory-changgi.changgi-son.chatgpt.site/` |
@@ -319,7 +319,7 @@ Quant Research 제품군은 다음처럼 보여야 한다.
 - 별도 gradient `Q` mark 같은 프로젝트별 장식은 공통 nav에서 사용하지 않음
 - theme control은 sun/moon icon의 `44×44px` button으로 통일하고 `aria-pressed`와 `라이트 모드로 전환`·`다크 모드로 전환` 동적 label을 제공
 
-`760px` 이하에서는 brand와 theme control을 첫 행에 유지하고, 8개 링크를 두 번째 행의 **메뉴 자체 horizontal rail**로 제공한다. 링크를 문서 밖으로 넘기거나 일부만 숨기지 않는다.
+모든 화면에서 한 줄을 유지한다. `760px` 이하에서는 brand를 `11px`로 줄이고 프로젝트 링크만 가로로 스크롤한다. 알파 하우스는 프로젝트 목록 맨 오른쪽, 모드 전환 버튼은 그 다음에 배치한다. 새 프로젝트는 기존 생성 순서를 보존하면서 현재 마지막 프로젝트(News) 다음, 알파 하우스 앞에 추가한다.
 
 모든 페이지는 Hub의 공통 `nav.js`·`nav.css`와 중앙 메뉴 JSON을 사용한다. 정적 페이지는 링크 영역만 갱신하고 React는 같은 데이터를 hook으로 받아 직접 렌더링한다. 조회 실패 시 검증된 로컬 fallback을 유지한다. 생성·검증·CSP 연결은 [공통 메뉴 계약](shared-navigation.md)을 따른다. 다른 분석 코드나 결과를 메뉴와 함께 공통 런타임으로 옮기지 않는다.
 

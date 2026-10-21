@@ -8,19 +8,9 @@ export const sharedNavigationFallback = {
   },
   "projects": [
     {
-      "id": "fear-greed",
-      "label": "Fear & Greed",
-      "url": "https://sonchanggi.github.io/fearNgreed/"
-    },
-    {
       "id": "factor",
       "label": "Factor",
       "url": "https://sonchanggi.github.io/factor/"
-    },
-    {
-      "id": "dram",
-      "label": "DRAM",
-      "url": "https://sonchanggi.github.io/dram-price/"
     },
     {
       "id": "etf",
@@ -28,9 +18,19 @@ export const sharedNavigationFallback = {
       "url": "https://sonchanggi.github.io/etf-tracking/"
     },
     {
+      "id": "dram",
+      "label": "DRAM",
+      "url": "https://sonchanggi.github.io/dram-price/"
+    },
+    {
       "id": "sox",
       "label": "SOX",
       "url": "https://sonchanggi.github.io/sox/"
+    },
+    {
+      "id": "fear-greed",
+      "label": "Fear & Greed",
+      "url": "https://sonchanggi.github.io/fearNgreed/"
     },
     {
       "id": "regime",
