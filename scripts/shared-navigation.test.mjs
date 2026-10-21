@@ -8,7 +8,7 @@ const api=require('../shared/navigation/v1/nav.js');
 const source=JSON.parse(fs.readFileSync(new URL('../shared/navigation/v1/menu.json',import.meta.url),'utf8'));
 test('all generated navigation fallbacks match the central source',()=>{
  assert.deepEqual(api.fallbackMenu,source);
- assert.deepEqual(source.projects.map(project=>project.id),['factor','etf','dram','sox','fear-greed','regime','news','observatory']);
+ assert.deepEqual(source.projects.map(project=>project.id),['factor','dram','etf','sox','fear-greed','regime','news','observatory']);
  assert.equal(source.projects.find(p=>p.id==='factor').url,'https://sonchanggi.github.io/factor/');
  assert(!source.projects.some(p=>p.id==='best-factor'||p.id==='spo'));
  assert(!JSON.stringify(api.fallbackMenu).includes('/SPO/'));

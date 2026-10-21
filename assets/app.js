@@ -280,7 +280,7 @@
     },
   ];
   const NAVIGATION_PROJECTS = [
-    ...['momentum', 'etf', 'dram', 'sox', 'fearngreed', 'regime'].map(id => PROJECTS.find(project => project.id === id)),
+    ...['momentum', 'dram', 'etf', 'sox', 'fearngreed', 'regime'].map(id => PROJECTS.find(project => project.id === id)),
     { id: 'news', shortName: 'News', url: 'https://sonchanggi.github.io/news/' },
     { id: 'observatory', shortName: '알파 하우스', url: 'https://research-observatory-changgi.changgi-son.chatgpt.site/' },
   ];

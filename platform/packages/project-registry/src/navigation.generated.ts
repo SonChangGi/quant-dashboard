@@ -13,14 +13,14 @@ export const sharedNavigationFallback = {
       "url": "https://sonchanggi.github.io/factor/"
     },
     {
-      "id": "etf",
-      "label": "ETF",
-      "url": "https://sonchanggi.github.io/etf-tracking/"
-    },
-    {
       "id": "dram",
       "label": "DRAM",
       "url": "https://sonchanggi.github.io/dram-price/"
+    },
+    {
+      "id": "etf",
+      "label": "ETF",
+      "url": "https://sonchanggi.github.io/etf-tracking/"
     },
     {
       "id": "sox",

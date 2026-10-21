@@ -288,14 +288,14 @@ Quant Research 제품군은 다음처럼 보여야 한다.
 
 메뉴 원본은 `shared/navigation/v1/menu.json`이다. Hub 브랜드 하나와 프로젝트 링크 8개로 구성하며 현재 순서는 다음과 같다.
 
-`Hub → Factor → ETF → DRAM → SOX → Fear & Greed → Regime → News → 알파 하우스`
+`Hub → Factor → DRAM → ETF → SOX → Fear & Greed → Regime → News → 알파 하우스`
 
 | 순서 | Label | URL |
 | ---: | --- | --- |
 | 1 | Hub | `https://sonchanggi.github.io/quant-dashboard/` |
 | 2 | Factor | `https://sonchanggi.github.io/factor/` |
-| 3 | ETF | `https://sonchanggi.github.io/etf-tracking/` |
-| 4 | DRAM | `https://sonchanggi.github.io/dram-price/` |
+| 3 | DRAM | `https://sonchanggi.github.io/dram-price/` |
+| 4 | ETF | `https://sonchanggi.github.io/etf-tracking/` |
 | 5 | SOX | `https://sonchanggi.github.io/sox/` |
 | 6 | Fear & Greed | `https://sonchanggi.github.io/fearNgreed/` |
 | 7 | Regime | `https://sonchanggi.github.io/regime/` |
