@@ -513,7 +513,7 @@ def test_health_readiness_and_container_operability_contract() -> None:
 
     dockerfile = Path(__file__).resolve().parents[1] / "Dockerfile"
     contents = dockerfile.read_text(encoding="utf-8")
-    assert contents.startswith("FROM python:3.11.15-slim-bookworm")
+    assert contents.startswith("FROM python:3.11.18-slim-bookworm")
     assert "COPY pyproject.toml uv.lock README.md ./" in contents
     assert "uv sync --locked --no-dev --no-editable --no-cache" in contents
     assert "USER quant-control" in contents
