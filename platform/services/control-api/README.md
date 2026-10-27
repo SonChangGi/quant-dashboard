@@ -178,16 +178,56 @@ variables are documented in `.env.example`.
 the durable Supabase store and dispatch pump; a live worker can never be paired
 with the volatile in-memory queue.
 
-Build the non-root Python 3.11.15 container with:
+Build the non-root Python 3.11.18 container with:
 
 ```bash
-docker build -t quant-control-api .
+docker build --pull --no-cache -t quant-control-api .
 docker run --env-file .env -p 8000:8000 quant-control-api
 ```
 
 The image installs production dependencies from `uv.lock` with
 `uv sync --locked --no-dev`; dependency resolution cannot drift during a
 container build.
+
+### Certificate security updates
+
+The [Render eMudhra advisory](https://render.com/docs/advisory-emudhra)
+requires refreshing every trust store and rebuilding the image. This service
+requires `certifi>=2026.10.19`, locked to `2026.10.23`. HTTPX remains at `0.28.1`.
+Both Docker stages update Debian's `ca-certificates` and refuse versions below
+`20250419~deb12u2`, the Bookworm fix in
+[DLA-4845-1](https://security-tracker.debian.org/tracker/DLA-4845-1).
+Keep `--pull --no-cache` for security rebuilds so old layers cannot skip updates.
+
+Python `3.11.18`, pip `26.2.2`, and uv `0.13.4` address the same incident,
+including build tools' separate bundled roots; see the
+[Python security announcement](https://discuss.python.org/t/109576).
+The hash-pinned pip bootstrap comes from that announcement. Do not replace it
+with an unverified installer or disable certificate verification.
+
+GitHub, Supabase, and artifact clients use HTTPX's verified defaults. HTTPX
+normally loads certifi, but `SSL_CERT_FILE` or `SSL_CERT_DIR` can override it.
+Before deployment, inspect whether those overrides or additional mounted CA
+stores exist and update them separately. Do not print secret values or assume
+that a local test proves the deployed store is safe.
+
+After an independently approved deployment, confirm the deployed image/revision,
+Python, pip, certifi and Debian CA versions. From the running service, use HTTPX
+with its effective trust configuration and a fresh credential-free request to
+both endpoints in the Render advisory. Each must fail specifically with
+`CERTIFICATE_VERIFY_FAILED`; DNS errors and timeouts are inconclusive. Never
+reuse authenticated GitHub/Supabase request headers for these probes. A normal
+HTTPS control request should succeed. Then verify `/healthz` and `/readyz`
+without dispatching an analysis run. Keep the deployment unverified until these
+checks succeed; publishing source or a Pages build alone does not deploy this API.
+
+The API CI job builds with fresh base layers, checks the non-root image's exact
+Python/pip/certifi versions and Debian CA security floor, and runs
+`scripts/verify_image_tls.py` via standard input. The script sends only a Host
+header and exercises the actual service clients, system CA and pip's vendored CA.
+It treats network failures other than certificate rejection as failures, then
+CI starts the image and checks `/healthz`. No production environment or secrets
+are passed to these containers. uv's pinned version is verified in the builder.
 
 Deploy this long-running API on a container service that supports background
 work and graceful shutdown. Vercel is for the frontend and preview deployments
