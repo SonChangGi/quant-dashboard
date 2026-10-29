@@ -10,7 +10,8 @@ import {
 
 describe("canonical project registry", () => {
   it("keeps the shared public labels and URLs in the approved order", () => {
-    expect(canonicalProjectRegistry.map(row => row.id)).toEqual(["hub","factor","dram","etf","sox","fear-greed","regime","news","observatory"]);
+    expect(canonicalProjectRegistry.map(row => row.id)).toEqual(["hub","factor","dram","etf","sox","fear-greed","regime","news","investment-journal","observatory"]);
+    expect(getProject("investment-journal").url).toBe("https://invest.changgi-son.chatgpt.site/");
     expect(getProject("factor").label).toBe("Factor");
     expect(getProject("factor").url).toBe("https://sonchanggi.github.io/factor/");
     expect(canonicalProjectRegistry.some(row => String(row.id) === "best-factor")).toBe(false);
