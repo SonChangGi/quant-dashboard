@@ -20,3 +20,7 @@ html[data-theme="dark"] body[data-qd-project="etf-tracking"] #weight-chart .rank
 html[data-theme="dark"] body[data-qd-project="etf-tracking"] #weight-chart .line-end-label text { fill: #101722; stroke: none; }
 html[data-theme="dark"] body[data-qd-project="etf-tracking"] #weight-chart .legend-key { background: color-mix(in srgb, var(--legend-color) 65%, white); }
 html[data-theme="dark"] body[data-qd-project="etf-tracking"] #weight-chart .chart-active-point { stroke: color-mix(in srgb, var(--active-series-color) 65%, white); }
+/* Dark accent fills need dark ink, including the ETF-pair secondary label. */
+html[data-theme="dark"] body[data-qd-project="fearNgreed"] :is(button.active,.exit-threshold-entry button,#apply-signal-settings,#history-follow-latest){color:#10151d}
+html[data-theme="dark"] body[data-qd-project="fearNgreed"] button.active :is(span,small){color:inherit}
+html[data-theme="dark"] body[data-qd-project="etf-tracking"] .primary-button{color:#10151d}

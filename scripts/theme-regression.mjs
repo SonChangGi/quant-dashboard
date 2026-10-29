@@ -90,11 +90,11 @@ for (const legacyKey of [
 
 {
   const page = runTheme();
-  assert.equal(page.root.dataset.theme, 'light', 'light is the default when query, storage, and system are light');
+  assert.equal(page.root.dataset.theme, 'dark', 'dark is the default even with a light system preference');
   page.listeners.get('click')();
-  assert.equal(page.root.dataset.theme, 'dark', 'theme toggle changes the current page theme');
-  assert.equal(page.storage.getItem('quant-research-theme'), 'dark', 'theme toggle persists only the canonical key');
-  assert.equal(page.label.textContent, '라이트 모드', 'theme toggle label describes the next action');
+  assert.equal(page.root.dataset.theme, 'light', 'theme toggle changes the current page theme');
+  assert.equal(page.storage.getItem('quant-research-theme'), 'light', 'theme toggle persists only the canonical key');
+  assert.equal(page.label.textContent, '다크 모드', 'theme toggle label describes the next action');
 }
 
 console.log('PASS theme query, migration, system preference, fallback, and toggle persistence');

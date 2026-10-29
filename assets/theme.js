@@ -49,14 +49,6 @@
     }
   }
 
-  function systemTheme() {
-    try {
-      return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    } catch (error) {
-      return null;
-    }
-  }
-
   function saveTheme(theme) {
     try {
       window.localStorage?.setItem(STORAGE_KEY, theme);
@@ -95,7 +87,7 @@
   }
 
   const initialStoredTheme = storedTheme();
-  applyTheme(requestedTheme() || initialStoredTheme || systemTheme() || currentTheme());
+  applyTheme(requestedTheme() || initialStoredTheme || 'dark');
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', bindThemeToggle, { once: true });

@@ -131,3 +131,30 @@ body[data-qd-project="sox"] .page-jump-nav a{width:34px;min-height:34px;height:3
 body[data-qd-project="sox"] .bar-row:not(.is-active){opacity:.8}
 body[data-qd-project="sox"] [hidden]{display:none!important}
 body[data-qd-project="sox"] .bar-chart.has-active .bar-row:not(.is-active){opacity:.8}
+
+/* Dark chart audit: preserve series identity while making small labels readable. */
+html[data-theme="dark"] body[data-qd-project="dram-price"] .chart-date-chip text{fill:#101620}
+html[data-theme="dark"] body[data-qd-project="dram-price"] .chart-series.is-muted{opacity:.85}
+html[data-theme="dark"] body[data-qd-project="dram-price"] .chart-facet [stroke="#3182f6"]{stroke:#82b2ff}
+html[data-theme="dark"] body[data-qd-project="dram-price"] .chart-facet [fill="#3182f6"]{fill:#82b2ff}
+html[data-theme="dark"] body[data-qd-project="dram-price"] .chart-value-callout__series i[style*="rgb(49, 130, 246)"]{background-color:#82b2ff!important}
+html[data-theme="dark"] body[data-qd-project="dram-price"] .chart-facet [stroke="#008f7a"]{stroke:#60d8be}
+html[data-theme="dark"] body[data-qd-project="dram-price"] .chart-facet [fill="#008f7a"]{fill:#60d8be}
+html[data-theme="dark"] body[data-qd-project="dram-price"] .chart-value-callout__series i[style*="rgb(0, 143, 122)"]{background-color:#60d8be!important}
+html[data-theme="dark"] body[data-qd-project="dram-price"] .chart-facet [stroke="#c56b12"]{stroke:#ffbe70}
+html[data-theme="dark"] body[data-qd-project="dram-price"] .chart-facet [fill="#c56b12"]{fill:#ffbe70}
+html[data-theme="dark"] body[data-qd-project="dram-price"] .chart-value-callout__series i[style*="rgb(197, 107, 18)"]{background-color:#ffbe70!important}
+html[data-theme="dark"] body[data-qd-project="dram-price"] .chart-facet [stroke="#7c5ce7"]{stroke:#bea3ff}
+html[data-theme="dark"] body[data-qd-project="dram-price"] .chart-facet [fill="#7c5ce7"]{fill:#bea3ff}
+html[data-theme="dark"] body[data-qd-project="dram-price"] .chart-value-callout__series i[style*="rgb(124, 92, 231)"]{background-color:#bea3ff!important}
+html[data-theme="dark"] body[data-qd-project="dram-price"] .chart-facet [stroke="#0891b2"]{stroke:#5dd3ea}
+html[data-theme="dark"] body[data-qd-project="dram-price"] .chart-facet [fill="#0891b2"]{fill:#5dd3ea}
+html[data-theme="dark"] body[data-qd-project="dram-price"] .chart-value-callout__series i[style*="rgb(8, 145, 178)"]{background-color:#5dd3ea!important}
+html[data-theme="dark"] body[data-qd-project="sox"] .quadrant.has-active .quad-point:not(.is-active){opacity:1}
+html[data-theme="dark"] body[data-qd-project="sox"] .quad-point.is-active{outline:2px solid var(--qd-accent);outline-offset:2px}
+body[data-qd-project="sox"] .table-wrap tbody td[colspan="14"]{text-align:left;white-space:normal}
+/* Control outlines remain distinguishable from both panel and raised surfaces. */
+html[data-theme="dark"] body[data-qd-project="dram-price"] :is(button[role="combobox"],.chart-date-controls select,.advanced-filters__trigger),
+html[data-theme="dark"] body[data-qd-project="sox"] :is(.table-tools input,.table-tools select,.snapshot-control select){border-color:#677991}
+/* Reserve the axis captions without changing the midpoint or data coordinates. */
+html[data-theme="dark"] body[data-qd-project="sox"] .quadrant-plot{inset:44px 24px}

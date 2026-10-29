@@ -35,3 +35,11 @@ body[data-qd-project=alpha-house] .office-movement-bar button[aria-pressed=true]
 body[data-qd-project=alpha-house] .office-room-navigation button{color:var(--qd-muted)}
 body[data-qd-project=alpha-house] .office-room-navigation button[aria-pressed=true]{background:var(--qd-soft);color:var(--qd-accent);border-color:var(--qd-accent)}
 body[data-qd-project=alpha-house] .office-topline b{background:var(--qd-soft);color:var(--qd-accent)}
+
+/* Keep secondary controls and selected activity metadata readable at night. */
+html[data-theme=dark] body[data-qd-project=alpha-house] .skip-link{background:var(--qd-accent);color:#101722}
+html[data-theme=dark] body[data-qd-project=alpha-house] :is(.focus-divider,.office-view-controls button){color:var(--qd-muted)}
+html[data-theme=dark] body[data-qd-project=alpha-house] .project-initial{color:var(--qd-text)!important}
+html[data-theme=dark] body[data-qd-project=alpha-house] .session-row.selected :is(.conversation-source,.child-count,.session-row-copy>small){color:#c2cede}
+html[data-theme=dark] body[data-qd-project=alpha-house] .session-row.selected .session-status{color:#a3c7ff}
+html[data-theme=dark] body[data-qd-project=alpha-house] .office-map-viewport{background:var(--qd-bg);border-color:var(--qd-border);scrollbar-color:var(--qd-border) var(--qd-bg)}

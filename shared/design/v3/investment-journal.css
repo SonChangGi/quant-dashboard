@@ -43,3 +43,5 @@ body[data-qd-project="investment-journal"] .section-head.qd-focus-heading>:first
 body[data-qd-project="investment-journal"] .qd-focus-active .wealth-plot{min-height:clamp(300px,52vh,640px)}
 html[data-theme="dark"] body[data-qd-project="investment-journal"] .button.primary{color:#101c2f}
 @media(max-width:800px){body[data-qd-project="investment-journal"] .header .nav{gap:8px}body[data-qd-project="investment-journal"] .header .nav button{min-width:44px;padding-inline:4px}}
+/* Separate instrument lookup from the following entry fields in narrow dialogs. */
+body[data-qd-project="investment-journal"] .modal-body>.stack:has([aria-label="새 종목 검색어"])+form{margin-top:18px}

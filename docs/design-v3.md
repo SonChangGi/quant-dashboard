@@ -46,7 +46,7 @@
 | `--qd-soft` | `#edf3ff` | `#243650` | 선택 배경 |
 | `--qd-raised` | `#f8fafd` | `#1e2837` | 표 헤더·보조 표면 |
 
-테마는 `html[data-theme="light"]`와 `html[data-theme="dark"]`로 구분한다. 공통 설정 키 `quant-research-theme`와 기존 페이지 테마 동작을 함께 반영하며, 링크 이동 뒤에도 사용자의 선택을 유지한다. URL의 `theme` 값은 `light` 또는 `dark`만 허용한다. 저장소를 사용할 수 없어도 기본 테마와 전환 버튼이 동작해야 한다.
+테마는 `html[data-theme="light"]`와 `html[data-theme="dark"]`로 구분한다. 기본값은 다크이며 OS 설정에 따라 바뀌지 않는다. 우선순위는 유효한 URL `theme` → 저장된 `quant-research-theme` → `dark`다. 사용자가 저장한 라이트 선택은 유지한다. 네이티브 초기화가 끝난 뒤 공통 부트가 이 우선순위를 다시 적용하며, 새 프로젝트도 시스템 기본값을 사용자 선택으로 저장하지 않아야 한다. 공통 설정 키 `quant-research-theme`와 기존 페이지 테마 동작을 함께 반영하며, 링크 이동 뒤에도 사용자의 선택을 유지한다. URL의 `theme` 값은 `light` 또는 `dark`만 허용한다. 저장소를 사용할 수 없어도 기본 테마와 전환 버튼이 동작해야 한다.
 
 브랜드는 **Quant**와 세 개의 상승 막대로 된 SVG 마크를 사용한다. 별도 프로젝트마다 로고를 다시 만들지 않는다. 마크는 장식으로 `aria-hidden` 처리하고, 링크에는 읽을 수 있는 브랜드 이름을 둔다. 마크와 아이콘은 `currentColor`를 사용해 테마에 맞춘다.
 

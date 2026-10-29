@@ -85,3 +85,7 @@ body[data-qd-project="regime"] .page-jump-nav a{width:34px;height:34px;font-size
 body[data-qd-project="regime"] .section-nav a[aria-current="page"]{background:transparent}
 html[data-theme="dark"] body[data-qd-project="factor"] :is(.lab-chart .trace,.lab-chart .observation-value,.lab-chart .dot,.lab-swatch,.lab-value-dot){filter:brightness(1.5) saturate(.75)}
 @media(max-width:600px){body[data-qd-project="regime"] .section-nav .section-nav-action{display:inline-flex;align-items:center}body[data-qd-project="regime"] #overview .probability-row{grid-template-columns:88px minmax(36px,1fr) 48px;gap:8px}body[data-qd-project="regime"] #overview .probability-track{display:block}}
+/* Keep the wide factor comparison table inside its own scroll viewport. */
+body[data-qd-project="factor"] #factor-table{min-width:0;max-width:100%}
+body[data-qd-project="factor"] #factor-table>.lab-table-scroll{width:100%;max-width:100%}
+body[data-qd-project="factor"] #factor-table .lab-table{min-width:1180px}
