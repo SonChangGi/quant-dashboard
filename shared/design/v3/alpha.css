@@ -38,7 +38,7 @@ body[data-qd-project=alpha-house] .office-topline b{background:var(--qd-soft);co
 
 /* Keep secondary controls and selected activity metadata readable at night. */
 html[data-theme=dark] body[data-qd-project=alpha-house] .skip-link{background:var(--qd-accent);color:#101722}
-html[data-theme=dark] body[data-qd-project=alpha-house] :is(.focus-divider,.office-view-controls button){color:var(--qd-muted)}
+html[data-theme=dark] body[data-qd-project=alpha-house] :is(.focus-divider,.office-view-controls button,.office-movement-bar>span){color:var(--qd-muted)}
 html[data-theme=dark] body[data-qd-project=alpha-house] .project-initial{color:var(--qd-text)!important}
 html[data-theme=dark] body[data-qd-project=alpha-house] .session-row.selected :is(.conversation-source,.child-count,.session-row-copy>small){color:#c2cede}
 html[data-theme=dark] body[data-qd-project=alpha-house] .session-row.selected .session-status{color:#a3c7ff}
