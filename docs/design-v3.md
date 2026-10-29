@@ -76,7 +76,7 @@
 
 1. `shared/navigation/v1/menu.json`에 고유 ID, 표시명, 공개 URL을 추가한다. 메뉴 순서와 허용 origin은 [공통 탐색 계약](shared-navigation.md)을 따른다. `node scripts/sync-navigation.mjs`로 생성 fallback을 동기화한다.
 2. `shared/navigation/v1/nav.js` 하단 presentation IIFE의 `aliases`와 `styles`에 디자인 식별자와 CSS 목록을 등록한다. 로더는 명시한 `html[data-quant-design-project]`, Alpha House 호스트, 첫 `[data-quant-project]` 값 또는 URL 첫 경로로 프로젝트를 식별한다. 예를 들어 `aliases.etf = 'etf-tracking'`, `styles['etf-tracking'] = ['fear-etf.css', 'fear-etf-v03.css']`처럼 연결한다. 기존 v1의 alias가 v3에도 자동 반영된다고 가정하지 말고 실제 소비 ID를 확인한다. 계산/API ID를 바꾸어 맞추지 않는다.
-3. `shared/design/v3/`에 프로젝트 CSS를 추가하고 `styles`의 해당 프로젝트 배열에 파일명을 등록한다. `v03`이 파일명에 포함되면 공통 `v03.css` 이후에 로드되는 현재 규칙을 따른다. `shell.js`의 `projects`에 `[디자인ID, 표시명, 검색설명, 아이콘키]`를 추가하고 `base()`의 공개 URL도 확인한다. 사이드바는 배열 index/slice로 그룹을 구성하므로 항목 추가 후 그룹·현재 위치·모바일 링크·검색 결과를 함께 확인한다.
+3. `shared/design/v3/`에 프로젝트 CSS를 추가하고 `styles`의 해당 프로젝트 배열에 파일명을 등록한다. `v03`이 파일명에 포함되면 공통 `v03.css` 이후에 로드되는 현재 규칙을 따른다. `shell.js`의 `projects`에 `[디자인ID, 표시명, 검색설명, 아이콘키]`를 추가하고 `base()`의 공개 URL도 확인한다. `shell.js`의 `groupItems()` 호출에 프로젝트 ID를 한 번 등록해 사이드바 그룹을 정한다. 배열 순서만 바꾸어 기존 항목이 사라지지 않도록 그룹·현재 위치·모바일 링크·검색 결과를 함께 확인한다.
 4. CSS는 `body[data-qd-project="프로젝트-스타일-ID"]` 아래로 제한한다. 공통 shell 변경이 아니라면 전역 `h2`, `small`, `svg`, `button` 규칙을 추가하지 않는다.
 5. 차트 확대가 필요하면 `shared/design/v3/focus.js`의 `specs`에 `[패널 selector, 차트 selector]`를 등록한다. 중첩 패널의 확대 버튼이 중복 생성되지 않는지 확인한다.
 6. 새 배포 파일은 `scripts/pages-artifact-files.json` 허용 목록에도 추가하고 `node scripts/verify-pages-artifact.mjs dist`로 정적 산출물을 검증한다.
@@ -92,12 +92,15 @@
 | `dram` | `/dram-price/` | `dram-price` |
 | `etf` | `/etf-tracking/` | `etf-tracking` |
 | `observatory` | Alpha House 별도 호스트 | `alpha-house` |
+| `investment-journal` | `https://invest.changgi-son.chatgpt.site/` | `investment-journal` |
+
+투자일지는 `nav.js`의 `hostedProjects`에 정확한 `invest.changgi-son.chatgpt.site` 호스트를 등록한다. `/`, `/login`, 계좌·거래 등 모든 하위 경로에서 같은 디자인 ID를 사용한다. `styles['investment-journal']`는 `['investment-journal.css']`이며 CSS의 배포 allowlist인 `scripts/pages-artifact-files.json`도 함께 등록한다. 차트 확대는 `focus.js`의 `['.panel', '.recharts-wrapper']`를 사용한다. 기존 사용자명·비밀번호 로그인과 서버 인증은 유지하며, 공통 메뉴 URL에는 자격증명이나 토큰을 넣지 않는다.
 
 `regime`, `sox`, `news`는 같은 이름을 사용한다. `momentum` 등 기존 탐색 alias는 유지하되 계산·API 계약과 혼동하지 않는다. 로더의 실제 등록 구조를 기준으로 수정하며, 예시 ID를 복사해 충돌시키지 않는다.
 
 ## 데이터와 배포 경계
 
-공통 디자인은 계산식, 비용, 체결 시점, 데이터 JSON, 모델, 수집·갱신 일정, News 런타임을 변경하지 않는다. 기존 날짜·필터·단위·빈 결과·오류는 유지한다. 상태 메시지의 문구를 줄여도 정상 상태처럼 오인하게 바꾸지 않는다.
+공통 디자인은 계산식, 비용, 체결 시점, 데이터 JSON, 모델, 수집·갱신 일정, News 런타임을 변경하지 않는다. 투자일지의 장부·현금·계좌·인증·API도 디자인 로더에서 읽거나 수정하지 않는다. 기존 날짜·필터·단위·빈 결과·오류는 유지한다. 상태 메시지의 문구를 줄여도 정상 상태처럼 오인하게 바꾸지 않는다.
 
 로컬 미리보기의 `boot.js`에는 데이터 GET을 로컬 snapshot으로 보내는 기능이 있다. 운영 번들에는 이 프록시, `/__data`, `/alpha-house/api/state` 우회, localhost URL, 고정 스냅샷 날짜, 미리보기 비교 링크를 포함하지 않는다. 공통 디자인 적용을 위해 원래 `fetch`를 덮어쓰지 않는다. 테마 상태와 UI 처리는 데이터 수집·계산에서 분리한다.
 

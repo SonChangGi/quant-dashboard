@@ -288,7 +288,7 @@ Quant Research 제품군은 다음처럼 보여야 한다.
 
 메뉴 원본은 `shared/navigation/v1/menu.json`이다. Hub 브랜드 하나와 프로젝트 링크 8개로 구성하며 현재 순서는 다음과 같다.
 
-`Hub → Factor → DRAM → ETF → SOX → Fear & Greed → Regime → News → 알파 하우스`
+`Hub → Factor → DRAM → ETF → SOX → Fear & Greed → Regime → News → 투자일지 → 알파 하우스`
 
 | 순서 | Label | URL |
 | ---: | --- | --- |

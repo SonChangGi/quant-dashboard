@@ -8,7 +8,7 @@ const api=require('../shared/navigation/v1/nav.js');
 const source=JSON.parse(fs.readFileSync(new URL('../shared/navigation/v1/menu.json',import.meta.url),'utf8'));
 test('all generated navigation fallbacks match the central source',()=>{
  assert.deepEqual(api.fallbackMenu,source);
- assert.deepEqual(source.projects.map(project=>project.id),['factor','dram','etf','sox','fear-greed','regime','news','observatory']);
+ assert.deepEqual(source.projects.map(project=>project.id),['factor','dram','etf','sox','fear-greed','regime','news','investment-journal','observatory']);
  assert.equal(source.projects.find(p=>p.id==='factor').url,'https://sonchanggi.github.io/factor/');
  assert(!source.projects.some(p=>p.id==='best-factor'||p.id==='spo'));
  assert(!JSON.stringify(api.fallbackMenu).includes('/SPO/'));
@@ -37,6 +37,14 @@ test('future projects follow the latest project while Alpha House remains last',
  const changed=structuredClone(source);
  changed.projects.splice(-1,0,{id:'next-project',label:'Next project',url:'https://sonchanggi.github.io/next-project/'});
  const links=api.getLinks(api.validateMenu(changed),'next-project');
- assert.deepEqual(links.slice(-3).map(project=>project.id),['news','next-project','observatory']);
+ assert.deepEqual(links.slice(-3).map(project=>project.id),['investment-journal','next-project','observatory']);
  assert.equal(links.find(project=>project.current).id,'next-project');
+});
+
+test('investment journal keeps its authenticated site URL and rejects credentials or token queries',()=>{
+ const journal=api.getLinks(source,'investment-journal').find(project=>project.current);
+ assert.equal(journal.url,'https://invest.changgi-son.chatgpt.site/');
+ for(const url of ['https://user:secret@invest.changgi-son.chatgpt.site/','https://invest.changgi-son.chatgpt.site/?token=secret','https://invest.changgi-son.chatgpt.site.evil.example/']){
+  const changed=structuredClone(source);changed.projects.find(project=>project.id==='investment-journal').url=url;assert.throws(()=>api.validateMenu(changed));
+ }
 });

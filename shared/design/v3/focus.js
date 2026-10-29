@@ -9,7 +9,8 @@
     regime: ['.card', '.svg-chart-wrap svg, #model-loss-chart svg'],
     'dram-price': ['.chart-panel', '.chart-viewport svg, .chart-facet svg'],
     sox: ['.panel', '.bar-chart .bar-row, .quadrant .quad-point'],
-    'etf-tracking': ['.primary-chart-panel', '#weight-chart svg']
+    'etf-tracking': ['.primary-chart-panel', '#weight-chart svg'],
+    'investment-journal': ['.panel', '.recharts-wrapper']
   };
   if (!specs[path]) return;
   const [panels, charts] = specs[path];
@@ -26,7 +27,7 @@
     button.textContent = ''; button.title='차트 크게 보기'; button.setAttribute('aria-label', '차트 크게 보기');
     button.setAttribute('aria-haspopup', 'dialog');
     button.addEventListener('click', () => active?.panel === panel ? close() : open(panel, button));
-    const heading = [...panel.children].find(el => el.matches('.panel-header,.card-head,.card-heading,.lab-section-heading,.section-heading'));
+    const heading = [...panel.children].find(el => el.matches('.panel-header,.card-head,.card-heading,.lab-section-heading,.section-heading') || (path==='investment-journal' && el.matches('.section-head')));
     if (heading) { heading.classList.add('qd-focus-heading'); heading.append(button); }
     else { const row = document.createElement('div'); row.className='qd-focus-tools'; row.append(button); panel.prepend(row); }
     return button;

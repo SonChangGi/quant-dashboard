@@ -1,0 +1,45 @@
+/* Journal presentation only: authentication, ledger and calculations stay native. */
+html[data-quant-design-project="investment-journal"]{--text:var(--qd-text);--strong:var(--qd-text);--border:var(--qd-border);--primary-strong:var(--qd-accent);--border-strong:color-mix(in srgb,var(--qd-muted) 35%,var(--qd-border))}
+body[data-qd-project="investment-journal"]{font-size:14px}
+body[data-qd-project="investment-journal"] .header{top:64px;height:58px;background:var(--qd-surface);z-index:35}
+body[data-qd-project="investment-journal"] .header-inner{padding-inline:28px;gap:24px;max-width:1440px}
+body[data-qd-project="investment-journal"] .header .brand{display:none}
+body[data-qd-project="investment-journal"] .journal-native-theme{display:none}
+body[data-qd-project="investment-journal"] .header .nav{justify-content:flex-start;gap:30px;min-width:0}
+body[data-qd-project="investment-journal"] .header .nav button{font-size:13px}
+body[data-qd-project="investment-journal"] .header-actions{margin-left:auto}
+body[data-qd-project="investment-journal"] .shell{padding:26px 28px 40px;max-width:1440px}
+body[data-qd-project="investment-journal"] h1{font-size:29px;letter-spacing:-.035em}
+body[data-qd-project="investment-journal"] .page-heading{margin-top:0}
+body[data-qd-project="investment-journal"] :is(.panel,.metric){border-radius:12px;box-shadow:none}
+body[data-qd-project="investment-journal"] .primary-metric{background:var(--qd-soft)}
+body[data-qd-project="investment-journal"] .metric-value{font-size:27px}
+body[data-qd-project="investment-journal"] :is(.button,input,select,textarea){border-radius:7px}
+body[data-qd-project="investment-journal"] :is(.metrics,.two-grid,.main-grid){gap:18px}
+body[data-qd-project="investment-journal"] .workspace-tabs{scroll-margin-top:140px}
+body[data-qd-project="investment-journal"] .section-head h2{font-size:18px}
+body[data-qd-project="investment-journal"] .table-scroll thead tr>:first-child{z-index:2}
+body[data-qd-project="investment-journal"] .modal-backdrop{z-index:1100}
+body[data-qd-project="investment-journal"] .toast{z-index:1200}
+body[data-qd-project="investment-journal"] .auth-page{min-height:calc(100dvh - 64px);grid-template-columns:minmax(0,1fr) minmax(0,1fr);max-width:1440px;margin:auto}
+body[data-qd-project="investment-journal"] .auth-story{background:var(--qd-bg);padding:44px 42px;border-right:1px solid var(--qd-border)}
+body[data-qd-project="investment-journal"] .auth-copy h1{font-size:36px;line-height:1.3}
+body[data-qd-project="investment-journal"] .auth-story .brand{color:var(--qd-muted);font-size:14px}
+body[data-qd-project="investment-journal"] .auth-story .brandmark{width:30px;height:30px;background:var(--qd-soft);color:var(--qd-accent)}
+body[data-qd-project="investment-journal"] .auth-illustration{background:var(--qd-surface);border:1px solid var(--qd-border);border-radius:14px;padding:24px}
+body[data-qd-project="investment-journal"] .auth-story-bottom{font-size:11px}
+body[data-qd-project="investment-journal"] .auth-form-side{min-height:calc(100dvh - 64px);background:var(--qd-surface);padding:40px 28px}
+body[data-qd-project="investment-journal"] .auth-form{width:100%;max-width:350px}
+body[data-qd-project="investment-journal"] .auth-form>h2{font-size:27px}
+body[data-qd-project="investment-journal"] .auth-tools{display:none}
+body[data-qd-project="investment-journal"] .qd-focus-active .chart-area{min-height:300px}
+@media(max-width:1100px){body[data-qd-project="investment-journal"] .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}body[data-qd-project="investment-journal"] .main-grid{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:800px){body[data-qd-project="investment-journal"] .header{height:auto}body[data-qd-project="investment-journal"] .header-inner{min-height:54px;height:auto;flex-wrap:nowrap;padding-inline:16px;gap:12px}body[data-qd-project="investment-journal"] .header .nav{height:54px;overflow:auto;gap:18px;justify-content:flex-start;scrollbar-width:none;flex:1;order:0;flex-basis:0}body[data-qd-project="investment-journal"] .header .nav button{font-size:12px;flex:0 0 auto}body[data-qd-project="investment-journal"] .header-actions{gap:0;flex-shrink:0}body[data-qd-project="investment-journal"] .user-pill{display:none}body[data-qd-project="investment-journal"] .header-actions .icon-button{width:34px;min-width:34px}body[data-qd-project="investment-journal"] .shell{padding:22px 16px 32px}body[data-qd-project="investment-journal"] .panel{padding:18px}body[data-qd-project="investment-journal"] h1{font-size:27px}body[data-qd-project="investment-journal"] :is(.metrics,.two-grid,.main-grid){gap:12px}body[data-qd-project="investment-journal"] .metric{padding:16px 14px}body[data-qd-project="investment-journal"] .metric-value{font-size:clamp(17px,4.9vw,23px)}body[data-qd-project="investment-journal"] .auth-page{grid-template-columns:1fr}body[data-qd-project="investment-journal"] .auth-story{display:none}body[data-qd-project="investment-journal"] .auth-form-side{min-height:calc(100dvh - 64px);padding:32px 24px;align-items:flex-start}body[data-qd-project="investment-journal"] .auth-form{margin:36px auto 0}body[data-qd-project="investment-journal"] .section-head h2{font-size:17px}}
+@media print{body[data-qd-project="investment-journal"]{padding:0!important}.qd-shell,.qd-sidebar{display:none!important}}
+
+body[data-qd-project="investment-journal"] .section-head.qd-focus-heading{flex-wrap:nowrap;align-items:center}
+body[data-qd-project="investment-journal"] .section-head.qd-focus-heading>.section-actions{margin-left:auto}
+body[data-qd-project="investment-journal"] .section-head.qd-focus-heading>:first-child{margin-right:auto}
+body[data-qd-project="investment-journal"] .qd-focus-active .wealth-plot{min-height:clamp(300px,52vh,640px)}
+html[data-theme="dark"] body[data-qd-project="investment-journal"] .button.primary{color:#101c2f}
+@media(max-width:800px){body[data-qd-project="investment-journal"] .header .nav{gap:8px}body[data-qd-project="investment-journal"] .header .nav button{min-width:44px;padding-inline:4px}}

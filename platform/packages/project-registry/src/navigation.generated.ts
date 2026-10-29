@@ -43,6 +43,11 @@ export const sharedNavigationFallback = {
       "url": "https://sonchanggi.github.io/news/"
     },
     {
+      "id": "investment-journal",
+      "label": "투자일지",
+      "url": "https://invest.changgi-son.chatgpt.site/"
+    },
+    {
       "id": "observatory",
       "label": "알파 하우스",
       "url": "https://research-observatory-changgi.changgi-son.chatgpt.site/"
