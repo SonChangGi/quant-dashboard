@@ -1,0 +1,23 @@
+/* Existing chart panels stay in their original DOM tree, including React panels. */
+body .qd-focus-button{display:inline-flex;align-items:center;justify-content:center;gap:6px;flex:0 0 auto;min-width:32px;min-height:32px;padding:5px 8px;border:1px solid var(--qd-border,#dce3eb);border-radius:7px;background:var(--qd-surface,#fff);color:var(--qd-muted,#596678);font:550 12px/1.4 var(--qd-font,sans-serif);white-space:nowrap;cursor:pointer}
+body .qd-focus-button::before{content:'⤢';font-size:17px;line-height:1}
+body .qd-focus-button:hover{color:var(--qd-accent,#2467e8);background:var(--qd-soft,#eef4ff);border-color:var(--qd-accent,#2467e8)}
+body .qd-focus-button:focus-visible{outline:2px solid var(--qd-accent,#2467e8);outline-offset:3px}
+body .qd-focus-heading{flex-wrap:wrap;gap:12px}
+body .qd-focus-tools{display:flex;justify-content:flex-end;margin-bottom:10px}
+body.qd-focus-open{overflow:hidden!important}
+body .qd-focus-backdrop{position:fixed;inset:0;z-index:2147482999;background:rgb(10 18 30 / 64%);backdrop-filter:blur(3px)}
+body .qd-focus-ancestor{transform:none!important;filter:none!important;perspective:none!important;contain:none!important;overflow:visible!important;isolation:auto!important;z-index:auto!important}
+body .qd-focus-active{position:fixed!important;inset:24px!important;z-index:2147483000!important;box-sizing:border-box!important;width:auto!important;max-width:none!important;min-width:0!important;height:auto!important;max-height:none!important;margin:0!important;padding:24px!important;overflow:auto!important;overscroll-behavior:contain;background:var(--qd-surface,#fff)!important;color:var(--qd-text,#18212e);border:1px solid var(--qd-border,#dce3eb)!important;border-radius:14px!important;box-shadow:0 24px 100px #0006!important}
+body .qd-focus-active > :is(.qd-focus-tools,.qd-focus-heading){position:sticky;top:-24px;z-index:20;background:var(--qd-surface,#fff);padding-block:12px;margin-top:-12px}
+body .qd-focus-active .qd-focus-button::before{content:'×';font-size:20px}
+body .qd-focus-active .lab-chart{height:clamp(300px,52vh,680px)!important;max-height:none!important}
+body .qd-focus-active .lab-chart.compact{height:clamp(150px,24vh,300px)!important}
+body .qd-focus-active :is(.chart-card,.chart-viewport,.chart-scroll,.svg-chart-wrap){max-width:none}
+body .qd-focus-active :is(.factor-performance-frame,.regime-trend-frame,.fear-scatter-frame,.dram-chart-frame){max-width:none}
+body .qd-focus-portal{z-index:2147483001!important}
+@media(max-width:600px){body .qd-focus-active{inset:8px!important;padding:16px!important;border-radius:10px!important}body .qd-focus-active > :is(.qd-focus-tools,.qd-focus-heading){top:-16px}body .qd-focus-button{min-height:36px}body .qd-focus-active .lab-chart{height:350px!important}}
+@media(prefers-reduced-motion:reduce){body .qd-focus-active{scroll-behavior:auto!important}}
+
+body .qd-focus-active .quadrant{height:clamp(360px,70vh,760px)!important}
+body .qd-focus-active .chart-latest-button{white-space:nowrap;flex-shrink:0}

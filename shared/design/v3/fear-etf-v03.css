@@ -1,0 +1,22 @@
+/* v0.3 only: preserve series identity while keeping dark contextual lines readable. */
+html[data-theme="dark"] body[data-qd-project="fearNgreed"] .unified-strategy-chart.has-active-series .history-series:not(.is-active) { opacity: .65; }
+html[data-theme="dark"] body[data-qd-project="fearNgreed"] #history-series-controls button[aria-pressed="false"] .legend-line { opacity: .65; }
+
+/* All ETF marks use the same lifted source hue; raw data and series keys stay unchanged. */
+html[data-theme="dark"] body[data-qd-project="etf-tracking"] #weight-chart .chart-series .series-line,
+html[data-theme="dark"] body[data-qd-project="etf-tracking"] #weight-chart .chart-series .series-point {
+  stroke: color-mix(in srgb, var(--series-color) 65%, white);
+}
+html[data-theme="dark"] body[data-qd-project="etf-tracking"] #weight-chart .chart-series .series-point { fill: color-mix(in srgb, var(--series-color) 65%, white); }
+html[data-theme="dark"] body[data-qd-project="etf-tracking"] #weight-chart .chart-series.is-muted,
+html[data-theme="dark"] body[data-qd-project="etf-tracking"] #weight-chart svg:has(.chart-series:hover) .chart-series:not(:hover),
+html[data-theme="dark"] body[data-qd-project="etf-tracking"] #weight-chart svg:has(.chart-series:focus-visible) .chart-series:not(:focus-visible) { opacity: .68; }
+html[data-theme="dark"] body[data-qd-project="etf-tracking"] #weight-chart .chart-series.is-active,
+html[data-theme="dark"] body[data-qd-project="etf-tracking"] #weight-chart .chart-series:hover,
+html[data-theme="dark"] body[data-qd-project="etf-tracking"] #weight-chart .chart-series:focus-visible { opacity: 1; }
+html[data-theme="dark"] body[data-qd-project="etf-tracking"] #weight-chart .line-end-label.is-muted { opacity: .9; }
+html[data-theme="dark"] body[data-qd-project="etf-tracking"] #weight-chart .line-end-label line { stroke: color-mix(in srgb, var(--end-label-color) 65%, white); }
+html[data-theme="dark"] body[data-qd-project="etf-tracking"] #weight-chart .rank-ticker-pill { fill: color-mix(in srgb, var(--end-label-color) 65%, white); }
+html[data-theme="dark"] body[data-qd-project="etf-tracking"] #weight-chart .line-end-label text { fill: #101722; stroke: none; }
+html[data-theme="dark"] body[data-qd-project="etf-tracking"] #weight-chart .legend-key { background: color-mix(in srgb, var(--legend-color) 65%, white); }
+html[data-theme="dark"] body[data-qd-project="etf-tracking"] #weight-chart .chart-active-point { stroke: color-mix(in srgb, var(--active-series-color) 65%, white); }

@@ -1,0 +1,133 @@
+/* Quant local preview · DRAM and SOX · presentation only. */
+body[data-qd-project="dram-price"],body[data-qd-project="sox"]{
+ --bg:var(--qd-bg);--panel:var(--qd-surface);--ink:var(--qd-text);--muted:var(--qd-muted);--line:var(--qd-border);
+ --surface:var(--qd-surface);--surface-strong:var(--qd-raised);--surface-soft:var(--qd-raised);--surface-raised:var(--qd-raised);--surface-muted:var(--qd-border);
+ --primary:var(--qd-accent);--accent:var(--qd-accent);--accent-strong:var(--qd-accent);--accent-soft:var(--qd-soft);--primary-soft:var(--qd-soft);--chart-panel:var(--qd-surface);
+ --radius-lg:10px;--radius-md:8px;--radius-sm:7px;--shadow:none;--shadow-soft:none;
+ background:var(--qd-bg);color:var(--qd-text);font-size:14px;line-height:1.6;
+}
+body[data-qd-project="dram-price"] #root>.quant-shared-nav{display:none!important}
+body[data-qd-project="dram-price"] .page-header,
+body[data-qd-project="dram-price"] .dashboard-shell,
+body[data-qd-project="dram-price"] .page-footer,
+body[data-qd-project="sox"] .hero,
+body[data-qd-project="sox"] .section,
+body[data-qd-project="sox"] .site-footer{width:min(1380px,calc(100% - 64px));margin-inline:auto}
+body[data-qd-project="dram-price"] .page-header{padding:26px 0 20px;align-items:center;gap:20px}
+body[data-qd-project="dram-price"] .page-header h1,body[data-qd-project="sox"] .hero h1{font-size:28px;line-height:1.25;font-weight:750;letter-spacing:-.04em}
+body[data-qd-project="dram-price"] .eyebrow,body[data-qd-project="sox"] .eyebrow{font-size:11px;font-weight:500;color:var(--qd-muted);letter-spacing:.2px;text-transform:none}
+body[data-qd-project="dram-price"] .section-heading h2,body[data-qd-project="sox"] .section-heading h2{font-size:20px;line-height:1.35;letter-spacing:-.025em}
+body[data-qd-project="dram-price"] .section-heading,body[data-qd-project="sox"] .section-heading{margin-bottom:14px}
+body[data-qd-project="dram-price"] .section-heading>.eyebrow,body[data-qd-project="sox"] .section-heading>.eyebrow{display:none}
+body[data-qd-project="dram-price"] .hub-link{font-size:12px;min-height:34px;font-weight:550;color:var(--qd-accent)}
+body[data-qd-project="dram-price"] .panel,body[data-qd-project="dram-price"] .data-details{border-radius:10px;box-shadow:none}
+body[data-qd-project="dram-price"] .panel{padding:20px;margin-top:20px;position:relative}
+body[data-qd-project="dram-price"] .panel::before,
+body[data-qd-project="dram-price"] .latest-card::before,
+body[data-qd-project="sox"] .panel::before{content:"";position:absolute;top:-1px;left:20px;width:44px;height:3px;border-radius:0 0 4px 4px;background:var(--qd-accent)}
+body[data-qd-project="dram-price"] .status-strip{border-radius:10px;box-shadow:none}
+body[data-qd-project="dram-price"] .status-strip__item{padding:13px 16px}
+body[data-qd-project="dram-price"] .status-strip__item small{font-weight:500}
+body[data-qd-project="dram-price"] .status-strip__item strong{font-size:13px;font-weight:650;font-variant-numeric:tabular-nums}
+body[data-qd-project="dram-price"] .latest-section{margin-top:24px}
+body[data-qd-project="dram-price"] .latest-grid{gap:14px}
+body[data-qd-project="dram-price"] .latest-card{position:relative;padding:18px 20px;border-radius:10px;box-shadow:none}
+body[data-qd-project="dram-price"] .latest-card h3{font-size:14px;font-weight:600;min-height:0;margin-top:12px}
+body[data-qd-project="dram-price"] .latest-card>strong{font-size:28px;font-weight:700;line-height:1.25;font-variant-numeric:tabular-nums}
+body[data-qd-project="dram-price"] .latest-card footer{margin-top:10px}
+body[data-qd-project="dram-price"] .kind-badge{border-radius:5px;font-weight:500;min-height:22px}
+body[data-qd-project="dram-price"] .filter-shell{border:0;background:var(--qd-raised);border-radius:8px;padding:12px;margin-bottom:16px}
+body[data-qd-project="dram-price"] .filter-field>span{font-weight:550}
+body[data-qd-project="dram-price"] .advanced-filters__trigger{min-height:38px;font-weight:550;border-radius:7px}
+body[data-qd-project="dram-price"] [role="combobox"]{min-height:38px;border-radius:7px;font-size:13px}
+body[data-qd-project="dram-price"] .advanced-filters__content{right:32px;box-shadow:0 8px 24px #15294a14;border-radius:10px}
+body[data-qd-project="dram-price"] .chart-facet{border-radius:8px}
+body[data-qd-project="dram-price"] .chart-facet figcaption strong{font-weight:600}
+body[data-qd-project="dram-price"] .chart-latest-button{min-height:36px;font-weight:550}
+body[data-qd-project="dram-price"] .chart-series-controls button{min-height:36px;padding:6px 10px;font-size:12px;font-weight:550}
+body[data-qd-project="dram-price"] .chart-date-controls{min-height:48px}
+body[data-qd-project="dram-price"] .chart-date-controls select{min-height:34px;font-size:12px}
+body[data-qd-project="dram-price"] .chart-series.is-active .chart-series-line,body[data-qd-project="dram-price"] .chart-series.is-context .chart-series-line{filter:none}
+body[data-qd-project="dram-price"] .chart-value-callout{box-shadow:none;border-radius:8px}
+body[data-qd-project="dram-price"] .desktop-table{border-radius:8px}
+body[data-qd-project="dram-price"] th,body[data-qd-project="dram-price"] td{padding:10px 12px;font-size:12px;font-variant-numeric:tabular-nums}
+body[data-qd-project="dram-price"] th{font-weight:550;background:var(--qd-raised)}
+body[data-qd-project="dram-price"] td .source-link{min-height:28px;font-size:12px;font-weight:500}
+body[data-qd-project="dram-price"] .data-details__trigger{font-size:13px;padding:15px 20px}
+/* Hide the fixed source-limitation prose, retaining source status, dates and links. */
+/* Keep date semantics and source reading criteria available in the collapsed details. */
+body[data-qd-project="dram-price"] .detail-grid{grid-template-columns:1fr 1fr}
+body[data-qd-project="dram-price"] .page-footer{font-size:12px;color:var(--qd-muted);padding-bottom:24px}
+body[data-qd-project="sox"] .hero{padding:26px 0 20px;margin-top:0;margin-bottom:8px;border:0;background:none;box-shadow:none}
+body[data-qd-project="sox"] .hero-grid{grid-template-columns:minmax(0,1fr) minmax(300px,420px);gap:28px;align-items:center}
+body[data-qd-project="sox"] .hero-note{padding:16px 18px;border-radius:10px}
+body[data-qd-project="sox"] .hero-note>.eyebrow{display:none}
+body[data-qd-project="sox"] .hero-note h2{font-size:14px;font-weight:600;line-height:1.4}
+body[data-qd-project="sox"] .snapshot-control{margin-top:8px;grid-template-columns:110px minmax(0,1fr);align-items:center;gap:6px 10px}
+body[data-qd-project="sox"] .snapshot-control label{font-size:12px;font-weight:500;color:var(--qd-muted)}
+body[data-qd-project="sox"] .snapshot-control select{min-height:36px;font-size:12px;border-radius:7px}
+body[data-qd-project="sox"] .snapshot-summary{grid-column:1/-1;font-size:11px}
+body[data-qd-project="sox"] .status-stack{margin-top:9px;gap:5px}
+body[data-qd-project="sox"] .status-chip{font-size:11px;font-weight:500;border-radius:5px;padding:3px 7px}
+body[data-qd-project="sox"] .hero-actions{margin-top:18px;gap:8px}
+body[data-qd-project="sox"] .hero-actions a{min-height:34px;font-size:12px;font-weight:550;border-radius:7px;padding:7px 12px;box-shadow:none;text-decoration:none}
+body[data-qd-project="sox"] .hero-actions a:first-child{background:var(--qd-soft);color:var(--qd-accent);border:1px solid var(--qd-border)}
+body[data-qd-project="sox"] .section{margin-bottom:26px;scroll-margin-top:124px}
+body[data-qd-project="sox"] .metric-grid,body[data-qd-project="sox"] .chart-grid,body[data-qd-project="sox"] .leader-grid{gap:14px}
+body[data-qd-project="sox"] .metric-card{padding:17px 18px;min-height:106px;border-radius:10px;gap:5px}
+body[data-qd-project="sox"] .metric-card .value{font-size:26px;font-weight:700;line-height:1.25;font-variant-numeric:tabular-nums}
+body[data-qd-project="sox"] .metric-card .detail{font-size:12px}
+body[data-qd-project="sox"] .panel{padding:20px;border-radius:10px;position:relative}
+body[data-qd-project="sox"] .panel-header h3{font-size:17px;line-height:1.35;font-weight:650;letter-spacing:-.025em}
+body[data-qd-project="sox"] .panel-header .eyebrow{margin-bottom:5px}
+body[data-qd-project="sox"] .bar-row{min-height:35px;border-radius:5px}
+body[data-qd-project="sox"] .bar-track{height:7px;border-radius:3px;background:var(--qd-raised)}
+body[data-qd-project="sox"] .bar-fill{border-radius:3px}
+body[data-qd-project="sox"] .bar-label,body[data-qd-project="sox"] .bar-value{font-size:12px;font-variant-numeric:tabular-nums}
+body[data-qd-project="sox"] .chart-readout{border-radius:8px;padding:14px 18px;box-shadow:none;background:var(--qd-surface)}
+body[data-qd-project="sox"] .leader-card{border-radius:10px;padding:18px}
+body[data-qd-project="sox"] .leader-card h3{font-size:14px;line-height:1.4;font-weight:650}
+body[data-qd-project="sox"] .leader-item{padding:10px 0}
+body[data-qd-project="sox"] .signal-pill,body[data-qd-project="sox"] .score-pill{font-weight:550;border-radius:5px;font-size:11px}
+body[data-qd-project="sox"] .table-tools{gap:8px}
+body[data-qd-project="sox"] .table-tools input,body[data-qd-project="sox"] .table-tools select{min-height:36px;font-size:12px;border-radius:7px}
+body[data-qd-project="sox"] .table-tools label{font-size:12px;color:var(--qd-muted)}
+body[data-qd-project="sox"] .table-wrap{border-radius:10px;background:var(--qd-surface);box-shadow:none}
+body[data-qd-project="sox"] th,body[data-qd-project="sox"] td{padding:10px 12px;font-size:12px;font-variant-numeric:tabular-nums}
+body[data-qd-project="sox"] th{font-size:11px;font-weight:550;background:var(--qd-raised);text-transform:none}
+body[data-qd-project="sox"] .ticker-select{font-weight:650;font-size:12px}
+body[data-qd-project="sox"] .ops-details{border-radius:10px;box-shadow:none}
+body[data-qd-project="sox"] .ops-details summary{min-height:48px;font-size:13px}
+body[data-qd-project="sox"] .ops-details .method-grid{grid-template-columns:1fr 1fr}
+body[data-qd-project="sox"] .site-footer{font-size:12px;color:var(--qd-muted)}
+body[data-qd-project="sox"] .page-jump-nav a{width:34px;min-height:34px;height:34px;font-size:16px;box-shadow:none}
+@media(max-width:1000px){
+ body[data-qd-project="sox"] .hero-grid{grid-template-columns:1fr 1fr}
+ body[data-qd-project="sox"] .split-heading{align-items:flex-start;flex-direction:column}
+ body[data-qd-project="sox"] .leader-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ body[data-qd-project="dram-price"] .status-strip{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:700px){
+ body[data-qd-project="dram-price"] .page-header,body[data-qd-project="dram-price"] .dashboard-shell,body[data-qd-project="dram-price"] .page-footer,
+ body[data-qd-project="sox"] .hero,body[data-qd-project="sox"] .section,body[data-qd-project="sox"] .site-footer{width:calc(100% - 32px)}
+ body[data-qd-project="dram-price"] .page-header,body[data-qd-project="sox"] .hero{padding:24px 0 18px}
+ body[data-qd-project="dram-price"] .page-header h1,body[data-qd-project="sox"] .hero h1{font-size:26px}
+ body[data-qd-project="dram-price"] .panel{padding:18px 14px}
+ body[data-qd-project="dram-price"] .latest-card{flex-basis:min(82vw,300px)}
+ body[data-qd-project="dram-price"] .filter-primary{grid-template-columns:1fr}
+ body[data-qd-project="dram-price"] .advanced-filters__content{right:16px;width:calc(100vw - 32px)}
+ body[data-qd-project="dram-price"] .detail-grid{grid-template-columns:1fr}
+ body[data-qd-project="sox"] .hero-grid,body[data-qd-project="sox"] .chart-grid{grid-template-columns:1fr;gap:16px}
+ body[data-qd-project="sox"] .metric-grid{grid-template-columns:1fr;gap:10px}
+ body[data-qd-project="sox"] .metric-card{min-height:0}
+ body[data-qd-project="sox"] .panel{padding:18px}
+ body[data-qd-project="sox"] .leader-grid{grid-template-columns:1fr;gap:12px}
+ body[data-qd-project="sox"] .table-tools{display:grid;grid-template-columns:48px minmax(0,1fr);width:100%}
+ body[data-qd-project="sox"] .table-tools input,body[data-qd-project="sox"] .table-tools select{width:100%;font-size:14px}
+ body[data-qd-project="sox"] .chart-readout dl{grid-template-columns:repeat(2,minmax(0,1fr))}
+ body[data-qd-project="sox"] .ops-details .method-grid{grid-template-columns:1fr}
+}
+/* Keep unselected series legible while retaining the selected-row emphasis. */
+body[data-qd-project="sox"] .bar-row:not(.is-active){opacity:.8}
+body[data-qd-project="sox"] [hidden]{display:none!important}
+body[data-qd-project="sox"] .bar-chart.has-active .bar-row:not(.is-active){opacity:.8}

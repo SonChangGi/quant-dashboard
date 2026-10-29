@@ -1,0 +1,37 @@
+body[data-qd-project=alpha-house]{--paper:var(--qd-bg);--bg:var(--qd-bg);--panel:var(--qd-surface);--surface:var(--qd-raised);--ink:var(--qd-text);--ink-strong:var(--qd-text);--muted:var(--qd-muted);--muted-strong:var(--qd-muted);--line:var(--qd-border);--primary:var(--qd-accent);--primary-strong:var(--qd-accent);--house-navy:var(--qd-text);--house-paper:var(--qd-surface);--radius:10px}
+body[data-qd-project=alpha-house] .app-shell{max-width:1500px;padding:0 32px}
+body[data-qd-project=alpha-house] .site-header{display:none}
+body[data-qd-project=alpha-house] .intro{padding:26px 0 20px;margin:0;align-items:center;gap:20px}
+body[data-qd-project=alpha-house] .intro h1{font-size:28px;font-weight:750;letter-spacing:-.04em}
+body[data-qd-project=alpha-house] .intro .eyebrow{display:none}
+body[data-qd-project=alpha-house] :is(.work-panel,.campus,.weekly-usage,.workforce-summary,.project-result,.project-dossier,.conversation-panel,.detail-panel){border-radius:10px;box-shadow:none;border-color:var(--qd-border);background:var(--qd-surface)}
+body[data-qd-project=alpha-house] .conversation-panel{border-top:1px solid var(--qd-border);position:relative}
+body[data-qd-project=alpha-house] .conversation-panel:before{content:'';position:absolute;left:18px;top:0;height:3px;width:44px;border-radius:0 0 3px 3px;background:var(--qd-accent)}
+body[data-qd-project=alpha-house] .work-panel-heading h2{font-size:15px;font-weight:650}
+body[data-qd-project=alpha-house] .conversation-project-header strong{font-size:13px}
+body[data-qd-project=alpha-house] .session-row-copy>strong{font-size:12px}
+body[data-qd-project=alpha-house] .detail-tabs{background:var(--qd-raised);border-color:var(--qd-border)}
+body[data-qd-project=alpha-house] .detail-tabs button{color:var(--qd-muted);font-size:12px;min-height:36px}
+body[data-qd-project=alpha-house] .detail-tabs button[aria-pressed=true]{color:var(--qd-accent);background:var(--qd-surface);box-shadow:none}
+body[data-qd-project=alpha-house] .project-dossier>p{color:var(--qd-muted)}
+body[data-qd-project=alpha-house] .project-dossier>a{color:var(--qd-accent)}
+body[data-qd-project=alpha-house] .project-result p.result-note,body[data-qd-project=alpha-house] .office-map-hint{display:none}
+body[data-qd-project=alpha-house] :is(input,select){background:var(--qd-surface);color:var(--qd-text);border-color:var(--qd-border);font-size:13px}
+body[data-qd-project=alpha-house] .site-footer{font-size:11px;color:var(--qd-muted);border-color:var(--qd-border);margin-top:20px}
+@media(max-width:760px){body[data-qd-project=alpha-house] .app-shell{padding:0 16px}body[data-qd-project=alpha-house] .intro{padding:24px 0 18px;flex-wrap:wrap}body[data-qd-project=alpha-house] .intro h1{font-size:25px}}
+body[data-qd-project=alpha-house] .observatory-workbench{--house-navy:var(--qd-text);--house-brass:var(--qd-accent)}
+body[data-qd-project=alpha-house] .section-kicker{display:none}
+body[data-qd-project=alpha-house] .activity-column>.side-panel-title,body[data-qd-project=alpha-house] .activity-column .work-panel-heading{border-top:1px solid var(--qd-border);position:relative}
+body[data-qd-project=alpha-house] .activity-column>.side-panel-title:before,body[data-qd-project=alpha-house] .activity-column .work-panel-heading:before{content:'';position:absolute;top:0;left:18px;width:44px;height:3px;border-radius:0 0 3px 3px;background:var(--qd-accent)}
+body[data-qd-project=alpha-house] .activity-column .task-purpose.detailed{background:var(--qd-raised);border-color:var(--qd-border);border-left:1px solid var(--qd-border);border-radius:7px}
+body[data-qd-project=alpha-house] .side-panel-toggle:hover{background:var(--qd-raised)}
+@media(min-width:1181px){body[data-qd-project=alpha-house] .activity-column{top:120px;max-height:calc(100dvh - 136px)}body[data-qd-project=alpha-house] .conversation-panel{max-height:calc(100dvh - 136px)}}
+body[data-qd-project=alpha-house] .office-floor-tabs button{background:var(--qd-surface);color:var(--qd-muted);border-color:var(--qd-border);box-shadow:none}
+body[data-qd-project=alpha-house] .office-floor-tabs button[aria-pressed=true]{background:var(--qd-soft);color:var(--qd-accent);border-color:var(--qd-accent);box-shadow:none}
+body[data-qd-project=alpha-house] .office-floor-tabs small{color:var(--qd-muted)}
+body[data-qd-project=alpha-house] .house-lighting{background:var(--qd-raised);border-color:var(--qd-border)}
+body[data-qd-project=alpha-house] .office-movement-bar button{background:var(--qd-raised);color:var(--qd-muted);border-color:var(--qd-border)}
+body[data-qd-project=alpha-house] .office-movement-bar button[aria-pressed=true]{background:var(--qd-soft);color:var(--qd-accent);box-shadow:none}
+body[data-qd-project=alpha-house] .office-room-navigation button{color:var(--qd-muted)}
+body[data-qd-project=alpha-house] .office-room-navigation button[aria-pressed=true]{background:var(--qd-soft);color:var(--qd-accent);border-color:var(--qd-accent)}
+body[data-qd-project=alpha-house] .office-topline b{background:var(--qd-soft);color:var(--qd-accent)}

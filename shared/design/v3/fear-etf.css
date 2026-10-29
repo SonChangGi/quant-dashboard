@@ -1,0 +1,132 @@
+/* Selected compact research layout. Shared navigation/fonts are supplied by design-system.css. */
+body[data-qd-project="fearNgreed"]{
+ --bg:var(--qd-bg);--bg-2:var(--qd-bg);--surface:var(--qd-surface);--surface-soft:var(--qd-raised);--surface-raised:var(--qd-surface);--ink:var(--qd-text);--ink-strong:var(--qd-text);--muted:var(--qd-muted);--line:var(--qd-border);--primary:var(--qd-accent);--primary-strong:var(--qd-accent);--primary-soft:var(--qd-soft);--chart-grid:var(--qd-border);--shadow:none;--shadow-soft:none;
+}
+body[data-qd-project="etf-tracking"]{
+ --qr-bg:var(--qd-bg);--qr-page:var(--qd-surface);--qr-surface:var(--qd-surface);--qr-surface-raised:var(--qd-surface);--qr-surface-soft:var(--qd-raised);--qr-text:var(--qd-text);--qr-text-strong:var(--qd-text);--qr-text-muted:var(--qd-muted);--qr-text-muted-strong:var(--qd-muted);--qr-border:var(--qd-border);--qr-primary:var(--qd-accent);--qr-primary-strong:var(--qd-accent);--qr-primary-soft:var(--qd-soft);--qr-chart-grid:var(--qd-border);--qr-chart-text:var(--qd-muted);--shadow:none;--shadow-soft:none;--radius:10px;--max-width:1380px;
+}
+body:is([data-qd-project="fearNgreed"],[data-qd-project="etf-tracking"]){font-size:14px;line-height:1.6;letter-spacing:-.015em}
+body:is([data-qd-project="fearNgreed"],[data-qd-project="etf-tracking"]) :is(h1,h2,h3,h4){font-family:var(--qd-font);color:var(--qd-text);letter-spacing:-.035em;line-height:1.4}
+body:is([data-qd-project="fearNgreed"],[data-qd-project="etf-tracking"]) :is(button,input,select){font-family:var(--qd-font);font-size:13px;border-radius:8px}
+body:is([data-qd-project="fearNgreed"],[data-qd-project="etf-tracking"]) :is(button,select){min-height:36px}
+body:is([data-qd-project="fearNgreed"],[data-qd-project="etf-tracking"]) :is(.card,.panel,.metric,.metric-card,.signal-card,.analysis-config,.control-card,.detail-disclosure,.conclusion-card){border-radius:10px;border:1px solid var(--qd-border);box-shadow:none;background:var(--qd-surface)}
+body:is([data-qd-project="fearNgreed"],[data-qd-project="etf-tracking"]) :is(.card,.panel){padding:20px;position:relative}
+body:is([data-qd-project="fearNgreed"],[data-qd-project="etf-tracking"]) :is(.card,.primary-chart-panel)::before{content:"";position:absolute;left:20px;top:0;width:44px;height:3px;border-radius:0 0 3px 3px;background:var(--qd-accent)}
+body:is([data-qd-project="fearNgreed"],[data-qd-project="etf-tracking"]) :is(.section-head,.section-heading){align-items:center;margin-bottom:14px}
+body:is([data-qd-project="fearNgreed"],[data-qd-project="etf-tracking"]) :is(.section-head,.section-heading) h2{font-size:21px;font-weight:700}
+body:is([data-qd-project="fearNgreed"],[data-qd-project="etf-tracking"]) :is(.card-head,.panel-header){align-items:flex-start;gap:16px;margin-bottom:12px}
+body:is([data-qd-project="fearNgreed"],[data-qd-project="etf-tracking"]) :is(.card-head,.panel-header) :is(h2,h3){font-size:17px;font-weight:650}
+body:is([data-qd-project="fearNgreed"],[data-qd-project="etf-tracking"]) :is(.eyebrow,.card-head p,.panel-subtitle,.source-line){font-size:12px;font-weight:450;line-height:1.6;color:var(--qd-muted)}
+body:is([data-qd-project="fearNgreed"],[data-qd-project="etf-tracking"]) .eyebrow{font-size:11px;letter-spacing:.045em;margin-bottom:6px}
+body:is([data-qd-project="fearNgreed"],[data-qd-project="etf-tracking"]) :is(.table-scroll,.table-wrap){border:1px solid var(--qd-border);border-radius:8px;overflow:auto;scrollbar-width:thin}
+body:is([data-qd-project="fearNgreed"],[data-qd-project="etf-tracking"]) table{border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+body:is([data-qd-project="fearNgreed"],[data-qd-project="etf-tracking"]) :is(th,td){padding:11px 13px;border-color:var(--qd-border);font-size:13px;font-variant-numeric:tabular-nums}
+body:is([data-qd-project="fearNgreed"],[data-qd-project="etf-tracking"]) th{font-size:12px;font-weight:550;background:var(--qd-raised);color:var(--qd-muted);position:sticky;top:0;z-index:1}
+body:is([data-qd-project="fearNgreed"],[data-qd-project="etf-tracking"]) tbody tr:hover{background:var(--qd-raised)}
+body:is([data-qd-project="fearNgreed"],[data-qd-project="etf-tracking"]) :is(.section-block,.section,.chart-grid){scroll-margin-top:120px}
+body:is([data-qd-project="fearNgreed"],[data-qd-project="etf-tracking"]) :is(.chart-note,.chart-help,.data-alternative,.chart-guide,.scope-badge,.status-pill){font-size:12px;line-height:1.6}
+body:is([data-qd-project="fearNgreed"],[data-qd-project="etf-tracking"]) :is(.table-card){padding:0}
+body:is([data-qd-project="fearNgreed"],[data-qd-project="etf-tracking"]) .table-card>.card-head{padding:18px 20px 0}
+body:is([data-qd-project="fearNgreed"],[data-qd-project="etf-tracking"]) .table-card::before{display:none}
+/* Fear & Greed */
+body[data-qd-project="fearNgreed"] :is(main,.site-footer){width:min(1380px,calc(100% - 64px))}
+body[data-qd-project="fearNgreed"] .hero{padding:28px 0 22px;margin:0 0 18px;gap:24px;grid-template-columns:minmax(0,1fr) minmax(320px,.7fr);border:0;border-bottom:1px solid var(--qd-border);border-radius:0;background:none;box-shadow:none}
+body[data-qd-project="fearNgreed"] .hero h1{font-size:30px;margin:0;line-height:1.3;font-weight:750;letter-spacing:-.045em}
+body[data-qd-project="fearNgreed"] .status-panel{padding:16px 18px;border-radius:10px;border:1px solid var(--qd-border);background:var(--qd-surface);box-shadow:none}
+body[data-qd-project="fearNgreed"] .signal-state-line strong{font-size:28px;font-weight:700}
+body[data-qd-project="fearNgreed"] .status-details-link{font-size:11px;text-decoration:none;color:var(--qd-accent)}
+body[data-qd-project="fearNgreed"] .conclusion-card{padding:18px 20px;border-left:1px solid var(--qd-border)}
+body[data-qd-project="fearNgreed"] .conclusion-card h2{font-size:19px}
+body[data-qd-project="fearNgreed"] .conclusion-facts span{font-size:12px;background:var(--qd-raised);border-radius:8px}
+body[data-qd-project="fearNgreed"] .conclusion-facts strong{font-size:12px}
+body[data-qd-project="fearNgreed"] .metric-grid{gap:12px}
+body[data-qd-project="fearNgreed"] .metric{padding:16px 18px}
+body[data-qd-project="fearNgreed"] .metric strong{font-size:26px;margin:5px 0}
+body[data-qd-project="fearNgreed"] .metric :is(span,small){font-size:12px}
+body[data-qd-project="fearNgreed"] .chart-grid{gap:16px;margin-top:22px}
+body[data-qd-project="fearNgreed"] .chart{border:0;background:var(--qd-surface);border-radius:6px}
+body[data-qd-project="fearNgreed"] .legend{gap:8px 15px;font-size:12px}
+body[data-qd-project="fearNgreed"] .analysis-config{position:relative;border-top:1px solid var(--qd-border)}
+body[data-qd-project="fearNgreed"] .analysis-config::before{content:"";position:absolute;left:20px;top:0;width:44px;height:3px;border-radius:0 0 3px 3px;background:var(--qd-accent)}
+body[data-qd-project="fearNgreed"] .analysis-config-head{padding:18px 20px}
+body[data-qd-project="fearNgreed"] .analysis-config-head h2{font-size:18px}
+body[data-qd-project="fearNgreed"] .section-block{margin-top:28px}
+body[data-qd-project="fearNgreed"] :is(.local-nav,.chart-actions,.history-series-controls){gap:6px}
+body[data-qd-project="fearNgreed"] .local-nav a{border-radius:7px;font-size:12px;font-weight:550}
+/* ETF holdings */
+body[data-qd-project="etf-tracking"] :is(.hero,.section,.site-footer){width:min(1380px,calc(100% - 64px))}
+body[data-qd-project="etf-tracking"] .hero{padding:28px 0 22px;margin:0 auto 22px;gap:28px;border:0;border-bottom:1px solid var(--qd-border);border-radius:0;background:none;box-shadow:none;grid-template-columns:minmax(0,1.3fr) minmax(320px,.7fr)}
+body[data-qd-project="etf-tracking"] .hero h1{font-size:30px;margin:0;line-height:1.3;letter-spacing:-.045em}
+body[data-qd-project="etf-tracking"] .hero-status{padding:15px 18px;border:1px solid var(--qd-border);background:var(--qd-surface);border-radius:10px;box-shadow:none}
+body[data-qd-project="etf-tracking"] .hero-status>.eyebrow{display:none}
+body[data-qd-project="etf-tracking"] .hero-status-line{padding:6px 0;font-size:13px}
+body[data-qd-project="etf-tracking"] .hero-status-line+.hero-status-line{border-color:var(--qd-border)}
+body[data-qd-project="etf-tracking"] .hero-status-line span{font-size:12px;font-weight:450}
+body[data-qd-project="etf-tracking"] .hero-status-primary strong{color:var(--qd-text)}
+body[data-qd-project="etf-tracking"] .hero-actions{margin-top:18px;gap:8px}
+body[data-qd-project="etf-tracking"] .hero-actions a{font-size:12px;min-height:34px;padding:7px 12px;border-radius:7px;font-weight:550}
+body[data-qd-project="etf-tracking"] .section{margin-bottom:24px}
+body[data-qd-project="etf-tracking"] .section-heading>.eyebrow,body[data-qd-project="etf-tracking"] .section-heading>div>.eyebrow{display:none}
+body[data-qd-project="etf-tracking"] .metric-card{padding:16px 18px}
+body[data-qd-project="etf-tracking"] .metric-card strong{font-size:25px}
+body[data-qd-project="etf-tracking"] .metric-card-primary{background:var(--qd-surface);border-color:var(--qd-border)}
+body[data-qd-project="etf-tracking"] .metric-card :is(span,small){font-size:12px;line-height:1.6}
+body[data-qd-project="etf-tracking"] .signal-card{padding:14px 16px}
+body[data-qd-project="etf-tracking"] .signal-summary-grid .signal-card p{font-size:13px}
+body[data-qd-project="etf-tracking"] .etf-switcher{padding:14px 16px;border:1px solid var(--qd-border);border-radius:10px;margin-bottom:14px;background:var(--qd-surface)}
+body[data-qd-project="etf-tracking"] .etf-switcher select{min-height:40px;font-size:14px}
+body[data-qd-project="etf-tracking"] .chart-observation-bar{border-color:var(--qd-border);border-radius:8px;background:var(--qd-raised)}
+body[data-qd-project="etf-tracking"] .chart-card{background:var(--qd-surface);border-color:var(--qd-border);border-radius:7px}
+body[data-qd-project="etf-tracking"] :is(.detail-disclosure,.control-disclosure)>summary{padding:16px 18px;font-size:14px;font-weight:550}
+body[data-qd-project="etf-tracking"] :is(.control-summary>span>small,.detail-disclosure>summary>span>small){display:none}
+body[data-qd-project="etf-tracking"] #research-notice{display:none}
+body[data-qd-project="etf-tracking"] .signal-row:is(.entry,.exit,.buy,.sell){background:transparent}
+body[data-qd-project="etf-tracking"] .signal-row:is(.entry,.exit,.buy,.sell):hover{background:var(--qd-raised)}
+body[data-qd-project="etf-tracking"] .top10-panel .panel-header .eyebrow{display:none}
+@media(max-width:900px){
+ body[data-qd-project="fearNgreed"] .hero,body[data-qd-project="etf-tracking"] .hero{grid-template-columns:1fr;gap:18px}
+ body[data-qd-project="fearNgreed"] .status-panel{max-width:none}
+ body[data-qd-project="etf-tracking"] .hero-status{max-width:none}
+ body[data-qd-project="fearNgreed"] .chart-grid{grid-template-columns:1fr}
+ body[data-qd-project="fearNgreed"] .chart-grid>.card{grid-column:1/-1}
+}
+@media(max-width:600px){
+ body[data-qd-project="fearNgreed"] :is(main,.site-footer),body[data-qd-project="etf-tracking"] :is(.hero,.section,.site-footer){width:calc(100% - 32px)}
+ body[data-qd-project="fearNgreed"] .hero,body[data-qd-project="etf-tracking"] .hero{padding:23px 0 20px}
+ body[data-qd-project="fearNgreed"] .hero h1,body[data-qd-project="etf-tracking"] .hero h1{font-size:26px}
+ body:is([data-qd-project="fearNgreed"],[data-qd-project="etf-tracking"]) :is(.card,.panel){padding:17px}
+ body:is([data-qd-project="fearNgreed"],[data-qd-project="etf-tracking"]) :is(.card-head,.section-head,.panel-header,.section-heading){flex-wrap:wrap;gap:10px}
+ body:is([data-qd-project="fearNgreed"],[data-qd-project="etf-tracking"]) :is(.section-head,.section-heading) h2{font-size:19px}
+ body:is([data-qd-project="fearNgreed"],[data-qd-project="etf-tracking"]) :is(.card-head,.panel-header) :is(h2,h3){font-size:16px}
+ body[data-qd-project="fearNgreed"] .metric-grid{grid-template-columns:1fr 1fr;gap:10px}
+ body[data-qd-project="fearNgreed"] .metric{padding:13px}
+ body[data-qd-project="fearNgreed"] .metric strong{font-size:22px}
+ body[data-qd-project="fearNgreed"] .conclusion-facts{grid-template-columns:1fr}
+ body[data-qd-project="fearNgreed"] .history-chart-callout{width:100%;max-width:100%}
+ body[data-qd-project="etf-tracking"] .signal-summary-grid{grid-template-columns:1fr}
+ body[data-qd-project="etf-tracking"] .chart-observation-bar{gap:12px;align-items:stretch;flex-direction:column}
+ body:is([data-qd-project="fearNgreed"],[data-qd-project="etf-tracking"]) :is(th,td){padding:10px 11px}
+ body:is([data-qd-project="fearNgreed"],[data-qd-project="etf-tracking"]) .table-card{padding:0}
+}
+/* Visual QA: remove legacy hero minimum height; keep live range summaries visible. */
+body[data-qd-project="etf-tracking"] .hero-main{min-height:0;padding:0;border:0;border-radius:0;background:none;box-shadow:none;justify-content:center}
+body[data-qd-project="etf-tracking"] .hero-status{align-content:start}
+body[data-qd-project="etf-tracking"] #control-summary-text{display:block;color:var(--qd-muted);font-size:12px}
+body:is([data-qd-project="fearNgreed"],[data-qd-project="etf-tracking"]) .status-details-link{min-height:28px;margin-top:2px}
+body[data-qd-project="fearNgreed"] .hero{gap:14px 24px}
+body[data-qd-project="fearNgreed"] .hero>.local-nav{order:3;grid-column:1/-1}
+body[data-qd-project="fearNgreed"] .status-panel{gap:5px;padding:14px 16px}
+body[data-qd-project="etf-tracking"] #main-content{width:min(1380px,calc(100% - 64px));margin-inline:auto}
+body[data-qd-project="etf-tracking"] #main-content>.section{width:100%}
+@media(max-width:600px){body[data-qd-project="etf-tracking"] #main-content{width:calc(100% - 32px)}}
+@media(max-width:600px){
+ body[data-qd-project="fearNgreed"] .conclusion-heading .badge{max-width:100%;white-space:normal;overflow-wrap:anywhere;border-radius:8px}
+ body[data-qd-project="etf-tracking"] .result-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;overflow:visible;padding:0}
+ body[data-qd-project="etf-tracking"] .result-metrics .metric-card{width:auto;min-width:0;flex:auto;padding:14px}
+ body[data-qd-project="etf-tracking"] .result-metrics .metric-card-primary{grid-column:1/-1}
+ body[data-qd-project="etf-tracking"] .result-metrics .metric-card strong{font-size:21px;overflow-wrap:normal;word-break:normal}
+ body[data-qd-project="etf-tracking"] .section-heading{text-align:left;align-items:flex-start;justify-content:flex-start}
+}
+/* Keep non-selected ETF series readable while preserving selection emphasis. */
+body[data-qd-project="etf-tracking"] .chart-card .chart-series.is-muted{opacity:.34}
+body[data-qd-project="etf-tracking"] .line-end-label.is-muted{opacity:.65}

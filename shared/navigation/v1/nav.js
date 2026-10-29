@@ -109,3 +109,29 @@
   }
   return Object.freeze({menuUrl, fallbackMenu: activeMenu, normalizeId, validateMenu, loadMenu, getLinks, render, start, getMenu: () => activeMenu});
 });
+
+/* Shared presentation layer. Keep the navigation v1 contract above unchanged. */
+(function(){
+'use strict';
+if(typeof document==='undefined'||typeof window==='undefined'||window.__quantDesignV3)return;
+const script=document.currentScript;
+const aliases={momentum:'factor',hub:'quant-dashboard',fearngreed:'fearNgreed','fear-greed':'fearNgreed',dram:'dram-price',etf:'etf-tracking',observatory:'alpha-house'};
+const styles={
+'quant-dashboard':[],factor:['factor-regime.css'],regime:['factor-regime.css'],fearNgreed:['fear-etf.css','fear-etf-v03.css'],'etf-tracking':['fear-etf.css','fear-etf-v03.css'],'dram-price':['dram-sox.css'],sox:['dram-sox.css'],news:['news.css','news-v03.css'],'alpha-house':['alpha.css']};
+function begin(){
+ const nav=document.querySelector('[data-quant-project]');
+ const alpha=['alpha-house.changgi-son.chatgpt.site','research-observatory-changgi.changgi-son.chatgpt.site'].includes(location.hostname);
+ const raw=document.documentElement.dataset.quantDesignProject||(alpha?'alpha-house':nav?.dataset.quantProject||location.pathname.split('/')[1]);
+ const project=aliases[raw]||raw||(location.hostname.endsWith('.chatgpt.site')?'alpha-house':'');
+ if(!Object.hasOwn(styles,project))return;
+ window.__quantDesignV3={version:'0.3.0',project,state:'loading'};
+ document.documentElement.dataset.quantDesignProject=project;
+ const base=new URL('../../design/v3/',script?.src||'https://sonchanggi.github.io/quant-dashboard/shared/navigation/v1/nav.js');
+ const css=['design-system.css',...styles[project].filter(n=>!n.includes('v03')),'v03.css',...styles[project].filter(n=>n.includes('v03')),'focus.css'];
+ const links=css.map(name=>{const link=document.createElement('link');link.rel='stylesheet';link.href=new URL(name,base);link.media='not all';document.head.append(link);return link});
+ const ready=Promise.all(links.map(link=>new Promise((resolve,reject)=>{link.onload=resolve;link.onerror=reject})));
+ const load=name=>new Promise((resolve,reject)=>{const el=document.createElement('script');el.src=new URL(name,base);el.onload=resolve;el.onerror=reject;document.head.append(el)});
+ ready.then(async()=>{await load('boot.js');await load('shell.js');links.forEach(l=>l.media='all');await load('focus.js');if(project==='news')await load('news-v03.js');window.__quantDesignV3.state='ready';window.dispatchEvent(new CustomEvent('quant-design-ready',{detail:{project,version:'0.3.0'}}))}).catch(()=>{window.__quantDesignV3.state='error';if(!document.querySelector('.qd-shell'))links.forEach(l=>l.remove())});
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',begin,{once:true});else begin();
+})();

@@ -61,7 +61,7 @@ jobs:
           cp index.html dist/index.html
           cp -R assets dist/assets
           cp -R shared dist/shared
-          test "$(find dist -type f | wc -l | tr -d ' ')" -eq 8
+          node scripts/verify-pages-artifact.mjs dist
           test ! -e dist/platform
           test ! -e dist/codex-skills
       - name: Configure GitHub Pages
@@ -107,6 +107,9 @@ jobs:
             shared/navigation/v1/nav.js
             shared/navigation/v1/nav.css
           )
+          while IFS= read -r design_path; do
+            public_files+=("$design_path")
+          done < <(find shared/design/v3 -type f | sort)
           for attempt in {1..12}; do
             matched=true
             for relative_path in "${public_files[@]}"; do
