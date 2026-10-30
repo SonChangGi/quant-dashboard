@@ -1,0 +1,102 @@
+/* v0.4 local editorial study: content and native interactions remain untouched. */
+body.qd-v04[data-qd-project="news"] .weekly-spotlights.priority-spotlights{grid-template-columns:1.12fr 1fr 1fr;gap:0;border:1px solid var(--qd-border);border-radius:14px;overflow:hidden;background:var(--qd-surface)}
+body.qd-v04[data-qd-project="news"] .priority-spotlights .weekly-spotlight,
+body.qd-v04[data-qd-project="news"] .priority-spotlights .weekly-spotlight:nth-child(-n+2){grid-column:auto;grid-row:auto;padding:22px 24px;border:0!important;border-radius:0;background:transparent!important}
+body.qd-v04[data-qd-project="news"] .priority-spotlights:has(> :nth-child(4)) .weekly-spotlight:first-child{grid-column:1;grid-row:span 2;padding:26px 28px;border-right:1px solid var(--qd-border)!important;background:color-mix(in srgb,var(--qd-accent) 4%,var(--qd-surface))!important}
+body.qd-v04[data-qd-project="news"] .priority-spotlights .weekly-spotlight:nth-child(n+4){border-top:1px solid var(--qd-border)!important}
+body.qd-v04[data-qd-project="news"] .priority-spotlights .weekly-spotlight:nth-child(2n){border-right:1px solid var(--qd-border)!important}
+body.qd-v04[data-qd-project="news"] :is(.weekly-spotlight,.weekly-contents a,.weekly-toc-empty,.library #topic-grid button)::before{display:none}
+body.qd-v04[data-qd-project="news"] .priority-spotlights .weekly-spotlight h3,
+body.qd-v04[data-qd-project="news"] .priority-spotlights .weekly-spotlight:nth-child(2) h3{font-size:calc(17px + var(--reader-font-step,0px));line-height:1.58;font-weight:650}
+body.qd-v04[data-qd-project="news"] .priority-spotlights .weekly-spotlight:first-child h3{font-size:calc(26px + var(--reader-font-step,0px));line-height:1.48;letter-spacing:-.035em}
+body.qd-v04[data-qd-project="news"] .priority-spotlights .weekly-spotlight:first-child .weekly-spotlight-lead{font-size:calc(14px + var(--reader-font-step,0px));line-height:1.9;-webkit-line-clamp:5;margin-top:18px}
+body.qd-v04[data-qd-project="news"] .priority-spotlights .weekly-spotlight:hover{background:var(--qd-raised)!important}
+body.qd-v04[data-qd-project="news"] .weekly-contents ol,
+body.qd-v04[data-qd-project="news"] .library #topic-grid{gap:8px}
+body.qd-v04[data-qd-project="news"] :is(.weekly-contents a,.weekly-toc-empty,.library #topic-grid button){min-height:44px;padding:11px 14px;border-radius:8px;background:transparent;font-size:13px}
+body.qd-v04[data-qd-project="news"] :is(.weekly-contents a:hover,.library #topic-grid button:hover){background:var(--qd-raised)}
+body.qd-v04[data-qd-project="news"] .toolbar{padding:18px 0;border-radius:0;background:transparent;border-width:1px 0;margin-bottom:34px}
+body.qd-v04[data-qd-project="news"] .issue-grid{gap:18px}
+body.qd-v04[data-qd-project="news"] :is(.issue,.library .card){padding:26px 28px;border-color:color-mix(in srgb,var(--qd-border) 72%,transparent);border-radius:12px}
+body.qd-v04[data-qd-project="news"] .issue h3,
+body.qd-v04[data-qd-project="news"] .library .card h3{font-size:calc(20px + var(--reader-font-step,var(--reading-step,0px)));line-height:1.6;font-weight:660}
+body.qd-v04[data-qd-project="news"] :is(.issue-lead,.library .lead){line-height:1.85}
+body.qd-v04[data-qd-project="news"] .nw3-read-button{min-height:40px;background:transparent;border-color:transparent;padding-left:0;padding-right:0;margin-top:12px;text-underline-offset:4px}
+body.qd-v04[data-qd-project="news"] .nw3-read-button:hover{text-decoration:underline;background:transparent}
+body.qd-v04[data-qd-project="news"] .nw3-reader .nw3-focused{max-width:68ch}
+body.qd-v04[data-qd-project="news"] .nw3-reader :is(.issue-summary p,.lead,.body p){line-height:1.95}
+/* Journal: one summary band establishes hierarchy above independent analyses. */
+body.qd-v04[data-qd-project="investment-journal"] .metrics{gap:0;background:var(--qd-surface);border:1px solid var(--qd-border);border-radius:14px;overflow:hidden;margin-block:12px 20px}
+body.qd-v04[data-qd-project="investment-journal"] .metrics>.metric{border:0;border-right:1px solid var(--qd-border);border-radius:0;background:transparent;padding:18px 24px;min-width:0}
+body.qd-v04[data-qd-project="investment-journal"] .metrics>.metric:last-child{border-right:0}
+body.qd-v04[data-qd-project="investment-journal"] .metrics>.primary-metric{background:color-mix(in srgb,var(--qd-accent) 5%,var(--qd-surface))}
+body.qd-v04[data-qd-project="investment-journal"] .metric-label{font-size:12px;line-height:1.6;margin-bottom:8px}
+body.qd-v04[data-qd-project="investment-journal"] .metric-value{font-size:clamp(22px,2.05vw,30px);letter-spacing:-.035em}
+body.qd-v04[data-qd-project="investment-journal"] .metric-detail{font-size:11px;line-height:1.6;margin-top:10px}
+body.qd-v04[data-qd-project="investment-journal"] .refresh-status{padding-block:4px;margin-block:0}
+body.qd-v04[data-qd-project="investment-journal"] .valuation-basis{padding-block:2px;margin-block:0}
+body.qd-v04[data-qd-project="investment-journal"] .panel{border-color:color-mix(in srgb,var(--qd-border) 72%,transparent);border-radius:14px;padding:24px}
+body.qd-v04[data-qd-project="investment-journal"] .section-head{margin-bottom:20px}
+body.qd-v04[data-qd-project="investment-journal"] .section-head h2{font-size:18px;font-weight:650;letter-spacing:-.025em}
+body.qd-v04[data-qd-project="investment-journal"] .table-scroll :is(th,td){padding-block:15px}
+body.qd-v04[data-qd-project="investment-journal"] .table-scroll tbody tr:hover{background:color-mix(in srgb,var(--qd-accent) 5%,var(--qd-surface))}
+body.qd-v04[data-qd-project="investment-journal"] .table-scroll th{font-size:12px;font-weight:550;background:var(--qd-raised)}
+body.qd-v04[data-qd-project="investment-journal"] .workspace-tabs{gap:8px}
+body.qd-v04[data-qd-project="investment-journal"] .workspace-tabs button{min-height:42px;padding-inline:14px}
+/* Alpha: aligned columns, calmer panels and larger touch targets. */
+body.qd-v04[data-qd-project="alpha-house"] :is(.conversation-panel,.activity-column>.side-panel-title,.activity-column .work-panel-heading)::before{display:none}
+body.qd-v04[data-qd-project="alpha-house"] .conversation-panel{top:0}
+body.qd-v04[data-qd-project="alpha-house"] :is(.work-panel,.campus,.detail-panel,.project-dossier){border-radius:12px}
+body.qd-v04[data-qd-project="alpha-house"] .work-panel-heading{padding:18px 16px}
+body.qd-v04[data-qd-project="alpha-house"] .conversation-search{padding:4px 9px;background:var(--qd-bg)}
+body.qd-v04[data-qd-project="alpha-house"] .conversation-search input{min-height:36px;background:transparent}
+body.qd-v04[data-qd-project="alpha-house"] .conversation-filter-row select{min-height:40px}
+body.qd-v04[data-qd-project="alpha-house"] .conversation-project-header{padding-block:13px}
+body.qd-v04[data-qd-project="alpha-house"] .session-row{padding-block:12px}
+body.qd-v04[data-qd-project="alpha-house"] .activity-column .task-purpose.detailed{border:0;background:var(--qd-bg);padding:14px}
+body.qd-v04[data-qd-project="alpha-house"] .office-room-navigation{gap:6px}
+body.qd-v04[data-qd-project="alpha-house"] .office-room-navigation button{min-height:36px}
+body.qd-v04[data-qd-project="alpha-house"] .detail-tabs{padding:4px;border:0;gap:3px}
+body.qd-v04[data-qd-project="alpha-house"] .detail-tabs button{min-height:40px}
+@media(min-width:1181px){
+ body.qd-v04[data-qd-project="alpha-house"] .conversation-panel{position:sticky;top:calc(var(--qd-header-height,64px) + 16px);max-height:calc(100dvh - 96px)}
+ body.qd-v04[data-qd-project="alpha-house"] .activity-column{top:calc(var(--qd-header-height,64px) + 16px);max-height:calc(100dvh - 96px)}
+}
+@media(max-width:1100px){
+ body.qd-v04[data-qd-project="investment-journal"] .metrics>.metric:nth-child(2){border-right:0}
+ body.qd-v04[data-qd-project="investment-journal"] .metrics>.metric:nth-child(-n+2){border-bottom:1px solid var(--qd-border)}
+}
+@media(max-width:900px){
+ body.qd-v04[data-qd-project="news"] .weekly-spotlights.priority-spotlights{grid-template-columns:repeat(2,minmax(0,1fr))}
+ body.qd-v04[data-qd-project="news"] .priority-spotlights:has(> :nth-child(4)) .weekly-spotlight:first-child{grid-column:1/-1;grid-row:auto;border-right:0!important;border-bottom:1px solid var(--qd-border)!important}
+ body.qd-v04[data-qd-project="news"] .priority-spotlights .weekly-spotlight:first-child .weekly-spotlight-lead{-webkit-line-clamp:3;margin-top:10px}
+}
+@media(max-width:600px){
+ body.qd-v04[data-qd-project="news"] .weekly-spotlights.priority-spotlights{grid-template-columns:1fr}
+ body.qd-v04[data-qd-project="news"] .priority-spotlights .weekly-spotlight,
+ body.qd-v04[data-qd-project="news"] .priority-spotlights:has(> :nth-child(4)) .weekly-spotlight:first-child{padding:20px;grid-column:1;grid-row:auto;border-right:0!important}
+ body.qd-v04[data-qd-project="news"] .priority-spotlights .weekly-spotlight:nth-child(n+3){border-top:1px solid var(--qd-border)!important}
+ body.qd-v04[data-qd-project="news"] .priority-spotlights .weekly-spotlight:first-child h3{font-size:calc(23px + var(--reader-font-step,0px))}
+ body.qd-v04[data-qd-project="news"] .priority-spotlights .weekly-spotlight:not(:first-child){padding-block:16px}
+ body.qd-v04[data-qd-project="news"] .priority-spotlights .weekly-spotlight-topic{margin-bottom:7px}
+ body.qd-v04[data-qd-project="news"] .weekly-contents ol{grid-template-columns:repeat(2,minmax(0,1fr))}
+ body.qd-v04[data-qd-project="news"] :is(.issue,.library .card){padding:22px 20px}
+ body.qd-v04[data-qd-project="news"] .toolbar{padding:16px 0}
+ body.qd-v04[data-qd-project="news"] .nw3-read-button{min-height:44px}
+ body.qd-v04[data-qd-project="investment-journal"] .metrics>.metric{padding:18px 14px}
+ body.qd-v04[data-qd-project="investment-journal"] .metric-value{font-size:clamp(18px,5.2vw,23px)}
+ body.qd-v04[data-qd-project="investment-journal"] .metric-label{font-size:11px;margin-bottom:8px}
+ body.qd-v04[data-qd-project="investment-journal"] .panel{padding:20px 16px}
+ body.qd-v04[data-qd-project="investment-journal"] .table-scroll :is(th,td){padding-block:13px}
+ body.qd-v04[data-qd-project="alpha-house"] .conversation-panel{position:relative;top:0}
+ body.qd-v04[data-qd-project="alpha-house"] .mobile-workspace-tabs button{min-height:44px}
+}
+/* Expanded reading is a document, not another card. */
+body.qd-v04[data-qd-project="news"] .nw3-reader .nw3-focused{padding:0;border:0;border-radius:0;background:transparent}
+body.qd-v04[data-qd-project="news"] .nw3-reader .nw3-focused h3{font-size:clamp(24px,2.3vw,30px);line-height:1.5;margin-block:18px 26px}
+html[data-view-density="compact"] body.qd-v04[data-qd-project="news"] :is(.issue,.library .card):not(.nw3-focused){padding:20px 22px}
+html[data-view-density="compact"] body.qd-v04[data-qd-project="investment-journal"] .metrics>.metric{padding:16px 20px}
+html[data-view-density="compact"] body.qd-v04[data-qd-project="investment-journal"] .table-scroll :is(th,td){padding-block:10px}
+html[data-view-density="compact"] body.qd-v04[data-qd-project="alpha-house"] :is(.session-row,.conversation-project-header){padding-block:9px}
+@media(min-width:1300px){html[data-view-density="compact"] body.qd-v04[data-qd-project="news"] :is(.issue-grid,.library .card-grid){grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:600px){body.qd-v04[data-qd-project="news"] .nw3-reader .nw3-focused{padding:0}}

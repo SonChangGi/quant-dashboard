@@ -35,3 +35,25 @@ test('shell keeps all existing projects and includes journal once in the market 
  assert.deepEqual([...groups].sort(),Array.from(projects.slice(1),row=>row[0]).sort());
  assert(shell.includes("'https://invest.changgi-son.chatgpt.site/'"));
 });
+
+test('v0.4 adds only the applicable presentation bundle after the native shell',async()=>{
+ const finance=['factor','regime','fearNgreed','etf-tracking','dram-price','sox'];
+ for(const project of ['quant-dashboard',...finance,'news','alpha-house','investment-journal']){
+  const r=await run({project});
+  const css=r.nodes.filter(n=>n.tag==='link').map(n=>new URL(n.href).pathname.split('/').pop());
+  const js=r.nodes.filter(n=>n.tag==='script').map(n=>new URL(n.src).pathname.split('/').pop());
+  assert.equal(r.window.__quantDesignV3.version,'0.4.0');
+  assert(css.includes('v04.css'));
+  assert.equal(css.includes('v04-finance.css'),finance.includes(project));
+  assert.equal(css.includes('v04-editorial.css'),['news','alpha-house','investment-journal'].includes(project));
+  assert(js.indexOf('v04.js')>js.indexOf('shell.js'));
+  assert(js.indexOf('v04.js')>js.indexOf('focus.js'));
+ }
+});
+test('production v0.4 assets exclude local routing and preserve native data ownership',()=>{
+ for(const name of ['v04.js','v04.css','v04-finance.css','v04-editorial.css']){
+  const asset=readFileSync(new URL('../shared/design/v3/'+name,import.meta.url),'utf8');
+  assert(!/QuantPreview|127\.0\.0\.1|localhost|design=baseline|quant-preview-|로컬 미리보기/.test(asset),name);
+  assert(!/\bfetch\s*\(|XMLHttpRequest|serviceWorker/.test(asset),name);
+ }
+});

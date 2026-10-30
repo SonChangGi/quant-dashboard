@@ -1,6 +1,10 @@
 # Design
 
-> 현재 최우선 규범은 활성 DRAM, Fear & Greed, ETF Tracking, SOX, Factor, Regime를 검증 대상으로 삼는 [Quant Research Web Design Prompt](docs/web-design.md)입니다. [공통 디자인 v1.2](docs/common-design-v1.md)와 [v1.2 프로젝트 적용 프롬프트](docs/common-design-v1-rollout-prompt.md)는 파일럿 근거로 유지합니다. 아래 문서는 과거 시각 언어와 개선 이력을 보존하는 비규범 역사 자료입니다. 종료된 Best와 이전 Momentum에 관한 내용은 당시 기록이며 현재 서비스·필수 검증 대상이 아닙니다. 충돌할 경우 `docs/web-design.md`를 우선합니다.
+> 현재 최우선 규범은 [Quant Research Web Design Prompt](docs/web-design.md) 문서 v2.5.0과 [v0.4 운영 구현 계약](docs/design-v3.md)입니다. 운영 UI 버전은 `0.4.0`이며, Hub·Factor·DRAM·ETF·SOX·Fear & Greed·Regime·News·투자일지·알파 하우스의 10개 사이트에 적용합니다. 기존 `shared/navigation/v1/nav.js`와 `shared/design/v3/`는 호환 경로로 유지합니다.
+>
+> 기본 테마는 다크, 공통 글꼴은 Pretendard, 브랜드는 Quant의 세 막대 마크입니다. 프로젝트 선택·즐겨찾기·밀도·접히는 사이드바·페이지 목차는 표시 전용 기능이며 원래 계산·데이터·인증·자동화를 변경하지 않습니다. 운영 번들에는 로컬 비교·프록시·미리보기 기능을 넣지 않습니다.
+>
+> [공통 디자인 v1.2](docs/common-design-v1.md)와 [v1.2 적용 프롬프트](docs/common-design-v1-rollout-prompt.md), 아래 기록은 비규범 역사 자료입니다. 과거의 개별 저장소 토큰 복제·웹폰트 미사용·정적 상단 메뉴·Visual Ralph 점수 요구를 현재 작업의 필수 조건으로 적용하지 않습니다. 종료된 Best와 이전 Momentum도 현재 서비스·필수 검증 대상이 아닙니다. 도메인별 유효한 계산·출처·결과 보호 계약은 현재 규범에서 계속 유지합니다.
 
 ## Historical source of truth (archived)
 - Status: Approved Visual Ralph reference implemented

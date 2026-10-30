@@ -1,10 +1,12 @@
 # Quant Research Web Design Prompt
 
-> 버전: `2.2.1`
+> 버전: `2.5.0`
 >
-> 시각 원칙 기준일: `2026-07-24`
+> 운영 UI 버전: `0.4.0` · 자산 경로: `shared/design/v3/` (호환 경로 유지)
 >
-> 운영·검증 대상 갱신: `2026-10-21`
+> 시각 원칙 기준일: `2026-10-30`
+>
+> 운영·검증 대상 갱신: `2026-10-30`
 >
 > 상태: 앞으로의 기존 페이지 개선과 신규 프로젝트에 사용하는 최우선 웹 디자인 프롬프트
 > 적용 범위: Quant Research Hub와 연결되는 모든 공개 웹페이지
@@ -16,12 +18,12 @@
 규칙이 충돌하면 아래 순서대로 판단한다.
 
 1. **분석·결과 보호 경계**
-2. **현재 활성 6개 데이터 사이트의 실제 디자인과 상호작용**
-3. **이 문서에서 추출한 공통 디자인 계약**
+2. **이 문서와 [v0.4 운영 구현 계약](design-v3.md)의 공통 디자인 규칙**
+3. **현재 10개 운영 사이트의 검증된 상호작용과 프로젝트 고유 구조**
 4. **프로젝트 고유의 분석 목적과 필요한 예외**
 5. **Toss 공개 자료에서 참고한 일반적인 디자인 원칙**
 
-최우선 참조 사이트는 다음 6개다.
+공통 디자인의 적용 대상은 Hub를 포함한 10개 사이트이며 등록 목록은 §4가 기준이다. 다음 6개 금융 사이트의 도메인별 상세 계약은 그대로 유지한다.
 
 | 기준 사이트 | 공개 페이지 | 공통 디자인에 제공하는 핵심 근거 | 반드시 보존할 고유 요소 |
 | --- | --- | --- | --- |
@@ -34,7 +36,7 @@
 
 ### 0.1 검증 기준선
 
-새 작업은 위 활성 6개 프로젝트와 Hub의 현재 검증된 소스를 기준으로 시작한다. 같은 실행·기간·단위의 결과, 원본 표 행과 차트 관측, 라이트·다크, 1440·1024·768·390px를 대조한다. Factor는 `factor_lab/web/integrated.*`, 나머지는 각 저장소의 실제 배포 원본을 확인한다. 공통 메뉴 기준은 `shared/navigation/v1/menu.json`이다.
+새 작업은 10개 운영 사이트 중 변경과 연결된 소비 화면의 현재 검증된 소스를 기준으로 시작한다. 같은 실행·기간·단위의 결과, 원본 표 행과 차트 관측, 라이트·다크, 1440·1024·768·390px를 대조한다. Factor는 `factor_lab/web/integrated.*`, 나머지는 각 저장소의 실제 배포 원본을 확인한다. 공통 메뉴 기준은 `shared/navigation/v1/menu.json`이다.
 
 아래 표는 색상·밀도·상호작용 원칙을 추출한 **2026-07-24 역사 기록**이다. 종료된 Best나 이전 Momentum UI를 현재 서비스·필수 검증 대상으로 되살리는 근거가 아니다. 과거 commit과 다른 프로젝트의 Git 이력은 유지한다.
 
@@ -207,7 +209,7 @@ control
 ```text
 packages/
   ui/          token과 프로젝트가 소유하는 재사용 primitive
-  shell/       8개 메뉴, theme, page header, status, disclosure
+  shell/       10개 등록 사이트 탐색, theme, page header, status, disclosure
   charts/      frame, plot 밖 readout, 날짜·계열 선택 primitive
   contracts/   Zod 기반 control registry, run/result envelope
   data-client/ 정적 snapshot과 API result adapter
@@ -245,7 +247,7 @@ Quant Research 제품군은 다음처럼 보여야 한다.
 
 기본 순서는 다음과 같다.
 
-1. 9개 공통 메뉴와 현재 페이지
+1. 10개 등록 사이트의 공통 탐색과 현재 페이지
 2. 페이지 정체성, 운영 상태, 데이터 기준일
 3. 결론·신호·최신 대표값
 4. 3~5개의 핵심 지표
@@ -284,15 +286,13 @@ Quant Research 제품군은 다음처럼 보여야 한다.
 
 프로젝트에 없는 날짜 역할을 새로 만들지 않는다.
 
-## 4. 9개 공통 메뉴
+## 4. 10개 공통 메뉴
 
-메뉴 원본은 `shared/navigation/v1/menu.json`이다. Hub 브랜드 하나와 프로젝트 링크 8개로 구성하며 현재 순서는 다음과 같다.
-
-`Hub → Factor → DRAM → ETF → SOX → Fear & Greed → Regime → News → 투자일지 → 알파 하우스`
+메뉴 원본은 `shared/navigation/v1/menu.json`이다. Hub 브랜드 1개와 프로젝트 9개, 총 10개 사이트를 등록한다. 다음 표는 registry 순서이며 즐겨찾기·사이드바 그룹의 표시 순서는 별도 UI 상태다. 표시 순서를 바꾸어 등록 항목이나 URL을 누락하지 않는다.
 
 | 순서 | Label | URL |
 | ---: | --- | --- |
-| 1 | Hub | `https://sonchanggi.github.io/quant-dashboard/` |
+| 1 | Quant Research Hub | `https://sonchanggi.github.io/quant-dashboard/` |
 | 2 | Factor | `https://sonchanggi.github.io/factor/` |
 | 3 | DRAM | `https://sonchanggi.github.io/dram-price/` |
 | 4 | ETF | `https://sonchanggi.github.io/etf-tracking/` |
@@ -300,34 +300,29 @@ Quant Research 제품군은 다음처럼 보여야 한다.
 | 6 | Fear & Greed | `https://sonchanggi.github.io/fearNgreed/` |
 | 7 | Regime | `https://sonchanggi.github.io/regime/` |
 | 8 | News | `https://sonchanggi.github.io/news/` |
-| 9 | 알파 하우스 | `https://research-observatory-changgi.changgi-son.chatgpt.site/` |
+| 9 | 투자일지 | `https://invest.changgi-son.chatgpt.site/` |
+| 10 | 알파 하우스 | `https://research-observatory-changgi.changgi-son.chatgpt.site/` |
 
 ### 4.1 Canonical navigation
 
-이 항목은 과거 구현에서 가장 많은 모양을 고르는 규칙이 아니라, 기존·신규 모든 페이지가 이동할 목표 contract다.
+운영 UI는 `0.4.0`이다. 소비 페이지의 기존 `shared/navigation/v1/nav.js` 진입점과 `shared/design/v3/` 경로는 호환성을 위해 유지한다. v3라는 폴더명을 UI 버전으로 해석하거나 소비 사이트의 URL을 일괄 이전하지 않는다. 로드 순서·프로젝트 alias·배포 검증은 [운영 구현 계약](design-v3.md), 메뉴 schema·fallback·CSP는 [공통 메뉴 계약](shared-navigation.md)을 따른다. 이전 v1 상단 메뉴의 치수는 fallback에만 해당한다.
 
-- full-width fixed shell, 기본 높이 `59px`·내부 행 `58px`
-- 내부 content 최대 폭 `1320px`
-- brand `14px / 700`
-- link `12px / 650`
-- 모든 link·theme control 최소 `44×44px`
-- nav shell `border-radius: 0`, 하단 `1px` border, 약한 blur만 사용
-- 현재 페이지는 `primary-soft` 배경과 `primary-strong` 글자
-- 현재 페이지 하나에만 `aria-current="page"`
-- 첫 keyboard focus는 `본문으로 건너뛰기`
-- brand label은 `Quant Research Hub`, href는 Hub URL로 통일
-- 별도 gradient `Q` mark 같은 프로젝트별 장식은 공통 nav에서 사용하지 않음
-- theme control은 sun/moon icon의 `44×44px` button으로 통일하고 `aria-pressed`와 `라이트 모드로 전환`·`다크 모드로 전환` 동적 label을 제공
+- 넓은 화면은 64px 상단 헤더와 224px 사이드바를 사용한다. 사용자가 접으면 72px 아이콘 레일로 전환한다.
+- 1180px 미만에서는 사이드바 접기 버튼과 사이드바를 숨기고 프로젝트 선택 창으로 10개 사이트에 접근한다. 가로로 긴 프로젝트 링크 열을 강제하지 않는다.
+- 상단에는 현재 프로젝트 선택, 빠른 검색, 페이지 목차, 보기 설정, 테마 전환을 제공한다. 브랜드는 Quant와 기존 세 막대 SVG다.
+- 프로젝트 선택 창에서 즐겨찾기를 추가·해제할 수 있다. 즐겨찾기는 사이트를 복제하거나 등록 목록을 바꾸지 않으며 기존 그룹과 중복 표시하지 않는다.
+- `⌘K`/`Ctrl+K` 검색, 방향키·Enter·Escape, 현재 위치와 닫기 후 포커스 복원을 유지한다. 현재 페이지 목차는 현재 렌더된 제목으로 만들고 숨긴 섹션·모달 내용을 포함하지 않는다.
+- 현재 위치는 각 탐색 표면에서 정확히 한 항목의 `aria-current="page"`로 표시한다. 여러 표면의 복제 링크를 문서 전체에서 한 개로 강제하지 않는다.
+- 아이콘 버튼에 accessible name과 visible focus를 제공한다. 모바일에서 버튼과 인접 조작이 겹치지 않도록 실제 크기와 간격을 검증한다.
+- 사용자 설정은 §12의 origin별 저장 계약을 따른다. 데이터 필터·계산 입력과 구분한다.
 
-모든 화면에서 한 줄을 유지한다. `760px` 이하에서는 brand를 `11px`로 줄이고 프로젝트 링크만 가로로 스크롤한다. 알파 하우스는 프로젝트 목록 맨 오른쪽, 모드 전환 버튼은 그 다음에 배치한다. 새 프로젝트는 기존 생성 순서를 보존하면서 현재 마지막 프로젝트(News) 다음, 알파 하우스 앞에 추가한다.
-
-모든 페이지는 Hub의 공통 `nav.js`·`nav.css`와 중앙 메뉴 JSON을 사용한다. 정적 페이지는 링크 영역만 갱신하고 React는 같은 데이터를 hook으로 받아 직접 렌더링한다. 조회 실패 시 검증된 로컬 fallback을 유지한다. 생성·검증·CSP 연결은 [공통 메뉴 계약](shared-navigation.md)을 따른다. 다른 분석 코드나 결과를 메뉴와 함께 공통 런타임으로 옮기지 않는다.
+원래 React·정적 페이지의 DOM 소유권, 네이티브 제어, 데이터 요청을 유지한다. 공통 shell은 별도 노드에 만들고 로드 실패 시 원래 화면과 탐색을 사용할 수 있어야 한다. 새 프로젝트는 registry·로더 alias·shell의 표시 항목·프로젝트 선택·검색·목차를 함께 확인한다.
 
 ## 5. Layout·Spacing·Shape
 
 ### 5.1 폭과 gutter
 
-- 기본 content max-width: `1240~1320px`
+- content max-width는 프로젝트별 정보량에 맞춰 유지한다. 공통 헤더와 사이드바를 뺀 실제 가용 폭에서 표·차트가 수축해야 한다.
 - desktop gutter: 최소 `16px`, 일반 `20~32px`
 - mobile gutter: `12~16px`
 - 한 section 안의 핵심 열은 `minmax(0, 1fr)`로 수축 가능해야 한다.
@@ -348,8 +343,8 @@ Quant Research 제품군은 다음처럼 보여야 한다.
 
 ### 5.3 모서리와 그림자
 
-- 기본 panel radius: `8px`
-- button·input radius: `6px`
+- 일반 panel radius: `10~14px`, 관련 KPI를 연결한 요약 영역: `12~14px`
+- button·input radius: `7~10px`
 - 상태 chip·pill: `999px`
 - 기존 승인 화면이 `10~16px` radius를 쓰면 프로젝트 안에서만 일관되게 유지할 수 있다.
 - 그림자는 panel 구분이 border만으로 부족할 때 한 단계만 사용한다.
@@ -359,7 +354,7 @@ Quant Research 제품군은 다음처럼 보여야 한다.
 
 ## 6. Semantic Color
 
-색 이름이 아니라 역할을 공유한다. 아래 값은 `2026-07-24` 당시 6개 공개 사이트와 source의 computed style·CSS token을 대조한 뒤, 반복된 역할에서 선택한 **신규 프로젝트·누락 token용 fallback 팔레트**다. 기존 사이트는 의미 역할만 mapping하고 승인된 값을 이 표로 일괄 교체하지 않는다. 일부 neutral·blue 값은 기존 사이트가 채택해 온 Toss-inspired 색감 때문에 TDS 공개 팔레트와 일치한다. 이 문서는 TDS에서 신규 값을 가져오는 근거가 아니라 활성 프로젝트의 승인된 시각 역할과 과거 검증 근거 사이의 호환성을 유지하는 근거다.
+색 이름이 아니라 역할을 공유한다. 운영 v0.4는 `--qd-*` 토큰과 [운영 팔레트](design-v3.md#색-테마와-브랜드)를 우선한다. 아래 값은 `2026-07-24` 당시 6개 공개 사이트와 source의 computed style·CSS token을 대조한 뒤, 반복된 역할에서 선택한 **신규 프로젝트·누락 token용 fallback 팔레트**다. 기존 사이트는 의미 역할만 mapping하고 승인된 값을 이 표로 일괄 교체하지 않는다. 일부 neutral·blue 값은 기존 사이트가 채택해 온 Toss-inspired 색감 때문에 TDS 공개 팔레트와 일치한다. 이 문서는 TDS에서 신규 값을 가져오는 근거가 아니라 활성 프로젝트의 승인된 시각 역할과 과거 검증 근거 사이의 호환성을 유지하는 근거다.
 
 | Token | Light | Dark | 용도 |
 | --- | --- | --- | --- |
@@ -403,15 +398,10 @@ Quant Research 제품군은 다음처럼 보여야 한다.
 
 ## 7. Typography
 
+번들에 포함한 `PretendardVariable.woff2`와 `--qd-font`를 공통 글꼴로 사용한다. 시스템 sans-serif는 로드 실패 시 대체 경로다. 버튼·입력·표·SVG 텍스트에도 적용하며 프로젝트마다 다른 웹폰트를 추가하지 않는다.
+
 ```css
-font-family:
-  Pretendard,
-  Inter,
-  -apple-system,
-  BlinkMacSystemFont,
-  "Segoe UI",
-  "Noto Sans KR",
-  sans-serif;
+font-family: var(--qd-font, Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
 ```
 
 - body: `15px / 1.55 / 400~500`
@@ -419,9 +409,9 @@ font-family:
 - 일반 보조 본문: `13~15px`
 - metadata·table header·eyebrow: `11~12px`
 - 조작 label과 핵심 상태: 최소 `12px`
-- page title: `clamp(2rem, 4vw, 3.25rem)`, 주로 `700`
-- section title: `clamp(1.35rem, 2.3vw, 1.8rem)`, `700`
-- card title: 약 `14~16px`, `650~700`
+- page title: 보통 `27~30px`, 주로 `700`; 별도 문서 읽기 화면은 읽기 위계를 따른다.
+- section title: 보통 `18~21px`, `650~700`
+- card title: 약 `16~18px`, `650~700`; News 첫 이슈는 더 큰 읽기 위계를 사용한다.
 - 대표 숫자: `1.45~2rem`, `700`
 - button·label: `600~700`
 - `800~900`은 brand·eyebrow·한 화면의 한두 개 강조에만 사용한다.
@@ -447,7 +437,8 @@ font-family:
 ### 8.3 Result·metric card
 
 - label → 핵심값 → 단위·기준일 순서
-- 한 카드에 대표값 하나를 원칙으로 한다.
+- 대표값마다 label·단위를 유지하되 관련 KPI는 구분선이 있는 하나의 요약 영역으로 연결할 수 있다. 카드 수를 늘리는 것을 목표로 하지 않는다.
+- 장식용 전체 폭 상단 띠를 사용하지 않는다. 의미색·상태·선택만 필요한 위치에 남긴다.
 - 3~5개 핵심 지표를 먼저 보여 주고 나머지는 상세로 보낸다.
 - 카드 전체를 badge와 bold로 채우지 않는다.
 - 값이 없으면 `0`으로 만들지 말고 `관측 없음`, `사용 불가`를 표시한다.
@@ -467,7 +458,7 @@ font-family:
 - 분석 입력 panel은 **현재 결과에 적용된 값의 compact summary만 항상 보이고 form 본문은 기본 닫힘**으로 시작한다.
 - `현재 적용값`과 `편집 중 값`을 구분하며, 성공 결과 binding 전에는 draft 값으로 공식 카드·차트·표를 바꾸지 않는다.
 - 분석 입력은 기존 적용·재계산 경로를 그대로 사용하고 새 adapter는 기존 Python 진입점을 호출한다.
-- 표시 제어는 공식 결과·URL·저장 설정을 바꾸지 않는다.
+- 표시 제어는 공식 결과와 분석 identity를 바꾸지 않는다. 선언된 표시 전용 URL·localStorage는 갱신할 수 있다. 예: Hub의 `view`, 화면 밀도, 즐겨찾기.
 - 고급 필터는 기본 닫힘으로 둘 수 있지만 현재 적용값은 요약한다.
 - 실제 실행 경로가 없는 command-copy UI는 `적용`, `실행`, `재계산` CTA로 표현하지 않는다. `실행 명령 복사`처럼 실제 동작을 그대로 쓴다.
 - 오류는 입력 근처에서 해결 방법과 함께 표시한다.
@@ -508,7 +499,7 @@ Fear & Greed, ETF Tracking, SOX, Factor처럼 긴 페이지에는 기존 상단�
 - `맨 위로`, `맨 아래로`를 예측 가능한 accessible name으로 제공한다.
 - 같은 `44×44px` icon button을 `8px` 간격의 세로 묶음으로 사용한다.
 - desktop은 viewport 오른쪽·아래 `16~24px`에 고정한다.
-- mobile은 숨기거나 normal flow의 전용 행으로 옮긴다. content 위에 fixed overlay로 띄우지 않는다.
+- mobile은 네이티브 빠른 이동을 유지하되 읽기·입력·dialog와 겹치면 숨기거나 normal flow의 전용 행으로 옮긴다.
 - chart label, table control, primary CTA를 가리지 않도록 충돌 시 인접한 빈 영역으로 옮기거나 해당 방향 button을 숨긴다.
 - dialog·tooltip보다 낮은 stacking layer를 사용하고 keyboard focus와 reduced motion을 지원한다.
 
@@ -561,7 +552,7 @@ DRAM처럼 단순 관측 목록은 모바일 카드로 바꿀 수 있다. 사건
 - hover·focus는 임시 preview
 - click·tap·Enter·Space는 pin
 - line chart의 active stroke는 대체로 `3.8~4px`, context stroke는 `2~2.8px`
-- line chart의 비활성 opacity는 `.12~.22`에서 실제 문맥 계열이 보이도록 theme별 조정
+- line chart의 비활성 계열도 다크에서 읽혀야 한다. 현재 Fear `.65`, ETF `.68` 보정은 유지하며, 새 차트는 실제 배경·선·범례 대비로 판단한다. 과거 `.12~.22`를 공통 기본값으로 복사하지 않는다.
 - bar·quadrant의 비활성 opacity는 `.35~.55`를 기준으로 하고 inset·scale·label을 함께 사용
 - pointer가 떠나거나 blur되면 직전 pinned state로 복귀
 - active 계열은 굵기·점·halo·label로도 구분
@@ -621,8 +612,10 @@ DRAM처럼 단순 관측 목록은 모바일 카드로 바꿀 수 있다. 사건
 ## 12. Theme·Accessibility·Responsive
 
 - theme storage canonical key: `quant-research-theme`
-- 유효한 query → canonical/legacy 저장값 → system preference → light 순서
-- 각 프로젝트가 사용하던 모든 legacy key는 읽은 뒤 canonical key로 migration한다. 최소 `quant-dashboard-theme`, `quant-calm-theme`, `dram-price-theme`, `etf-tracking-theme`, `momentum-factor-theme`, `sox-theme`를 포함한다.
+- 유효한 URL `theme=light|dark` → 저장된 `quant-research-theme` → `dark` 순서. OS 설정은 기본값을 바꾸지 않는다. 저장된 사용자 라이트 선택은 유지한다.
+- 네이티브 테마 제어와 기존 legacy key는 현재 부트·adapter 계약대로 동기화한다. 초기화 과정의 기본 light를 사용자 선택으로 승격하지 않는다. 특히 News library와 React 초기화 뒤에도 공통 우선순위를 유지한다.
+- v0.4 표시 설정은 `quant-ui-v04-favorites`(프로젝트 표시명 배열), `quant-ui-v04-density`(`comfortable` 또는 `compact`), `quant-ui-v04-rail`(접힘 여부 boolean)을 JSON으로 저장한다. 기본값은 대시보드·뉴스 브리핑·투자일지 즐겨찾기, `comfortable`, 펼친 레일이다.
+- localStorage는 origin별이다. GitHub Pages 경로끼리는 같은 origin을 공유하지만 투자일지·Alpha House의 별도 origin과 자동 동기화되지 않는다. 저장소 오류나 잘못된 값은 안전한 표시 기본값으로 처리하고 분석 데이터에 쓰지 않는다.
 - 선택 theme는 `document.documentElement.dataset.theme`와 `color-scheme`에 동기화
 - theme toggle은 `aria-pressed`와 현재 동작을 설명하는 동적 accessible label을 유지
 - 라이트·다크 모두 본문·축·격자·상태·focus ring 검증
@@ -650,7 +643,7 @@ DRAM처럼 단순 관측 목록은 모바일 카드로 바꿀 수 있다. 사건
 2. 기존 worktree의 사용자 변경을 확인하고 최신 main 기반 전용 branch/worktree를 사용한다.
 3. 수정 금지 파일·함수·schema·결과 snapshot을 먼저 기록한다.
 4. 공개 화면과 source에서 다음 inventory를 만든다.
-   - 8개 메뉴
+   - 10개 등록 사이트와 표시 그룹·즐겨찾기·프로젝트 선택
    - 모든 control의 id·`control_kind`·기본값 출처·validation·serialization
    - `analysis` control의 API/workflow/CLI·Python parameter·result binding·no-op 조건
    - visible copy와 중복
@@ -710,8 +703,8 @@ DRAM처럼 단순 관측 목록은 모바일 카드로 바꿀 수 있다. 사건
 
 ### 15.3 디자인
 
-- 8개 메뉴 label·순서·URL 동일
-- 공통 상단 메뉴 안에서 `aria-current="page"` 정확히 1개
+- 10개 registry label·순서·URL 일치, 표시 그룹과 즐겨찾기에서 누락·중복 없음
+- 각 탐색 표면에서 `aria-current="page"` 정확히 1개
 - body `15px/1.55` 중심의 compact hierarchy
 - 불필요한 `800+` weight 반복 없음
 - 접근성 전용 label을 제외한 visible semantic duplicate 0건
@@ -721,6 +714,7 @@ DRAM처럼 단순 관측 목록은 모바일 카드로 바꿀 수 있다. 사건
 - table 숫자 정렬·단위·column 보존
 - chart readout과 plot·축·끝 라벨 overlap 없음
 - 해당 기능이 있는 multi-series chart의 active·muted 계열과 date-axis chart의 날짜 pin·keyboard·touch 동작
+- 다크 기본값·저장된 라이트·유효한 URL 테마, 표시 설정 저장/복원, 목차·프로젝트 선택·즐겨찾기·접기·검색·빈 결과를 검증
 - light/dark 및 세 viewport에서 document overflow 없음
 - `NaN`, `undefined`, 잘린 label, 빈 tooltip 없음
 - loading·empty·degraded·fail-closed 상태와 긴 한글·긴 종목명에서도 잘림·겹침 없음
@@ -728,6 +722,7 @@ DRAM처럼 단순 관측 목록은 모바일 카드로 바꿀 수 있다. 사건
 ### 15.4 배포
 
 - local test와 preview 통과
+- 운영 번들에 `QuantPreview`, `localhost`, 로컬 프록시·비교 모드·미리보기 전용 저장키가 없어야 한다. 기존 `shared/navigation/v1/nav.js`에서 `shared/design/v3/`의 v0.4 자산을 로드하며 UI 버전은 `0.4.0`으로 확인한다.
 - Vercel Preview는 UI 검수 환경이며 운영 snapshot·분석 성공의 증거로 취급하지 않는다.
 - Preview는 검증된 GitHub Pages data origin을 read-only로 사용하고 production 데이터·current pointer를 덮어쓰지 않는다.
 - 승인 후 commit·push·PR·CI·Pages 성공
@@ -739,7 +734,7 @@ DRAM처럼 단순 관측 목록은 모바일 카드로 바꿀 수 있다. 사건
 
 다음이 모두 충족되어야 완료다.
 
-1. 현재 6개 기준 사이트와 같은 제품군으로 보인다.
+1. 10개 운영 사이트의 v0.4 공통 탐색·글꼴·표시 체계를 따른다.
 2. 페이지 고유의 결과 구조·차트·표·의미색은 유지된다.
 3. 첫 화면에서 핵심 결과와 기준일을 찾을 수 있다.
 4. 메뉴·타이포그래피·색상 역할·간격·상태·접근성이 일관된다.
@@ -788,7 +783,7 @@ https://github.com/SonChangGi/quant-dashboard/blob/main/docs/web-design.md
 
 우선순위
 1. Python·분석·결과·데이터·자동화 보호
-2. 현재 DRAM, Fear & Greed, ETF Tracking, SOX, Factor, Regime 공개 페이지와의 디자인 통일성
+2. 운영 UI v0.4.0의 10개 등록 사이트와 공통 디자인 통일성
 3. web-design.md의 nav·색상·타이포그래피·간격·컴포넌트·표·차트·접근성 계약
 4. 현재 프로젝트의 고유 분석 목적과 기존 결과 구조
 
@@ -811,17 +806,17 @@ https://github.com/SonChangGi/quant-dashboard/blob/main/docs/web-design.md
 1. 최신 origin/main, worktree, 공개 화면, 데이터 계약을 읽기 전용으로 감사해.
 2. 수정 금지 파일·함수와 현재 결과 snapshot을 먼저 고정해.
 3. 모든 visible control의 mode, 기본값 출처, validation, serialization, 실제 분석 mapping inventory를 만들어.
-4. 8개 메뉴, visible copy, typography, spacing, token, chart, table, overflow inventory를 만들어.
-5. 현재 프로젝트의 좋은 디자인은 보존하고 6개 기준 사이트와 다른 drift만 수정해.
+4. 10개 등록 사이트의 탐색·즐겨찾기·목차·밀도, visible copy, typography, spacing, token, chart, table, overflow inventory를 만들어.
+5. 현재 프로젝트의 고유 분석 구조는 보존하고 v0.4 계약과 다른 drift만 수정해. body.qd-v04 아래로 표시 변경을 제한해.
 6. 결과→기준일·핵심 지표→핵심 차트→입력→표·운영 상세 순서로 정리해.
 7. 반복 설명, Python·JSON·재계산 구현 문구를 지우고 일반 운영 정보는 운영 상세 한 곳으로 통합해. 결과 해석에 필요한 도메인 방법론은 별도 접힘 영역으로 보존해.
 8. 차트 정확값을 plot 밖에 두고, 해당 기능이 있는 차트에서만 선택 계열 강조·날짜·keyboard·mobile 동작을 검증해.
 9. 표의 숫자 정렬·단위·내부 스크롤을 개선하되 원본 열과 값을 유지해.
-10. 기존 분석·데이터 테스트, 입력 결정성·민감도·격리·binding 테스트와 UI 회귀 테스트를 모두 실행해.
+10. 변경 영향에 해당하는 기존 필수 검사와 UI 회귀를 실행해. 분석 입력 연결을 변경한 경우에만 결정성·민감도·binding 검증을 넓히고, 표시 변경 때문에 수집·전체 백테스트를 다시 실행하지 마.
 11. 1440×900, 1024×768, 390×844의 light/dark를 확인해.
 
-배포 전에는 local preview URL과 변경 파일 목록을 먼저 제공하고 멈춰.
-사용자가 배포를 승인한 경우에만 commit·push·PR·CI·Pages·공개 readback까지 진행해.
+배포 승인이 없으면 local preview URL과 변경 파일 목록을 제공해.
+사용자가 배포를 승인했다면 그 범위 안에서 commit·push·PR·CI·Pages·공개 readback까지 진행하고 이미 받은 승인을 반복 요청하지 마.
 
 완료 보고에는 다음을 분리해서 적어.
 - 통일한 디자인

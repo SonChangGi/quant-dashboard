@@ -23,7 +23,9 @@ const files = {
 };
 
 const navigationMenu = JSON.parse(readFileSync('shared/navigation/v1/menu.json', 'utf8'));
-const currentNavigationOrder = ['Hub', ...navigationMenu.projects.map(project => project.label)].join(' → ');
+const navigationSection = files.webDesign.split('## 4. 10개 공통 메뉴')[1]?.split('### 4.1')[0] || '';
+const documentedNavigation = [...navigationSection.matchAll(/^\| (\d+) \| (.+?) \| `([^`]+)` \|$/gm)].map(([,order,label,url])=>({order:Number(order),label,url}));
+const expectedNavigation = [navigationMenu.brand,...navigationMenu.projects].map(({label,url},index)=>({order:index+1,label,url}));
 
 const checks = [];
 const assert = (condition, label) => checks.push({ label, ok: Boolean(condition) });
@@ -245,7 +247,7 @@ assert(
   ].every((url) => contains(files.webDesign, url)),
   'web design prompt retains the active price and market reference sites',
 );
-assert(contains(files.webDesign, '버전: `2.2.1`'), 'web design prompt version is pinned');
+assert(contains(files.webDesign, '버전: `2.5.0`'), 'web design prompt version is pinned');
 assert(contains(files.webDesign, '## 1. 절대 보호 경계') && contains(files.webDesign, '계산·normalization·selection·aggregation 함수는 동결'), 'web design prompt protects analysis and result behavior');
 assert(contains(files.webDesign, '### 1.4 입력의 네 종류를 먼저 선언한다') && ['`display`', '`result_selector`', '`analysis`', '`operation`'].every((kind) => contains(files.webDesign, kind)), 'web design prompt classifies every visible control before implementation');
 assert(contains(files.webDesign, '### 1.5 현재 6개 사이트의 입력 기준선') && contains(files.webDesign, 'command 생성만으로 완료 처리하지 않는다'), 'web design prompt records the audited six-site input baseline');
@@ -258,7 +260,7 @@ assert(contains(files.webDesign, 'applied_config') && contains(files.webDesign, 
 assert(contains(files.webDesign, 'effective_config_hash') && contains(files.webDesign, 'config_hash == effective_config_hash'), 'web design prompt binds requested and fallback-effective configurations separately');
 assert(contains(files.webDesign, 'packages/') && contains(files.webDesign, 'data-client/') && contains(files.webDesign, '프로젝트별 view-model'), 'web design prompt defines reusable frontend boundaries without centralizing project calculations');
 assert(contains(files.webDesign, '## 13. 기존 페이지 개선 절차') && contains(files.webDesign, '## 14. 신규 프로젝트 구현 절차') && contains(files.webDesign, 'local preview'), 'web design prompt covers existing and new project workflows');
-assert(contains(files.webDesign, '## 4. 9개 공통 메뉴') && contains(files.webDesign, 'aria-current="page"') && contains(files.webDesign, 'Quant Research Hub'), 'web design prompt fixes the shared navigation contract');
+assert(contains(files.webDesign, '## 4. 10개 공통 메뉴') && contains(files.webDesign, 'aria-current="page"') && contains(files.webDesign, 'Quant Research Hub'), 'web design prompt fixes the shared navigation contract');
 assert(contains(files.webDesign, '## 9. Table') && contains(files.webDesign, 'tabular') && contains(files.webDesign, '## 10. Chart') && contains(files.webDesign, 'plot 밖 정확값 readout'), 'web design prompt fixes table and chart contracts');
 assert(contains(files.webDesign, 'multi-series comparison chart에만') && contains(files.webDesign, 'date-axis chart에만') && contains(files.webDesign, 'bar·quadrant'), 'web design prompt keeps chart interactions domain-conditional');
 assert(contains(files.webDesign, 'TDS UI Kit') && contains(files.webDesign, '향후에도 Toss 자료에서 새 값을 직접 가져오지 않는다'), 'web design prompt records the Toss reference and reuse boundary');
@@ -269,7 +271,7 @@ assert(contains(files.commonDesign, '프레젠테이션 상태') && contains(fil
 assert(contains(files.commonDesign, '데이터 기준일') && contains(files.commonDesign, '평가 종료일') && contains(files.commonDesign, '차트 선택일'), 'common design v1 names distinct date roles');
 assert(contains(files.commonDesign, '390px') && contains(files.commonDesign, '44px'), 'common design v1 declares mobile containment and touch targets');
 assert(contains(files.commonDesign, 'quant-research-theme') && contains(files.commonDesign, 'quant-dashboard-theme') && contains(files.commonDesign, 'quant-calm-theme') && contains(files.commonDesign, 'dram-price-theme'), 'common design v1 fixes canonical and legacy theme keys');
-assert(contains(files.webDesign, currentNavigationOrder) && contains(files.commonDesign, '현재 메뉴는 `shared/navigation/v1/menu.json`'), 'current design navigation matches the central menu and supersedes the historical pilot order');
+assert(JSON.stringify(documentedNavigation) === JSON.stringify(expectedNavigation) && contains(files.commonDesign, '현재 메뉴는 `shared/navigation/v1/menu.json`'), 'current design navigation matches the central menu and supersedes the historical pilot order');
 assert(contains(files.commonDesign, 'skip link') && contains(files.commonDesign, '12px'), 'common design v1 fixes keyboard entry and legible dense labels');
 assert(contains(files.commonDesign, '프로젝트별 plan-goal'), 'common design v1 requires project-by-project rollout');
 assert(contains(files.commonDesign, 'plot 영역 밖') && contains(files.commonDesign, 'absolute overlay'), 'common design v1 keeps exact-value readouts away from plotted marks');

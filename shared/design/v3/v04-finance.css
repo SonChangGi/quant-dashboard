@@ -1,0 +1,161 @@
+/* v0.4 local finance: continuous metric bands, clear controls, quiet tables. */
+body.qd-v04:is([data-qd-project="factor"],[data-qd-project="regime"],[data-qd-project="fearNgreed"],[data-qd-project="dram-price"],[data-qd-project="sox"],[data-qd-project="etf-tracking"]){--finance-cell-space:18px;--finance-row-space:12px}
+html[data-view-density="compact"] body.qd-v04{--finance-cell-space:12px;--finance-row-space:8px}
+
+/* Related values share a surface; dividers describe relationships instead of six boxes. */
+body.qd-v04[data-qd-project="factor"] .lab-summary,
+body.qd-v04[data-qd-project="fearNgreed"] .metric-grid,
+body.qd-v04[data-qd-project="etf-tracking"] .result-metrics,
+body.qd-v04[data-qd-project="sox"] .metric-grid,
+body.qd-v04[data-qd-project="dram-price"] .latest-grid{
+ gap:0;border:1px solid var(--qd-border);border-radius:12px;background:var(--qd-surface);overflow:hidden;
+}
+body.qd-v04[data-qd-project="factor"] .lab-summary>.lab-stat,
+body.qd-v04[data-qd-project="fearNgreed"] .metric-grid>.metric,
+body.qd-v04[data-qd-project="etf-tracking"] .result-metrics>.metric-card,
+body.qd-v04[data-qd-project="sox"] .metric-grid>.metric-card,
+body.qd-v04[data-qd-project="dram-price"] .latest-grid>.latest-card{
+ margin:0;padding:var(--finance-cell-space) 20px;border:0;border-radius:0;background:transparent;box-shadow:none;min-width:0;
+}
+body.qd-v04[data-qd-project="factor"] .lab-summary>.lab-stat+.lab-stat,
+body.qd-v04[data-qd-project="fearNgreed"] .metric-grid>.metric+.metric,
+body.qd-v04[data-qd-project="etf-tracking"] .result-metrics>.metric-card+.metric-card,
+body.qd-v04[data-qd-project="sox"] .metric-grid>.metric-card+.metric-card,
+body.qd-v04[data-qd-project="dram-price"] .latest-grid>.latest-card+.latest-card{border-left:1px solid var(--qd-border)}
+body.qd-v04[data-qd-project="factor"] .lab-stat.primary dd{color:var(--qd-accent)}
+body.qd-v04[data-qd-project="etf-tracking"] .result-metrics{grid-template-columns:1.4fr repeat(4,minmax(0,1fr))}
+body.qd-v04[data-qd-project="etf-tracking"] .result-metrics strong{font-size:22px;line-height:1.45;overflow-wrap:anywhere}
+body.qd-v04[data-qd-project="etf-tracking"] .result-metrics>.metric-card-primary strong{font-size:18px}
+body.qd-v04[data-qd-project="dram-price"] .latest-card::before{display:none}
+body.qd-v04[data-qd-project="dram-price"] .latest-card>strong{font-size:25px;line-height:1.45}
+body.qd-v04[data-qd-project="dram-price"] .latest-card h3{font-size:13px;line-height:1.6;margin:10px 0 5px}
+body.qd-v04[data-qd-project="dram-price"] .latest-card footer{margin-top:8px}
+@media(min-width:1001px){
+ body.qd-v04[data-qd-project="dram-price"] .latest-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+ body.qd-v04[data-qd-project="dram-price"] .latest-grid>.latest-card:nth-child(3n+1){border-left:0}
+ body.qd-v04[data-qd-project="dram-price"] .latest-grid>.latest-card:nth-child(n+4){border-top:1px solid var(--qd-border)}
+ body.qd-v04[data-qd-project="sox"] .metric-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+ body.qd-v04[data-qd-project="sox"] .metric-grid>.metric-card:nth-child(3n+1){border-left:0}
+ body.qd-v04[data-qd-project="sox"] .metric-grid>.metric-card:nth-child(n+4){border-top:1px solid var(--qd-border)}
+}
+@media(min-width:1500px){
+ body.qd-v04[data-qd-project="sox"] .metric-grid{grid-template-columns:repeat(6,minmax(0,1fr))}
+ body.qd-v04[data-qd-project="sox"] .metric-grid>.metric-card:nth-child(n+2){border-left:1px solid var(--qd-border);border-top:0}
+}
+
+/* Small controls belong to a toolbar, rather than another large card. */
+body.qd-v04[data-qd-project="regime"] .date-controls{padding:14px 18px;border-radius:10px;background:var(--qd-raised)}
+body.qd-v04[data-qd-project="regime"] .shared-date-controls{margin-bottom:18px}
+body.qd-v04[data-qd-project="etf-tracking"] .etf-switcher{display:flex;align-items:center;gap:16px;background:var(--qd-raised);padding:12px 16px;border-radius:10px}
+body.qd-v04[data-qd-project="etf-tracking"] .etf-switcher label{margin:0;white-space:nowrap;font-size:12px;color:var(--qd-muted)}
+body.qd-v04[data-qd-project="etf-tracking"] .etf-switcher select{max-width:440px;flex:1;min-width:0}
+body.qd-v04[data-qd-project="dram-price"] .filter-shell{padding:14px 16px;border:1px solid var(--qd-border);border-radius:10px}
+body.qd-v04[data-qd-project="factor"] .lab-toolbar{gap:12px}
+body.qd-v04[data-qd-project="sox"] .table-tools{padding:12px 14px;background:var(--qd-raised);border:1px solid var(--qd-border);border-radius:10px}
+body.qd-v04[data-qd-project="fearNgreed"] .analysis-config-head{min-height:60px;align-items:center}
+@media(min-width:800px){
+ body.qd-v04[data-qd-project="regime"] .date-controls>.field-group{display:flex;flex-direction:row;align-items:center;gap:10px}
+ body.qd-v04[data-qd-project="regime"] .date-controls>.field-group label{white-space:nowrap;margin:0}
+ body.qd-v04[data-qd-project="regime"] .date-controls{align-items:center;min-height:0;gap:14px}
+}
+
+/* The outer chart panel carries the frame; nested plots keep their full drawing area. */
+body.qd-v04[data-qd-project="dram-price"] .chart-facet,
+body.qd-v04[data-qd-project="etf-tracking"] .primary-chart-panel .chart-card{border:0;border-radius:0;background:transparent}
+body.qd-v04[data-qd-project="dram-price"] .chart-facet figcaption{padding-inline:0;border-bottom:1px solid var(--qd-border)}
+body.qd-v04[data-qd-project="sox"] .chart-readout{border-color:color-mix(in srgb,var(--qd-accent) 38%,var(--qd-border));background:var(--qd-soft)}
+body.qd-v04[data-qd-project="fearNgreed"] .conclusion-facts{gap:0}
+body.qd-v04[data-qd-project="fearNgreed"] .conclusion-facts>span{background:transparent;border-radius:0}
+body.qd-v04[data-qd-project="fearNgreed"] .conclusion-facts>span+span{border-left:1px solid var(--qd-border)}
+
+/* Deliberate row rhythm and a frozen identity column in wide comparison tables. */
+body.qd-v04:is([data-qd-project="factor"],[data-qd-project="regime"],[data-qd-project="fearNgreed"],[data-qd-project="dram-price"],[data-qd-project="sox"],[data-qd-project="etf-tracking"]) table :is(th,td){padding-block:var(--finance-row-space);font-variant-numeric:tabular-nums}
+body.qd-v04:is([data-qd-project="factor"],[data-qd-project="regime"],[data-qd-project="fearNgreed"],[data-qd-project="dram-price"],[data-qd-project="sox"],[data-qd-project="etf-tracking"]) table th{font-size:12px;font-weight:600;letter-spacing:0}
+body.qd-v04:is([data-qd-project="factor"],[data-qd-project="regime"],[data-qd-project="fearNgreed"],[data-qd-project="dram-price"],[data-qd-project="sox"],[data-qd-project="etf-tracking"]) tbody tr:focus-within>td{background:var(--qd-soft)}
+body.qd-v04[data-qd-project="factor"] #factor-table .lab-table :is(th,td):first-child,
+body.qd-v04[data-qd-project="sox"] .table-wrap table :is(th,td):first-child{position:sticky;left:0;z-index:2;background:var(--qd-surface);box-shadow:1px 0 0 var(--qd-border)}
+body.qd-v04[data-qd-project="factor"] #factor-table .lab-table th:first-child,
+body.qd-v04[data-qd-project="sox"] .table-wrap table th:first-child{z-index:3;background:var(--qd-raised)}
+body.qd-v04[data-qd-project="factor"] #factor-table .lab-table tr:is(:hover,:focus-within)>td:first-child,
+body.qd-v04[data-qd-project="sox"] .table-wrap table tr:is(:hover,:focus-within)>td:first-child{background:var(--qd-soft)}
+body.qd-v04:is([data-qd-project="factor"],[data-qd-project="regime"],[data-qd-project="fearNgreed"],[data-qd-project="dram-price"],[data-qd-project="sox"],[data-qd-project="etf-tracking"]) :is(.lab-table-scroll,.table-scroll,.table-wrap,.desktop-table){scrollbar-color:var(--qd-muted) var(--qd-raised);scrollbar-width:thin;overscroll-behavior-x:contain}
+
+@media(max-width:1000px){
+ body.qd-v04[data-qd-project="factor"] .lab-summary,
+ body.qd-v04[data-qd-project="fearNgreed"] .metric-grid,
+ body.qd-v04[data-qd-project="etf-tracking"] .result-metrics,
+ body.qd-v04[data-qd-project="sox"] .metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ body.qd-v04[data-qd-project="factor"] .lab-summary>.lab-stat:nth-child(odd),
+ body.qd-v04[data-qd-project="fearNgreed"] .metric-grid>.metric:nth-child(odd),
+ body.qd-v04[data-qd-project="sox"] .metric-grid>.metric-card:nth-child(odd){border-left:0}
+ body.qd-v04[data-qd-project="factor"] .lab-summary>.lab-stat:nth-child(n+3),
+ body.qd-v04[data-qd-project="fearNgreed"] .metric-grid>.metric:nth-child(n+3),
+ body.qd-v04[data-qd-project="sox"] .metric-grid>.metric-card:nth-child(n+3){border-top:1px solid var(--qd-border)}
+ body.qd-v04[data-qd-project="etf-tracking"] .result-metrics>.metric-card-primary{grid-column:1/-1}
+ body.qd-v04[data-qd-project="etf-tracking"] .result-metrics>.metric-card:nth-child(even){border-left:0}
+ body.qd-v04[data-qd-project="etf-tracking"] .result-metrics>.metric-card:nth-child(n+2){border-top:1px solid var(--qd-border)}
+}
+@media(max-width:600px){
+ body.qd-v04[data-qd-project="factor"] .lab-summary>.lab-stat,
+ body.qd-v04[data-qd-project="fearNgreed"] .metric-grid>.metric,
+ body.qd-v04[data-qd-project="etf-tracking"] .result-metrics>.metric-card,
+ body.qd-v04[data-qd-project="sox"] .metric-grid>.metric-card{padding:15px;min-height:100px}
+ body.qd-v04[data-qd-project="factor"] .lab-stat dd,
+ body.qd-v04[data-qd-project="fearNgreed"] .metric strong,
+ body.qd-v04[data-qd-project="etf-tracking"] .result-metrics strong,
+ body.qd-v04[data-qd-project="sox"] .metric-card .value{font-size:22px;line-height:1.4;overflow-wrap:anywhere}
+ body.qd-v04[data-qd-project="factor"] .lab-stat.primary dd{font-size:19px}
+ body.qd-v04[data-qd-project="etf-tracking"] .result-metrics>.metric-card-primary{min-height:0}
+ body.qd-v04[data-qd-project="etf-tracking"] .result-metrics>.metric-card-primary strong{font-size:18px}
+ body.qd-v04[data-qd-project="dram-price"] .latest-grid{scroll-snap-type:x proximity;scroll-padding-inline:0}
+ body.qd-v04[data-qd-project="dram-price"] .latest-card{scroll-snap-align:start;flex-basis:min(82vw,300px)}
+ body.qd-v04[data-qd-project="etf-tracking"] .etf-switcher{flex-wrap:wrap;gap:7px}
+ body.qd-v04[data-qd-project="etf-tracking"] .etf-switcher select{flex-basis:100%;width:100%}
+ body.qd-v04[data-qd-project="fearNgreed"] .conclusion-facts>span+span{border-left:0;border-top:1px solid var(--qd-border)}
+ body.qd-v04[data-qd-project="dram-price"] :is(.filter-shell button[role="combobox"],.advanced-filters__trigger),
+ body.qd-v04[data-qd-project="sox"] .table-tools :is(input,select),
+ body.qd-v04[data-qd-project="regime"] .date-controls :is(input,select,button),
+ body.qd-v04[data-qd-project="factor"] .lab-toolbar :is(input,select),
+ body.qd-v04[data-qd-project="etf-tracking"] .etf-switcher select{min-height:44px}
+}
+
+/* Factor has a checkbox before the identity: retain both, not just selection. */
+body.qd-v04[data-qd-project="factor"] #factor-table .lab-table :is(th,td):first-child{width:52px;min-width:52px;max-width:52px;padding-inline:12px;box-sizing:border-box}
+body.qd-v04[data-qd-project="factor"] #factor-table .lab-table :is(th,td):nth-child(2){position:sticky;left:52px;z-index:2;width:180px;min-width:180px;max-width:180px;white-space:normal;background:var(--qd-surface);box-shadow:1px 0 0 var(--qd-border)}
+body.qd-v04[data-qd-project="factor"] #factor-table .lab-table th:nth-child(2){z-index:3;background:var(--qd-raised)}
+body.qd-v04[data-qd-project="factor"] #factor-table .lab-table tr:is(:hover,:focus-within)>td:nth-child(2){background:var(--qd-soft)}
+body.qd-v04[data-qd-project="factor"] #factor-table .lab-table{table-layout:fixed}
+body.qd-v04[data-qd-project="regime"] .shared-date-controls{padding:0;border:0;background:none;box-shadow:none}
+@media(min-width:800px){
+ body.qd-v04[data-qd-project="regime"] .date-controls{display:flex;flex-wrap:wrap}
+ body.qd-v04[data-qd-project="regime"] .date-controls>.field-group.date-field{display:flex!important}
+}
+body.qd-v04[data-qd-project="etf-tracking"] .etf-switcher>label{display:flex;align-items:center;gap:16px;width:100%}
+@media(max-width:600px){body.qd-v04[data-qd-project="etf-tracking"] .etf-switcher>label{flex-direction:column;align-items:stretch;gap:7px}}
+@media(min-width:701px) and (max-width:1000px){
+ body.qd-v04[data-qd-project="dram-price"] .latest-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ body.qd-v04[data-qd-project="dram-price"] .latest-grid>.latest-card:nth-child(odd){border-left:0}
+ body.qd-v04[data-qd-project="dram-price"] .latest-grid>.latest-card:nth-child(n+3){border-top:1px solid var(--qd-border)}
+}
+@media(max-width:700px){
+ body.qd-v04[data-qd-project="dram-price"] .latest-grid{overflow-x:auto;overflow-y:hidden;scroll-snap-type:x proximity;scroll-padding-inline:0}
+ body.qd-v04[data-qd-project="dram-price"] .latest-card{scroll-snap-align:start}
+}
+/* SOX's identity is the ticker in column two; rank may scroll away. */
+body.qd-v04[data-qd-project="sox"] .table-wrap table :is(th,td):first-child{position:static;box-shadow:none}
+body.qd-v04[data-qd-project="sox"] .table-wrap table :is(th,td):nth-child(2){position:sticky;left:0;z-index:2;background:var(--qd-surface);box-shadow:1px 0 0 var(--qd-border)}
+body.qd-v04[data-qd-project="sox"] .table-wrap table th:nth-child(2){z-index:3;background:var(--qd-raised)}
+body.qd-v04[data-qd-project="sox"] .table-wrap table tr:is(:hover,:focus-within)>td:nth-child(2){background:var(--qd-soft)}
+@media(max-width:1000px){
+ body.qd-v04[data-qd-project="factor"] .lab-summary,
+ body.qd-v04[data-qd-project="fearNgreed"] .metric-grid,
+ body.qd-v04[data-qd-project="etf-tracking"] .result-metrics,
+ body.qd-v04[data-qd-project="sox"] .metric-grid{display:grid}
+ body.qd-v04[data-qd-project="sox"] .metric-grid>.metric-card{width:auto}
+}
+@media(max-width:1000px){
+ body.qd-v04[data-qd-project="factor"] .lab-summary>.lab-stat.primary{grid-column:auto}
+}
+@media(max-width:600px){
+ body.qd-v04[data-qd-project="regime"] .date-controls select{font-size:14px;padding-inline:10px}
+}

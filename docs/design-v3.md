@@ -1,10 +1,12 @@
-# Quant 공통 디자인 v3
+# Quant 공통 디자인 v0.4 운영 계약
 
-2026-10-30 승인된 v0.3 로컬 미리보기를 공통 디자인으로 적용한다. Hub와 금융 분석 화면은 **집중형**, News와 전체 브리핑은 **여백형**을 사용한다. 글꼴·색·탐색·입력·표·차트의 표현은 통일하고, 각 프로젝트의 계산과 데이터 계약은 유지한다.
+2026-10-30 승인된 v0.4 디자인을 10개 운영 사이트에 적용한다. 운영 UI 버전은 `0.4.0`이다. 이 문서명과 `shared/design/v3/` 자산 폴더는 기존 참조·소비 페이지의 호환성을 위해 유지하며 UI 버전을 뜻하지 않는다. 상위 디자인 규범은 [Web Design Prompt v2.5.0](web-design.md)다.
+
+Hub·금융의 빠른 비교, News의 읽기, 투자일지의 계좌 기록, Alpha House의 작업 탐색이라는 서로 다른 목적을 유지한다. 글꼴·색·탐색·입력·표의 표현을 통일하고 사용자가 여유/촘촘한 밀도를 선택하게 한다. 원래 계산·데이터·인증·자동화 계약은 바꾸지 않는다.
 
 ## 적용 구조
 
-모든 소비 사이트가 사용하는 Hub의 `shared/navigation/v1/nav.js`가 `shared/design/v3/`의 디자인 번들을 로드한다. 메뉴의 원본은 계속 `shared/navigation/v1/menu.json`이다. 현재 v3 shell은 `shell.js`의 `projects` 배열과 `base()`를 별도로 사용하므로 메뉴 변경 시 함께 맞춘다. 디자인을 바꾸기 위해 News 수집기나 개별 프로젝트의 데이터 생성·배포 자동화를 수정하지 않는다.
+모든 소비 사이트가 사용하는 Hub의 `shared/navigation/v1/nav.js`가 `shared/design/v3/`의 디자인 번들을 로드한다. 메뉴의 원본은 계속 `shared/navigation/v1/menu.json`이다. 현재 기반 shell은 `shell.js`의 `projects` 배열과 `base()`를 별도로 사용하므로 메뉴 변경 시 함께 맞춘다. 디자인을 바꾸기 위해 News 수집기나 개별 프로젝트의 데이터 생성·배포 자동화를 수정하지 않는다.
 
 ```text
 소비 페이지의 기존 shared/navigation/v1/nav.js
@@ -12,19 +14,22 @@
   └─ shared/design/v3/             테마·공통 탐색·스타일·차트 확대
        ├─ 공통 디자인 토큰과 Pretendard 폰트
        ├─ 프로젝트별 CSS
-       └─ 공통 shell과 차트 확대 기능
+       ├─ 공통 shell과 차트 확대 기능
+       └─ v04.css · v04-finance.css · v04-editorial.css · v04.js
 ```
 
 번들 URL은 Hub의 배포 경로를 기준으로 해석한다. 소비 페이지가 `/factor/` 또는 다른 origin에 있어도 `/design/` 같은 로컬 미리보기 경로를 요청해서는 안 된다. 공유 스크립트는 한 번만 초기화하고, 준비 전이나 로드 실패 시 원래 페이지와 탐색 기능을 사용할 수 있어야 한다.
 
-현재 로더는 `nav.js` 하단의 별도 presentation IIFE다. `aliases`로 탐색 ID를 디자인 ID로 연결하고 `styles`에서 프로젝트별 CSS를 선택한다. CSS는 `design-system.css` → 프로젝트 기본 CSS → `v03.css` → 이름에 `v03`이 포함된 보정 CSS → `focus.css` 순서다. CSS가 준비되면 `boot.js`, `shell.js`, `focus.js`를 로드하며 News에는 `news-v03.js`를 추가한다. `window.__quantDesignV3`의 `version`, `project`, `state`와 `quant-design-ready` 이벤트로 적용 상태를 확인할 수 있다.
+로더는 `nav.js`의 presentation IIFE다. `aliases`로 탐색 ID를 디자인 ID에 연결하고 `styles`에서 기존 프로젝트 CSS를 선택한다. 기존 `design-system.css` → 프로젝트 기본 CSS → `v03.css` → 프로젝트 v03 보정 CSS → `focus.css`를 보존한 뒤, 공통 `v04.css`를 추가한다. 금융 6개에는 `v04-finance.css`, News·투자일지·Alpha House에는 `v04-editorial.css`를 그 뒤에 추가하고 Hub는 공통 파일만 사용한다. 각 파일은 `body.qd-v04`와 프로젝트 scope로 적용 대상을 제한한다.
+
+기존 `boot.js`, `shell.js`, `focus.js`와 News의 `news-v03.js`를 유지하며, `v04.js`는 기반 shell이 준비된 뒤 실행한다. `window.__quantDesignV3`는 기존 로더의 호환 상태 API로 남기고 v0.4 적용은 `window.__quantDesignV4`의 `version: '0.4.0'`, `state: 'ready'`, `project`와 `body.qd-v04`로 확인한다. 기반 로더의 준비 상태만으로 v0.4 전체 적용을 단정하지 않는다.
 
 원래 React 컴포넌트와 차트 DOM의 소유권을 유지한다. 공통 shell은 별도 노드에 만들고, 차트 확대는 원래 패널을 이동·복제하지 않고 표시 크기와 위치를 전환한다. 닫으면 스크롤, 포커스, `inert`, ARIA 속성을 복원한다.
 
 ## 글꼴과 정보 위계
 
 - 공통 글꼴은 번들에 포함한 `PretendardVariable.woff2`다. `font-display: swap`, 굵기 100–900, 시스템 sans-serif 대체 글꼴을 사용한다. 버튼·입력·표·SVG 텍스트도 `--qd-font`를 따른다.
-- 페이지 제목은 약 27–29px, 주요 구획은 20–21px, 카드 제목은 17–18px, 본문은 14–15px를 기준으로 한다. 표와 보조 정보는 11–13px로 조정하되 핵심 결과나 상태를 작은 보조문구로 내리지 않는다.
+- 페이지 제목은 약 27–30px, 주요 구획은 20–21px, 카드 제목은 17–18px, 본문은 14–15px를 기준으로 한다. 표와 보조 정보는 11–13px로 조정하되 핵심 결과나 상태를 작은 보조문구로 내리지 않는다.
 - 수치에는 `font-variant-numeric: tabular-nums`를 적용한다. 수익률·비중·가격·날짜의 단위를 유지하고, 같은 열은 소수점 자릿수와 정렬을 맞춘다.
 - 첫 화면은 제목, 기준일과 현재 상태, 핵심 결과, 주요 그래프 순서로 구성한다. 계산 근거·운영 이력 등 상세는 펼침 영역이나 관련 섹션으로 이어진다.
 - 제목을 재진술하는 설명, 상투적인 한계 문구, 같은 의미의 영문 부제는 제거한다. 실제 오류·로딩·데이터 결측·적용 기간·모델 구분·가격 및 체결 기준은 보존한다.
@@ -33,18 +38,18 @@
 
 ## 색, 테마와 브랜드
 
-색은 공통 토큰으로 참조한다. 아래는 v3의 의도한 기본 팔레트이며, 실제 적용값은 공통 스타일의 cascade를 포함해 확인한다. 프로젝트에서 같은 역할의 색을 별도 hex 값으로 반복 정의하지 않는다.
+색은 공통 토큰으로 참조한다. 아래는 v0.4의 기본 팔레트이며, 실제 적용값은 공통 스타일의 cascade를 포함해 확인한다. 프로젝트에서 같은 역할의 색을 별도 hex 값으로 반복 정의하지 않는다.
 
 | 토큰 | 라이트 | 다크 | 용도 |
 | --- | --- | --- | --- |
-| `--qd-bg` | `#f4f6f9` | `#10151e` | 페이지 배경 |
-| `--qd-surface` | `#ffffff` | `#19212e` | 카드·탐색 배경 |
-| `--qd-text` | `#182333` | `#e9eef7` | 주요 글자 |
-| `--qd-muted` | `#68778c` | `#9baac0` | 보조 글자 |
-| `--qd-border` | `#e3e8ef` | `#2c384a` | 구분선 |
-| `--qd-accent` | `#276be6` | `#82b2ff` | 선택·핵심 동작 |
-| `--qd-soft` | `#edf3ff` | `#243650` | 선택 배경 |
-| `--qd-raised` | `#f8fafd` | `#1e2837` | 표 헤더·보조 표면 |
+| `--qd-bg` | `#f5f7fa` | `#0e141d` | 페이지 배경 |
+| `--qd-surface` | `#ffffff` | `#17202d` | 카드·탐색 배경 |
+| `--qd-text` | `#202938` | `#edf2fa` | 주요 글자 |
+| `--qd-muted` | `#68768a` | `#a4b3c7` | 보조 글자 |
+| `--qd-border` | `#e7ebf0` | `#2b3849` | 구분선 |
+| `--qd-accent` | `#2875eb` | `#82b2ff` | 선택·핵심 동작 |
+| `--qd-soft` | `#edf3ff` | `#22364f` | 선택 배경 |
+| `--qd-raised` | `#f8fafc` | `#1c2736` | 표 헤더·보조 표면 |
 
 테마는 `html[data-theme="light"]`와 `html[data-theme="dark"]`로 구분한다. 기본값은 다크이며 OS 설정에 따라 바뀌지 않는다. 우선순위는 유효한 URL `theme` → 저장된 `quant-research-theme` → `dark`다. 사용자가 저장한 라이트 선택은 유지한다. 네이티브 초기화가 끝난 뒤 공통 부트가 이 우선순위를 다시 적용하며, 새 프로젝트도 시스템 기본값을 사용자 선택으로 저장하지 않아야 한다. 공통 설정 키 `quant-research-theme`와 기존 페이지 테마 동작을 함께 반영하며, 링크 이동 뒤에도 사용자의 선택을 유지한다. URL의 `theme` 값은 `light` 또는 `dark`만 허용한다. 저장소를 사용할 수 없어도 기본 테마와 전환 버튼이 동작해야 한다.
 
@@ -54,17 +59,30 @@
 
 ## 탐색과 화면 구성
 
-- 넓은 화면은 212px 사이드바, 현재 프로젝트 이름과 검색·테마 버튼이 있는 상단 헤더를 사용한다. 로컬 v0.3의 상단 100px는 헤더 64px와 미리보기 안내 36px의 합이다. 운영판에서 안내를 제거하면 본문 여백과 앵커 오프셋도 함께 줄인다.
-- 1180px 미만에서는 사이드바를 접고 상단 프로젝트 링크 영역만 가로 스크롤한다. 현재 프로젝트는 화면 안에 보이도록 맞춘다. 페이지 전체에 가로 스크롤이 생기면 안 된다.
-- `⌘K` 또는 `Ctrl+K`로 프로젝트와 현재 페이지의 섹션을 찾는다. 방향키로 선택하고 Enter로 이동하며 Escape로 닫는다. 결과 없음 상태, 한글 IME 조합, 닫은 후 포커스 복귀를 지원한다.
-- 현재 위치에는 `aria-current="page"`를 표시한다. 검색·테마·확대처럼 아이콘만 보이는 버튼은 명시적인 `aria-label`을 갖는다. 모바일에서 숨긴 텍스트에 접근 가능한 이름을 의존하지 않는다.
-- 고정 헤더 때문에 제목이나 키보드 포커스가 가려지지 않도록 `scroll-padding-top`과 `scroll-margin-top`을 실제 shell 높이에 맞춘다.
+- 넓은 화면은 224px 사이드바와 64px 헤더를 사용한다. 사이드바를 접으면 72px 아이콘 레일로 바뀌고 본문 폭도 함께 바뀐다. 1180px 미만에서는 사이드바를 숨긴다.
+- 프로젝트 선택 창은 등록된 10개 사이트와 즐겨찾기를 제공한다. 기본 즐겨찾기는 대시보드·뉴스 브리핑·투자일지다. 즐겨찾기 항목은 기존 그룹에서 중복 표시하지 않으며 등록 URL은 유지한다.
+- 보기 설정은 `comfortable`(여유롭게)와 `compact`(촘촘하게)를 제공한다. 카드·표·목록의 표시 간격만 바꾸며 데이터와 계산 입력을 변경하지 않는다.
+- 현재 페이지 목차는 보이는 제목으로 구성하고, 항목 선택 시 해당 제목으로 이동한다. 제목이 없으면 빈 상태를 표시한다. React 재렌더와 필터 변경 후에도 현재 화면을 반영한다.
+- `⌘K` 또는 `Ctrl+K` 빠른 검색은 프로젝트·현재 페이지 섹션을 찾는다. 방향키·Enter·Escape, 한글 IME 조합, 빈 결과, 닫은 뒤 포커스 복귀를 유지한다.
+- 프로젝트 선택·보기 설정·목차는 모달 상태와 포커스를 관리한다. 차트 확대나 네이티브 dialog가 열려 있을 때 겹쳐 열지 않는다. 모바일은 화면 안에 들어오는 하단 창을 사용한다.
+- 현재 위치는 각 탐색 표면의 `aria-current="page"`로 표시한다. 아이콘 버튼의 이름·선택 상태·포커스 표시를 보존한다. 앵커 오프셋은 실제 헤더 높이를 따른다.
+- Hub의 전체/시장/전략·ETF/반도체 보기는 기존 패널의 표시만 바꾸며 `view` query로 표현한다. 데이터·결과 identity는 그대로다.
+
+### 표시 설정 저장
+
+| 키 | 값 | 기본값 |
+| --- | --- | --- |
+| `quant-ui-v04-favorites` | 등록된 프로젝트 표시명 배열 | 대시보드·뉴스 브리핑·투자일지 |
+| `quant-ui-v04-density` | `comfortable` 또는 `compact` | `comfortable` |
+| `quant-ui-v04-rail` | 접힘 여부 boolean | `false` |
+
+설정은 JSON으로 origin별 localStorage에 저장한다. GitHub Pages 경로는 같은 origin을 공유하지만 투자일지·Alpha House와 자동 동기화되지 않는다. 읽기 실패·잘못된 값·저장소 사용 불가 시 안전한 기본값으로 동작한다. 테마 키는 기존 `quant-research-theme`를 계속 사용한다. 표시 설정은 계좌·장부·계산 입력·자동화 상태의 저장 경로와 분리한다.
 
 ## 카드, 표와 차트
 
-카드는 얕은 테두리와 10–12px 정도의 모서리로 구분한다. 집중형의 기본 간격은 padding 18px, gap 14px이며 주요 Hub 패널에는 20–22px 여백을 사용할 수 있다. 카드 상단을 가로지르는 컬러 띠 대신 필요한 경우 36–44px의 짧은 강조선을 사용한다. News의 먼저 볼 이슈·주제별 뉴스는 불필요한 상단 띠를 두지 않는다.
+카드는 얕은 테두리와 10–14px 모서리로 구분한다. 관련 KPI는 하나의 요약 표면과 내부 구분선으로 연결하고 장식용 전체 상단 띠를 없앤다. 밀도에 따라 padding·행 간격을 조정하되 값·단위·날짜의 가독성을 유지한다. News는 큰 첫 이슈와 네 개 보조 이슈, 조용한 주제 구분을 사용하고 집중 읽기에서는 카드 장식을 줄인다.
 
-표는 헤더와 본문의 대비, 행 간격, 숫자 정렬을 우선한다. 줄무늬와 hover는 약하게 적용한다. 긴 표는 자체 래퍼에서 가로 스크롤하고, sticky 헤더는 그 래퍼 안에서 동작하게 한다. 정렬·검색·CSV 등 기존 제어를 장식 요소로 대체하지 않는다.
+표는 헤더와 본문의 대비, 행 간격, 숫자 정렬을 우선한다. Factor의 팩터명·SOX 티커처럼 넓은 비교표의 식별 열은 내부 가로 스크롤 중 고정하며 마지막 열도 읽을 수 있어야 한다. 줄무늬와 hover는 약하게 적용한다. 긴 표는 자체 래퍼에서 가로 스크롤하고, sticky 헤더는 그 래퍼 안에서 동작하게 한다. 정렬·검색·CSV 등 기존 제어를 장식 요소로 대체하지 않는다.
 
 차트는 단위·기간·축 시작점과 관측/예측/전략 구분을 유지한다. 눈금선은 보조색, 주요 계열은 충분한 대비로 표현한다. 선·점·끝 라벨·범례의 계열 색을 일치시키고, 선택과 비선택을 선명도와 두께로 구분한다. 비선택 계열도 읽을 수 있어야 한다.
 
@@ -76,23 +94,26 @@
 
 1. `shared/navigation/v1/menu.json`에 고유 ID, 표시명, 공개 URL을 추가한다. 메뉴 순서와 허용 origin은 [공통 탐색 계약](shared-navigation.md)을 따른다. `node scripts/sync-navigation.mjs`로 생성 fallback을 동기화한다.
 2. `shared/navigation/v1/nav.js` 하단 presentation IIFE의 `aliases`와 `styles`에 디자인 식별자와 CSS 목록을 등록한다. 로더는 명시한 `html[data-quant-design-project]`, Alpha House 호스트, 첫 `[data-quant-project]` 값 또는 URL 첫 경로로 프로젝트를 식별한다. 예를 들어 `aliases.etf = 'etf-tracking'`, `styles['etf-tracking'] = ['fear-etf.css', 'fear-etf-v03.css']`처럼 연결한다. 기존 v1의 alias가 v3에도 자동 반영된다고 가정하지 말고 실제 소비 ID를 확인한다. 계산/API ID를 바꾸어 맞추지 않는다.
-3. `shared/design/v3/`에 프로젝트 CSS를 추가하고 `styles`의 해당 프로젝트 배열에 파일명을 등록한다. `v03`이 파일명에 포함되면 공통 `v03.css` 이후에 로드되는 현재 규칙을 따른다. `shell.js`의 `projects`에 `[디자인ID, 표시명, 검색설명, 아이콘키]`를 추가하고 `base()`의 공개 URL도 확인한다. `shell.js`의 `groupItems()` 호출에 프로젝트 ID를 한 번 등록해 사이드바 그룹을 정한다. 배열 순서만 바꾸어 기존 항목이 사라지지 않도록 그룹·현재 위치·모바일 링크·검색 결과를 함께 확인한다.
-4. CSS는 `body[data-qd-project="프로젝트-스타일-ID"]` 아래로 제한한다. 공통 shell 변경이 아니라면 전역 `h2`, `small`, `svg`, `button` 규칙을 추가하지 않는다.
+3. 금융/에디토리얼 분류에 맞춰 로더의 v0.4 CSS 선택도 등록한다. `shared/design/v3/`에 프로젝트 CSS를 추가하고 `styles`의 해당 프로젝트 배열에 파일명을 등록한다. `v03`이 파일명에 포함되면 공통 `v03.css` 이후에 로드되는 현재 규칙을 따른다. `shell.js`의 `projects`에 `[디자인ID, 표시명, 검색설명, 아이콘키]`를 추가하고 `base()`의 공개 URL도 확인한다. `shell.js`의 `groupItems()` 호출에 프로젝트 ID를 한 번 등록해 사이드바 그룹을 정한다. 배열 순서만 바꾸어 기존 항목이 사라지지 않도록 그룹·현재 위치·모바일 링크·검색 결과를 함께 확인한다.
+4. v0.4 CSS는 `body.qd-v04[data-qd-project="프로젝트-스타일-ID"]` 아래로 제한한다. 기존 기반 스타일의 `body[data-qd-project]` scope도 유지한다. 공통 shell 변경이 아니라면 전역 `h2`, `small`, `svg`, `button` 규칙을 추가하지 않는다.
 5. 차트 확대가 필요하면 `shared/design/v3/focus.js`의 `specs`에 `[패널 selector, 차트 selector]`를 등록한다. 중첩 패널의 확대 버튼이 중복 생성되지 않는지 확인한다.
 6. 새 배포 파일은 `scripts/pages-artifact-files.json` 허용 목록에도 추가하고 `node scripts/verify-pages-artifact.mjs dist`로 정적 산출물을 검증한다.
 7. 개발 화면, 운영 도메인, 중첩 경로, 다른 프로젝트 링크까지 확인한 후 배포한다. CSP가 있는 소비 사이트에서는 Hub 스크립트·스타일·폰트가 실제로 허용되는지 검증한다.
 
-현재 식별자 구분 예:
+현재 10개 사이트의 식별자 대응(행 순서는 registry 기준):
 
-| 탐색 ID | 사이트 경로 | 디자인 scope |
+| 탐색 ID | 사이트 경로·호스트 | 디자인 scope |
 | --- | --- | --- |
 | `hub` | `/quant-dashboard/` | `quant-dashboard` |
 | `factor` | `/factor/` | `factor` |
-| `fear-greed` | `/fearNgreed/` | `fearNgreed` |
 | `dram` | `/dram-price/` | `dram-price` |
 | `etf` | `/etf-tracking/` | `etf-tracking` |
-| `observatory` | Alpha House 별도 호스트 | `alpha-house` |
-| `investment-journal` | `https://invest.changgi-son.chatgpt.site/` | `investment-journal` |
+| `sox` | `/sox/` | `sox` |
+| `fear-greed` | `/fearNgreed/` | `fearNgreed` |
+| `regime` | `/regime/` | `regime` |
+| `news` | `/news/` | `news` |
+| `investment-journal` | `invest.changgi-son.chatgpt.site` | `investment-journal` |
+| `observatory` | `research-observatory-changgi.changgi-son.chatgpt.site` | `alpha-house` |
 
 투자일지는 `nav.js`의 `hostedProjects`에 정확한 `invest.changgi-son.chatgpt.site` 호스트를 등록한다. `/`, `/login`, 계좌·거래 등 모든 하위 경로에서 같은 디자인 ID를 사용한다. `styles['investment-journal']`는 `['investment-journal.css']`이며 CSS의 배포 allowlist인 `scripts/pages-artifact-files.json`도 함께 등록한다. 차트 확대는 `focus.js`의 `['.panel', '.recharts-wrapper']`를 사용한다. 기존 사용자명·비밀번호 로그인과 서버 인증은 유지하며, 공통 메뉴 URL에는 자격증명이나 토큰을 넣지 않는다.
 
@@ -102,15 +123,17 @@
 
 공통 디자인은 계산식, 비용, 체결 시점, 데이터 JSON, 모델, 수집·갱신 일정, News 런타임을 변경하지 않는다. 투자일지의 장부·현금·계좌·인증·API도 디자인 로더에서 읽거나 수정하지 않는다. 기존 날짜·필터·단위·빈 결과·오류는 유지한다. 상태 메시지의 문구를 줄여도 정상 상태처럼 오인하게 바꾸지 않는다.
 
-로컬 미리보기의 `boot.js`에는 데이터 GET을 로컬 snapshot으로 보내는 기능이 있다. 운영 번들에는 이 프록시, `/__data`, `/alpha-house/api/state` 우회, localhost URL, 고정 스냅샷 날짜, 미리보기 비교 링크를 포함하지 않는다. 공통 디자인 적용을 위해 원래 `fetch`를 덮어쓰지 않는다. 테마 상태와 UI 처리는 데이터 수집·계산에서 분리한다.
+운영 번들에는 `QuantPreview`, 로컬 미리보기 URL 변환, `localhost`, 프록시·고정 스냅샷, 비교 링크·baseline 모드·미리보기 표시를 포함하지 않는다. 미리보기 전용 저장키 대신 위 `quant-ui-v04-*` 계약을 사용한다. 원래 `fetch`를 덮어쓰거나 운영 API·인증 요청을 프록시하지 않는다.
+
+News의 수집·검토·발행·활성 런타임·동결 판본·원문 JSON은 보존한다. 기존 공개 HTML이 중앙 자산을 읽는 구조로 적용하며 디자인 배포를 위해 수집을 재실행하지 않는다. 투자일지는 네이티브 계좌·현금·장부·복구·API와 체험/실제 계정 구분을 유지한다. Alpha House의 작업 상태·실행·세션 기능 역시 공통 표시 레이어가 소유하지 않는다.
 
 ## 검증과 배포 기준
 
 변경 범위와 연결된 소비 화면을 검증한다. 단순 스타일 변경을 이유로 데이터 재수집이나 전체 백테스트를 수행하지 않는다.
 
-- 저장된 소스의 문법과 자산 참조를 확인하고 Hub의 `npm test`를 실행한다. 배포 작업에서는 저장소의 `npm run test:publish` 기준도 충족한다. 로더·프로젝트 매핑 변경은 관련 회귀 검사에 포함한다.
+- 신규 `v04*` 자산의 scope·운영 버전·미리보기 코드 미포함과 로드 순서를 확인한다. 저장된 소스의 문법과 자산 참조를 확인하고 Hub의 `npm test`를 실행한다. 배포 작업에서는 `npm run test:publish`도 실행하고 종료 코드와 원인을 기록한다. `npm test` 실패나 실제 데이터 계약·관측 불가 오류는 배포 전에 해결한다. 기존 upstream 출처·모델 품질 주의로 `test:live`가 코드 2를 반환하면 통과로 표기하지 않고, 공개 보고서와 변경 전후 근거를 보존한 뒤 저장소의 기존 `public-health-gate.mjs` 기준으로 배포 가능 여부를 확인한다. 경고를 숨기거나 gate를 완화하지 않는다. 로더·프로젝트 매핑 변경은 관련 회귀 검사에 포함한다.
 - 실제 브라우저에서 1440×1000 라이트·다크, 390×844 모바일을 확인한다. 폰트 로드와 computed style, 페이지 overflow, 주요 제목·수치·날짜·제어의 잘림을 확인하고 실제 이미지를 보고 판단한다.
-- 공통 검색·테마·프로젝트 이동, 차트 확대·닫기·Escape·포커스 복귀, 대표 네이티브 필터 변경→결과 반영→복원을 확인한다. React 페이지는 재렌더 뒤에도 정상인지 확인한다.
+- 프로젝트 선택·즐겨찾기 저장/복원·밀도·레일 접기·목차·Hub 보기와 공통 검색·테마·프로젝트 이동, 차트 확대·닫기·Escape·포커스 복귀, 대표 네이티브 필터 변경→결과 반영→복원을 확인한다. React 페이지는 재렌더 뒤에도 정상인지 확인한다.
 - 로딩·빈 결과·오류 상태의 표현을 보존한다. 콘솔 오류와 자산/모듈 404를 확인한다. 일시적인 ResizeObserver 알림은 실제 기능 실패와 구분해 기록한다.
 - 승인된 로컬 미리보기와 소스 버전, 검증 화면을 남긴다. 외부 배포는 해당 승인 범위에서 수행하고, 배포 후 각 소비 사이트에서 공통 번들·폰트가 로드되고 주요 기능이 동작하는지 공개 readback으로 확인한다.
 - 중앙 로더 변경은 여러 사이트에 즉시 영향을 준다. 별도 백업 폴더를 만들지 않는다. 실패 시 기존 Git 이력에서 확인한 정상 로더 연결 또는 해당 디자인 번들만 되돌린다. 데이터·자동화를 함께 되돌리지 않는다.
