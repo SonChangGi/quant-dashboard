@@ -142,6 +142,8 @@ function begin(){
    document.documentElement.dataset.unifiedDesign='0.5.0';
    for(const name of ['polish.js','adapters/finance.js','adapters/editorial.js'])await new Promise((resolve,reject)=>{const el=document.createElement('script');el.src=new URL(name,releaseBase);el.onload=resolve;el.onerror=reject;document.head.append(el)});
    window.__quantDesignUnified.state='ready';
+   const footer=document.querySelector('.qd-side-footer small');
+   if(footer)footer.textContent='Quant Research · v'+window.__quantDesignUnified.version;
    window.dispatchEvent(new CustomEvent('quant-design-unified-ready',{detail:{project,version:'0.5.0'}}));
   }catch{extensionLinks.forEach(link=>link.remove());delete document.documentElement.dataset.unifiedDesign;window.__quantDesignUnified.state='error'}
  }

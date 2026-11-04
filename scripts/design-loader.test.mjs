@@ -5,10 +5,10 @@ import {readFileSync} from 'node:fs';
 const source=readFileSync(new URL('../shared/navigation/v1/nav.js',import.meta.url),'utf8').split('/* Shared presentation layer.')[1];
 const loader='/* Shared presentation layer.'+source;
 async function run({path='/',host='sonchanggi.github.io',project,fail=false,failExtension=false}={}){
- const nodes=[],root={dataset:{}},window={dispatchEvent(){}};
- const document={readyState:'complete',currentScript:{src:'https://sonchanggi.github.io/quant-dashboard/shared/navigation/v1/nav.js'},documentElement:root,querySelector:s=>s==='[data-quant-project]'&&project?{dataset:{quantProject:project}}:null,createElement:tag=>({tag,remove(){this.removed=true}}),head:{append(node){nodes.push(node);queueMicrotask(()=>(fail||(failExtension&&String(node.href).endsWith('/common.css')))?node.onerror?.():node.onload?.())}}};
+ const nodes=[],root={dataset:{}},window={dispatchEvent(){}},footer={textContent:'Quant Research · v0.4'};
+ const document={readyState:'complete',currentScript:{src:'https://sonchanggi.github.io/quant-dashboard/shared/navigation/v1/nav.js'},documentElement:root,querySelector:s=>s==='.qd-side-footer small'?footer:s==='[data-quant-project]'&&project?{dataset:{quantProject:project}}:null,createElement:tag=>({tag,remove(){this.removed=true}}),head:{append(node){nodes.push(node);queueMicrotask(()=>(fail||(failExtension&&String(node.href).endsWith('/common.css')))?node.onerror?.():node.onload?.())}}};
  vm.runInNewContext(loader,{document,window,location:{pathname:path,hostname:host},URL,CustomEvent:class{},Promise});
- await new Promise(r=>setTimeout(r,10));return{nodes,window,root};
+ await new Promise(r=>setTimeout(r,10));return{nodes,window,root,footer};
 }
 test('every current project and legacy alias resolves to its production design',async()=>{
  const cases={hub:'quant-dashboard',momentum:'factor',factor:'factor',regime:'regime',fearngreed:'fearNgreed','fear-greed':'fearNgreed',dram:'dram-price',sox:'sox',etf:'etf-tracking',news:'news',observatory:'alpha-house','investment-journal':'investment-journal'};
@@ -63,9 +63,10 @@ test('unified release reports readiness only after its assets load',async()=>{
  for(const project of ['hub','factor','dram','etf','sox','fear-greed','regime','news','investment-journal','observatory']){
   const r=await run({project});assert.equal(r.window.__quantDesignUnified.state,'ready');assert.equal(r.root.dataset.unifiedDesign,'0.5.0');
   assert.equal(r.window.__quantDesignV3.version,'0.4.0');
+  assert.equal(r.footer.textContent,'Quant Research · v0.5.0');
  }
 });
 test('failed extension restores the loaded foundation without claiming readiness',async()=>{
- const r=await run({project:'factor',failExtension:true});assert.equal(r.window.__quantDesignV3.state,'ready');assert.equal(r.window.__quantDesignUnified.state,'error');assert.equal(r.root.dataset.unifiedDesign,undefined);
+ const r=await run({project:'factor',failExtension:true});assert.equal(r.window.__quantDesignV3.state,'ready');assert.equal(r.window.__quantDesignUnified.state,'error');assert.equal(r.root.dataset.unifiedDesign,undefined);assert.equal(r.footer.textContent,'Quant Research · v0.4');
  assert(r.nodes.filter(n=>String(n.href).includes('/adapters/')||String(n.href).endsWith('/common.css')).every(n=>n.removed));
 });
