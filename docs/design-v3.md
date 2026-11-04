@@ -1,8 +1,30 @@
-# Quant 공통 디자인 v0.4 운영 계약
+# Quant 공통 디자인 0.5.0 운영 계약
 
-2026-10-30 승인된 v0.4 디자인을 10개 운영 사이트에 적용한다. 운영 UI 버전은 `0.4.0`이다. 이 문서명과 `shared/design/v3/` 자산 폴더는 기존 참조·소비 페이지의 호환성을 위해 유지하며 UI 버전을 뜻하지 않는다. 상위 디자인 규범은 [Web Design Prompt v2.5.0](web-design.md)다.
+2026-11-04 승인된 공통 extension `0.5.0`을 10개 운영 사이트에 적용한다. 기반 foundation은 검증된 `0.4.0` 바이트를 유지한다. 이 문서명과 `shared/design/v3/` 자산 폴더는 기존 참조·소비 페이지의 호환성을 위해 유지하며 UI 버전을 뜻하지 않는다. 상위 디자인 규범은 [Web Design Prompt v2.5.0](web-design.md)다.
 
 Hub·금융의 빠른 비교, News의 읽기, 투자일지의 계좌 기록, Alpha House의 작업 탐색이라는 서로 다른 목적을 유지한다. 글꼴·색·탐색·입력·표의 표현을 통일하고 사용자가 여유/촘촘한 밀도를 선택하게 한다. 원래 계산·데이터·인증·자동화 계약은 바꾸지 않는다.
+
+
+## 2026-11-04 release 0.5.0
+
+기준은 News `web-design.md` 2.6.0 §19와 승인된 로컬 후보 `quant-design-unified-20261104`다. 공통 원본은 `shared/design/releases/0.5.0/`이며 `manifest.json`에 모든 자산의 SHA-256을 기록한다. 이 버전 디렉터리의 파일은 수정하지 않고 다음 변경은 새 버전으로 발행한다. `foundation/`의 22개 파일은 기존 0.4.0과 동일하다.
+
+9개 소비 사이트는 호환 진입점 `shared/navigation/v1/nav.js`를 유지하고, 로더가 고정 release의 foundation을 먼저 준비한 뒤 `common.css`, 세 adapter CSS, `polish.js`, 두 adapter JS를 적용한다. News의 새 reader/library는 자체 소유 로더와 로컬 고정 복사본을 사용한다. 기존 형식 News는 중앙 진입점을 유지한다. 두 경로 모두 같은 공통 extension 해시를 사용하며 중복 shell을 만들지 않는다.
+
+foundation 준비는 `window.__quantDesignV3.state`, extension 준비는 `window.__quantDesignUnified`의 `version: '0.5.0'`, `foundation: '0.4.0'`, `state: 'ready'`와 `html[data-unified-design="0.5.0"]`로 구분한다. extension 실패는 foundation을 유지하고 ready로 보고하지 않는다. 이전 0.4.0 파일이나 네이티브 데이터·인증·자동화를 변경하지 않는다.
+
+| 역할 | 다크 | 라이트 |
+| --- | --- | --- |
+| 배경 | `#0f1722` | `#f3f5f7` |
+| 표면 | `#1a2534` | `#ffffff` |
+| 높은 표면 | `#253449` | `#e9eef3` |
+| 본문 | `#edf2f8` | `#1c2938` |
+| 보조 글자 | `#b8c5d5` | `#546374` |
+| 경계 | `#43566e` | `#a7b3c3` |
+| 강조 | `#9dbbe5` | `#3c5b87` |
+| 선택 배경 | `#273d5b` | `#e5edf6` |
+
+170ms 표면 전환, reduced motion, 모바일 44px 상단 조작, 표 스크롤 키보드 접근을 공통 적용한다. adapter는 금융 정확값·필터, News 읽기, 투자일지 기간 조작과 Alpha 도구 배치를 개선한다. 검토된 반복 문구만 축약한다. 아래 0.4 기반 설명은 기반의 기존 동작 기록이며, 로드 경로와 최종 팔레트는 이 절이 우선한다.
 
 ## 적용 구조
 

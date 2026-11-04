@@ -1,0 +1,79 @@
+/* Domain presentation only. Load after the pinned foundation and News reader assets. */
+body.qd-v04[data-qd-project="investment-journal"] [data-qd-redundant-copy="true"] {display:none!important}
+
+/* News keeps its approved topic palette, article width and native reading flow. */
+body.qd-v04[data-qd-project="news"] :is(.issue,.library .card,.weekly-spotlight):focus-within {
+  outline:2px solid var(--qd-accent);outline-offset:3px;
+}
+body.qd-v04[data-qd-project="news"] :is(.date-navigation,.library .pagination) {
+  flex-wrap:wrap;row-gap:8px;
+}
+body.qd-v04[data-qd-project="news"] :is(.date-navigation a,.date-navigation button) {
+  min-height:44px;display:inline-flex;align-items:center;justify-content:center;
+}
+body.qd-v04[data-qd-project="news"] .nw3-read-button {
+  align-self:flex-start;text-underline-offset:4px;
+}
+body.qd-v04[data-qd-project="news"] .nw3-read-button:hover {text-decoration:underline}
+
+/* Journal: the same information hierarchy, with controls that remain usable on narrow screens. */
+body.qd-v04[data-qd-project="investment-journal"] :is(.main-grid,.two-grid,.studio-grid) {align-items:stretch}
+body.qd-v04[data-qd-project="investment-journal"] :is(.main-grid,.two-grid,.studio-grid)>.panel {min-width:0}
+body.qd-v04[data-qd-project="investment-journal"] .workspace-tabs {
+  scroll-padding-inline:12px;overscroll-behavior-x:contain;margin-bottom:24px;
+}
+body.qd-v04[data-qd-project="investment-journal"] .workspace-tabs button {
+  min-height:44px;font-size:13px;flex-shrink:0;padding-inline:12px;
+}
+body.qd-v04[data-qd-project="investment-journal"] .filters {gap:12px 20px;align-items:flex-end}
+body.qd-v04[data-qd-project="investment-journal"] :is(.filters-left,.table-tools,.heading-actions) {gap:10px;flex-wrap:wrap;min-width:0}
+body.qd-v04[data-qd-project="investment-journal"] .metric-detail {font-size:12px;line-height:1.6}
+body.qd-v04[data-qd-project="investment-journal"] .metric-value {font-variant-numeric:tabular-nums;line-height:1.25}
+body.qd-v04[data-qd-project="investment-journal"] .table-scroll {
+  overscroll-behavior-x:contain;scrollbar-width:thin;scroll-padding-inline:12px;
+}
+body.qd-v04[data-qd-project="investment-journal"] .table-scroll tbody tr:focus-within {background:var(--qd-soft)}
+body.qd-v04[data-qd-project="investment-journal"] .section-head {align-items:flex-start;gap:12px}
+body.qd-v04[data-qd-project="investment-journal"] .section-head>div:first-child {min-width:0}
+body.qd-v04[data-qd-project="investment-journal"] .section-actions {flex-wrap:wrap;justify-content:flex-end;gap:8px}
+body.qd-v04[data-qd-project="investment-journal"] :is(.quant-method,.performance-method) {line-height:1.8}
+body.qd-v04[data-qd-project="investment-journal"] :is(.quant-method,.performance-method)>summary {min-height:44px;align-content:center}
+body.qd-v04[data-qd-project="investment-journal"] .auth-form {max-width:380px}
+
+/* Alpha House: improve the surrounding workbench, leaving the office geometry and telemetry intact. */
+body.qd-v04[data-qd-project="alpha-house"] .conversation-controls {display:grid;gap:10px;padding:0 12px 16px}
+body.qd-v04[data-qd-project="alpha-house"] .conversation-search {min-height:44px;padding-block:0}
+body.qd-v04[data-qd-project="alpha-house"] .conversation-search input {min-height:42px;font-size:13px}
+body.qd-v04[data-qd-project="alpha-house"] .conversation-filter-row {gap:8px;margin-top:0}
+body.qd-v04[data-qd-project="alpha-house"] .conversation-filter-row select {min-width:0;min-height:44px}
+body.qd-v04[data-qd-project="alpha-house"] .session-row {border-radius:8px;min-height:48px}
+body.qd-v04[data-qd-project="alpha-house"] .session-row-copy>strong {font-size:13px;line-height:1.55}
+body.qd-v04[data-qd-project="alpha-house"] .session-row-copy>small {font-size:12px;line-height:1.5}
+body.qd-v04[data-qd-project="alpha-house"] .conversation-project-header {min-height:48px;gap:8px}
+body.qd-v04[data-qd-project="alpha-house"] .detail-tabs button {min-height:44px;font-size:13px}
+body.qd-v04[data-qd-project="alpha-house"] :is(.conversation-list,.team-roster,.activity-column) {overscroll-behavior-y:contain;scrollbar-width:thin}
+body.qd-v04[data-qd-project="alpha-house"] .session-detail-body dl>div {gap:16px;padding-block:7px;font-size:12px}
+body.qd-v04[data-qd-project="alpha-house"] .session-detail-body dd {overflow-wrap:anywhere;min-width:0}
+body.qd-v04[data-qd-project="alpha-house"] .project-history>summary {min-height:44px;align-content:center;font-size:12px}
+
+@media(max-width:760px) {
+  body.qd-v04[data-qd-project="investment-journal"] .workspace-tabs {margin-bottom:18px}
+  body.qd-v04[data-qd-project="investment-journal"] :is(.metric-label,.metric-detail) {font-size:12px}
+  body.qd-v04[data-qd-project="investment-journal"] .table-scroll table {font-size:13px}
+  body.qd-v04[data-qd-project="investment-journal"] .section-actions {max-width:100%}
+  body.qd-v04[data-qd-project="investment-journal"] .filters-left {display:grid;grid-template-columns:minmax(0,1fr);width:100%;gap:10px}
+  body.qd-v04[data-qd-project="investment-journal"] .filters-left>select {min-width:0;width:100%;max-width:100%}
+  body.qd-v04[data-qd-project="investment-journal"] .period {display:grid;grid-template-columns:repeat(6,minmax(0,1fr));width:100%;min-width:0;gap:4px}
+  body.qd-v04[data-qd-project="investment-journal"] .period button {min-height:44px;min-width:0;padding-inline:4px;white-space:nowrap}
+  body.qd-v04[data-qd-project="alpha-house"] .mobile-workspace-tabs {top:calc(var(--qd-header-height,64px) + 8px)}
+  body.qd-v04[data-qd-project="alpha-house"] .mobile-workspace-tabs button {min-height:44px;font-size:13px}
+  body.qd-v04[data-qd-project="alpha-house"] .conversation-search input {font-size:16px}
+  body.qd-v04[data-qd-project="alpha-house"] .conversation-filter-row {display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+  body.qd-v04[data-qd-project="alpha-house"] .office-topline {flex-wrap:wrap;min-width:0;row-gap:10px}
+  body.qd-v04[data-qd-project="alpha-house"] .office-view-controls {max-width:100%;flex-wrap:wrap;margin-left:0}
+}
+@media(max-width:360px) {
+  body.qd-v04[data-qd-project="investment-journal"] .metric-value {font-size:17px}
+  body.qd-v04[data-qd-project="investment-journal"] .section-head {flex-wrap:wrap}
+  body.qd-v04[data-qd-project="investment-journal"] .period {grid-template-columns:repeat(3,minmax(0,1fr))}
+}

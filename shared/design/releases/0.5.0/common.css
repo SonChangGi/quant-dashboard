@@ -1,0 +1,73 @@
+/* Quant foundation extension 0.5.0. One palette, all ten consumers. */
+html[data-unified-design],html[data-unified-design] body.qd-v04 {
+  --qd-bg:#0f1722;--qd-surface:#1a2534;--qd-raised:#253449;
+  --qd-text:#edf2f8;--qd-muted:#b8c5d5;--qd-border:#43566e;
+  --qd-accent:#9dbbe5;--qd-soft:#273d5b;
+  --qd-radius:12px;--qd-pad:24px;--qd-gap:20px;
+  --qu-motion:170ms;--qu-ease:cubic-bezier(.2,.8,.2,1);
+}
+html[data-unified-design][data-theme=light],html[data-unified-design][data-theme=light] body.qd-v04 {
+  --qd-bg:#f3f5f7;--qd-surface:#fff;--qd-raised:#e9eef3;
+  --qd-text:#1c2938;--qd-muted:#546374;--qd-border:#a7b3c3;
+  --qd-accent:#3c5b87;--qd-soft:#e5edf6;
+}
+html[data-unified-design] body.qd-v04 {
+  --bg:var(--qd-bg);--background:var(--qd-bg);--panel:var(--qd-surface);
+  --surface:var(--qd-surface);--surface-raised:var(--qd-raised);--panel-elevated:var(--qd-raised);
+  --ink:var(--qd-text);--ink-strong:var(--qd-text);--text:var(--qd-text);
+  --text-primary:var(--qd-text);--text-muted:var(--qd-muted);--muted:var(--qd-muted);
+  --line:var(--qd-border);--border:var(--qd-border);--primary:var(--qd-accent);--primary-soft:var(--qd-soft);
+  background:var(--qd-bg);color:var(--qd-text);
+}
+html[data-unified-design] body.qd-v04 :is(.qd-shell,.qd-sidebar,.q4-dialog,.qd-command) {
+  background:var(--qd-surface);color:var(--qd-text);border-color:var(--qd-border);
+}
+html[data-unified-design] body.qd-v04 :is(button,a,summary,input,select,textarea) {
+  transition:background-color var(--qu-motion) var(--qu-ease),border-color var(--qu-motion) var(--qu-ease),color var(--qu-motion) var(--qu-ease),box-shadow var(--qu-motion) var(--qu-ease);
+}
+html[data-unified-design] body.qd-v04 :is(button,input,select,textarea) {font-family:var(--qd-font);border-radius:8px;}
+html[data-unified-design] body.qd-v04 :is(input:not([type=checkbox]):not([type=radio]):not([type=range]),select,textarea) {
+  color:var(--qd-text);background-color:var(--qd-surface);border:1px solid var(--qd-border);
+  min-height:40px;font-size:14px;
+}
+html[data-unified-design] body.qd-v04 select {
+  appearance:none;padding-inline:12px 44px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath d='m4 6 4 4 4-4' fill='none' stroke='%23889bad' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 14px center;
+}
+html[data-unified-design] body.qd-v04 :is(button,input,select,textarea,a,summary):focus-visible {
+  outline:2px solid var(--qd-accent)!important;outline-offset:3px;
+}
+html[data-unified-design] body.qd-v04 :is(button,input,select):disabled {opacity:.5;cursor:not-allowed;}
+html[data-unified-design] body.qd-v04 .qd-sidebar a {min-height:44px;border-radius:8px;}
+html[data-unified-design] body.qd-v04 .qd-sidebar a:hover {background:var(--qd-raised);}
+html[data-unified-design] body.qd-v04 .qd-sidebar a[aria-current=page] {background:var(--qd-soft);color:var(--qd-text);}
+html[data-unified-design] body.qd-v04 :is(.qd-shell button,.q4-project-picker) {min-height:40px;}
+html[data-unified-design] body.qd-v04 :is(.q4-dialog,.qd-command) {border-radius:14px;box-shadow:0 24px 80px #0004;}
+html[data-unified-design] body.qd-v04 dialog[open] {animation:qu-enter 170ms var(--qu-ease);}
+html[data-unified-design] body.qd-v04 dialog::backdrop {background:#08121e88;}
+html[data-unified-design] body.qd-v04 :is(h1,h2,h3) {text-wrap:balance;}
+html[data-unified-design] body.qd-v04 :is(td,th,[class*=metric-value]) {font-variant-numeric:tabular-nums;}
+html[data-unified-design] body.qd-v04 tbody tr {transition:background-color 150ms ease;}
+html[data-unified-design] body.qd-v04 tbody tr:hover {background:color-mix(in srgb,var(--qd-soft) 60%,transparent);}
+html[data-unified-design] body.qd-v04 .qu-scroll-table {overflow:auto;overscroll-behavior-inline:contain;scrollbar-width:thin;scrollbar-color:var(--qd-border) transparent;}
+html[data-unified-design] body.qd-v04 .qu-scroll-table:focus-visible {outline:2px solid var(--qd-accent);outline-offset:3px;}
+html[data-unified-design] body.qd-v04 .qu-scroll-table th {position:sticky;top:0;background:var(--qd-raised);z-index:1;}
+html[data-unified-design] body.qd-v04 .qu-hide-copy {display:none!important;}
+html[data-unified-design] {scroll-padding-top:88px;}
+@keyframes qu-enter {from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:600px) {
+  html[data-unified-design] {--qd-pad:16px;--qd-gap:16px;}
+  html[data-unified-design] body.qd-v04 :is(input:not([type=checkbox]):not([type=radio]):not([type=range]),select,textarea) {min-height:44px;font-size:16px;}
+  html[data-unified-design] body.qd-v04 .qd-shell button {min-height:44px;}
+  html[data-unified-design] body.qd-v04 .qd-shell-inner {display:grid;grid-template-columns:28px minmax(0,1fr) repeat(4,44px);gap:2px;padding-inline:8px;}
+  html[data-unified-design] body.qd-v04 .qd-shell .qd-brand {margin:0;min-width:0;}
+  html[data-unified-design] body.qd-v04 .q4-picker {min-width:0;margin:0;padding-inline:3px;}
+  html[data-unified-design] body.qd-v04 .q4-picker span {overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  html[data-unified-design] body.qd-v04 :is(#qd-search,#qd-theme,.qd-shell .q4-icon) {width:44px;min-width:44px;height:44px;padding:0;}
+}
+@media(forced-colors:active) {html[data-unified-design] body.qd-v04 select {appearance:auto;background-image:none;}}
+@media(prefers-reduced-motion:reduce) {
+  html[data-unified-design] {scroll-behavior:auto!important;}
+  html[data-unified-design] *,html[data-unified-design] *::before,html[data-unified-design] *::after {animation:none!important;transition:none!important;scroll-behavior:auto!important;}
+}

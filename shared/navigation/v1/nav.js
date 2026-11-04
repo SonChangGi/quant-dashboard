@@ -126,12 +126,27 @@ function begin(){
  if(!Object.hasOwn(styles,project))return;
  window.__quantDesignV3={version:'0.4.0',project,state:'loading'};
  document.documentElement.dataset.quantDesignProject=project;
- const base=new URL('../../design/v3/',script?.src||'https://sonchanggi.github.io/quant-dashboard/shared/navigation/v1/nav.js');
+ const releaseBase=new URL('../../design/releases/0.5.0/',script?.src||'https://sonchanggi.github.io/quant-dashboard/shared/navigation/v1/nav.js');
+ const base=new URL('foundation/',releaseBase);
  const css=['design-system.css',...styles[project].filter(n=>!n.includes('v03')),'v03.css',...styles[project].filter(n=>n.includes('v03')),'focus.css','v04.css',...(['factor','regime','fearNgreed','etf-tracking','dram-price','sox'].includes(project)?['v04-finance.css']:['news','investment-journal','alpha-house'].includes(project)?['v04-editorial.css']:[])];
  const links=css.map(name=>{const link=document.createElement('link');link.rel='stylesheet';link.href=new URL(name,base);link.media='not all';document.head.append(link);return link});
  const ready=Promise.all(links.map(link=>new Promise((resolve,reject)=>{link.onload=resolve;link.onerror=reject})));
  const load=name=>new Promise((resolve,reject)=>{const el=document.createElement('script');el.src=new URL(name,base);el.onload=resolve;el.onerror=reject;document.head.append(el)});
- Promise.all([ready,load('boot.js')]).then(async()=>{window.QuantDesignTheme?.apply();await load('shell.js');links.forEach(l=>l.media='all');await load('focus.js');if(project==='news')await load('news-v03.js');await load('v04.js');window.__quantDesignV3.state='ready';window.dispatchEvent(new CustomEvent('quant-design-ready',{detail:{project,version:'0.4.0'}}))}).catch(()=>{window.__quantDesignV3.state='error';if(!document.querySelector('.qd-shell'))links.forEach(l=>l.remove())});
+ async function unified(){
+  window.__quantDesignUnified={version:'0.5.0',foundation:'0.4.0',project,state:'loading'};
+  const styles=['common.css','adapters/finance.css','adapters/editorial.css','adapters/hub.css'];
+  const extensionLinks=styles.map(name=>{const link=document.createElement('link');link.rel='stylesheet';link.href=new URL(name,releaseBase);link.media='not all';return link});
+  try{
+   await Promise.all(extensionLinks.map(link=>new Promise((resolve,reject)=>{link.onload=resolve;link.onerror=reject;document.head.append(link)})));
+   extensionLinks.forEach(link=>link.media='all');
+   document.documentElement.dataset.unifiedDesign='0.5.0';
+   for(const name of ['polish.js','adapters/finance.js','adapters/editorial.js'])await new Promise((resolve,reject)=>{const el=document.createElement('script');el.src=new URL(name,releaseBase);el.onload=resolve;el.onerror=reject;document.head.append(el)});
+   window.__quantDesignUnified.state='ready';
+   window.dispatchEvent(new CustomEvent('quant-design-unified-ready',{detail:{project,version:'0.5.0'}}));
+  }catch{extensionLinks.forEach(link=>link.remove());delete document.documentElement.dataset.unifiedDesign;window.__quantDesignUnified.state='error'}
+ }
+
+ Promise.all([ready,load('boot.js')]).then(async()=>{window.QuantDesignTheme?.apply();await load('shell.js');links.forEach(l=>l.media='all');await load('focus.js');if(project==='news')await load('news-v03.js');await load('v04.js');window.__quantDesignV3.state='ready';window.dispatchEvent(new CustomEvent('quant-design-ready',{detail:{project,version:'0.4.0'}}));await unified()}).catch(()=>{window.__quantDesignV3.state='error';if(!document.querySelector('.qd-shell'))links.forEach(l=>l.remove())});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',begin,{once:true});else begin();
 })();

@@ -1,0 +1,13 @@
+/* Hub: consistent hierarchy, aligned summaries, less repetitive framing. */
+html[data-unified-design] body.qd-hub .panel {border-radius:12px;border-color:var(--qd-border);background:var(--qd-surface);}
+html[data-unified-design] body.qd-hub .panel-header h4 {font-size:20px;line-height:1.4;}
+html[data-unified-design] body.qd-hub .panel-link {color:var(--qd-accent);min-height:36px;display:inline-flex;align-items:center;}
+html[data-unified-design] body.qd-hub .summary-grid {align-items:stretch;gap:20px;}
+html[data-unified-design] body.qd-hub .summary-grid>.panel {min-width:0;}
+html[data-unified-design] body.qd-hub .q4-hub-views {gap:6px;}
+html[data-unified-design] body.qd-hub .q4-hub-views button {min-height:40px;padding-inline:16px;border-radius:8px;}
+html[data-unified-design] body.qd-hub .q4-hub-views button[aria-pressed=true] {background:var(--qd-soft);color:var(--qd-text);}
+html[data-unified-design] body.qd-hub .news-headlines li {border-color:var(--qd-border);}
+html[data-unified-design] body.qd-hub .panel--news {padding:20px 24px!important;}
+html[data-unified-design] body.qd-hub .news-headlines a {font-size:16px;line-height:1.6;}
+html[data-unified-design] body.qd-hub .hub-status-strip {font-variant-numeric:tabular-nums;}

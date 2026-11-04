@@ -1,0 +1,113 @@
+/* Finance adapter 2026-11-04. Presentation only; foundation owns shared tokens. */
+
+/* Factor: a compact working header and readouts that stay outside the plot. */
+body.qd-v04[data-qd-project="factor"] .lab-tabs {
+  overflow-x:auto; scrollbar-width:thin; overscroll-behavior-x:contain;
+  gap:4px; scroll-padding-inline:4px;
+}
+body.qd-v04[data-qd-project="factor"] .lab-tabs a {flex-shrink:0;min-height:44px;display:flex;align-items:center;padding-inline:14px;font-weight:600}
+body.qd-v04[data-qd-project="factor"] .lab-summary {align-items:stretch}
+body.qd-v04[data-qd-project="factor"] .lab-stat {display:flex;flex-direction:column}
+body.qd-v04[data-qd-project="factor"] .lab-stat dd {letter-spacing:-.025em;font-weight:700}
+body.qd-v04[data-qd-project="factor"] .lab-stat small {margin-top:auto;padding-top:8px}
+body.qd-v04[data-qd-project="factor"] .lab-metrics {gap:12px 24px;padding:12px 0;border-block:1px solid var(--qd-border)}
+body.qd-v04[data-qd-project="factor"] .lab-chart-wrap {display:flex;flex-direction:column}
+body.qd-v04[data-qd-project="factor"] .lab-chart-values {order:-2;min-height:44px;gap:8px 20px;padding:10px 0;margin-bottom:4px}
+body.qd-v04[data-qd-project="factor"] .lab-chart-controls {order:-1}
+body.qd-v04[data-qd-project="factor"] .lab-chart-values:empty {display:none}
+body.qd-v04[data-qd-project="factor"] .lab-toolbar {padding:16px;background:var(--qd-raised);border:1px solid var(--qd-border);border-radius:12px}
+body.qd-v04[data-qd-project="factor"] .lab-toolbar label {min-width:0}
+body.qd-v04[data-qd-project="factor"] .lab-holdings-grid {align-items:stretch}
+body.qd-v04[data-qd-project="factor"] .lab-holdings-group {border:1px solid var(--qd-border);border-radius:10px;overflow:hidden}
+body.qd-v04[data-qd-project="factor"] .lab-holdings-group .lab-table-scroll {height:100%;border:0;border-radius:0}
+
+/* DRAM: each product keeps the same value and source baseline. */
+body.qd-v04[data-qd-project="dram-price"] .latest-grid {align-items:stretch}
+body.qd-v04[data-qd-project="dram-price"] .latest-card {display:flex;flex-direction:column}
+body.qd-v04[data-qd-project="dram-price"] .latest-card h3 {min-height:2.8em;line-height:1.4;font-size:14px;font-weight:600}
+body.qd-v04[data-qd-project="dram-price"] .latest-card>strong {font-weight:700;letter-spacing:-.025em}
+body.qd-v04[data-qd-project="dram-price"] .latest-card footer {margin-top:auto;padding-top:12px;align-items:center;gap:12px}
+body.qd-v04[data-qd-project="dram-price"] .latest-card footer>a {display:inline-flex;align-items:center;justify-content:center;flex:0 0 44px;min-height:44px;border:1px solid var(--qd-border);border-radius:8px}
+body.qd-v04[data-qd-project="dram-price"] .filter-primary {align-items:end;gap:16px}
+body.qd-v04[data-qd-project="dram-price"] .filter-field {min-width:0}
+body.qd-v04[data-qd-project="dram-price"] .chart-value-callout {gap:12px 24px;padding:12px 16px;background:var(--qd-raised);border:1px solid var(--qd-border);border-radius:10px}
+body.qd-v04[data-qd-project="dram-price"] .chart-series-controls {gap:8px;padding-block:8px}
+body.qd-v04[data-qd-project="dram-price"] .chart-date-controls {gap:8px 12px;align-items:center;flex-wrap:wrap}
+body.qd-v04[data-qd-project="dram-price"] .chart-latest-button {flex-shrink:0;white-space:nowrap;min-width:max-content;min-height:44px}
+body.qd-v04[data-qd-project="dram-price"] .chart-viewport {display:flex;flex-direction:column}
+body.qd-v04[data-qd-project="dram-price"] .chart-viewport>.chart-value-callout {position:static;inset:auto;order:-1;width:100%;max-width:none;pointer-events:auto;box-shadow:none;margin:12px 0}
+body.qd-v04[data-qd-project="dram-price"] .chart-value-callout__series span {white-space:normal;overflow-wrap:anywhere;text-overflow:clip}
+body.qd-v04[data-qd-project="dram-price"] .chart-scroll {min-width:0;width:100%}
+
+/* ETF: preserve the multi-series chart and give date/selection one clear row. */
+body.qd-v04[data-qd-project="etf-tracking"] .chart-observation-bar {display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px 20px;padding:12px 16px;background:var(--qd-raised);border:1px solid var(--qd-border);border-radius:10px;margin-block:12px}
+body.qd-v04[data-qd-project="etf-tracking"] .chart-selection-summary {min-width:0;flex:1 1 240px}
+body.qd-v04[data-qd-project="etf-tracking"] .chart-date-controls {display:flex;align-items:end;flex-wrap:wrap;gap:8px;min-width:0}
+body.qd-v04[data-qd-project="etf-tracking"] .chart-date-controls label {min-width:0}
+body.qd-v04[data-qd-project="etf-tracking"] .signal-summary-grid {align-items:stretch}
+body.qd-v04[data-qd-project="etf-tracking"] .etf-signal-table-grid {align-items:stretch}
+body.qd-v04[data-qd-project="etf-tracking"] .table-wrap {max-width:100%;overscroll-behavior-x:contain}
+body.qd-v04[data-qd-project="etf-tracking"] .detail-disclosure>summary {min-height:52px;padding-block:14px;gap:12px}
+
+/* SOX: aligned comparison panels and legible stock identity in the wide table. */
+body.qd-v04[data-qd-project="sox"] .chart-grid {align-items:stretch;gap:20px}
+body.qd-v04[data-qd-project="sox"] .chart-grid>.panel {min-width:0;display:flex;flex-direction:column}
+body.qd-v04[data-qd-project="sox"] .chart-grid>.panel>.panel-header {min-height:50px;margin-bottom:12px}
+body.qd-v04[data-qd-project="sox"] .chart-grid>.panel>:is(.bar-chart,.quadrant) {margin-top:auto}
+body.qd-v04[data-qd-project="sox"] .leader-grid {align-items:stretch;gap:16px}
+body.qd-v04[data-qd-project="sox"] .table-tools {display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px}
+body.qd-v04[data-qd-project="sox"] .table-tools input {flex:1 1 180px;min-width:0}
+body.qd-v04[data-qd-project="sox"] .table-tools select {min-width:0;max-width:100%}
+body.qd-v04[data-qd-project="sox"] #constituent-table :is(th,td):nth-child(2) {min-width:86px}
+body.qd-v04[data-qd-project="sox"] .chart-readout {min-height:48px;padding:12px 16px;line-height:1.6}
+
+/* Fear & Greed: keep model, signal and execution distinctions; lighten the frame. */
+body.qd-v04[data-qd-project="fearNgreed"] .history-chart-toolbar {gap:12px 20px;align-items:start}
+body.qd-v04[data-qd-project="fearNgreed"] .history-event-key {gap:8px 16px;flex-wrap:wrap}
+body.qd-v04[data-qd-project="fearNgreed"] .history-selected-snapshot {padding:12px 16px;background:var(--qd-raised);border:1px solid var(--qd-border);border-radius:10px;margin-block:12px}
+body.qd-v04[data-qd-project="fearNgreed"] .history-chart-callout {gap:12px 20px;border-radius:10px}
+body.qd-v04[data-qd-project="fearNgreed"] .analysis-config-head {padding-block:16px;gap:16px}
+body.qd-v04[data-qd-project="fearNgreed"] .analysis-config-grid {gap:20px}
+body.qd-v04[data-qd-project="fearNgreed"] :is(.data-alternative,.chart-guide)>summary {min-height:44px;padding-block:12px;cursor:pointer}
+body.qd-v04[data-qd-project="fearNgreed"] .metric strong {letter-spacing:-.025em;font-weight:700}
+
+/* Regime: the observation/forecast flow remains explicit; dates stay usable. */
+body.qd-v04[data-qd-project="regime"] .section-nav {gap:4px;overflow-x:auto;scrollbar-width:thin;overscroll-behavior-x:contain}
+body.qd-v04[data-qd-project="regime"] .section-nav>a:not([hidden]) {min-height:44px;display:inline-flex;align-items:center;white-space:nowrap;font-weight:600;padding-inline:12px}
+body.qd-v04[data-qd-project="regime"] .decision-pipeline {align-items:stretch;gap:16px}
+body.qd-v04[data-qd-project="regime"] .decision-stage-heading {min-height:36px;gap:8px;padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--qd-border)}
+body.qd-v04[data-qd-project="regime"] .forecast-timing {gap:12px 24px}
+body.qd-v04[data-qd-project="regime"] .date-controls {gap:12px 16px;padding:12px 16px}
+body.qd-v04[data-qd-project="regime"] .step-buttons {gap:8px}
+body.qd-v04[data-qd-project="regime"] .forecast-window-details>summary {min-height:44px;cursor:pointer}
+
+/* Native data tables retain their columns and rows; scroll only within wrappers. */
+body.qd-v04:is([data-qd-project="factor"],[data-qd-project="regime"],[data-qd-project="fearNgreed"],[data-qd-project="dram-price"],[data-qd-project="sox"],[data-qd-project="etf-tracking"]) :is(.lab-table-scroll,.table-scroll,.table-wrap,.desktop-table):focus-visible {outline:2px solid var(--qd-accent);outline-offset:3px}
+
+@media(max-width:700px) {
+  body.qd-v04[data-qd-project="factor"] .lab-tabs {justify-content:flex-start;gap:0}
+  body.qd-v04[data-qd-project="factor"] .lab-tabs a {font-size:13px;padding-inline:12px}
+  body.qd-v04[data-qd-project="factor"] .lab-toolbar {padding:12px;gap:12px}
+  body.qd-v04[data-qd-project="factor"] .lab-toolbar label {flex:1 1 120px}
+  body.qd-v04[data-qd-project="factor"] .lab-toolbar label:first-child {flex-basis:100%}
+  body.qd-v04[data-qd-project="factor"] .lab-holdings-pagination .lab-button {min-height:44px}
+  body.qd-v04[data-qd-project="factor"] .lab-metrics {gap:12px 20px}
+  body.qd-v04[data-qd-project="factor"] .lab-chart-values>strong {flex-basis:100%}
+  body.qd-v04[data-qd-project="dram-price"] .chart-value-callout {padding:12px;gap:12px}
+  body.qd-v04[data-qd-project="dram-price"] .chart-facet figcaption {flex-wrap:wrap;gap:10px}
+  body.qd-v04[data-qd-project="etf-tracking"] .chart-observation-bar {padding:12px;gap:12px}
+  body.qd-v04[data-qd-project="etf-tracking"] .chart-date-controls {width:100%}
+  body.qd-v04[data-qd-project="etf-tracking"] .chart-date-controls>label {flex:1}
+  body.qd-v04[data-qd-project="etf-tracking"] .chart-date-controls input {width:100%;max-width:100%;min-height:44px}
+  body.qd-v04[data-qd-project="sox"] .table-tools {width:100%;padding:12px}
+  body.qd-v04[data-qd-project="sox"] .chart-grid {gap:16px}
+  body.qd-v04[data-qd-project="regime"] .date-controls {padding:12px;gap:10px}
+  body.qd-v04[data-qd-project="regime"] .date-controls .field-group {min-width:0}
+  body.qd-v04[data-qd-project="regime"] .date-controls :is(input,select) {max-width:100%;font-size:16px}
+  body.qd-v04[data-qd-project="regime"] .decision-pipeline {gap:12px}
+}
+@media(max-width:600px) {
+  body.qd-v04[data-qd-project="regime"] .date-controls {display:grid;grid-template-columns:minmax(0,1fr) auto}
+  body.qd-v04[data-qd-project="regime"] .date-controls>.field-group {grid-column:1/-1;width:100%}
+  body.qd-v04[data-qd-project="regime"] .date-controls>.field-group :is(input,select) {width:100%;min-width:0}
+}

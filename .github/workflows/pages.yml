@@ -109,7 +109,7 @@ jobs:
           )
           while IFS= read -r design_path; do
             public_files+=("$design_path")
-          done < <(find shared/design/v3 -type f | sort)
+          done < <(find shared/design -type f | sort)
           for attempt in {1..12}; do
             matched=true
             for relative_path in "${public_files[@]}"; do
