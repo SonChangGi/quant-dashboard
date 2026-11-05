@@ -3242,7 +3242,7 @@
       const mark = ({ row, x: cx, y: cy }, index, chart) => {
         const state = states[index], current = row.role === 'current';
         const r = current ? 5 : state?.startsWith('extreme') ? 4 : chart === 'price' && (!state || state === 'neutral') ? 1.4 : 3;
-        const attrs = `data-point="${index}" data-date="${row.date}" data-state="${state || 'unclassified'}" class="${chart}-observation fear-point ${state || ''}${current ? ' is-current' : ''}"`;
+        const attrs = `data-point="${index}" ${chart === 'price' ? `data-qr-series-id="kospi" data-qr-index="${index}"` : `data-qr-point-id="${row.date}"`} data-date="${row.date}" data-state="${state || 'unclassified'}" class="${chart}-observation fear-point ${state || ''}${current ? ' is-current' : ''}"`;
         const title = `<title>${escapeHtml(`${row.date} · ${FEAR_POINT_LABELS[state] || ''}${chart === 'price' ? ` · KOSPI ${row.close.toLocaleString('ko-KR', { maximumFractionDigits: 2 })}` : ` · 수익률 ${formatSignedFear(row.return1d * 100, 2)}% · 개인 ${formatSignedFear(row.rawFlowTrillion, 3)}조원`}`)}</title>`;
         return state?.includes('greed')
           ? `<path ${attrs} d="M${cx},${cy - r - 1}L${cx + r + 1},${cy}L${cx},${cy + r + 1}L${cx - r - 1},${cy}Z">${title}</path>`
@@ -3257,7 +3257,7 @@
           <svg viewBox="0 0 ${price.w} ${price.h}" role="img" aria-label="KOSPI 종가, 산점도와 같은 ${price.points.length}개 날짜">
             ${price.yTicks.map((value) => `${line(price.p.l, price.y(value), w - price.p.r, price.y(value), 'scatter-grid')}<text x="${price.p.l - 8}" y="${price.y(value) + 4}" text-anchor="end">${value.toLocaleString('ko-KR')}</text>`).join('')}
             ${price.dateTicks.map((date, index) => `<text x="${price.x(date)}" y="${price.h - 7}" text-anchor="${index === 0 ? 'start' : index === price.dateTicks.length - 1 ? 'end' : 'middle'}">${date.slice(0, 7).replace('-', '.')}</text>`).join('')}
-            <path class="fear-price-line" d="${price.points.map((point, index) => `${index ? 'L' : 'M'}${point.x},${point.y}`).join('')}"/>
+            <path data-qr-series-id="kospi" class="fear-price-line" d="${price.points.map((point, index) => `${index ? 'L' : 'M'}${point.x},${point.y}`).join('')}"/>
             ${price.points.map((point, index) => mark(point, index, 'price')).join('')}
             <line class="fear-price-cursor" y1="${price.p.t}" y2="${price.h - price.p.b}"/>
             <circle class="price-selected" r="7"/>
@@ -3298,6 +3298,8 @@
         const frame = target.querySelector(selector);
         if (!frame) return;
         const svg = frame.querySelector('svg');
+        if(isPrice)globalThis.QuantRange?.svg({id:'hub-kospi-price',element:svg,host:frame,currentIndex:()=>selected,onSeriesRequest:(id,ctx)=>{if(Number.isInteger(ctx.index)){pinned=ctx.index;select(pinned)}},onReset:()=>{pinned=scatter.points.length-1;select(pinned)},domain:geometry.points.map(p=>({key:p.row.date,label:p.row.date})),series:[{id:'kospi',label:'KOSPI',measure:'relative',unit:'pt',points:geometry.points.map(p=>({key:p.row.date,value:p.row.close}))}],x:i=>geometry.points[i].x,plotTop:geometry.p.t,plotBottom:geometry.h-geometry.p.b});
+        else globalThis.QuantRange?.scatterSvg({id:'hub-fear-scatter',element:svg,host:frame,scatter:scatter.points.map(r=>({id:r.date,label:r.date,x:r.return1d*100,y:r.rawFlowTrillion})),scatterAxes:{xLabel:'수익률 %',yLabel:'개인 순매수 조원'},bounds:{left:g.p.l,right:g.w-g.p.r,top:g.p.t,bottom:g.h-g.p.b},xDomain:[g.xmin,g.xmax],yDomain:[g.ymin,g.ymax]});
         const nearest = (event) => {
           const rect = svg.getBoundingClientRect(), px = (event.clientX - rect.left) * geometry.w / rect.width, py = (event.clientY - rect.top) * geometry.h / rect.height;
           if (px < geometry.p.l || px > geometry.w - geometry.p.r || py < geometry.p.t || py > geometry.h - geometry.p.b) return null;
@@ -3308,7 +3310,7 @@
           return best;
         };
         svg.addEventListener('pointermove', (event) => { const index = nearest(event); if (event.pointerType !== 'touch' && index !== null) select(index); });
-        svg.addEventListener('click', (event) => { const index = nearest(event); if (index !== null) { pinned = index; select(index); } });
+        svg.addEventListener('click', (event) => {if(isPrice&&!event.target.closest?.('[data-qr-series-id]'))return; const index = nearest(event); if (index !== null) { pinned = index; select(index); } });
         frame.addEventListener('pointerleave', () => select(pinned));
         frame.addEventListener('keydown', (event) => {
           const move = { ArrowLeft: Math.max(0, selected - 1), ArrowRight: Math.min(g.points.length - 1, selected + 1), Home: 0, End: g.points.length - 1, Escape: g.points.length - 1 };
@@ -3596,7 +3598,7 @@
     if (!target) return;
     if (!performance?.rows?.length) { target.innerHTML = '<p class="empty-state">성과 자료가 없습니다.</p>'; return; }
     const rows = performance.rows;
-    target.innerHTML = `<figure class="factor-performance"><div class="factor-performance-heading"><h5>누적성과 · 낙폭</h5><span>시작일 = 100</span></div><div class="factor-performance-legend"><span><i></i>월별 선택</span>${performance.benchmark ? '<span class="benchmark"><i></i>SPY</span>' : ''}</div><figcaption class="factor-performance-readout" aria-live="polite"></figcaption><div class="factor-performance-frame" tabindex="0" role="group" aria-label="월별 선택 전략 성과. 좌우 방향키로 날짜 이동"></div><p class="factor-performance-period">${escapeHtml(rows[0].date)}–${escapeHtml(rows.at(-1).date)} · 비용 후 전략</p></figure>`;
+    target.innerHTML = `<figure class="factor-performance"><div class="factor-performance-heading"><h5>누적성과 · 낙폭</h5><span>시작일 = 100</span></div><div class="factor-performance-legend"><button type="button" data-qr-chart-id="hub-factor" data-qr-series-id="value0"><i></i>월별 선택</button>${performance.benchmark ? '<button type="button" class="benchmark" data-qr-chart-id="hub-factor" data-qr-series-id="value1"><i></i>SPY</button>' : ''}</div><figcaption class="factor-performance-readout" aria-live="polite"></figcaption><div class="factor-performance-frame" tabindex="0" role="group" aria-label="월별 선택 전략 성과. 좌우 방향키로 날짜 이동"></div><p class="factor-performance-period">${escapeHtml(rows[0].date)}–${escapeHtml(rows.at(-1).date)} · 비용 후 전략</p></figure>`;
     const frame = target.querySelector?.('.factor-performance-frame'), readout = target.querySelector?.('.factor-performance-readout');
     if (!frame || !readout) return;
     let selected = rows.length - 1, pinned = selected, previousWidth = 0;
@@ -3609,11 +3611,11 @@
       for (let tick=0;tick<=g.ceiling;tick+=g.step) grid.push(`${line(g.left,g.y(tick),g.right,g.y(tick),'factor-performance-grid')}<text x="${g.left-8}" y="${g.y(tick)+4}" text-anchor="end">${tick}</text>`);
       const ddTicks = [0,g.ddFloor/2,g.ddFloor].map(value => `${line(g.left,g.dy(value),g.right,g.dy(value),'factor-performance-grid')}<text x="${g.left-8}" y="${g.dy(value)+4}" text-anchor="end">${Math.round(value*100)}%</text>`).join('');
       const path = (field,i,y) => { let open=false; return rows.map((row,index) => { const value=row[field][i];if(!Number.isFinite(value)){open=false;return '';}const command=open?'L':'M';open=true;return `${command}${g.x(index).toFixed(2)},${y(value).toFixed(2)}`; }).join(' '); };
-      const curves = [0,...(performance.benchmark?[1]:[])].map(i => `<path class="factor-performance-line ${i?'benchmark':''}" d="${path('values',i,g.y)}"/><path class="factor-performance-line ${i?'benchmark':''}" d="${path('drawdowns',i,g.dy)}"/><circle class="factor-performance-point ${i?'benchmark':''}" data-series="${i}" data-field="values" r="3.5"/><circle class="factor-performance-point ${i?'benchmark':''}" data-series="${i}" data-field="drawdowns" r="3.5"/>`).join('');
+      const curves = [0,...(performance.benchmark?[1]:[])].map(i => `<path data-qr-series-id="value${i}" class="factor-performance-line ${i?'benchmark':''}" d="${path('values',i,g.y)}"/><path data-qr-series-id="dd${i}" class="factor-performance-line ${i?'benchmark':''}" d="${path('drawdowns',i,g.dy)}"/><circle class="factor-performance-point ${i?'benchmark':''}" data-series="${i}" data-field="values" r="3.5"/><circle class="factor-performance-point ${i?'benchmark':''}" data-series="${i}" data-field="drawdowns" r="3.5"/>`).join('');
       const count = g.w < 400 ? 3 : 4;
       const ticks = Array.from({length:count},(_,i)=>Math.round(i*(rows.length-1)/(count-1)));
       const dates = [...new Set(ticks)].map(i=>`<text x="${g.x(i)}" y="377" text-anchor="${i===0?'start':i===rows.length-1?'end':'middle'}">${rows[i].date.slice(0,7).replace('-','.')}</text>`).join('');
-      frame.innerHTML = `<svg viewBox="0 0 ${g.w} ${g.h}" role="img" aria-label="월별 선택과 SPY의 누적성과 및 낙폭">${grid.join('')}${ddTicks}<text class="factor-performance-caption" x="${g.left}" y="253">낙폭</text>${curves}${dates}${line(g.x(selected),g.top,g.x(selected),g.ddBottom,'factor-performance-cursor')}</svg>`;
+      frame.innerHTML = `<svg data-qr-spec="${encodeURIComponent(JSON.stringify({id:'hub-factor',domain:rows.map(r=>({key:r.date,label:r.date})),series:[0,1].flatMap(i=>[{id:'value'+i,label:i?'SPY':'월별 선택',measure:'relative',unit:'지수',points:rows.map(r=>({key:r.date,value:r.values[i]}))},{id:'dd'+i,label:(i?'SPY':'월별 선택')+' 낙폭',measure:'pp',scale:100,unit:'%',points:rows.map(r=>({key:r.date,value:r.drawdowns[i]}))}]),xs:rows.map((r,i)=>g.x(i)),plotTop:g.top,plotBottom:g.ddBottom}))}" viewBox="0 0 ${g.w} ${g.h}" role="img" aria-label="월별 선택과 SPY의 누적성과 및 낙폭">${grid.join('')}${ddTicks}<text class="factor-performance-caption" x="${g.left}" y="253">낙폭</text>${curves}${dates}${line(g.x(selected),g.top,g.x(selected),g.ddBottom,'factor-performance-cursor')}</svg>`;
       const svg = frame.querySelector('svg'), cursor = frame.querySelector('.factor-performance-cursor');
       const show = index => {
         selected=index;const row=rows[index];cursor.setAttribute('x1',g.x(index));cursor.setAttribute('x2',g.x(index));
@@ -3624,7 +3626,8 @@
       };
       const nearest = event => { const rect=svg.getBoundingClientRect(),px=(event.clientX-rect.left)*g.w/rect.width;let index=0;for(let i=1;i<rows.length;i++)if(Math.abs(g.x(i)-px)<Math.abs(g.x(index)-px))index=i;return index; };
       frame.onpointermove=event=>{if(event.pointerType!=='touch')show(nearest(event));};
-      frame.onclick=event=>{pinned=nearest(event);show(pinned);frame.focus({preventScroll:true});};
+      svg._quantRangeAdapter={currentIndex:()=>selected,onSeriesRequest:(id,ctx)=>{if(Number.isInteger(ctx.index)){pinned=ctx.index;show(pinned)}},onReset:()=>{pinned=rows.length-1;show(pinned)}};
+      frame.onclick=event=>{if(!event.target.closest?.('[data-qr-series-id]'))return;pinned=nearest(event);show(pinned);frame.focus({preventScroll:true});};
       frame.onpointerleave=()=>show(pinned);
       frame.onkeydown=event=>{const moves={ArrowLeft:Math.max(0,selected-1),ArrowRight:Math.min(rows.length-1,selected+1),Home:0,End:rows.length-1,Escape:rows.length-1};if(Object.hasOwn(moves,event.key)){event.preventDefault();pinned=moves[event.key];show(pinned);}};
       show(selected);
@@ -3679,6 +3682,7 @@
           <strong class="factor-weight">${percentage}</strong>${integrated ? '' : `<span class="factor-signal" aria-label="${momentum ? '신호' : '팩터 점수'} ${escapeAttribute(formatNumber(row.value))}">${escapeHtml(formatNumber(row.value))}</span>`}
         </li>`;
       }).join('')}</ol>`;
+    globalThis.QuantRange?.categories({id:'hub-allocation-'+project.id,element:target.querySelector('.factor-holdings'),host:target,itemSelector:'li',domain:allocation.rows.map(r=>({key:r.symbol,label:r.symbol})),series:[{id:'weight',label:'모델 비중',unit:'%',measure:'pp',scale:100,aggregate:'sum',points:allocation.rows.map(r=>({key:r.symbol,value:r.weight}))}]});
   }
 
   function renderIntegratedMomentum(summary, mode, error, project) {
@@ -3800,7 +3804,7 @@
     let period = trend.rows.length >= 52 ? '52' : 'all', selected = 0, pinnedDate = trend.rows.at(-1).date, previousWidth = 0;
     target.innerHTML = `<figure class="regime-trend">
       <div class="regime-trend-toolbar"><span class="regime-trend-range"></span><label>분석 기간 <select class="regime-trend-window" aria-label="국면 추이 분석 기간">${[26, 52, 104, 'all'].map((n) => `<option value="${n}"${n !== 'all' && n > trend.rows.length ? ' disabled' : ''}>${n === 'all' ? '전체' : `${n}주`}</option>`).join('')}</select></label></div>
-      <div class="regime-trend-legend">${REGIME_STATES.map((state) => `<span class="${state}"><i aria-hidden="true"></i>${labels[state]}</span>`).join('')}<small>배경 · 국면</small><small>● ◆ ▼ 실제 1주 후</small></div>
+      <div class="regime-trend-legend">${REGIME_STATES.map((state) => `<button type="button" class="${state}" data-qr-chart-id="hub-regime" data-qr-series-id="observed${state}"><i aria-hidden="true"></i>${labels[state]}</button>`).join('')}<small>배경 · 국면</small><small>● ◆ ▼ 실제 1주 후</small></div>
       <figcaption id="${escapeAttribute(readoutId)}" class="regime-trend-readout" aria-live="polite"></figcaption>
       <div class="regime-trend-frame" tabindex="0" role="group" aria-label="국면 추이. 좌우 방향키로 관측일 이동" aria-describedby="${escapeAttribute(readoutId)}"></div>
     </figure>`;
@@ -3819,7 +3823,7 @@
         const title = panel.key === 'observed' ? observedLabel : '1주 예측확률';
         const bands = panel.bands.map((band) => `<rect class="regime-trend-band ${band.state}" data-panel="${panel.key}" data-state="${band.state}" x="${band.left}" y="${panel.top}" width="${band.right - band.left}" height="${g.panelHeight}"/>`).join('');
         const grid = [0, .25, .5, .75, 1].map((v) => `${line(g.left, g.y(v, panel.top), g.right, g.y(v, panel.top), 'regime-trend-grid')}<text x="${g.left - 7}" y="${g.y(v, panel.top) + 4}" text-anchor="end">${v * 100}%</text>`).join('');
-        const curves = panel.series.map((series) => `<path class="regime-trend-line ${series.state} ${panel.key}" data-panel="${panel.key}" data-state="${series.state}" d="${series.points.map((p, index) => `${index && g.times[index] - g.times[index - 1] <= 7 * 86400000 ? 'L' : 'M'}${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' ')}"/>`).join('');
+        const curves = panel.series.map((series) => `<path data-qr-series-id="${panel.key}${series.state}" class="regime-trend-line ${series.state} ${panel.key}" data-panel="${panel.key}" data-state="${series.state}" d="${series.points.map((p, index) => `${index && g.times[index] - g.times[index - 1] <= 7 * 86400000 ? 'L' : 'M'}${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' ')}"/>`).join('');
         const ends = panel.endpoints.map((p) => `<path class="regime-trend-leader ${p.state}" d="M${p.x},${p.y} L${p.x + 6},${p.labelY} H${p.x + 10}"/><circle class="regime-trend-end ${p.state}" cx="${p.x}" cy="${p.y}" r="3"/><text class="regime-trend-end-label ${p.state}" x="${p.x + 14}" y="${p.labelY + 4}">${escapeHtml(`${g.compact ? '' : `${REGIME_STATE_LABELS[p.state].replaceAll(' ', '')} `}${percent(p.value)}`)}</text>`).join('');
         const focus = REGIME_STATES.map((state) => `<circle class="regime-trend-focus ${state}" data-panel="${panel.key}" data-state="${state}" r="3.5"/>`).join('');
         return `<text class="regime-trend-title" x="${g.left}" y="${panel.top - 11}">${escapeHtml(title)}</text>${bands}${grid}${curves}${ends}${focus}`;
@@ -3836,6 +3840,7 @@
       const dates = g.tickIndices.map((i) => `<text x="${g.x(i)}" y="${g.dateY}" text-anchor="${i === 0 ? 'start' : i === rows.length - 1 ? 'end' : 'middle'}">${rows.length <= 26 ? rows[i].date.slice(5).replace('-', '.') : rows[i].date.slice(0, 7).replace('-', '.')}</text>`).join('');
       frame.innerHTML = `<svg viewBox="0 0 ${g.w} ${g.h}" role="img" aria-label="${escapeAttribute(`${observedLabel}와 1주 예측확률, ${rows.length}주`)}">${panels}${line(g.left, g.outcomeY, g.right, g.outcomeY, 'regime-trend-grid')}<text class="regime-trend-outcome-title" x="${g.left}" y="${g.outcomeY - 10}">실제 t+1</text>${outcomes}${dates}${line(g.x(selected), g.observedTop, g.x(selected), g.outcomeY + 7, 'regime-trend-cursor')}</svg>`;
       const svg = frame.querySelector('svg'), cursor = frame.querySelector('.regime-trend-cursor');
+      globalThis.QuantRange?.svg({id:'hub-regime',element:svg,host:target,currentIndex:()=>selected,onSeriesRequest:(id,ctx)=>{if(Number.isInteger(ctx.index)){pinnedDate=rows[ctx.index].date;show(ctx.index)}},onReset:()=>{pinnedDate=rows.at(-1).date;show(rows.length-1)},domain:rows.map(r=>({key:r.date,label:r.date})),series:g.panels.flatMap(panel=>panel.series.map(s=>({id:panel.key+s.state,label:(panel.key==='observed'?'관측 ':'예측 ')+labels[s.state],unit:'%',measure:'pp',scale:100,points:s.points.map((p,i)=>({key:rows[i].date,value:p.value}))}))),x:i=>g.x(i),plotTop:g.observedTop,plotBottom:g.outcomeY});
       const show = (index) => {
         selected = index;
         const row = rows[index];
@@ -3858,7 +3863,7 @@
         return closest;
       };
       frame.onpointermove = (event) => { if (event.pointerType !== 'touch') show(nearest(event)); };
-      frame.onclick = (event) => { const index = nearest(event); pinnedDate = rows[index].date; show(index); frame.focus({ preventScroll: true }); };
+      frame.onclick = (event) => { if(!event.target.closest?.('[data-qr-series-id]'))return;const index = nearest(event); pinnedDate = rows[index].date; show(index); frame.focus({ preventScroll: true }); };
       frame.onpointerleave = () => show(rows.findIndex((row) => row.date === pinnedDate));
       frame.onkeydown = (event) => {
         const move = { ArrowLeft: Math.max(0, selected - 1), ArrowUp: Math.max(0, selected - 1), ArrowRight: Math.min(rows.length - 1, selected + 1), ArrowDown: Math.min(rows.length - 1, selected + 1), Home: 0, End: rows.length - 1, Escape: rows.length - 1 };
@@ -3941,7 +3946,7 @@
       const endY = Math.max(label.y, Math.min(label.y + label.height, label.anchorY));
       return `<g class="sox-ticker-label${leader ? ' is-leader' : ''}${active ? ' is-selected' : ''}" data-sox-ticker="${escapeAttribute(label.ticker)}"><line x1="${label.anchorX}" y1="${label.anchorY}" x2="${endX}" y2="${endY}"/><rect x="${label.x}" y="${label.y}" width="${label.width}" height="${label.height}" rx="13"/><text x="${label.x + label.width / 2}" y="${label.y + (g.compact ? 17 : 20)}" text-anchor="middle">${escapeHtml(label.ticker)}</text></g>`;
     }).join('');
-    return `<svg class="sox-quadrant-svg" viewBox="0 0 ${g.width} ${g.height}" role="img" aria-label="가격과 실적 모멘텀 상대점수, ${g.points.length}종목">
+    return `<svg data-qr-spec="${encodeURIComponent(JSON.stringify({id:"hub-sox",kind:"scatter",scatter:g.points.map(p=>({id:p.ticker,label:p.ticker,x:p.priceMomentum,y:p.earningsMomentum})),scatterAxes:{xLabel:"가격 점수",yLabel:"실적 점수"},bounds:b,xDomain:[0,1],yDomain:[0,1]}))}" class="sox-quadrant-svg" viewBox="0 0 ${g.width} ${g.height}" role="img" aria-label="가격과 실적 모멘텀 상대점수, ${g.points.length}종목">
       <rect class="sox-quadrant-surface" x="${b.left}" y="${b.top}" width="${b.right - b.left}" height="${b.bottom - b.top}" rx="8"/>
       <text class="sox-axis-title" x="${b.left}" y="20">실적 모멘텀 ↑</text><text class="sox-axis-title" x="${b.right}" y="${g.height - 2}" text-anchor="end">가격 모멘텀 →</text>
       <line class="sox-midline" x1="${g.centerX}" x2="${g.centerX}" y1="${b.top}" y2="${b.bottom}"/><line class="sox-midline" x1="${b.left}" x2="${b.right}" y1="${g.centerY}" y2="${g.centerY}"/>
@@ -4148,11 +4153,11 @@
           </g>
         `;
       }).join('');
-      return `<g class="etf-mini-series series-color-${index % COLORS.length}" aria-label="${escapeAttribute(item.label)}">${segmentPaths}${pointMarks}</g>`;
+      return `<g data-qr-series-id="${index}" class="etf-mini-series series-color-${index % COLORS.length}" aria-label="${escapeAttribute(item.label)}">${segmentPaths}${pointMarks}</g>`;
     }).join('');
     const legend = chartSeries.map((item, index) => {
       const latest = item.points.at(-1);
-      return `<button type="button" class="etf-legend-button" data-series-index="${index}" aria-pressed="false"><i class="legend-key" style="background:${COLORS[index % COLORS.length]}"></i><span>${escapeHtml(item.label)}</span><strong>${escapeHtml(formatPercent(latest?.value))}</strong></button>`;
+      return `<button type="button" class="etf-legend-button" data-qr-chart-id="hub-etf-${row.code||row.ticker||row.name}" data-qr-series-id="${index}" data-series-index="${index}" aria-pressed="false"><i class="legend-key" style="background:${COLORS[index % COLORS.length]}"></i><span>${escapeHtml(item.label)}</span><strong>${escapeHtml(formatPercent(latest?.value))}</strong></button>`;
     }).join('');
     const uniqueDates = [...new Set(points.map((point) => point.date))].sort((a, b) => Date.parse(a) - Date.parse(b));
     const xTickCount = Math.min(compact ? 3 : 6, uniqueDates.length);
@@ -4173,7 +4178,7 @@
       <div class="etf-mini-chart" data-y-min="${yMin}" data-y-max="${yMax}" data-date-start="${minDate}" data-date-end="${maxDate}">
         <div class="etf-chart-readout" aria-live="polite">${initialReadout}</div>
         <div class="etf-mini-plot" tabindex="0" role="group" aria-label="${escapeAttribute(frameLabel)}" data-base-label="${escapeAttribute(frameLabel)}">
-          <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeAttribute(row.name)} 현재 상위 ${chartSeries.length}종목 편입비중 추이">
+          <svg data-qr-spec="${encodeURIComponent(JSON.stringify({id:"hub-etf-"+(row.code||row.ticker||row.name),domain:[...new Set(points.map(p=>p.date))].sort().map(key=>({key,label:key})),series:chartSeries.map((s,i)=>({id:String(i),label:s.label,unit:"%",measure:"pp",scale:100,points:s.points.map(p=>({key:p.date,value:p.value}))})),xs:[...new Set(points.map(p=>p.date))].sort().map(d=>x(d)),plotTop:margin.top,plotBottom:height-margin.bottom}))}" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeAttribute(row.name)} 현재 상위 ${chartSeries.length}종목 편입비중 추이">
             <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"/>
             <text x="${margin.left}" y="${compact ? 14 : 30}" fill="#d8dee8" font-size="${compact ? 11 : 16}" font-weight="600">최근 1개월 비중(%)</text>
             ${grid}
@@ -4292,6 +4297,9 @@
           return distance < bestDistance ? index : bestIndex;
         }, 0);
       };
+
+      const qrSvg=frame.querySelector('svg');
+      if(qrSvg?.dataset.qrSpec){const spec=JSON.parse(decodeURIComponent(qrSvg.dataset.qrSpec));qrSvg._quantRangeAdapter={currentIndex:()=>{const date=pointsForSeries(seriesIndex)[pointIndex]?.dataset.date;const index=spec.domain.findIndex(d=>d.key===date);return index<0?null:index},onSeriesRequest:(id,ctx)=>{seriesIndex=Number(id);if(Number.isInteger(ctx.index))pointIndex=closestPointIndex(pointsForSeries(seriesIndex),spec.domain[ctx.index]?.key);pinCurrentSelection()},onReset:()=>{pinnedSelection=null;clearSelection()}};}
 
       frame.addEventListener('focus', update);
       frame.addEventListener('keydown', (event) => {
@@ -4573,7 +4581,7 @@
         return `<circle class="dram-data-point${pointIndex === item.points.length - 1 ? ' endpoint' : ''}" cx="${pointX}" cy="${pointY}" r="${pointIndex === item.points.length - 1 ? '4.2' : '3.3'}" fill="${color}" data-series-index="${index}" data-point-index="${pointIndex}" data-date="${escapeAttribute(point.date)}" data-chart-x="${pointX}" data-keyboard-label="${escapeAttribute(keyboardLabel)}"/>`;
       }).join('');
       const dashAttribute = dash ? ` stroke-dasharray="${dash}"` : '';
-      return `<g class="dram-series series-color-${index % COLORS.length}" data-series-index="${index}" data-series-label="${escapeAttribute(item.name)}" style="--series-color:${color}"><path class="dram-series-hit" d="${pathData}" fill="none" stroke="transparent"/><path class="dram-series-line" d="${pathData}" fill="none" stroke="${color}"${dashAttribute}/>${circles}</g>`;
+      return `<g data-qr-series-id="${index}" class="dram-series series-color-${index % COLORS.length}" data-series-index="${index}" data-series-label="${escapeAttribute(item.name)}" style="--series-color:${color}"><path class="dram-series-hit" d="${pathData}" fill="none" stroke="transparent"/><path class="dram-series-line" d="${pathData}" fill="none" stroke="${color}"${dashAttribute}/>${circles}</g>`;
     }).join('');
 
     const legend = displaySeries.map((item, index) => {
@@ -4582,7 +4590,7 @@
       const label = dramProductLabel(item.name);
       const latest = item.points.at(-1);
       return `
-      <button type="button" class="dram-legend-button" title="${escapeAttribute(item.name)}" data-series-index="${index}" aria-pressed="false" aria-label="${escapeAttribute(`${item.name} 계열 선택`)}">
+      <button type="button" class="dram-legend-button" data-qr-chart-id="hub-dram-${source}" data-qr-series-id="${index}" title="${escapeAttribute(item.name)}" data-series-index="${index}" aria-pressed="false" aria-label="${escapeAttribute(`${item.name} 계열 선택`)}">
         <svg viewBox="0 0 30 10" aria-hidden="true"><line x1="1" x2="29" y1="5" y2="5" stroke="${COLORS[index % COLORS.length]}" stroke-width="3"${dashAttribute}/></svg>
         <span class="dram-product-name"><strong>${escapeHtml(label.name)}</strong><small>${escapeHtml(label.spec)}</small></span><span class="dram-product-price">${escapeHtml(formatNumber(latest?.value))}<small>USD</small></span>
       </button>
@@ -4616,9 +4624,9 @@
       </div>
       <div class="chart-legend dram-legend" role="group" aria-label="D램 제품 계열 선택">${legend}</div>
       <div class="dram-chart-frame" tabindex="0" role="group" aria-label="${escapeAttribute(frameLabel)}" aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown Home End Escape" data-base-label="${escapeAttribute(frameLabel)}">
-        <svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="${titleId} ${descId}">
+        <svg data-qr-spec="${encodeURIComponent(JSON.stringify({id:"hub-dram-"+source,domain:allDates.map(key=>({key,label:key})),series:displaySeries.map((s,i)=>({id:String(i),label:s.name||s.label,color:COLORS[i % COLORS.length],unit:"USD",measure:"relative",pointUnit:mode==='indexed'?'pt':'USD',pointScale:1,points:s.points.map(p=>({key:p.date,value:p.value,pointValue:p.plotValue}))})),xs:allDates.map(d=>x(d)),plotTop:margin.top,plotBottom:height-margin.bottom}))}" viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="${titleId} ${descId}">
           <title id="${titleId}">${escapeHtml(`${sourceName} D램 일별 ${modeLabel}`)}</title>
-          <desc id="${descId}">${escapeHtml(`${firstDate}부터 ${lastDate}까지 ${displaySeries.length}개 제품, ${points.length}개 관측치를 비교합니다. 정확값은 차트 밖 선택값 영역에서 확인합니다.`)}</desc>
+          <desc id="${descId}">${escapeHtml(`${firstDate}부터 ${lastDate}까지 ${displaySeries.length}개 제품, ${points.length}개 관측치를 비교합니다. 선을 누르면 해당 날짜의 값을 확인합니다.`)}</desc>
           <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"/>
           <text x="${margin.left}" y="18" fill="#d8dee8" font-size="13" font-weight="700">${mode === 'indexed' ? '상대 변화 · 첫 관측=100' : '일별 가격 · USD'}</text>
           ${grid}
