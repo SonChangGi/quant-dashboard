@@ -128,6 +128,12 @@ function begin(){
  document.documentElement.dataset.quantDesignProject=project;
  const releaseBase=new URL('../../design/releases/0.5.0/',script?.src||'https://sonchanggi.github.io/quant-dashboard/shared/navigation/v1/nav.js');
  const base=new URL('foundation/',releaseBase);
+ const early=window.QuantFirstPaint;
+ if(early?.styleReady&&early.state==='loading'&&early.project===project){
+  const runtime=document.createElement('script');runtime.src=new URL('runtime.js',early.base);
+  runtime.onerror=()=>{window.__quantDesignV3.state='error';early.fail('runtime-network')};
+  document.head.append(runtime);return;
+ }
  const css=['design-system.css',...styles[project].filter(n=>!n.includes('v03')),'v03.css',...styles[project].filter(n=>n.includes('v03')),'focus.css','v04.css',...(['factor','regime','fearNgreed','etf-tracking','dram-price','sox'].includes(project)?['v04-finance.css']:['news','investment-journal','alpha-house'].includes(project)?['v04-editorial.css']:[])];
  const links=css.map(name=>{const link=document.createElement('link');link.rel='stylesheet';link.href=new URL(name,base);link.media='not all';document.head.append(link);return link});
  const ready=Promise.all(links.map(link=>new Promise((resolve,reject)=>{link.onload=resolve;link.onerror=reject})));

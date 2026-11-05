@@ -828,3 +828,12 @@ https://github.com/SonChangGi/quant-dashboard/blob/main/docs/web-design.md
 - 요청 config·input schema·artifact hash와 결과 binding 일치 증거
 - 테스트와 visual QA 결과
 ```
+
+
+## 첫 화면 디자인 적용
+
+공통 UI 0.5.0은 `shared/design/startup/1.0.0/` 초기 진입 번들을 사용한다. 각 사이트의 마지막 head 요소에 프로젝트 CSS와 동기 `start.js`를 순서대로 넣고 `data-quant-first-paint-css`, `data-quant-design-project`를 지정한다. 최종 CSS와 저장된 테마가 본문 첫 표시 전에 적용되며, 공통 메뉴는 단일 runtime 초기화가 끝나면 표시한다. 본문 전체를 숨기지 않는다.
+
+CSS/스크립트 실패 시 기본 화면으로 복귀하며 4초 후 도착한 runtime은 적용하지 않는다. CSS scope 미지원 환경은 기존 로더를 사용한다. News는 동일한 초기 표시 원칙을 자체 고정 번들로 적용한다.
+
+`node scripts/build-first-paint.mjs`는 변경하지 않은 0.5.0 원본에서 프로젝트 CSS와 runtime을 생성한다. `npm test`가 원본 및 생성 파일 해시와 부트스트랩·실패 경로를 검사한다. 배포된 startup 버전은 수정하지 않고 다음 버전으로 발행한다. 초기 진입 자산을 먼저 공개한 뒤 소비 사이트를 배포한다.
