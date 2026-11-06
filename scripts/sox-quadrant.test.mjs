@@ -1,9 +1,10 @@
+import {readFileSync as readQuantFormatter} from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 const context = vm.createContext({console, URL});
-vm.runInContext(fs.readFileSync('assets/app.js','utf8'), context);
+vm.runInContext(readQuantFormatter(new URL('../shared/design/releases/0.7.0/number.js',import.meta.url),'utf8'),context);vm.runInContext(fs.readFileSync('assets/app.js','utf8'), context);
 const api = context.__QUANT_DASHBOARD_TESTS__;
 const fixture = () => {
   const constituents = Array.from({length:6}, (_,i) => ({rank:i+1,ticker:`S${i}`,name:`Stock ${i}`,proxyWeight:(6-i)/21,scores:{priceMomentum:1-i*.15,earningsMomentum:.95-i*.1,combined:.975-i*.125,label:'original label'}}));

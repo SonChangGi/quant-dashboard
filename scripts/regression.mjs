@@ -1,3 +1,4 @@
+import {readFileSync as readQuantFormatter} from 'node:fs';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import {
@@ -8,7 +9,7 @@ import {
 
 const source = readFileSync('assets/app.js', 'utf8');
 const context = vm.createContext({ console, URL });
-vm.runInContext(source, context, { filename: 'assets/app.js' });
+vm.runInContext(readQuantFormatter(new URL('../shared/design/releases/0.7.0/number.js',import.meta.url),'utf8'),context);vm.runInContext(source, context, { filename: 'assets/app.js' });
 const api = context.__QUANT_DASHBOARD_TESTS__;
 
 // Time-dependent status fixtures must be observed at their recorded test time.

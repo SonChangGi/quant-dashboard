@@ -1,3 +1,4 @@
+import {readFileSync as readQuantFormatter} from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -7,7 +8,7 @@ import { operationalFindingsFor } from './public-health-policy.mjs';
 const fixture = JSON.parse(readFileSync(new URL('fixtures/regime-health-current.json', import.meta.url), 'utf8'));
 const priorFixture = JSON.parse(readFileSync(new URL('fixtures/regime-v5-public.json', import.meta.url), 'utf8'));
 const context = vm.createContext({ console, URL });
-vm.runInContext(readFileSync(new URL('../assets/app.js', import.meta.url), 'utf8'), context);
+vm.runInContext(readQuantFormatter(new URL('../shared/design/releases/0.7.0/number.js',import.meta.url),'utf8'),context);vm.runInContext(readFileSync(new URL('../assets/app.js', import.meta.url), 'utf8'), context);
 const api = context.__QUANT_DASHBOARD_TESTS__;
 const plain = (value) => JSON.parse(JSON.stringify(value));
 const clone = () => structuredClone(fixture.payload);
@@ -37,7 +38,7 @@ test('a current healthy source set with low transition recall is identified as m
   assert.equal(result.label, '조기경보 성능 주의');
   assert.match(result.detail, /41/);
   assert.match(result.detail, /3/);
-  assert.match(result.detail, /7\.3%/);
+  assert.match(result.detail, /7\.32%/);
   assert.equal(JSON.stringify(payload), before);
 });
 

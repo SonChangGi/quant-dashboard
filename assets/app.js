@@ -3038,7 +3038,7 @@
         || Math.abs(early.on_time_recall - early.on_time_departure_count / early.event_count) > 1e-6) return null;
     return {
       kind: 'model_quality', label: '조기경보 성능 주의',
-      detail: `수집·주간 데이터 확인 통과. 사후 진단에서 전환 ${early.event_count}건 중 적시 경보 ${early.on_time_departure_count}건(${(100 * early.on_time_recall).toFixed(1)}%, 진단 기준 20% 미만). 확률 건전성 진단은 정상.`,
+      detail: `수집·주간 데이터 확인 통과. 사후 진단에서 전환 ${early.event_count}건 중 적시 경보 ${early.on_time_departure_count}건(${globalThis.QuantFormat.number(100 * early.on_time_recall)}%, 진단 기준 20% 미만). 확률 건전성 진단은 정상.`,
     };
   }
 
@@ -3167,7 +3167,7 @@
   }
 
   function formatSignedFear(value, digits) {
-    return `${value > 0 ? '+' : ''}${value.toLocaleString('ko-KR', { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
+    return `${value > 0 ? '+' : ''}${globalThis.QuantFormat.number(value)}`;
   }
 
   function fearScatterGeometry(scatter, width = 640) {
@@ -3243,7 +3243,7 @@
         const state = states[index], current = row.role === 'current';
         const r = current ? 5 : state?.startsWith('extreme') ? 4 : chart === 'price' && (!state || state === 'neutral') ? 1.4 : 3;
         const attrs = `data-point="${index}" ${chart === 'price' ? `data-qr-series-id="kospi" data-qr-index="${index}"` : `data-qr-point-id="${row.date}"`} data-date="${row.date}" data-state="${state || 'unclassified'}" class="${chart}-observation fear-point ${state || ''}${current ? ' is-current' : ''}"`;
-        const title = `<title>${escapeHtml(`${row.date} · ${FEAR_POINT_LABELS[state] || ''}${chart === 'price' ? ` · KOSPI ${row.close.toLocaleString('ko-KR', { maximumFractionDigits: 2 })}` : ` · 수익률 ${formatSignedFear(row.return1d * 100, 2)}% · 개인 ${formatSignedFear(row.rawFlowTrillion, 3)}조원`}`)}</title>`;
+        const title = `<title>${escapeHtml(`${row.date} · ${FEAR_POINT_LABELS[state] || ''}${chart === 'price' ? ` · KOSPI ${globalThis.QuantFormat.number(row.close)}` : ` · 수익률 ${formatSignedFear(row.return1d * 100, 2)}% · 개인 ${formatSignedFear(row.rawFlowTrillion, 3)}조원`}`)}</title>`;
         return state?.includes('greed')
           ? `<path ${attrs} d="M${cx},${cy - r - 1}L${cx + r + 1},${cy}L${cx},${cy + r + 1}L${cx - r - 1},${cy}Z">${title}</path>`
           : `<circle ${attrs} cx="${cx}" cy="${cy}" r="${r}">${title}</circle>`;
@@ -3255,7 +3255,7 @@
       const priceChart = price ? `<div class="fear-price-heading"><h4>가격 · KOSPI 종가</h4><span>지수포인트</span></div>
         <div class="scatter-frame fear-price-frame" tabindex="0" role="group" aria-label="KOSPI 종가와 공포·탐욕. 좌우 방향키로 두 그래프의 날짜 이동" aria-describedby="fear-scatter-readout">
           <svg viewBox="0 0 ${price.w} ${price.h}" role="img" aria-label="KOSPI 종가, 산점도와 같은 ${price.points.length}개 날짜">
-            ${price.yTicks.map((value) => `${line(price.p.l, price.y(value), w - price.p.r, price.y(value), 'scatter-grid')}<text x="${price.p.l - 8}" y="${price.y(value) + 4}" text-anchor="end">${value.toLocaleString('ko-KR')}</text>`).join('')}
+            ${price.yTicks.map((value) => `${line(price.p.l, price.y(value), w - price.p.r, price.y(value), 'scatter-grid')}<text x="${price.p.l - 8}" y="${price.y(value) + 4}" text-anchor="end">${globalThis.QuantFormat.number(value)}</text>`).join('')}
             ${price.dateTicks.map((date, index) => `<text x="${price.x(date)}" y="${price.h - 7}" text-anchor="${index === 0 ? 'start' : index === price.dateTicks.length - 1 ? 'end' : 'middle'}">${date.slice(0, 7).replace('-', '.')}</text>`).join('')}
             <path data-qr-series-id="kospi" class="fear-price-line" d="${price.points.map((point, index) => `${index ? 'L' : 'M'}${point.x},${point.y}`).join('')}"/>
             ${price.points.map((point, index) => mark(point, index, 'price')).join('')}
@@ -3292,7 +3292,7 @@
           cursor.setAttribute('x1', match.x); cursor.setAttribute('x2', match.x);
         }
         const close = price?.points[index].row.close;
-        readout.innerHTML = `<strong>${escapeHtml(row.date)}${row.role === 'current' ? ' · 현재' : ''}${state ? ` <em class="fear-state ${state}">${FEAR_POINT_LABELS[state]}</em>` : ''}</strong>${close !== undefined ? `<span>KOSPI <b>${close.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b></span>` : ''}<span>수익률 <b>${escapeHtml(formatSignedFear(row.return1d * 100, 2))}%</b></span><span>개인 <b>${escapeHtml(formatSignedFear(row.rawFlowTrillion, 3))}조원</b></span>`;
+        readout.innerHTML = `<strong>${escapeHtml(row.date)}${row.role === 'current' ? ' · 현재' : ''}${state ? ` <em class="fear-state ${state}">${FEAR_POINT_LABELS[state]}</em>` : ''}</strong>${close !== undefined ? `<span>KOSPI <b>${globalThis.QuantFormat.number(close)}</b></span>` : ''}<span>수익률 <b>${escapeHtml(formatSignedFear(row.return1d * 100, 2))}%</b></span><span>개인 <b>${escapeHtml(formatSignedFear(row.rawFlowTrillion, 3))}조원</b></span>`;
       };
       const bind = (selector, geometry, isPrice) => {
         const frame = target.querySelector(selector);
@@ -3609,7 +3609,7 @@
       const line = (x1,y1,x2,y2,cls) => `<line class="${cls}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
       const grid = [];
       for (let tick=0;tick<=g.ceiling;tick+=g.step) grid.push(`${line(g.left,g.y(tick),g.right,g.y(tick),'factor-performance-grid')}<text x="${g.left-8}" y="${g.y(tick)+4}" text-anchor="end">${tick}</text>`);
-      const ddTicks = [0,g.ddFloor/2,g.ddFloor].map(value => `${line(g.left,g.dy(value),g.right,g.dy(value),'factor-performance-grid')}<text x="${g.left-8}" y="${g.dy(value)+4}" text-anchor="end">${Math.round(value*100)}%</text>`).join('');
+      const ddTicks = [0,g.ddFloor/2,g.ddFloor].map(value => `${line(g.left,g.dy(value),g.right,g.dy(value),'factor-performance-grid')}<text x="${g.left-8}" y="${g.dy(value)+4}" text-anchor="end">${globalThis.QuantFormat.number(value*100)}%</text>`).join('');
       const path = (field,i,y) => { let open=false; return rows.map((row,index) => { const value=row[field][i];if(!Number.isFinite(value)){open=false;return '';}const command=open?'L':'M';open=true;return `${command}${g.x(index).toFixed(2)},${y(value).toFixed(2)}`; }).join(' '); };
       const curves = [0,...(performance.benchmark?[1]:[])].map(i => `<path data-qr-series-id="value${i}" class="factor-performance-line ${i?'benchmark':''}" d="${path('values',i,g.y)}"/><path data-qr-series-id="dd${i}" class="factor-performance-line ${i?'benchmark':''}" d="${path('drawdowns',i,g.dy)}"/><circle class="factor-performance-point ${i?'benchmark':''}" data-series="${i}" data-field="values" r="3.5"/><circle class="factor-performance-point ${i?'benchmark':''}" data-series="${i}" data-field="drawdowns" r="3.5"/>`).join('');
       const count = g.w < 400 ? 3 : 4;
@@ -3620,7 +3620,7 @@
       const show = index => {
         selected=index;const row=rows[index];cursor.setAttribute('x1',g.x(index));cursor.setAttribute('x2',g.x(index));
         for (const point of frame.querySelectorAll('.factor-performance-point')) { const value=row[point.dataset.field][Number(point.dataset.series)];point.style.display=Number.isFinite(value)?'':'none';point.setAttribute('cx',g.x(index));point.setAttribute('cy',point.dataset.field==='values'?g.y(value):g.dy(value)); }
-        const value = i => Number.isFinite(row.values[i]) ? row.values[i].toLocaleString('ko-KR', {minimumFractionDigits:2, maximumFractionDigits:2}) : '—';
+        const value = i => Number.isFinite(row.values[i]) ? globalThis.QuantFormat.number(row.values[i]) : '—';
         const dd = i => Number.isFinite(row.drawdowns[i]) ? formatPercent(row.drawdowns[i]) : '—';
         readout.innerHTML = `<time datetime="${row.date}">${row.date}</time><span>월별 선택 <b>${value(0)}</b><small>낙폭 ${dd(0)}</small></span>${performance.benchmark?`<span class="benchmark">SPY <b>${value(1)}</b><small>낙폭 ${dd(1)}</small></span>`:''}`;
       };
@@ -3646,7 +3646,7 @@
     const weightPolicy = momentum ? (summary.selectedWeightingPolicy === 'score_liquidity_rank' ? '점수 70% · 거래대금 30%' : summary.selectedWeightingPolicy || '확인 불가') : '';
     target.innerHTML = `<div class="factor-identity"><span>선택 팩터</span><strong>${escapeHtml(identity.name)}</strong>${identity.detail ? `<small>${escapeHtml(identity.detail)}</small>` : ''}</div>
       <div class="factor-stats">
-        <div class="factor-concentration"><span>표시 ${allocation.rows.length || 5}종목 비중</span><strong>${allocation.total === null ? '—' : `${(allocation.total * 100).toFixed(2)}%`}</strong><div class="factor-total-track" role="img" aria-label="${allocation.total === null ? '비중 합계 확인 불가' : `전체 포트폴리오 중 표시 종목 비중 ${formatPercent(allocation.total)}`}" ${allocation.total === null ? 'hidden' : ''}><i style="width:${allocation.total === null ? 0 : Math.min(100, allocation.total * 100)}%"></i></div></div>
+        <div class="factor-concentration"><span>표시 ${allocation.rows.length || 5}종목 비중</span><strong>${allocation.total === null ? '—' : `${globalThis.QuantFormat.number(allocation.total * 100)}%`}</strong><div class="factor-total-track" role="img" aria-label="${allocation.total === null ? '비중 합계 확인 불가' : `전체 포트폴리오 중 표시 종목 비중 ${formatPercent(allocation.total)}`}" ${allocation.total === null ? 'hidden' : ''}><i style="width:${allocation.total === null ? 0 : Math.min(100, allocation.total * 100)}%"></i></div></div>
         <div class="factor-composite"><span>종합 점수 · ${momentum ? '0–100' : '0–1'}</span><strong>${escapeHtml(formatNumber(summary.compositeScore))}</strong></div>
       </div>
       <div class="factor-holdings-heading"><h5>${momentum ? '신호' : '비중'} 상위 ${allocation.rows.length || 5}종목</h5><span>${momentum ? '신호' : '보유'} 기준 ${escapeHtml(allocation.dateLabel)}</span></div>
@@ -3669,7 +3669,7 @@
     const momentum = project.id === 'momentum', integrated = allocation.integrated === true;
     target.classList.toggle('integrated-allocation', integrated);
     if (!allocation.rows.length) { target.innerHTML = '<p class="empty-state">표시할 종목이 없습니다.</p>'; return; }
-    const ticks = [0, scale / 2, scale].map((value) => `${Number((value * 100).toFixed(1))}%`);
+    const ticks = [0, scale / 2, scale].map((value) => `${globalThis.QuantFormat.number(value * 100)}%`);
     target.innerHTML = `<div class="factor-columns" aria-hidden="true"><span>#</span><span>종목</span><span>모델 비중</span><span></span>${integrated ? '' : `<span>${momentum ? '신호' : '팩터 점수'}</span>`}</div>
       <div class="factor-axis" aria-hidden="true"><div>${ticks.map((value) => `<span>${value}</span>`).join('')}</div></div>
       <ol class="factor-holdings" aria-label="${momentum && !integrated ? '모멘텀 신호' : '모델 비중'} 순위. 비중 막대 공통 범위 0에서 ${Math.round(scale * 100)}퍼센트">
@@ -3798,7 +3798,7 @@
       return;
     }
     const labels = { risk_on: 'Risk-on', transition: 'Transition', risk_off: 'Risk-off' };
-    const percent = (value) => `${(value * 100).toFixed(1)}%`;
+    const percent = (value) => `${globalThis.QuantFormat.number(value * 100)}%`;
     const observedLabel = `관측 ${trend.currentMeasureLabel || '소속도'}`;
     const readoutId = `${project.id}-trend-readout`;
     let period = trend.rows.length >= 52 ? '52' : 'all', selected = 0, pinnedDate = trend.rows.at(-1).date, previousWidth = 0;
@@ -3852,7 +3852,7 @@
         for (const marker of frame.querySelectorAll('.regime-trend-outcome')) marker.classList.toggle('is-active', marker.dataset.date === row.date);
         const actual = row.actualState ? labels[row.actualState] : row.nextDate > trend.rows.at(-1).date ? '결과 대기' : '결과 없음';
         const vector = (values) => REGIME_STATES.map((state) => `<div class="${state}"><dt>${labels[state]}</dt><dd>${percent(values[state])}</dd></div>`).join('');
-        readout.innerHTML = `<div class="regime-trend-date"><strong>${escapeHtml(formatMaybeDate(row.date))}</strong><span>→ ${escapeHtml(formatMaybeDate(row.nextDate))}</span></div><div class="regime-trend-vectors"><div><span>${escapeHtml(observedLabel)}</span><dl>${vector(row.memberships)}</dl></div><div><span>1주 예측확률</span><dl>${vector(row.probabilities)}</dl></div></div><div class="regime-trend-result"><span>예측 <b>${labels[row.nextState]}</b></span><span>실제 <b>${actual}</b></span><span>엔트로피 <b>${Number.isFinite(row.entropy) ? row.entropy.toFixed(3) : '—'}</b></span></div>`;
+        readout.innerHTML = `<div class="regime-trend-date"><strong>${escapeHtml(formatMaybeDate(row.date))}</strong><span>→ ${escapeHtml(formatMaybeDate(row.nextDate))}</span></div><div class="regime-trend-vectors"><div><span>${escapeHtml(observedLabel)}</span><dl>${vector(row.memberships)}</dl></div><div><span>1주 예측확률</span><dl>${vector(row.probabilities)}</dl></div></div><div class="regime-trend-result"><span>예측 <b>${labels[row.nextState]}</b></span><span>실제 <b>${actual}</b></span><span>엔트로피 <b>${Number.isFinite(row.entropy) ? globalThis.QuantFormat.number(row.entropy) : '—'}</b></span></div>`;
       };
       const nearest = (event) => {
         const rect = svg.getBoundingClientRect();
@@ -5279,9 +5279,9 @@
   function formatBytes(value) {
     const bytes = finiteOrNull(value);
     if (!bytes || bytes <= 0) return '용량 확인 불가';
-    if (bytes >= 1_000_000) return `${(bytes / 1_000_000).toLocaleString('ko-KR', { maximumFractionDigits: 1 })} MB`;
-    if (bytes >= 1_000) return `${(bytes / 1_000).toLocaleString('ko-KR', { maximumFractionDigits: 0 })} KB`;
-    return `${bytes.toLocaleString('ko-KR')} B`;
+    if (bytes >= 1_000_000) return `${globalThis.QuantFormat.number(bytes / 1_000_000)} MB`;
+    if (bytes >= 1_000) return `${globalThis.QuantFormat.number(bytes / 1_000)} KB`;
+    return `${globalThis.QuantFormat.number(bytes)} B`;
   }
 
   function textByteLength(text) {
@@ -5327,13 +5327,13 @@
   function formatPercent(value) {
     const num = finiteOrNull(value);
     if (num === null) return '-';
-    return `${(num * 100).toLocaleString('ko-KR', { maximumFractionDigits: 2, minimumFractionDigits: 0 })}%`;
+    return `${globalThis.QuantFormat.number(num * 100)}%`;
   }
 
   function formatNumber(value) {
     const num = finiteOrNull(value);
     if (num === null) return '-';
-    return num.toLocaleString('ko-KR', { maximumFractionDigits: 4 });
+    return globalThis.QuantFormat.number(num);
   }
 
   function formatFearPosition(value) {

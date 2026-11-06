@@ -1,3 +1,4 @@
+import {readFileSync as readQuantFormatter} from 'node:fs';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
@@ -8,7 +9,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 
 const context = vm.createContext({ console, URL });
-vm.runInContext(readFileSync('assets/app.js', 'utf8'), context);
+vm.runInContext(readQuantFormatter(new URL('../shared/design/releases/0.7.0/number.js',import.meta.url),'utf8'),context);vm.runInContext(readFileSync('assets/app.js', 'utf8'), context);
 const api = context.__QUANT_DASHBOARD_TESTS__;
 const clone = (value) => JSON.parse(JSON.stringify(value));
 const week = (date, state = 'risk_on') => {

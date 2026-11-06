@@ -1,3 +1,4 @@
+import {readFileSync as readQuantFormatter} from 'node:fs';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
@@ -7,7 +8,7 @@ import vm from 'node:vm';
 const root = new URL('../', import.meta.url);
 const fixture = JSON.parse(readFileSync(new URL('fixtures/regime-v5-public.json', import.meta.url), 'utf8'));
 const context = vm.createContext({ console, URL });
-vm.runInContext(readFileSync(new URL('assets/app.js', root), 'utf8'), context, { filename: 'assets/app.js' });
+vm.runInContext(readQuantFormatter(new URL('../shared/design/releases/0.7.0/number.js',import.meta.url),'utf8'),context);vm.runInContext(readFileSync(new URL('assets/app.js', root), 'utf8'), context, { filename: 'assets/app.js' });
 const api = context.__QUANT_DASHBOARD_TESTS__;
 const adapter = api.PANEL_ADAPTERS.regime;
 const plain = (value) => JSON.parse(JSON.stringify(value));

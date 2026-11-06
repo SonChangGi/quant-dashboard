@@ -1,9 +1,10 @@
+import {readFileSync as readQuantFormatter} from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 const context = vm.createContext({console, URL});
-vm.runInContext(fs.readFileSync('assets/app.js', 'utf8'), context);
+vm.runInContext(readQuantFormatter(new URL('../shared/design/releases/0.7.0/number.js',import.meta.url),'utf8'),context);vm.runInContext(fs.readFileSync('assets/app.js', 'utf8'), context);
 const api = context.__QUANT_DASHBOARD_TESTS__;
 
 test('DRAM product labels preserve generation, Gb, speed, organisation and eTT distinctions', () => {

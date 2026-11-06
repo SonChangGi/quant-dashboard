@@ -1,0 +1,24 @@
+/* Journal: preserve full precision values without clipping narrow KPI cards. */
+@media (max-width: 480px) {
+  html[data-quant-design-project="investment-journal"] body .metric .metric-value {
+    font-size: 18px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}
+@media (max-width: 360px) {
+  html[data-quant-design-project="investment-journal"] .metrics {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  html[data-quant-design-project="investment-journal"] body .metric .metric-value {
+    font-size: 24px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 480px) {
+  html[data-quant-design-project="investment-journal"] .panel .metrics {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

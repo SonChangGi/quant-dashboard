@@ -1,3 +1,4 @@
+import {readFileSync as readQuantFormatter} from 'node:fs';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
@@ -59,7 +60,7 @@ function setup(fetchImpl) {
     window: { setTimeout, clearTimeout },
     document: { addEventListener() {}, querySelector: (selector) => targets[selector] || null },
   });
-  vm.runInContext(source, context);
+  vm.runInContext(readQuantFormatter(new URL('../shared/design/releases/0.7.0/number.js',import.meta.url),'utf8'),context);vm.runInContext(source, context);
   return { api: context.__QUANT_DASHBOARD_TESTS__, targets };
 }
 const bodyFor = (url) => url.endsWith('archive.json') ? serialize(archive) : serialize(briefing);

@@ -1,3 +1,4 @@
+import {readFileSync as readQuantFormatter} from 'node:fs';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { createHash } from 'node:crypto';
@@ -24,7 +25,7 @@ class PublicFetchError extends Error {
 const sandbox = { console };
 sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
-vm.runInContext(readFileSync('assets/app.js', 'utf8'), sandbox, { filename: 'assets/app.js' });
+vm.runInContext(readQuantFormatter(new URL('../shared/design/releases/0.7.0/number.js',import.meta.url),'utf8'),sandbox);vm.runInContext(readFileSync('assets/app.js', 'utf8'), sandbox, { filename: 'assets/app.js' });
 
 const api = sandbox.__QUANT_DASHBOARD_TESTS__;
 if (!api) throw new Error('Dashboard test API was not exported.');

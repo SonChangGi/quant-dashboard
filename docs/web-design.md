@@ -1,8 +1,8 @@
 # Quant Research Web Design Prompt
 
-> 버전: `2.7.0`
+> 버전: `2.8.0`
 >
-> 목표 UI: `0.6.0` · 초기 진입: `shared/design/startup/1.1.0/` · 차트: `QuantRange 1.2.0`
+> 목표 UI: `0.7.0` · 초기 진입: `shared/design/startup/1.2.0/` · 차트: `QuantRange 1.3.0`
 >
 > 시각 원칙 기준일: `2026-10-30`
 >
@@ -18,7 +18,7 @@
 규칙이 충돌하면 아래 순서대로 판단한다.
 
 1. **분석·결과 보호 경계**
-2. **이 문서의 0.6.0 공통 계약과 마지막의 초기 진입·차트 계약** (과거 [기반 구현 계약](design-v3.md)은 충돌하지 않는 부분만 적용)
+2. **이 문서의 0.7.0 공통 계약과 마지막의 초기 진입·차트 계약** (과거 [기반 구현 계약](design-v3.md)은 충돌하지 않는 부분만 적용)
 3. **현재 10개 운영 사이트의 검증된 상호작용과 프로젝트 고유 구조**
 4. **프로젝트 고유의 분석 목적과 필요한 예외**
 5. **Toss 공개 자료에서 참고한 일반적인 디자인 원칙**
@@ -512,7 +512,7 @@ Fear & Greed, ETF Tracking, SOX, Factor처럼 긴 페이지에는 기존 상단�
 - header는 필요하면 sticky, `11~12px / 650~700`
 - cell은 `12~14px`, padding `10~14px`
 - 텍스트·종목명은 왼쪽, 숫자·비율·금액은 오른쪽
-- 숫자는 tabular figures, 단위와 소수점 규칙은 원본 계약 유지
+- 숫자는 tabular figures, 단위는 원본 계약 유지, 소수점은 아래 공통 숫자 표시 계약 적용
 - 날짜 형식은 같은 표 안에서 통일
 - row border는 `--border`, hover·selected는 `--primary-soft`
 - sortable table은 `aria-sort`와 현재 정렬 방향을 제공
@@ -722,7 +722,7 @@ DRAM처럼 단순 관측 목록은 모바일 카드로 바꿀 수 있다. 사건
 ### 15.4 배포
 
 - local test와 preview 통과
-- 운영 번들에 `QuantPreview`, `localhost`, 로컬 프록시·비교 모드·미리보기 전용 저장키가 없어야 한다. 초기 진입 1.1.0이 고정된 공통 UI 0.6.0과 QuantRange 1.2.0을 준비한다. 현재 버전·자산 해시와 실제 준비 상태를 확인한다.
+- 운영 번들에 `QuantPreview`, `localhost`, 로컬 프록시·비교 모드·미리보기 전용 저장키가 없어야 한다. 초기 진입 1.2.0이 고정된 공통 UI 0.7.0과 QuantRange 1.3.0을 준비한다. 현재 버전·자산 해시와 실제 준비 상태를 확인한다.
 - Vercel Preview는 UI 검수 환경이며 운영 snapshot·분석 성공의 증거로 취급하지 않는다.
 - Preview는 검증된 GitHub Pages data origin을 read-only로 사용하고 production 데이터·current pointer를 덮어쓰지 않는다.
 - 승인 후 commit·push·PR·CI·Pages 성공
@@ -783,7 +783,7 @@ https://github.com/SonChangGi/quant-dashboard/blob/main/docs/web-design.md
 
 우선순위
 1. Python·분석·결과·데이터·자동화 보호
-2. 운영 UI v0.6.0의 10개 등록 사이트와 공통 디자인 통일성
+2. 운영 UI v0.7.0의 10개 등록 사이트와 공통 디자인 통일성
 3. web-design.md의 nav·색상·타이포그래피·간격·컴포넌트·표·차트·접근성 계약
 4. 현재 프로젝트의 고유 분석 목적과 기존 결과 구조
 
@@ -830,15 +830,15 @@ https://github.com/SonChangGi/quant-dashboard/blob/main/docs/web-design.md
 ```
 
 
-## 공통 UI 0.6.0 — 초기 진입과 차트 계약
+## 공통 UI 0.7.0 — 초기 진입과 차트 계약
 
 이 절은 2026-11-06 승인된 10개 로컬 미리보기의 배포 기준이다. 이전의 plot 밖 readout 규칙과 News 2.6.0의 중립색 목표보다 우선한다. 수집·분석·계산·원문·인증·스케줄은 그대로 유지한다.
 
 ### 하나의 원본과 프로젝트별 고정 버전
 
-- 공통 원본: 이 저장소 `shared/design/releases/0.6.0/`. 기존 0.5.0 기반은 수정하지 않고 새 표시 계층을 결합한다.
-- 초기 진입: `shared/design/startup/1.1.0/`. 프로젝트별 CSS 10개, `start.js`, `runtime.js`, 원본·출력 SHA-256 `manifest.json`.
-- 공통 차트 엔진: QuantRange 1.2.0. 실제 데이터와 좌표는 프로젝트 adapter가 제공한다. DOM 글자에서 가격을 추측하거나 화면만을 위해 관측값을 생성하지 않는다.
+- 공통 원본: 이 저장소 `shared/design/releases/0.7.0/`. 기존 0.5.0 기반은 수정하지 않고 새 표시 계층을 결합한다.
+- 초기 진입: `shared/design/startup/1.2.0/`. 프로젝트별 CSS 10개, `start.js`, `runtime.js`, 원본·출력 SHA-256 `manifest.json`.
+- 공통 차트 엔진: QuantRange 1.3.0. 실제 데이터와 좌표는 프로젝트 adapter가 제공한다. DOM 글자에서 가격을 추측하거나 화면만을 위해 관측값을 생성하지 않는다.
 - News는 같은 승인된 공통 표시 계층을 자신의 고정 번들에 포함한다. 원문 링크·주제색·읽기 폭은 News adapter가 소유한다. 브리핑 내용과 실행 중 자동화를 디자인 배포로 교체하지 않는다.
 - 프로젝트 문서는 이 문서로 연결한다. 버전이 같은 파일을 각 저장소에서 별개로 수정하지 않는다. 변경은 새 불변 release와 소비 사이트별 검증을 통해 배포한다.
 
@@ -847,13 +847,13 @@ https://github.com/SonChangGi/quant-dashboard/blob/main/docs/web-design.md
 1. 네이티브 CSS와 공통 프로젝트 CSS를 head에서 읽는다. 공통 CSS에는 최종 색상·표·차트 HUD 스타일을 모두 포함한다.
 2. 공통 CSS 다음에 동기 `start.js`를 둔다. `async`·`defer`를 붙이지 않는다. 테마와 root/body scope를 준비하고 QuantRange를 네이티브 차트 렌더링 전에 등록한다.
 3. 네이티브 앱의 `defer` 또는 module이 실제 데이터와 차트를 렌더링한다. React hydration 이후의 탐색 loader도 기존 단일 소유권을 유지한다.
-4. 공통 nav가 `QuantFirstPaint.base`의 `runtime.js`를 한 번 실행한다. shell → 제어 → 프로젝트 adapter → 표/문구 → ready 순서로 초기화하며 footer는 실제 UI 버전 `v0.6.0`을 표시한다.
+4. 공통 nav가 `QuantFirstPaint.base`의 `runtime.js`를 한 번 실행한다. shell → 제어 → 프로젝트 adapter → 표/문구 → ready 순서로 초기화하며 footer는 실제 UI 버전 `v0.7.0`을 표시한다.
 5. 첫 화면 전체를 숨기거나 네트워크 완료 뒤 테마를 바꾸지 않는다. 공통 CSS 실패는 네이티브 화면을 유지하고, 초기화 실패·4초 timeout은 scope를 해제한다. 늦게 도착한 runtime이 fallback을 덮지 않는다.
 6. 공유 자산을 먼저 배포하고 공개 해시를 확인한 뒤 소비 사이트의 pin을 올린다. 배포된 0.5.0/1.0.0 파일은 캐시된 이전 페이지를 위해 유지한다.
 
 ```html
-<link rel="stylesheet" href="https://sonchanggi.github.io/quant-dashboard/shared/design/startup/1.1.0/factor.css" data-quant-first-paint-css>
-<script src="https://sonchanggi.github.io/quant-dashboard/shared/design/startup/1.1.0/start.js" data-quant-design-project="factor"></script>
+<link rel="stylesheet" href="https://sonchanggi.github.io/quant-dashboard/shared/design/startup/1.2.0/factor.css" data-quant-first-paint-css>
+<script src="https://sonchanggi.github.io/quant-dashboard/shared/design/startup/1.2.0/start.js" data-quant-design-project="factor"></script>
 ```
 
 ### 색·구조·움직임
@@ -884,3 +884,16 @@ https://github.com/SonChangGi/quant-dashboard/blob/main/docs/web-design.md
 `node scripts/build-silicon-startup.mjs`가 원본 해시를 기록하며 CSS와 순서가 고정된 runtime을 생성한다. `npm test`가 생성 drift, 첫 표시·실패 경로, 엔진 계산과 선택 계약을 검사한다. 프로젝트 필수 검사 후 실제 1440px/390px 화면, 라이트·다크, 가로 넘침, 범례·드래그·해제·확대·표 정렬을 확인한다. 변경하지 않은 검사를 이유 없이 반복하지 않는다.
 
 기존 승인된 데이터·인증·자동화·원문을 보존하고, 공개 HTML/핵심 자산의 exact SHA와 실제 화면 ready 상태를 구분해 확인한다. 최종 지침과 소비 프로젝트 pin은 GitHub에서도 읽을 수 있어야 한다.
+
+
+## 숫자·여백 공통 계약 — 2.8.0
+
+- 공통 `QuantFormat 1.0.0`은 일반 소수를 최대 소수점 둘째 자리까지 반올림하고 끝의 0을 생략한다. `12.345 → 12.35`, `12.5 → 12.5`, `475 → 475`.
+- 표시 단위에서 `0 < |값| < 0.01`이면 첫 유효숫자부터 두 자리까지 보존한다. `0.0001234 → 0.00012`. percent formatter는 100배 표시값으로 이 기준을 판단한다.
+- 가격·지수·확률·수익률의 원값, 비율→% 배율, %p, 통화, compact 단위, 부호, 결측 의미는 보존한다. 날짜·버전·ID·종목 코드·수정 가능한 입력·SVG 좌표에는 표시 포맷을 강제하지 않는다. 반올림한 화면 값을 계산 입력으로 재사용하지 않는다.
+- 동기 `start.js`는 `QuantFormat` → 초기 테마·scope → `QuantRange 1.3.0` 순으로 준비한 뒤 네이티브 앱이 실행된다. React SSR formatter와 브라우저 formatter는 같은 대표 입력으로 일치 검증한다.
+- 카드·표·필터·차트·확대 화면·날짜 입력을 1440/390/320px에서 확인한다. 문서 가로 넘침뿐 아니라 카드 내부 수치, native date input, SVG 가장자리 숫자, 한글 고아 글자와 불필요한 빈 높이도 검사한다.
+- 달력 `table[role=grid]`는 데이터 표 정렬·비교·고정 열 처리에서 제외한다. 날짜 선택 7열은 유지하고 좁은 화면의 시작/종료 입력은 충분한 폭을 확보한다.
+- 모바일의 긴 데이터 표는 내부 가로 스크롤을 유지한다. 숨겨진 열 방향에만 은은한 좌우 음영을 표시하고 끝에 도달하면 제거한다. 음영은 입력을 가로채지 않는다.
+- News는 같은 원본을 고정한 별도 번들을 사용한다. 기사 원문·edition JSON·평가·선정·수집·스케줄을 디자인 배포에서 변경하지 않는다. 실행 중인 자동화의 소스·활성 release·잠금은 별도 작업과 충돌하지 않는 시점에 통합한다.
+- 릴리스 순서: 불변 공통 자산 게시·공개 SHA 확인 → 소비자 pin 갱신 → 공개 HTML/JS/CSS 일치와 실제 UI 확인. 이전 불변 release는 덮어쓰지 않는다.

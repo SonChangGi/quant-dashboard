@@ -1,0 +1,14 @@
+/* Calendar is a seven-column date control, not a financial data table. */
+html[data-quant-silicon] .qp-table-edge{position:absolute;width:16px;z-index:3;pointer-events:none;display:block}
+html[data-quant-silicon] .qp-table-edge[hidden]{display:none!important}
+html[data-quant-silicon] .qp-table-edge-left{background:linear-gradient(90deg,rgba(0,0,0,.3),transparent)}
+html[data-quant-silicon] .qp-table-edge-right{background:linear-gradient(270deg,rgba(0,0,0,.3),transparent)}
+@media(min-width:601px){html[data-quant-silicon] .qp-table-edge{display:none}}
+html[data-quant-silicon] body.qd-v04 #archive-dialog{width:min(430px,calc(100vw - 24px));padding:clamp(12px,3vw,24px)!important;overflow:auto;max-height:calc(100dvh - 24px);box-sizing:border-box}
+html[data-quant-silicon] body.qd-v04 .calendar-grid{width:100%!important;min-width:0!important;table-layout:fixed;border-spacing:4px!important;background:transparent!important}
+html[data-quant-silicon] body.qd-v04 .calendar-grid :is(th,td){padding:0!important;min-width:0!important;text-align:center!important;position:static!important;background:transparent!important;border:0!important;height:auto!important;white-space:normal!important}
+html[data-quant-silicon] body.qd-v04 .calendar-grid th{padding:6px 0!important;font-size:12px!important}
+html[data-quant-silicon] body.qd-v04 .calendar-day{width:100%;min-height:44px!important;padding:8px 2px!important;line-height:1.4!important;font-variant-numeric:tabular-nums}
+html[data-quant-silicon] body.qd-v04 .calendar-selected{line-height:1.65;overflow-wrap:anywhere;margin-top:16px}
+html[data-quant-silicon] body.qd-v04 .calendar-links{gap:12px;flex-wrap:wrap}
+@media(max-width:480px){html[data-quant-silicon] body[data-qd-project=news] .dates{grid-template-columns:minmax(0,1fr)!important;gap:12px!important}html[data-quant-silicon] body[data-qd-project=news] .dates input{width:100%;min-width:0;box-sizing:border-box}}

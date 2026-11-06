@@ -1,0 +1,62 @@
+/* Shared spacing corrections verified against the static financial views. */
+body.qd-v04.integrated-app .lab-inline-control {
+  align-items: flex-start !important;
+  text-align: left;
+}
+body.qd-v04.integrated-app .lab-panel > .lab-inline-control {
+  margin-bottom: 12px !important;
+}
+@media (max-width: 640px) {
+  body.qd-v04[data-qd-project="etf-tracking"] #signal-tables > .signal-table-block {
+    margin: 0 !important;
+    padding: 12px !important;
+  }
+  body.qd-v04[data-qd-project="etf-tracking"] .etf-signal-table-grid > .signal-table-card {
+    margin: 0 !important;
+    padding: 12px !important;
+    min-width: 0;
+  }
+}
+@media (max-width: 640px) {
+  body.qd-v04[data-qd-project="quant-dashboard"] .q4-hub-views {
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    gap: 4px !important;
+    padding-bottom: 10px !important;
+  }
+  body.qd-v04[data-qd-project="quant-dashboard"] .q4-hub-views > :is(button, a) {
+    flex: 0 0 auto !important;
+    white-space: nowrap !important;
+  }
+  body.qd-v04[data-qd-project="quant-dashboard"] .q4-hub-views > button {
+    padding-inline: 10px !important;
+  }
+}
+@media (max-width: 640px) {
+  body.qd-v04[data-qd-project="fearNgreed"] #analysis-settings .segmented button {
+    word-break: keep-all;
+    overflow-wrap: normal;
+  }
+  body.qd-v04[data-qd-project="fearNgreed"] .history-custom-range {
+    width: 100%;
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 10px !important;
+  }
+  body.qd-v04[data-qd-project="fearNgreed"] .history-custom-range > label,
+  body.qd-v04[data-qd-project="fearNgreed"] .history-custom-range input {
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+  }
+  body.qd-v04[data-qd-project="fearNgreed"] .history-custom-range > span { display: none; }
+  body.qd-v04[data-qd-project="fearNgreed"] .history-custom-range > button { grid-column: 1 !important; }
+}
+@media (max-width: 640px) {
+  /* Desktop's 240px horizontal flex basis must not become mobile card height. */
+  body.qd-v04[data-qd-project="etf-tracking"] .chart-selection-summary {
+    flex: 0 1 auto !important;
+    gap: 6px;
+    align-content: start;
+  }
+}

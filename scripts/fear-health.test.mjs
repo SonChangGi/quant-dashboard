@@ -1,3 +1,4 @@
+import {readFileSync as readQuantFormatter} from 'node:fs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
@@ -5,7 +6,7 @@ import vm from 'node:vm';
 import { operationalFindingsFor } from './public-health-policy.mjs';
 
 const context = vm.createContext({ console, URL });
-vm.runInContext(readFileSync('assets/app.js', 'utf8'), context);
+vm.runInContext(readQuantFormatter(new URL('../shared/design/releases/0.7.0/number.js',import.meta.url),'utf8'),context);vm.runInContext(readFileSync('assets/app.js', 'utf8'), context);
 const api = context.__QUANT_DASHBOARD_TESTS__;
 const fixture = JSON.parse(readFileSync('scripts/fixtures/fear-health-current.json', 'utf8'));
 const fresh = () => structuredClone(fixture);
