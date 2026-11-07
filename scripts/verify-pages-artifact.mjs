@@ -10,3 +10,7 @@ assert.deepEqual(walk(root).sort(),expected.sort());
 console.log(`Verified ${expected.length} allowlisted public assets.`);
 
 verifyHtml(readFileSync(join(root,'index.html'),'utf8'),{project:'quant-dashboard'});
+for (const name of expected) {
+  assert(readFileSync(join(root,name)).equals(readFileSync(new URL('../'+name,import.meta.url))),
+    `Artifact bytes differ from validated source: ${name}`);
+}

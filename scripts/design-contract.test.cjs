@@ -17,3 +17,14 @@ test('identical artifact contract in Node and Python, including rollback and sta
  assert.equal(child.status,0,child.stderr); const python=JSON.parse(child.stdout);
  for(const [i,c] of inputs.entries()){let accepted=true;try{verifyHtml(c.html,{project:'factor',navigation:c.navigation})}catch{accepted=false}assert.equal(accepted,c.expected,c.name);assert.equal(python[i],accepted,'Python parity: '+c.name)}
 });
+
+test('Hub refuses stale artifact bytes even when filenames and startup pin remain valid',()=>{
+ const os=require('node:os'), root=path.resolve(__dirname,'..'), temp=fs.mkdtempSync(path.join(os.tmpdir(),'quant-artifact-'));
+ try {
+  const files=JSON.parse(fs.readFileSync(path.join(__dirname,'pages-artifact-files.json'),'utf8'));
+  for(const name of files){const dest=path.join(temp,name);fs.mkdirSync(path.dirname(dest),{recursive:true});fs.copyFileSync(path.join(root,name),dest)}
+  let result=spawnSync(process.execPath,[path.join(__dirname,'verify-pages-artifact.mjs'),temp],{encoding:'utf8'});assert.equal(result.status,0,result.stderr);
+  fs.appendFileSync(path.join(temp,'shared/design/startup/1.2.0/start.js'),'\n/* stale generated output */');
+  result=spawnSync(process.execPath,[path.join(__dirname,'verify-pages-artifact.mjs'),temp],{encoding:'utf8'});assert.notEqual(result.status,0);assert.match(result.stderr,/Artifact bytes differ from validated source/);
+ }finally{fs.rmSync(temp,{recursive:true,force:true})}
+});
