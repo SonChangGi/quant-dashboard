@@ -130,7 +130,7 @@ function begin(){
  if(project==='news'&&(location.hostname==='sonchanggi.github.io'||localArchiveHost)&&archivedNewsPaths.includes(archivePath)&&!window.QuantFirstPaint&&!document.querySelector('link[data-quant-first-paint-css]')){
   if(window.__quantNewsArchiveLoading)return;
   window.__quantNewsArchiveLoading=true;
-  const archive=document.createElement('script');archive.src=new URL('../../design/archive/news-0.5.0.js',script.src);document.head.append(archive);return;
+  const archive=document.createElement('script');archive.src=new URL('../../design/archive/news-0.5.0.js?v=9ee2e79861f3',script.src);document.head.append(archive);return;
  }
  window.__quantDesignV3={version:'0.4.0',project,state:'loading'};
  document.documentElement.dataset.quantDesignProject=project;

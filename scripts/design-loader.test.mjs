@@ -50,13 +50,20 @@ test('production v0.4 assets exclude local routing and preserve native data owne
 
 test('only the seven approved historical News paths request the frozen archive presentation',async()=>{
  const source=JSON.parse(readFileSync(new URL('../shared/design/archive/news-pages.json',import.meta.url),'utf8'));
- for(const path of source){const r=await run({path,project:'news'});assert.equal(r.nodes.length,1);assert(String(r.nodes[0].src).endsWith('/archive/news-0.5.0.js'))}
+ for(const path of source){const r=await run({path,project:'news'});assert.equal(r.nodes.length,1);assert(new URL(r.nodes[0].src).pathname.endsWith('/archive/news-0.5.0.js'))}
  for(const path of ['/news/','/news/daily/2026-11-07/index.html','/news/previews/unknown/index.html']){const r=await run({path,project:'news'});assert.equal(r.nodes.length,0)}
  const modern=await run({path:source[0],project:'news',early:true});assert(String(modern.nodes[0].src).endsWith('/startup/1.2.0/runtime.js'));
 });
 
 test('approved archive directory aliases and localhost previews keep their pinned presentation',async()=>{
  for(const options of [{path:'/news/weekend/2026-09-14/'},{host:'localhost',path:'/weekend/2026-09-14/index.html'},{host:'127.0.0.1',path:'/news/previews/68c794e1b8e10af7fc7db83b/'}]){
-  const r=await run({...options,project:'news'});assert.equal(r.nodes.length,1);assert(String(r.nodes[0].src).endsWith('/archive/news-0.5.0.js'));
+  const r=await run({...options,project:'news'});assert.equal(r.nodes.length,1);assert(new URL(r.nodes[0].src).pathname.endsWith('/archive/news-0.5.0.js'));
  }
+});
+
+test('archive request is bound to the exact loader bytes, independent of stale browser cache',async()=>{
+ const {createHash}=await import('node:crypto');
+ const bytes=readFileSync(new URL('../shared/design/archive/news-0.5.0.js',import.meta.url));
+ const r=await run({path:'/news/weekend/2026-09-14/',project:'news'});
+ assert.equal(new URL(r.nodes[0].src).searchParams.get('v'),createHash('sha256').update(bytes).digest('hex').slice(0,12));
 });
