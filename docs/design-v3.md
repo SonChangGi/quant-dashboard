@@ -1,11 +1,8 @@
-# Quant 공통 디자인 0.5.0 운영 계약
+# Quant 공통 디자인 구현 이력
 
-> 현재 규범: [Web Design Prompt 2.7.0](web-design.md). 목표 UI 0.6.0 / startup 1.1.0 / QuantRange 1.2.0. 아래 0.4·0.5 기록은 기반 구현 이력이며 현재 규칙과 충돌하면 최신 규범이 우선합니다.
+현재 규범은 [Web Design Prompt 2.10.0](web-design.md)이다. UI 0.7.0 / startup 1.2.0 / QuantRange 1.3.0을 사용한다. `scripts/build-precision-startup.mjs`만 현재 번들을 생성하고, nav는 그 runtime 하나만 실행한다. 기초 소스는 `shared/design/releases/0.5.0/foundation/`, 최신 표시 소스는 `shared/design/releases/0.7.0/`에 한 벌씩 유지한다.
 
-2026-11-04 승인된 공통 extension `0.5.0`을 10개 운영 사이트에 적용한다. 기반 foundation은 검증된 `0.4.0` 바이트를 유지한다. 이 문서명과 `shared/design/v3/` 자산 폴더는 기존 참조·소비 페이지의 호환성을 위해 유지하며 UI 버전을 뜻하지 않는다. 상위 디자인 규범은 [Web Design Prompt v2.5.0](web-design.md)다.
-
-Hub·금융의 빠른 비교, News의 읽기, 투자일지의 계좌 기록, Alpha House의 작업 탐색이라는 서로 다른 목적을 유지한다. 글꼴·색·탐색·입력·표의 표현을 통일하고 사용자가 여유/촘촘한 밀도를 선택하게 한다. 원래 계산·데이터·인증·자동화 계약은 바꾸지 않는다.
-
+아래 내용은 과거 구현 기록이다. 등장하는 `shared/design/v3/`, 동적 0.5 로딩, 과거 생성 절차는 폐기되었으며 새 작업에서 재사용하지 않는다. 색·동작 변경은 현재 규범과 실제 사용 중인 번들에서 확인한다.
 
 ## 2026-11-04 release 0.5.0
 

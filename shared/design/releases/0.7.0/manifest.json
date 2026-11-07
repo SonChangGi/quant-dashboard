@@ -1,0 +1,20 @@
+{
+  "version": "0.7.0",
+  "foundation": "0.4.0",
+  "files": {
+    "all-sites.css": "1ef9291039234b4b0fc3f0a2a47e3c36f2c3488e6f58702fb797f34514bf864c",
+    "common.css": "4c07d2b12a95798ee35355fa46c2378b6518dc70b2f1c9a4a65d8dfa602bf50b",
+    "dram.css": "85fba3818d4ba972d0ed5da40ed644893de27001de288f6913b62532f16bc186",
+    "editorial-spacing.css": "e164801e02de99beeb914d5a5e549738c43ab9ed7a58cbb94fe2b0b4f94a6d21",
+    "finance-spacing.css": "961606e46a82887040ec7287fd1e116e33e8d047dadfe85b130d29d3825f96c9",
+    "news-numbers.js": "f64a4d5ae952325adcce6d1cc5adc7c576dbbdd7d653056d6e042afc857fc1c6",
+    "number.js": "258f5dca021508df10a62f5b687aa0fb49a5a96e4a3dcd75afbda9a09ce77a07",
+    "quant-range.css": "dc7baff2cd90115593749ffd4e7176fe8c3e3c15a4f67d343992d1211df8ff38",
+    "quant-range.js": "0886fc86fb41b7ef39ff00d56d01e859070f4a21fa39b519d15269db3b007cbc",
+    "spacing.css": "5bb206fd72f694fb43c29548c6208afdac727f7b1a9af08b1a3fb534a7d637ae",
+    "static-spacing.css": "b1b7ea32fde6ec8e40cdd8f329c202f11d41961c9907817445d3b40a15c35689",
+    "table-edges.js": "555295c4578281d4fd6b38a2c108bfd10052738bcd0ebc36d6a39e9bc8bb7142",
+    "tables.js": "1c9f64720f2f7e45575c2fbc1f43946c2f6d4a13872f400ddf1b1ede7e5e3587",
+    "ui-copy.js": "b8755046599d42821ca612f54269c1c63cb471381117d160eefca4da94e04b77"
+  }
+}

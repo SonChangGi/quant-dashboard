@@ -24,7 +24,22 @@ test('Hub refuses stale artifact bytes even when filenames and startup pin remai
   const files=JSON.parse(fs.readFileSync(path.join(__dirname,'pages-artifact-files.json'),'utf8'));
   for(const name of files){const dest=path.join(temp,name);fs.mkdirSync(path.dirname(dest),{recursive:true});fs.copyFileSync(path.join(root,name),dest)}
   let result=spawnSync(process.execPath,[path.join(__dirname,'verify-pages-artifact.mjs'),temp],{encoding:'utf8'});assert.equal(result.status,0,result.stderr);
+  const retired=path.join(temp,'shared/design/startup/1.1.0/start.js');fs.mkdirSync(path.dirname(retired),{recursive:true});fs.writeFileSync(retired,'/* retired */');
+  result=spawnSync(process.execPath,[path.join(__dirname,'verify-pages-artifact.mjs'),temp],{encoding:'utf8'});assert.notEqual(result.status,0);
+  fs.rmSync(path.dirname(retired),{recursive:true});
   fs.appendFileSync(path.join(temp,'shared/design/startup/1.2.0/start.js'),'\n/* stale generated output */');
   result=spawnSync(process.execPath,[path.join(__dirname,'verify-pages-artifact.mjs'),temp],{encoding:'utf8'});assert.notEqual(result.status,0);assert.match(result.stderr,/Artifact bytes differ from validated source/);
  }finally{fs.rmSync(temp,{recursive:true,force:true})}
+});
+
+test('all published stylesheet dependencies exist in the minimal artifact',()=>{
+ const files=JSON.parse(fs.readFileSync(path.join(__dirname,'pages-artifact-files.json'),'utf8'));
+ for(const name of files.filter(n=>n.endsWith('.css'))){
+  const css=fs.readFileSync(path.join(__dirname,'..',name),'utf8');
+  for(const match of css.matchAll(/url\(['"]?([^)'"\s]+)['"]?\)/g)){
+   if(/^(?:data:|https?:|#)/.test(match[1]))continue;
+   const dependency=path.posix.normalize(path.posix.join(path.posix.dirname(name),match[1]));
+   assert(files.includes(dependency),`${name} requires unpublished ${dependency}`);
+  }
+ }
 });

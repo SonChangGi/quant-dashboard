@@ -247,7 +247,7 @@ assert(
   ].every((url) => contains(files.webDesign, url)),
   'web design prompt retains the active price and market reference sites',
 );
-assert(contains(files.webDesign, '버전: `2.9.0`'), 'web design prompt version is pinned');
+assert(contains(files.webDesign, '버전: `2.10.0`'), 'web design prompt version is pinned');
 assert(contains(files.webDesign, '## 1. 절대 보호 경계') && contains(files.webDesign, '계산·normalization·selection·aggregation 함수는 동결'), 'web design prompt protects analysis and result behavior');
 assert(contains(files.webDesign, '### 1.4 입력의 네 종류를 먼저 선언한다') && ['`display`', '`result_selector`', '`analysis`', '`operation`'].every((kind) => contains(files.webDesign, kind)), 'web design prompt classifies every visible control before implementation');
 assert(contains(files.webDesign, '### 1.5 현재 6개 사이트의 입력 기준선') && contains(files.webDesign, 'command 생성만으로 완료 처리하지 않는다'), 'web design prompt records the audited six-site input baseline');

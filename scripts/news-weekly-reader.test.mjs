@@ -4,7 +4,7 @@ import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 
-const source = readFileSync(new URL('../shared/design/v3/news-v03.js', import.meta.url), 'utf8');
+const source = readFileSync(new URL('../shared/design/releases/0.5.0/foundation/news-v03.js', import.meta.url), 'utf8');
 const marker = '/* Weekly narrative navigation: presentation only, with native content ownership. */';
 const weekly = source.slice(source.indexOf(marker));
 

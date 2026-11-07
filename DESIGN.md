@@ -1,6 +1,6 @@
 # Design
 
-> 현재 최우선 규범은 [Quant Research Web Design Prompt](docs/web-design.md) 문서 v2.7.0과 [기반 구현 이력](docs/design-v3.md)입니다. 운영 UI 버전은 `0.6.0`, 초기 진입은 `1.1.0`, 차트는 `QuantRange 1.2.0`이며, Hub·Factor·DRAM·ETF·SOX·Fear & Greed·Regime·News·투자일지·알파 하우스의 10개 사이트에 적용합니다. `shared/design/startup/1.1.0/`을 먼저 연결하고 기존 단일 nav가 runtime을 실행합니다. `shared/design/v3/`는 이전 버전 호환 경로로 유지합니다.
+> 현재 최우선 규범은 [Quant Research Web Design Prompt](docs/web-design.md) 2.10.0입니다. 운영 UI 0.7.0 / startup 1.2.0 / QuantRange 1.3.0을 10개 사이트에 적용합니다. 단일 생성기 `scripts/build-precision-startup.mjs`와 공개 파일 목록 기반 `npm run build`를 사용합니다. 기존 `shared/design/v3/` 복제본과 과거 동적 디자인 로더는 제거했습니다. [기반 구현 이력](docs/design-v3.md)은 현재 규범과 구분합니다.
 >
 > 기본 테마는 다크, 공통 글꼴은 Pretendard, 브랜드는 Quant의 세 막대 마크입니다. 프로젝트 선택·즐겨찾기·밀도·접히는 사이드바·페이지 목차는 표시 전용 기능이며 원래 계산·데이터·인증·자동화를 변경하지 않습니다. 운영 번들에는 로컬 비교·프록시·미리보기 기능을 넣지 않습니다.
 >

@@ -57,11 +57,7 @@ jobs:
         run: npm test
       - name: Build an allowlisted Pages artifact
         run: |
-          mkdir -p dist
-          cp index.html dist/index.html
-          cp -R assets dist/assets
-          cp -R shared dist/shared
-          node scripts/verify-pages-artifact.mjs dist
+          npm run build
           test ! -e dist/platform
           test ! -e dist/codex-skills
       - name: Configure GitHub Pages
@@ -97,19 +93,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          public_files=(
-            index.html
-            assets/app.js
-            assets/styles.css
-            assets/shared-nav.css
-            assets/theme.js
-            shared/navigation/v1/menu.json
-            shared/navigation/v1/nav.js
-            shared/navigation/v1/nav.css
-          )
-          while IFS= read -r design_path; do
-            public_files+=("$design_path")
-          done < <(find shared/design -type f | sort)
+          public_files=()
+          while IFS= read -r asset_path; do
+            public_files+=("$asset_path")
+          done < <(node -e 'for (const p of require("./scripts/pages-artifact-files.json")) console.log(p)')
           for attempt in {1..12}; do
             matched=true
             for relative_path in "${public_files[@]}"; do

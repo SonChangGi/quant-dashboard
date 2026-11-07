@@ -1,4 +1,4 @@
-const test=require('node:test'),assert=require('node:assert/strict'),q=require('../shared/design/releases/0.6.0/quant-range.js');
+const test=require('node:test'),assert=require('node:assert/strict'),q=require('../shared/design/releases/0.7.0/quant-range.js');
 const c={domain:[{key:'a',label:'a'},{key:'b',label:'b'}],series:[{label:'P',measure:'relative',points:[{key:'a',value:100},{key:'b',value:125}]}]};
 test('reverse drag normalizes chronology',()=>assert.equal(q.compute(c,{index:1},{index:0}).series[0].delta.value,25));
 test('zero and negative baseline use absolute delta',()=>{assert.deepEqual(q.delta(0,5),{value:5,unit:'absolute'});assert.deepEqual(q.delta(-2,4),{value:6,unit:'absolute'})});

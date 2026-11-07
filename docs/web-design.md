@@ -1,12 +1,12 @@
 # Quant Research Web Design Prompt
 
-> 버전: `2.9.0`
+> 버전: `2.10.0`
 >
 > 목표 UI: `0.7.0` · 초기 진입: `shared/design/startup/1.2.0/` · 차트: `QuantRange 1.3.0`
 >
 > 시각 원칙 기준일: `2026-10-30`
 >
-> 운영·검증 대상 갱신: `2026-11-06`
+> 운영·검증 대상 갱신: `2026-11-07`
 >
 > 상태: 앞으로의 기존 페이지 개선과 신규 프로젝트에 사용하는 최우선 웹 디자인 프롬프트
 > 적용 범위: Quant Research Hub와 연결되는 모든 공개 웹페이지
@@ -305,7 +305,7 @@ Quant Research 제품군은 다음처럼 보여야 한다.
 
 ### 4.1 Canonical navigation
 
-운영 UI는 `0.4.0`이다. 소비 페이지의 기존 `shared/navigation/v1/nav.js` 진입점과 `shared/design/v3/` 경로는 호환성을 위해 유지한다. v3라는 폴더명을 UI 버전으로 해석하거나 소비 사이트의 URL을 일괄 이전하지 않는다. 로드 순서·프로젝트 alias·배포 검증은 [운영 구현 계약](design-v3.md), 메뉴 schema·fallback·CSP는 [공통 메뉴 계약](shared-navigation.md)을 따른다. 이전 v1 상단 메뉴의 치수는 fallback에만 해당한다.
+운영 UI는 `0.7.0`, 초기 진입은 `startup/1.2.0/`이다. `shared/navigation/v1/nav.js`는 페이지의 동기 startup이 준비한 단일 runtime만 연결한다. startup이 없거나 실패하면 기본 화면을 유지하며 구형 디자인을 동적으로 로드하지 않는다. 로드 순서와 프로젝트 alias는 [운영 구현 계약](design-v3.md), 메뉴 schema·fallback·CSP는 [공통 메뉴 계약](shared-navigation.md)을 따른다. 이전 v1 상단 메뉴의 치수는 기본 화면에만 해당한다.
 
 - 넓은 화면은 64px 상단 헤더와 224px 사이드바를 사용한다. 사용자가 접으면 72px 아이콘 레일로 전환한다.
 - 1180px 미만에서는 사이드바 접기 버튼과 사이드바를 숨기고 프로젝트 선택 창으로 10개 사이트에 접근한다. 가로로 긴 프로젝트 링크 열을 강제하지 않는다.
@@ -354,7 +354,7 @@ Quant Research 제품군은 다음처럼 보여야 한다.
 
 ## 6. Semantic Color
 
-색 이름이 아니라 역할을 공유한다. 운영 v0.4는 `--qd-*` 토큰과 [운영 팔레트](design-v3.md#색-테마와-브랜드)를 우선한다. 아래 값은 `2026-07-24` 당시 6개 공개 사이트와 source의 computed style·CSS token을 대조한 뒤, 반복된 역할에서 선택한 **신규 프로젝트·누락 token용 fallback 팔레트**다. 기존 사이트는 의미 역할만 mapping하고 승인된 값을 이 표로 일괄 교체하지 않는다. 일부 neutral·blue 값은 기존 사이트가 채택해 온 Toss-inspired 색감 때문에 TDS 공개 팔레트와 일치한다. 이 문서는 TDS에서 신규 값을 가져오는 근거가 아니라 활성 프로젝트의 승인된 시각 역할과 과거 검증 근거 사이의 호환성을 유지하는 근거다.
+색 이름이 아니라 역할을 공유한다. 운영 UI 0.7은 `--qd-*` 토큰과 [운영 팔레트](design-v3.md#색-테마와-브랜드)를 우선한다. 아래 값은 `2026-07-24` 당시 6개 공개 사이트와 source의 computed style·CSS token을 대조한 뒤, 반복된 역할에서 선택한 **신규 프로젝트·누락 token용 fallback 팔레트**다. 기존 사이트는 의미 역할만 mapping하고 승인된 값을 이 표로 일괄 교체하지 않는다. 일부 neutral·blue 값은 기존 사이트가 채택해 온 Toss-inspired 색감 때문에 TDS 공개 팔레트와 일치한다. 이 문서는 TDS에서 신규 값을 가져오는 근거가 아니라 활성 프로젝트의 승인된 시각 역할과 과거 검증 근거 사이의 호환성을 유지하는 근거다.
 
 | Token | Light | Dark | 용도 |
 | --- | --- | --- | --- |
@@ -881,7 +881,7 @@ https://github.com/SonChangGi/quant-dashboard/blob/main/docs/web-design.md
 
 ### 검증과 배포
 
-`node scripts/build-silicon-startup.mjs`가 원본 해시를 기록하며 CSS와 순서가 고정된 runtime을 생성한다. `npm test`가 생성 drift, 첫 표시·실패 경로, 엔진 계산과 선택 계약을 검사한다. 프로젝트 필수 검사 후 실제 1440px/390px 화면, 라이트·다크, 가로 넘침, 범례·드래그·해제·확대·표 정렬을 확인한다. 변경하지 않은 검사를 이유 없이 반복하지 않는다.
+`node scripts/build-precision-startup.mjs`가 원본 해시를 기록하며 CSS와 순서가 고정된 runtime을 생성한다. `npm test`가 생성 drift, 첫 표시·실패 경로, 엔진 계산과 선택 계약을 검사한다. 프로젝트 필수 검사 후 실제 1440px/390px 화면, 라이트·다크, 가로 넘침, 범례·드래그·해제·확대·표 정렬을 확인한다. 변경하지 않은 검사를 이유 없이 반복하지 않는다.
 
 기존 승인된 데이터·인증·자동화·원문을 보존하고, 공개 HTML/핵심 자산의 exact SHA와 실제 화면 ready 상태를 구분해 확인한다. 최종 지침과 소비 프로젝트 pin은 GitHub에서도 읽을 수 있어야 한다.
 
@@ -907,3 +907,12 @@ https://github.com/SonChangGi/quant-dashboard/blob/main/docs/web-design.md
 - Sites는 실제 SSR 결과와 build/source receipt를 검사하고 package 직전에 다시 확인해 과거 dist의 포장을 차단한다. 과거 배포 버전의 수동 복원까지 이 저장소 검사로 막는다고 간주하지 않는다.
 - News는 자체 고정 번들 및 게시 검사 계약을 유지한다. boot와 CSS 다음 숫자 formatter→차트 엔진→native reader 순서를 지키며, 자동화 소스·불변 런타임·배포본이 같은 디자인을 포함하는지 확인한다.
 - 공통 자산을 먼저 공개·검증하고 소비 사이트를 배포한다. 로컬의 다른 dirty 작업과 원자료를 덮어쓰지 않는다.
+
+## 단일 생성 경로와 미사용 자산 정리 — 2.10.0
+
+- 공통 생성기는 `scripts/build-precision-startup.mjs` 하나다. 실제 사용 중인 foundation `releases/0.5.0/`와 UI `releases/0.7.0/`을 원본으로 삼고 `startup/1.2.0/`을 재현한다. 버전명만으로 원본을 미사용으로 판단하지 않는다. 원본 해시는 각 manifest로 검증한다.
+- 중복 `shared/design/v3/`, 대체된 UI 0.6·startup 1.0/1.1 산출물과 생성기를 현재 소스에서 제거한다. 이력은 Git에 남긴다. 현재 startup과 글꼴 바이트는 변경하지 않는다.
+- `npm run build`는 `scripts/pages-artifact-files.json`의 공개 파일만 새 산출물에 복사하고 정확한 파일 목록·바이트·로딩 계약을 검증한다. 빌드 원본·미사용 버전·검증 증거를 폴더 전체 복사로 다시 배포하지 않는다.
+- Sites의 SSR 검증 HTML과 전체 해시 기록은 배포 dist 밖에 보관한다. 패키징 직전 원본/빌드 일치 검증은 유지한다. 현재 앱이 사용하는 native fallback과 인증·DB·API는 제거하지 않는다.
+- News는 현행 reader의 명시적 CSS/JS/글꼴 의존성만 내보낸다. 과거 판·preview 전체의 참조와 버전 단위 의존성을 확인해 필요한 자산을 보존하며, 승인된 불변 런타임을 수정하지 않는다. 디자인 소스 변경도 공식 전체 검증 후 새 릴리스로 활성화한다.
+- 미사용이 확인된 템플릿·장식·CSS 분기는 정리하되, 실제 소비자가 있는 이전 API·연구 화면·사용자 미리보기·원자료는 이름이나 수정 시각만으로 삭제하지 않는다.

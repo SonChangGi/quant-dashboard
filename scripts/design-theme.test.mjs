@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
-const source=readFileSync(new URL('../shared/design/v3/boot.js',import.meta.url),'utf8');
+const source=readFileSync(new URL('../shared/design/releases/0.5.0/foundation/boot.js',import.meta.url),'utf8');
 function run({search='',saved,blocked=false,project='news'}={}){
  const entries=new Map(saved===undefined?[]:[['quant-research-theme',saved]]),root={dataset:{theme:'light',quantDesignProject:project},style:{}},window={};
  const storage={getItem:k=>{if(blocked)throw Error('blocked');return entries.get(k)},setItem:(k,v)=>{if(blocked)throw Error('blocked');entries.set(k,v)}};
