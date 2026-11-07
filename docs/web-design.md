@@ -1,6 +1,6 @@
 # Quant Research Web Design Prompt
 
-> 버전: `2.8.0`
+> 버전: `2.9.0`
 >
 > 목표 UI: `0.7.0` · 초기 진입: `shared/design/startup/1.2.0/` · 차트: `QuantRange 1.3.0`
 >
@@ -886,7 +886,7 @@ https://github.com/SonChangGi/quant-dashboard/blob/main/docs/web-design.md
 기존 승인된 데이터·인증·자동화·원문을 보존하고, 공개 HTML/핵심 자산의 exact SHA와 실제 화면 ready 상태를 구분해 확인한다. 최종 지침과 소비 프로젝트 pin은 GitHub에서도 읽을 수 있어야 한다.
 
 
-## 숫자·여백 공통 계약 — 2.8.0
+## 숫자·여백 공통 계약 — 2.9.0
 
 - 공통 `QuantFormat 1.0.0`은 일반 소수를 최대 소수점 둘째 자리까지 반올림하고 끝의 0을 생략한다. `12.345 → 12.35`, `12.5 → 12.5`, `475 → 475`.
 - 표시 단위에서 `0 < |값| < 0.01`이면 첫 유효숫자부터 두 자리까지 보존한다. `0.0001234 → 0.00012`. percent formatter는 100배 표시값으로 이 기준을 판단한다.
@@ -897,3 +897,13 @@ https://github.com/SonChangGi/quant-dashboard/blob/main/docs/web-design.md
 - 모바일의 긴 데이터 표는 내부 가로 스크롤을 유지한다. 숨겨진 열 방향에만 은은한 좌우 음영을 표시하고 끝에 도달하면 제거한다. 음영은 입력을 가로채지 않는다.
 - News는 같은 원본을 고정한 별도 번들을 사용한다. 기사 원문·edition JSON·평가·선정·수집·스케줄을 디자인 배포에서 변경하지 않는다. 실행 중인 자동화의 소스·활성 release·잠금은 별도 작업과 충돌하지 않는 시점에 통합한다.
 - 릴리스 순서: 불변 공통 자산 게시·공개 SHA 확인 → 소비자 pin 갱신 → 공개 HTML/JS/CSS 일치와 실제 UI 확인. 이전 불변 release는 덮어쓰지 않는다.
+
+## 자동 갱신·배포와 로딩 계약 — 2.9.0
+
+- 공통 검증 원본은 `shared/design/contracts/1.0.0/`이다. 같은 contract.json과 Python/Node 검증기를 각 프로젝트가 고정 복사하며, 엔진 간 회귀 fixture 결과를 함께 검사한다. 브라우저 UI0.7.0/startup1.2.0 자산은 불변으로 유지한다.
+- 로딩은 초기 테마 → 앱 CSS → 최종 공통 CSS → 동기 startup(숫자 formatter·첫 화면 범위·차트 엔진) → 앱 entry → 단일 nav/runtime → ready 순서다. 마크업도 같은 순서를 따른다. React의 독립 framework/rolldown module 선행은 허용하되 앱 entry는 startup 뒤에 위치한다. React nav는 앱의 기존 단일 소유자가 로드한다.
+- 원본 HTML뿐 아니라 생성된 사이트, 승격 직전 candidate, 최종 업로드 artifact를 검증한다. 정확한 버전 pin, 프로젝트 CSS, 시작 스크립트의 중복·async/defer, 구형 direct runtime/engine, CSS와 앱/nav 순서 위반을 거절한다. 데이터 갱신은 디자인 계약을 낮출 권한을 갖지 않는다.
+- modern startup의 timeout/CSS실패 후 늦게 도착한 nav는 과거0.5 디자인을 다시 불러오지 않는다. 기본 페이지를 유지하며 늦은 runtime도 실패한 초기화를 되살리지 않는다.
+- Sites는 실제 SSR 결과와 build/source receipt를 검사하고 package 직전에 다시 확인해 과거 dist의 포장을 차단한다. 과거 배포 버전의 수동 복원까지 이 저장소 검사로 막는다고 간주하지 않는다.
+- News는 자체 고정 번들 및 게시 검사 계약을 유지한다. boot와 CSS 다음 숫자 formatter→차트 엔진→native reader 순서를 지키며, 자동화 소스·불변 런타임·배포본이 같은 디자인을 포함하는지 확인한다.
+- 공통 자산을 먼저 공개·검증하고 소비 사이트를 배포한다. 로컬의 다른 dirty 작업과 원자료를 덮어쓰지 않는다.

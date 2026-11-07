@@ -134,6 +134,11 @@ function begin(){
   runtime.onerror=()=>{window.__quantDesignV3.state='error';early.fail('runtime-network')};
   document.head.append(runtime);return;
  }
+ // A pinned modern page must never downgrade after timeout or stylesheet failure.
+ if(early||document.querySelector('link[data-quant-first-paint-css]')){
+  if(early?.state==='loading')early.fail('startup-contract');
+  window.__quantDesignV3.state='error';return;
+ }
  const css=['design-system.css',...styles[project].filter(n=>!n.includes('v03')),'v03.css',...styles[project].filter(n=>n.includes('v03')),'focus.css','v04.css',...(['factor','regime','fearNgreed','etf-tracking','dram-price','sox'].includes(project)?['v04-finance.css']:['news','investment-journal','alpha-house'].includes(project)?['v04-editorial.css']:[])];
  const links=css.map(name=>{const link=document.createElement('link');link.rel='stylesheet';link.href=new URL(name,base);link.media='not all';document.head.append(link);return link});
  const ready=Promise.all(links.map(link=>new Promise((resolve,reject)=>{link.onload=resolve;link.onerror=reject})));
