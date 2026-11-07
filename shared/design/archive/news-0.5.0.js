@@ -5,7 +5,10 @@
 if(typeof document==='undefined'||typeof window==='undefined'||window.__quantDesignV3)return;
 const script=document.currentScript;
 const archivedPaths=["/news/previews/68c794e1b8e10af7fc7db83b/index.html", "/news/previews/410dc673f197f26f5beec057/index.html", "/news/weekend/2026-09-14/index.html", "/news/weekend/2026-09-28/index.html", "/news/weekend/2026-09-21/index.html", "/news/weekend/2026-09-21/revisions/5082e05d8c3d02b49d19d181/index.html", "/news/weekend/2026-09-28/revisions/469163ed5963470ca7f21f6f/index.html"];
-if(location.hostname!=='sonchanggi.github.io'||!archivedPaths.includes(location.pathname)||window.QuantFirstPaint||document.querySelector('link[data-quant-first-paint-css]'))return;
+const localArchiveHost=['127.0.0.1','localhost'].includes(location.hostname);
+let archivePath=location.pathname.endsWith('/')?location.pathname+'index.html':location.pathname;
+if(localArchiveHost&&!archivePath.startsWith('/news/'))archivePath='/news'+archivePath;
+if((location.hostname!=='sonchanggi.github.io'&&!localArchiveHost)||!archivedPaths.includes(archivePath)||window.QuantFirstPaint||document.querySelector('link[data-quant-first-paint-css]'))return;
 const aliases={momentum:'factor',hub:'quant-dashboard',fearngreed:'fearNgreed','fear-greed':'fearNgreed',dram:'dram-price',etf:'etf-tracking',observatory:'alpha-house'};
 const styles={
 'quant-dashboard':[],factor:['factor-regime.css'],regime:['factor-regime.css'],fearNgreed:['fear-etf.css','fear-etf-v03.css'],'etf-tracking':['fear-etf.css','fear-etf-v03.css'],'dram-price':['dram-sox.css'],sox:['dram-sox.css'],news:['news.css','news-v03.css'],'alpha-house':['alpha.css'],'investment-journal':['investment-journal.css']};

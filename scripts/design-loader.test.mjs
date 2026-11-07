@@ -54,3 +54,9 @@ test('only the seven approved historical News paths request the frozen archive p
  for(const path of ['/news/','/news/daily/2026-11-07/index.html','/news/previews/unknown/index.html']){const r=await run({path,project:'news'});assert.equal(r.nodes.length,0)}
  const modern=await run({path:source[0],project:'news',early:true});assert(String(modern.nodes[0].src).endsWith('/startup/1.2.0/runtime.js'));
 });
+
+test('approved archive directory aliases and localhost previews keep their pinned presentation',async()=>{
+ for(const options of [{path:'/news/weekend/2026-09-14/'},{host:'localhost',path:'/weekend/2026-09-14/index.html'},{host:'127.0.0.1',path:'/news/previews/68c794e1b8e10af7fc7db83b/'}]){
+  const r=await run({...options,project:'news'});assert.equal(r.nodes.length,1);assert(String(r.nodes[0].src).endsWith('/archive/news-0.5.0.js'));
+ }
+});
