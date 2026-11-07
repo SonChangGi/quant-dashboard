@@ -48,3 +48,9 @@ test('production v0.4 assets exclude local routing and preserve native data owne
  }
 });
 
+test('only the seven approved historical News paths request the frozen archive presentation',async()=>{
+ const source=JSON.parse(readFileSync(new URL('../shared/design/archive/news-pages.json',import.meta.url),'utf8'));
+ for(const path of source){const r=await run({path,project:'news'});assert.equal(r.nodes.length,1);assert(String(r.nodes[0].src).endsWith('/archive/news-0.5.0.js'))}
+ for(const path of ['/news/','/news/daily/2026-11-07/index.html','/news/previews/unknown/index.html']){const r=await run({path,project:'news'});assert.equal(r.nodes.length,0)}
+ const modern=await run({path:source[0],project:'news',early:true});assert(String(modern.nodes[0].src).endsWith('/startup/1.2.0/runtime.js'));
+});

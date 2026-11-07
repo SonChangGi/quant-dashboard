@@ -305,7 +305,7 @@ Quant Research 제품군은 다음처럼 보여야 한다.
 
 ### 4.1 Canonical navigation
 
-운영 UI는 `0.7.0`, 초기 진입은 `startup/1.2.0/`이다. `shared/navigation/v1/nav.js`는 페이지의 동기 startup이 준비한 단일 runtime만 연결한다. startup이 없거나 실패하면 기본 화면을 유지하며 구형 디자인을 동적으로 로드하지 않는다. 로드 순서와 프로젝트 alias는 [운영 구현 계약](design-v3.md), 메뉴 schema·fallback·CSP는 [공통 메뉴 계약](shared-navigation.md)을 따른다. 이전 v1 상단 메뉴의 치수는 기본 화면에만 해당한다.
+운영 UI는 `0.7.0`, 초기 진입은 `startup/1.2.0/`이다. `shared/navigation/v1/nav.js`는 페이지의 동기 startup이 준비한 단일 runtime만 연결한다. 현재 페이지의 startup이 없거나 실패하면 기본 화면을 유지하며 구형 디자인을 동적으로 로드하지 않는다. 승인된 News 과거 문서 7개는 별도 고정 archive 경로로 보존한다. 로드 순서와 프로젝트 alias는 [운영 구현 계약](design-v3.md), 메뉴 schema·fallback·CSP는 [공통 메뉴 계약](shared-navigation.md)을 따른다. 이전 v1 상단 메뉴의 치수는 기본 화면에만 해당한다.
 
 - 넓은 화면은 64px 상단 헤더와 224px 사이드바를 사용한다. 사용자가 접으면 72px 아이콘 레일로 전환한다.
 - 1180px 미만에서는 사이드바 접기 버튼과 사이드바를 숨기고 프로젝트 선택 창으로 10개 사이트에 접근한다. 가로로 긴 프로젝트 링크 열을 강제하지 않는다.
@@ -916,3 +916,5 @@ https://github.com/SonChangGi/quant-dashboard/blob/main/docs/web-design.md
 - Sites의 SSR 검증 HTML과 전체 해시 기록은 배포 dist 밖에 보관한다. 패키징 직전 원본/빌드 일치 검증은 유지한다. 현재 앱이 사용하는 native fallback과 인증·DB·API는 제거하지 않는다.
 - News는 현행 reader의 명시적 CSS/JS/글꼴 의존성만 내보낸다. 과거 판·preview 전체의 참조와 버전 단위 의존성을 확인해 필요한 자산을 보존하며, 승인된 불변 런타임을 수정하지 않는다. 디자인 소스 변경도 공식 전체 검증 후 새 릴리스로 활성화한다.
 - 미사용이 확인된 템플릿·장식·CSS 분기는 정리하되, 실제 소비자가 있는 이전 API·연구 화면·사용자 미리보기·원자료는 이름이나 수정 시각만으로 삭제하지 않는다.
+
+승인된 News 과거 문서 7개의 원문·HTML을 바꾸지 않기 위해 `shared/design/archive/news-pages.json`에 명시한 경로만 `archive/news-0.5.0.js`와 승인된 0.5 자산을 사용한다. 최신 페이지와 미등록 경로는 이 분기에 진입할 수 없다. 과거 문서에서 실제 필요한 0.5 자산은 공개 목록에 남기고, 현대 startup의 fallback으로 재사용하지 않는다.

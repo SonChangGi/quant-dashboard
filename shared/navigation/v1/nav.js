@@ -114,6 +114,8 @@
 (function(){
 'use strict';
 if(typeof document==='undefined'||typeof window==='undefined'||window.__quantDesignV3)return;
+const script=document.currentScript;
+const archivedNewsPaths=["/news/previews/68c794e1b8e10af7fc7db83b/index.html", "/news/previews/410dc673f197f26f5beec057/index.html", "/news/weekend/2026-09-14/index.html", "/news/weekend/2026-09-28/index.html", "/news/weekend/2026-09-21/index.html", "/news/weekend/2026-09-21/revisions/5082e05d8c3d02b49d19d181/index.html", "/news/weekend/2026-09-28/revisions/469163ed5963470ca7f21f6f/index.html"];
 const aliases={momentum:'factor',hub:'quant-dashboard',fearngreed:'fearNgreed','fear-greed':'fearNgreed',dram:'dram-price',etf:'etf-tracking',observatory:'alpha-house'};
 const projects=new Set(['quant-dashboard','factor','regime','fearNgreed','etf-tracking','dram-price','sox','news','alpha-house','investment-journal']);
 function begin(){
@@ -122,6 +124,11 @@ function begin(){
  const raw=document.documentElement.dataset.quantDesignProject||hostedProjects[location.hostname]||nav?.dataset.quantProject||location.pathname.split('/')[1];
  const project=aliases[raw]||raw||(location.hostname.endsWith('.chatgpt.site')?'alpha-house':'');
  if(!projects.has(project))return;
+ if(project==='news'&&location.hostname==='sonchanggi.github.io'&&archivedNewsPaths.includes(location.pathname)&&!window.QuantFirstPaint&&!document.querySelector('link[data-quant-first-paint-css]')){
+  if(window.__quantNewsArchiveLoading)return;
+  window.__quantNewsArchiveLoading=true;
+  const archive=document.createElement('script');archive.src=new URL('../../design/archive/news-0.5.0.js',script.src);document.head.append(archive);return;
+ }
  window.__quantDesignV3={version:'0.4.0',project,state:'loading'};
  document.documentElement.dataset.quantDesignProject=project;
  const early=window.QuantFirstPaint;
