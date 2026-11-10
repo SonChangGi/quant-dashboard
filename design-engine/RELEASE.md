@@ -15,3 +15,20 @@
 차트 접근성 이름에서 제목 중복을 제거하고 의미·키보드 탐색 정보는 유지했다.
 
 [패키지 다운로드](quant-design-engine-0.4.1.tgz)
+
+## 운영 화면의 적용 범위
+
+| 화면 | 적용한 조작·표현 |
+|---|---|
+| [Hub](https://sonchanggi.github.io/quant-dashboard/) | 연결된 날짜 탐색, 접힌 차트 도구, 검색·정렬·CSV |
+| [Factor](https://sonchanggi.github.io/factor/) | 범례·성과·낙폭·표 동기화, 확대·이동·조건부 복원 |
+| [SOX](https://sonchanggi.github.io/sox/) | 긴 이름의 2행 카드, 점수 필터·검색·같은 결과 CSV |
+| [ETF](https://sonchanggi.github.io/etf-tracking/) | 검색·정렬 순서와 CSV 일치, 원래 순위 유지 |
+| [DRAM](https://sonchanggi.github.io/dram-price/) | 날짜·제품 탐색, 가격 정렬, 모바일 내부 가로 탐색 |
+| [Fear](https://sonchanggi.github.io/fearNgreed/) | 직접 구간 측정, 검색 복구, 숫자 정렬·CSV |
+| [Regime](https://sonchanggi.github.io/regime/) | 관측·예측 구분, 날짜·구간 선택, 확률 변화 %p |
+| [투자일지](https://invest.changgi-son.chatgpt.site) | 기간 변경 시 관측일 유지, 표 검색·정렬·초기화 |
+| [Alpha House](https://alpha-house.changgi-son.chatgpt.site) | 접힌 필터, 검색 결과·초기화, 실제 운영 상태 유지 |
+| [News](https://sonchanggi.github.io/news/) | 기사·원문 보존, 검색 복구·집중 읽기·목록 복귀 |
+
+프로젝트별 기존 렌더러와 수치 계산을 유지한다. 독립 가이드의 모든 차트 종류나 확대 기능이 모든 화면에 적용된 것은 아니다. 투자일지 로그인 이후 조작 검증은 명시적 예시 데이터로 수행했다.
