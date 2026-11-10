@@ -918,3 +918,7 @@ https://github.com/SonChangGi/quant-dashboard/blob/main/docs/web-design.md
 - 미사용이 확인된 템플릿·장식·CSS 분기는 정리하되, 실제 소비자가 있는 이전 API·연구 화면·사용자 미리보기·원자료는 이름이나 수정 시각만으로 삭제하지 않는다.
 
 승인된 News 과거 문서 7개의 원문·HTML을 바꾸지 않기 위해 `shared/design/archive/news-pages.json`에 명시한 경로만 `archive/news-0.5.0.js`와 승인된 0.5 자산을 사용한다. 최신 페이지와 미등록 경로는 이 분기에 진입할 수 없다. 과거 문서에서 실제 필요한 0.5 자산은 공개 목록에 남기고, 현대 startup의 fallback으로 재사용하지 않는다.
+
+## 2026-11-10 · 공통 엔진 운영 적용판
+
+[공통 지침·작동 예제 v0.4.1](../design-engine/index.html)과 [화면별 적용 범위](../design-engine/RELEASE.md)를 함께 따른다. 엔진 API·어댑터0.4.0은 호환되며 공유 shell UI0.7/startup1.2의 버전과 구분한다. 실제 배포 소스를 기준으로 수정하고 계산·데이터·URL을 보존한다.
