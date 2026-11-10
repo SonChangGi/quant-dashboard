@@ -1,0 +1,126 @@
+{
+  "version": "0.4.1",
+  "checkedAt": "2026-11-10",
+  "items": [
+    {
+      "source": "Hallmark",
+      "strength": "핵심 결과 우선",
+      "applied": "주요 KPI와 비교 차트를 먼저 배치",
+      "route": "overview",
+      "pattern": "",
+      "url": "https://www.usehallmark.com/themes/dusk/",
+      "code": "demo/app.js: overview",
+      "status": "원칙 적용"
+    },
+    {
+      "source": "shadcn/ui",
+      "strength": "연결된 대시보드",
+      "applied": "기간·범례·계열 선택이 요약과 표에 함께 반영",
+      "route": "compose",
+      "pattern": "",
+      "url": "https://ui.shadcn.com/view/new-york-v4/dashboard-01",
+      "code": "demo/app.js: composition",
+      "status": "원칙 적용"
+    },
+    {
+      "source": "Astryx",
+      "strength": "의미 기반 토큰",
+      "applied": "강조색·밀도·모서리를 같은 엔진에서 변경",
+      "route": "foundations",
+      "pattern": "",
+      "url": "https://astryx.atmeta.com/sandbox/pages/example-cards/",
+      "code": "engine/tokens.js",
+      "status": "원칙 적용"
+    },
+    {
+      "source": "Carbon",
+      "strength": "값의 의미와 상태",
+      "applied": "단위·증감 방향·빈 값·로딩·복구 상태 분리",
+      "route": "foundations",
+      "pattern": "",
+      "url": "https://carbondesignsystem.com/data-visualization/overview/",
+      "code": "engine/metrics.js, engine/index.js",
+      "status": "원칙 적용"
+    },
+    {
+      "source": "TanStack Table",
+      "strength": "하나의 행 모델",
+      "applied": "검색·범위·정렬·페이지·CSV가 같은 결과 사용",
+      "route": "tables",
+      "pattern": "",
+      "url": "https://tanstack.com/table/latest/docs/guide/row-models",
+      "code": "engine/table.js",
+      "status": "원칙 적용"
+    },
+    {
+      "source": "AG Grid",
+      "strength": "비교 가능한 셀 그래프",
+      "applied": "공통 척도와 결측 구간을 유지하는 스파크라인",
+      "route": "tables",
+      "pattern": "",
+      "url": "https://www.ag-grid.com/javascript-data-grid/sparklines-overview/",
+      "code": "engine/table.js: columnExtent / sparkline",
+      "status": "원칙 적용"
+    },
+    {
+      "source": "Observable Plot / D3",
+      "strength": "질문에 맞는 시각화",
+      "applied": "공통 축의 작은 다중 차트와 분포 패턴",
+      "route": "charts",
+      "pattern": "small-multiples",
+      "url": "https://observablehq.com/plot/features/facets",
+      "code": "engine/charts.js: small-multiples, histogram",
+      "status": "원칙 적용"
+    },
+    {
+      "source": "Vega-Lite",
+      "strength": "불확실성 표현",
+      "applied": "예측 경계·중앙선·중첩된 구간을 분리",
+      "route": "charts",
+      "pattern": "fan",
+      "url": "https://vega.github.io/vega-lite/docs/errorband.html",
+      "code": "engine/charts.js: fan",
+      "status": "원칙 적용"
+    },
+    {
+      "source": "Apache ECharts",
+      "strength": "다양한 차트와 직접 조작",
+      "applied": "17종 SVG 차트·확대·이동·원자료 접근",
+      "route": "charts",
+      "pattern": "",
+      "url": "https://echarts.apache.org/en/index.html",
+      "code": "engine/charts.js, vendor/echarts.min.js",
+      "status": "엔진 사용"
+    },
+    {
+      "source": "Lightweight Charts",
+      "strength": "자연스러운 시계열 탐색",
+      "applied": "모드 전환 없이 값 확인·확대·이동, 조건부 복원",
+      "route": "compose",
+      "pattern": "",
+      "url": "https://tradingview.github.io/lightweight-charts/docs/api/interfaces/HandleScaleOptions",
+      "code": "engine/charts.js: mountChart",
+      "status": "원칙 적용"
+    },
+    {
+      "source": "Base UI / Radix",
+      "strength": "상태와 키보드 접근",
+      "applied": "필요한 상태에서만 도구 표시, 포커스 복귀",
+      "route": "compose",
+      "pattern": "",
+      "url": "https://base-ui.com/",
+      "code": "engine/index.js, engine/table.js",
+      "status": "원칙 적용"
+    },
+    {
+      "source": "Magic UI / React Bits / Motion",
+      "strength": "위계와 절제된 피드백",
+      "applied": "크기가 다른 정보 영역, 지속적인 장식 애니메이션 제외",
+      "route": "overview",
+      "pattern": "",
+      "url": "https://magicui.design/docs/components/bento-grid",
+      "code": "demo/demo.css",
+      "status": "선택 채택"
+    }
+  ]
+}

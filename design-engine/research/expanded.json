@@ -1,0 +1,322 @@
+{
+  "schemaVersion": "1.0",
+  "reviewedAt": "2026-11-10",
+  "scope": "추가 공식 상세 문서 조사. 기존 32개 사이트 연구를 대체하지 않고 표현 의미와 renderer 계약을 확장한다.",
+  "priorResearch": [
+    "../../outputs/quant-design-atlas-20261109/research-charts.json",
+    "../../outputs/quant-design-atlas-20261109/research-systems.json",
+    "../../outputs/quant-design-atlas-20261109/research-additional.json"
+  ],
+  "verification": "문서·예제 명세 실제 조회. 라이브 브라우저 조작 및 성능 측정은 이 조사에서 하지 않았다.",
+  "sources": [
+    {
+      "id": "interval-area",
+      "name": "Observable Plot · area",
+      "url": "https://observablehq.github.io/plot/marks/area",
+      "observed": "area는 baseline/topline 사이를 채우며 band는 y1/y2를 명시한다. 점은 입력 순서로 연결하므로 정렬되지 않으면 잘못된 도형이 된다.",
+      "ownContract": "interval은 x, lower, upper, center, intervalKind, level, method를 명시한다. x 정렬 및 lower<=center<=upper를 검사한다.",
+      "adopt": "중앙선+옅은 구간의 계층; 상하 경계를 함께 읽는 HUD",
+      "reject": "구간 종류 없는 장식 면적 및 화면에서 임의 smoothing",
+      "failureConditions": [
+        "뒤섞인 시간",
+        "lower>upper",
+        "중앙값의 구간 이탈",
+        "단위 없는 축"
+      ],
+      "reviewedAt": "2026-11-10",
+      "inspection": "공식 본문과 명세/코드 조회; 브라우저 상호작용 검증 아님"
+    },
+    {
+      "id": "interval-semantics",
+      "name": "Vega-Lite · errorband",
+      "url": "https://vega.github.io/vega-lite/docs/errorband.html",
+      "observed": "errorband는 원시자료 집계 또는 사전 계산 범위 표시가 가능하다. extent 기본은 stderr이며 ci는 평균의 95% bootstrap CI다.",
+      "ownContract": "신뢰구간·예측구간·분위범위는 서로 다른 intervalKind. 원자료의 검증된 범위를 렌더링하고 frontend가 통계적 의미를 선택하지 않는다.",
+      "adopt": "사전 계산한 lower/upper 전달",
+      "reject": "기본 stderr를 95% 예측구간처럼 표시",
+      "failureConditions": [
+        "intervalKind 누락",
+        "confidence level 미표시",
+        "예측값을 관측선과 동일 실선 표시"
+      ],
+      "reviewedAt": "2026-11-10",
+      "inspection": "공식 본문과 명세/코드 조회; 브라우저 상호작용 검증 아님"
+    },
+    {
+      "id": "interval-layer",
+      "name": "Vega-Lite · line with confidence interval",
+      "url": "https://vega.github.io/vega-lite/examples/layer_line_errorband_ci.html",
+      "observed": "예제는 errorband extent=ci와 평균 line을 layer로 결합한다.",
+      "ownContract": "fan은 외측부터 내측 순으로 그리며 중첩 확률 구간이 포함 관계를 만족해야 한다. forecastStart와 실제 관측 종료일을 분리한다.",
+      "adopt": "경계·중앙선·예측 구간의 분리된 의미",
+      "reject": "예제의 평균 집계 로직을 모델 예측에 무비판적으로 적용",
+      "failureConditions": [
+        "좁은 구간이 넓은 구간 밖에 존재",
+        "예측 시작 경계 누락",
+        "band가 점/선 선택을 가림"
+      ],
+      "reviewedAt": "2026-11-10",
+      "inspection": "공식 본문과 명세/코드 조회; 브라우저 상호작용 검증 아님"
+    },
+    {
+      "id": "interval-gaps",
+      "name": "D3 · area defined",
+      "url": "https://d3js.org/d3-shape/area",
+      "observed": "defined=false이면 현재 면적 세그먼트를 끝낸다. default는 true다. 선형 곡선이 기본이며 단일점 구간은 보이지 않을 수 있다.",
+      "ownContract": "결측 위치에 선과 band를 모두 끊는다. 단일 유효점은 점으로 보존한다. null을 0으로 강제 변환하지 않는다.",
+      "adopt": "검증된 구간별 path 생성",
+      "reject": "결측 구간을 연결하는 연속 polygon",
+      "failureConditions": [
+        "null이 0으로 렌더링",
+        "gap 위에 면적 연결",
+        "단일 관측값 소실"
+      ],
+      "reviewedAt": "2026-11-10",
+      "inspection": "공식 본문과 명세/코드 조회; 브라우저 상호작용 검증 아님"
+    },
+    {
+      "id": "distribution-box",
+      "name": "Observable Plot · box",
+      "url": "https://observablehq.github.io/plot/marks/box",
+      "observed": "box는 극값 rule, IQR bar, 중앙값 tick, 이상치 dot의 합성이다.",
+      "ownContract": "q1/median/q3와 whisker 규칙, n, 제외건수, 모집단 기간을 명시한다. 사전 요약 자료를 원시 관측 분포처럼 표현하지 않는다.",
+      "adopt": "가로 box로 긴 전략명 공간 확보",
+      "reject": "whisker를 무조건 최솟값·최댓값으로 설명",
+      "failureConditions": [
+        "quartile 정렬 위반",
+        "n=0인데 box 표시",
+        "이상치 숨김",
+        "whisker 정의 누락"
+      ],
+      "reviewedAt": "2026-11-10",
+      "inspection": "공식 본문과 명세/코드 조회; 브라우저 상호작용 검증 아님"
+    },
+    {
+      "id": "distribution-histogram",
+      "name": "Observable Plot · bin",
+      "url": "https://observablehq.github.io/plot/transforms/bin",
+      "observed": "bin은 연속 수치를 구간으로 묶어 count/sum/proportion을 계산한다. 문서는 2개 초과 겹친 histogram의 가독성 문제를 지적한다.",
+      "ownContract": "비교 분포는 동일 bin edges를 공유한다. count/비율/density를 분리하고 y축 분모를 명시한다.",
+      "adopt": "2개 이내 겹침 또는 small multiples",
+      "reject": "각 전략별 자동 bin 및 다른 표본 수의 count 단순 비교",
+      "failureConditions": [
+        "다른 bin 폭을 같은 높이로 비교",
+        "비율 합계 오류",
+        "제외 표본수 미표시"
+      ],
+      "reviewedAt": "2026-11-10",
+      "inspection": "공식 본문과 명세/코드 조회; 브라우저 상호작용 검증 아님"
+    },
+    {
+      "id": "histogram-boundaries",
+      "name": "D3 · bin boundaries",
+      "url": "https://d3js.org/d3-array/bin",
+      "observed": "bin의 하한 포함, 상한 제외이며 마지막 bin은 상한도 포함한다. null/비교불가/domain 외 값은 제외된다.",
+      "ownContract": "경계 규칙을 고정하고 제외건수를 별도 집계한다. renderer와 표의 집계는 같은 결과를 소비한다.",
+      "adopt": "명시적 edges와 순수 계산 함수",
+      "reject": "라이브러리의 silent discard를 사용자에게 숨김",
+      "failureConditions": [
+        "경계 관측값 중복 집계",
+        "최대값 누락",
+        "count 합+제외!=원자료 개수"
+      ],
+      "reviewedAt": "2026-11-10",
+      "inspection": "공식 본문과 명세/코드 조회; 브라우저 상호작용 검증 아님"
+    },
+    {
+      "id": "paired-change",
+      "name": "Observable Plot · link",
+      "url": "https://observablehq.github.io/plot/marks/link",
+      "observed": "link는 두 좌표를 연결하며 시작/끝 마커와 변화 색을 중복 부호화할 수 있다.",
+      "ownContract": "paired compare는 같은 대상·단위의 before/after를 연결한다. dumbbell에는 두 끝의 날짜/조건과 값·차이를 제공한다.",
+      "adopt": "긴 종목명은 가로 dumbbell, 소수 계열의 두 시점은 slope",
+      "reject": "세 시점 이상을 두 점 연결로 축약해 추세로 주장",
+      "failureConditions": [
+        "before/after 뒤집힘",
+        "paired 대상 불일치",
+        "동일값 두 점 겹침으로 하나 소실",
+        "끝 라벨 충돌"
+      ],
+      "reviewedAt": "2026-11-10",
+      "inspection": "공식 본문과 명세/코드 조회; 브라우저 상호작용 검증 아님"
+    },
+    {
+      "id": "relative-gap",
+      "name": "Observable Plot · difference",
+      "url": "https://observablehq.github.io/plot/marks/difference",
+      "observed": "difference는 두 선 사이를 채우고 위/아래에 따라 색을 나눈다.",
+      "ownContract": "차이의 기준을 명시한다. 누적수익률 차이는 percentage points, 상대 부는 ratio로 구분한다.",
+      "adopt": "SPY 대비 초과/미달 영역과 0 기준선",
+      "reject": "독립된 두 가격축의 화면상 차이를 실제 차이로 색칠",
+      "failureConditions": [
+        "%와 %p 혼동",
+        "시점 불일치",
+        "기준계열 누락에도 차이 계산"
+      ],
+      "reviewedAt": "2026-11-10",
+      "inspection": "공식 본문과 명세/코드 조회; 브라우저 상호작용 검증 아님"
+    },
+    {
+      "id": "contribution-waterfall",
+      "name": "Plotly · waterfall",
+      "url": "https://plotly.com/javascript/waterfall-charts/",
+      "observed": "waterfall 예제는 measure absolute/relative/total을 구분하고 connector로 단계 합을 연결한다.",
+      "ownContract": "기여도는 합산 가능한 같은 단위를 사용한다. opening+sum(relative)=closing을 허용오차 내 검증하고 total은 중복 합산하지 않는다.",
+      "adopt": "부호+연결선+합계의 명확한 구분",
+      "reject": "누적수익률처럼 복리 항목을 단순 더해 설명",
+      "failureConditions": [
+        "합계 불일치",
+        "total 중복 집계",
+        "순서 바꿈으로 중간 합 오해",
+        "음의 합계 축 밖 잘림"
+      ],
+      "reviewedAt": "2026-11-10",
+      "inspection": "공식 본문과 명세/코드 조회; 브라우저 상호작용 검증 아님"
+    },
+    {
+      "id": "diverging-scale",
+      "name": "D3 · diverging scales",
+      "url": "https://d3js.org/d3-scale/diverging",
+      "observed": "diverging scale의 domain과 range는 세 요소이며 중간값을 중심으로 색을 매핑한다.",
+      "ownContract": "기여도·상관·잔차는 의미 있는 중심값을 고정한다. 절대 크기 비교 시 domain을 대칭으로 유지하며 숫자와 부호를 병기한다.",
+      "adopt": "0 중심 청록/장미+중립, 색 외 위치·부호",
+      "reject": "페이지별 auto 색범위로 동일값을 다른 강도로 표시",
+      "failureConditions": [
+        "중심 0이 중립색 아님",
+        "필터 변경 때 기준 미표시",
+        "null이 중립 0 색으로 표시"
+      ],
+      "reviewedAt": "2026-11-10",
+      "inspection": "공식 본문과 명세/코드 조회; 브라우저 상호작용 검증 아님"
+    },
+    {
+      "id": "small-multiples",
+      "name": "Observable Plot · facets",
+      "url": "https://observablehq.github.io/plot/features/facets",
+      "observed": "facet은 범주별 작은 차트를 반복한다. 문서는 너무 많은 facet의 크기 문제와 직접 행/열 wrapping을 설명한다.",
+      "ownContract": "기본 shared domain·동일 기간·같은 지표. independent scale은 각 패널에 명시한다. 모바일은 열 수를 줄이고 패널 높이를 유지한다.",
+      "adopt": "여러 전략·품목의 비중첩 비교",
+      "reject": "최솟값-최댓값 정규화를 밝히지 않은 동일 축처럼 보이는 sparkline",
+      "failureConditions": [
+        "축 도메인 불일치 미고지",
+        "패널 제목과 선 혼동",
+        "모바일에서 축/라벨 소실"
+      ],
+      "reviewedAt": "2026-11-10",
+      "inspection": "공식 본문과 명세/코드 조회; 브라우저 상호작용 검증 아님"
+    },
+    {
+      "id": "calendar-matrix",
+      "name": "Observable Plot · cell",
+      "url": "https://observablehq.github.io/plot/marks/cell",
+      "observed": "cell은 두 범주축의 사각형이며 text와 layer 가능하다. calendar는 주/요일 및 연도 facet을 사용한다. 규칙적 범주 interval은 누락 공간을 보존한다.",
+      "ownContract": "matrix는 행·열 순서, 단위, 색 domain 및 정확값 접근을 제공한다. calendar는 timezone·weekStart와 미관측/휴장/0 구분을 고정한다.",
+      "adopt": "색과 숫자 병기; 일자 구조와 gap 유지",
+      "reject": "데이터 있는 날만 압축해 실제 달력인 듯 표시",
+      "failureConditions": [
+        "일요일/월요일 시작 혼동",
+        "UTC→로컬 날짜 밀림",
+        "윤일 누락",
+        "0과 null 동일 색·레이블"
+      ],
+      "reviewedAt": "2026-11-10",
+      "inspection": "공식 본문과 명세/코드 조회; 브라우저 상호작용 검증 아님"
+    },
+    {
+      "id": "uncertainty-polygon",
+      "name": "Plotly · continuous error bars",
+      "url": "https://plotly.com/javascript/continuous-error-bars/",
+      "observed": "filled lines 예제는 상단 시계열과 역순 하단 시계열을 연결해 polygon을 만든다.",
+      "ownContract": "band polygon은 시간 순서·경계 순서·gap을 검사하고 tooltip에 interval label을 남긴다.",
+      "adopt": "선과 면적을 별도 계층으로 그리는 접근",
+      "reject": "showlegend=false인 band를 설명 없이 숨김",
+      "failureConditions": [
+        "polygon 자기 교차",
+        "fill만 있고 범위 설명 없음",
+        "선택 HUD에 중앙값만 표시"
+      ],
+      "reviewedAt": "2026-11-10",
+      "inspection": "공식 본문과 명세/코드 조회; 브라우저 상호작용 검증 아님"
+    },
+    {
+      "id": "renderer-svg-canvas",
+      "name": "ECharts · SVG versus Canvas",
+      "url": "https://echarts.apache.org/handbook/en/best-practices/canvas-vs-svg/",
+      "observed": "공식 문서는 많은 요소에는 Canvas, 다수 인스턴스·메모리·확대 선명도에는 SVG 장점을 설명하며 환경별 실험을 권한다.",
+      "ownContract": "기본 SVG, 실제 데이터량·상호작용 측정으로 Canvas 선택. 차트 유형만으로 엔진을 고정하지 않는다.",
+      "adopt": "측정 기반 renderer adapter",
+      "reject": "고정 1000개 임계값을 보편적 보장으로 사용",
+      "failureConditions": [
+        "Canvas 메모리 상승",
+        "SVG 다수 마크 조작 지연",
+        "renderer 변경 시 tooltip/키보드 계약 상실"
+      ],
+      "reviewedAt": "2026-11-10",
+      "inspection": "공식 본문과 명세/코드 조회; 브라우저 상호작용 검증 아님"
+    },
+    {
+      "id": "renderer-static",
+      "name": "ECharts · server rendering",
+      "url": "https://echarts.apache.org/handbook/en/how-to/cross-platform/server/",
+      "observed": "SVG SSR은 문자열 출력이 가능하고 일부 interaction에는 client hydration이 필요하다.",
+      "ownContract": "Python 생성 HTML은 JSON+로컬 JS를 임베드해 동일 core 사용. 정적 SVG는 기능 없는 별도 export로 명시한다.",
+      "adopt": "문서·PDF용 SVG와 interactive HTML 분리",
+      "reject": "정적 SVG를 드래그 가능한 차트라고 안내",
+      "failureConditions": [
+        "SSR와 client 축 불일치",
+        "hydrate 뒤 초기 선택 소실",
+        "숨김 컨테이너 크기 0"
+      ],
+      "reviewedAt": "2026-11-10",
+      "inspection": "공식 본문과 명세/코드 조회; 브라우저 상호작용 검증 아님"
+    },
+    {
+      "id": "renderer-plot-react",
+      "name": "Observable Plot · integration",
+      "url": "https://observablehq.github.io/plot/getting-started",
+      "observed": "React에서 작은 plot의 SSR과 useRef/useEffect로 client mount를 안내한다. 업데이트는 기존 plot 제거 후 교체한다.",
+      "ownContract": "renderer가 DOM 소유 영역을 분리하고 update/dispose 수명주기를 지킨다. 외부 selection state는 재렌더에도 보존한다.",
+      "adopt": "리포트용 간단한 adapter",
+      "reject": "재생성으로 사용자 focus·선택까지 초기화",
+      "failureConditions": [
+        "unmount 후 이벤트 잔존",
+        "resize 때 선택 초기화",
+        "키보드 focus 소실"
+      ],
+      "reviewedAt": "2026-11-10",
+      "inspection": "공식 본문과 명세/코드 조회; 브라우저 상호작용 검증 아님"
+    },
+    {
+      "id": "renderer-vega-spec",
+      "name": "Vega-Lite · embedding",
+      "url": "https://vega.github.io/vega-lite/usage/embed.html",
+      "observed": "Vega/Vega-Lite/Vega-Embed를 로컬 파일 또는 npm/CDN으로 로드하고 명세를 웹페이지에 넣는다.",
+      "ownContract": "자체 JSON spec은 금융 의미·비교가능성 검증을 먼저 수행한다. 외부 renderer spec은 adapter 내부에 둔다.",
+      "adopt": "명세 직렬화·버전관리 원리",
+      "reject": "프로덕트 계약을 라이브러리 raw options에 종속",
+      "failureConditions": [
+        "원격 URL 없으면 미작동",
+        "라이브러리 업데이트로 의미 변경",
+        "비교 정의를 theme에서 변경"
+      ],
+      "reviewedAt": "2026-11-10",
+      "inspection": "공식 본문과 명세/코드 조회; 브라우저 상호작용 검증 아님"
+    },
+    {
+      "id": "renderer-d3-react",
+      "name": "D3 · React integration",
+      "url": "https://d3js.org/getting-started",
+      "observed": "scale/array/interpolate/format은 DOM을 다루지 않아 React에서도 동일하게 쓴다. DOM 조작 모듈은 ref와 effect로 경계를 나눈다.",
+      "ownContract": "핵심은 framework-neutral 순수 함수, renderer가 DOM을 소유한다. React는 얇은 mount/update/dispose wrapper만 둔다.",
+      "adopt": "검증된 scale·shape·bin primitives 재사용",
+      "reject": "React 필수 의존성 또는 DOM 이중 소유",
+      "failureConditions": [
+        "React와 renderer가 같은 노드 수정",
+        "cleanup 누락",
+        "Python용 별도 시각 계산 복제"
+      ],
+      "reviewedAt": "2026-11-10",
+      "inspection": "공식 본문과 명세/코드 조회; 브라우저 상호작용 검증 아님"
+    }
+  ]
+}
