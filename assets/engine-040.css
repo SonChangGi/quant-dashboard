@@ -34,3 +34,6 @@ html[data-design-engine="0.4.1"] .qd-hub :is(.regime-trend-legend,.factor-perfor
 .qe-range041 {display:block;margin:8px 0;font-size:12px;font-variant-numeric:tabular-nums}
 .qe-plot041 [hidden],.factor-performance-legend[hidden],.regime-trend-legend[hidden],.etf-mini-legend[hidden] {display:none!important}
 @media(max-width:640px){.qe-options041 button,.qe-plot041>button{min-height:44px}.qe-options041>summary{min-height:36px}.factor-performance-frame,.regime-trend-frame,.etf-mini-plot,.dram-chart-frame{max-width:100%}.regime-trend-vectors{gap:12px}.regime-trend-readout{padding:12px}}
+.qd-hub .dram-source-card > .dram-chart-readout {padding:12px 0!important;margin:0!important;border:0!important;border-radius:0!important;background:transparent!important;color:var(--muted-strong);font-size:12px;line-height:1.65}
+html[data-design-engine="0.4.1"] #dram-chart .dram-legend-button[aria-pressed] {border:1px solid var(--line)!important;background:var(--panel)!important;color:var(--ink)!important}
+.qd-hub .dram-legend-button[aria-pressed="false"] {opacity:.45}

@@ -3614,6 +3614,7 @@
     target.innerHTML = `<figure class="factor-performance"><div class="factor-performance-heading"><h5>누적성과 · 낙폭</h5><span>시작일 = 100</span></div><div class="factor-performance-legend"><button type="button" data-qr-chart-id="hub-factor" data-qr-series-id="value0"><i></i>월별 선택</button>${performance.benchmark ? '<button type="button" class="benchmark" data-qr-chart-id="hub-factor" data-qr-series-id="value1"><i></i>SPY</button>' : ''}</div><figcaption class="factor-performance-readout" aria-live="polite"></figcaption><div class="factor-performance-frame" tabindex="0" role="group" aria-label="월별 선택 전략 성과. 좌우 방향키로 날짜 이동"></div><p class="factor-performance-period">${escapeHtml(rows[0].date)}–${escapeHtml(rows.at(-1).date)} · 비용 후 전략</p></figure>`;
     const frame = target.querySelector?.('.factor-performance-frame'), readout = target.querySelector?.('.factor-performance-readout');
     if (!frame || !readout) return;
+    frame.after(readout);
     let selected = rows.length - 1, pinned = selected, previousWidth = 0;
     const draw = () => {
       const width = Math.round(target.clientWidth || 580);
@@ -3828,6 +3829,7 @@
     </figure>`;
     const select = target.querySelector('.regime-trend-window'), frame = target.querySelector('.regime-trend-frame'), readout = target.querySelector('.regime-trend-readout');
     select.value = period;
+    frame.after(readout);
     const draw = (force = false) => {
       const width = Math.max(280, Math.round(target.clientWidth || 580));
       if (!force && width === previousWidth) return;
@@ -4002,6 +4004,7 @@
       <div class="sox-quadrant-readout" aria-live="polite">${soxQuadrantReadout(rows.find((row) => row.ticker === pinnedTicker))}</div>
       <div class="sox-quadrant-frame" tabindex="0" role="group" aria-label="SOX 가격·실적 사분면. 방향키로 종목을 선택합니다." aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown Home End Escape"></div>`;
     const frame = target.querySelector('.sox-quadrant-frame'), readout = target.querySelector('.sox-quadrant-readout'), select = target.querySelector('#sox-stock-select');
+    frame.after(readout);
     const draw = () => {
       const width = Math.max(220, Math.round(frame.clientWidth || 1000));
       lastWidth = width;
@@ -4094,6 +4097,7 @@
           const dates=[...new Set(records.flatMap(r=>asRecords(r.chartSeries).flatMap(x=>asArray(x.points).map(p=>p.date??p[0]))))].sort();
           const series=asRecords(records[index].chartSeries).slice(0,limit).map((item,i)=>{const values=new Map(asArray(item.points).map(p=>[p.date??p[0],p.value??p[1]]));return{name:item.label,color:COLORS[i%COLORS.length],dashed:i>=6,unit:'%p',data:dates.map(d=>Number.isFinite(values.get(d))?values.get(d)*100:null)}});
           slot.querySelectorAll('.etf-mini-legend').forEach(e=>e.hidden=true);
+          const etfReadout=slot.querySelector('.etf-chart-readout');if(etfReadout)slot.querySelector('.etf-mini-plot').after(etfReadout);
           globalThis.HubCharts041.lines(slot.querySelector('.etf-mini-plot'),{title:records[index].name+' 편입비중',dates,panels:[{title:'편입비중 · 공통 축',unit:'%',axis:{min:domain.yTicks[0]*100,max:domain.yTicks.at(-1)*100},series}],onSelect:i=>{const output=slot.querySelector('.etf-chart-readout');if(output)output.textContent=dates[i]+' · '+series.map(s=>s.name+' '+(s.data[i]===null?'—':formatNumber(s.data[i])+'%')).join(' · ')}});
         }
       };
@@ -4554,8 +4558,12 @@
     if(globalThis.HubCharts041){
       const normalized=normalizeChartSeries(chartSeries), dates=[...new Set(normalized.flatMap(s=>s.points.map(p=>p[0])))].sort(), indexed=card.dataset.dramScaleMode==='indexed';
       const series=normalized.map((item,i)=>{const values=new Map(item.points),base=item.points[0][1];return{name:dramCompactName(item.name),color:COLORS[i%COLORS.length],dashed:i>=6,measure:'relative',data:dates.map(d=>Number.isFinite(values.get(d))?values.get(d)*(indexed?100/base:1):null)}});
-      const chart=globalThis.HubCharts041.lines(card.querySelector('.dram-chart-frame'),{title:source+' DRAM 가격',dates,legend:false,unit:indexed?'지수':'USD',panels:[{title:indexed?'각 제품 첫 관측 = 100':'제품별 가격',unit:indexed?'지수':'USD',series}],onSelect:i=>{const output=card.querySelector('.dram-chart-readout');if(output)output.textContent=dates[i]+' · '+series.map(s=>s.name+' '+(s.data[i]===null?'—':formatNumber(s.data[i]))).join(' · ')}});
+      const chart=globalThis.HubCharts041.lines(card.querySelector('.dram-chart-frame'),{title:source+' DRAM 가격',dates,unit:indexed?'지수':'USD',panels:[{title:indexed?'각 제품 첫 관측 = 100':'제품별 가격',unit:indexed?'지수':'USD',series}],onSelect:i=>{const output=card.querySelector('.dram-chart-readout');if(output)output.textContent=dates[i]+' · '+series.map(s=>s.name+' '+(s.data[i]===null?'—':formatNumber(s.data[i]))).join(' · ')}});
       card.querySelectorAll('.dram-legend-button').forEach((button,i)=>{const replacement=button.cloneNode(true);button.replaceWith(replacement);replacement.onclick=()=>{chart?.dispatchAction({type:'legendToggleSelect',name:series[i].name});replacement.setAttribute('aria-pressed',String(chart?.getOption().legend[0].selected[series[i].name]!==false));};});
+      const frame=card.querySelector('.dram-chart-frame'),readout=card.querySelector('.dram-chart-readout'),legend=card.querySelector('.dram-legend');
+      if(readout)frame.after(readout);if(legend){(readout||frame).after(legend);legend.setAttribute('aria-label','최신 제품별 가격 · 계열 표시');}
+      const syncLegend=()=>card.querySelectorAll('.dram-legend-button').forEach((button,i)=>button.setAttribute('aria-pressed',String(chart?.getOption().legend[0].selected[series[i].name]!==false)));
+      chart?.on('legendselectchanged',syncLegend);syncLegend();
     }
   }
 
