@@ -3282,8 +3282,10 @@
       </figure>`;
       const readout = target.querySelector('.scatter-readout'), ring = target.querySelector('.scatter-selected');
       const priceRing = target.querySelector('.price-selected'), cursor = target.querySelector('.fear-price-cursor');
+      let linkedPrice,linkedScatter;
       const select = (index) => {
         selected = index;
+        for(const chart of [linkedPrice,linkedScatter])if(chart&&!chart.isDisposed()){chart.dispatchAction({type:'downplay',seriesIndex:0});chart.dispatchAction({type:'highlight',seriesIndex:0,dataIndex:index});}
         const point = g.points[index], row = point.row, state = states[index];
         ring.setAttribute('cx', point.x); ring.setAttribute('cy', point.y); ring.dataset.date = row.date;
         if (priceRing) {
@@ -3320,6 +3322,17 @@
       bind('.fear-scatter-frame', g, false);
       if (price) bind('.fear-price-frame', price, true);
       select(selected);
+      if (globalThis.HubCharts041) {
+        const hc=globalThis.HubCharts041, dates=scatter.points.map(r=>r.date);
+        const pointColor=state=>state?.includes('fear')?'var(--fear)':state?.includes('greed')?'var(--greed)':'var(--muted-strong)';
+        const points=scatter.points.map((r,i)=>({name:r.date+' · '+(FEAR_POINT_LABELS[states[i]]||''),x:r.return1d*100,y:r.rawFlowTrillion,color:pointColor(states[i]),current:r.role==='current',index:i,symbol:states[i]?.includes('greed')?'diamond':'circle',hollow:states[i]==='fear'||states[i]==='greed'}));
+        const boundaries=scatter.boundaries;
+        linkedScatter=hc.scatter(target.querySelector('.fear-scatter-frame'),{title:'KOSPI 수익률과 개인 순매수',dates,points,xLabel:'수익률 (%)',yLabel:'순매수 (조원)',xAxis:{min:g.xmin,max:g.xmax},yAxis:{min:g.ymin,max:g.ymax},onSelect:i=>{pinned=i;select(i)},extra:t=>[
+          {name:'OLS 회귀선',type:'line',data:[[g.xmin,predicted(g.xmin)],[g.xmax,predicted(g.xmax)]],showSymbol:false,lineStyle:{color:t.muted,width:1.5,type:'dashed'},silent:true},
+          ...(boundaries?Object.entries(boundaries).map(([key,offset])=>({type:'line',data:[[g.xmin,predicted(g.xmin)+offset],[g.xmax,predicted(g.xmax)+offset]],showSymbol:false,silent:true,lineStyle:{color:pointColor(key.toLowerCase()),opacity:.45,width:1,type:'dotted'}})):[])
+        ]});
+        if(price) linkedPrice=hc.lines(target.querySelector('.fear-price-frame'),{title:'KOSPI 종가',unit:'pt',dates,series:[{name:'KOSPI',data:scatter.pricePoints.map(r=>r.close),measure:'relative',color:'var(--muted-strong)',extra:{showSymbol:true,showAllSymbol:true,symbolSize:3,data:scatter.pricePoints.map((r,i)=>({value:r.close,itemStyle:{color:pointColor(states[i])}}))}}],onSelect:select});
+      }
     };
     draw();
     if (typeof ResizeObserver !== 'undefined') { fearScatterObserver = new ResizeObserver(draw); fearScatterObserver.observe(target); }
@@ -3631,6 +3644,11 @@
       frame.onpointerleave=()=>show(pinned);
       frame.onkeydown=event=>{const moves={ArrowLeft:Math.max(0,selected-1),ArrowRight:Math.min(rows.length-1,selected+1),Home:0,End:rows.length-1,Escape:rows.length-1};if(Object.hasOwn(moves,event.key)){event.preventDefault();pinned=moves[event.key];show(pinned);}};
       show(selected);
+      if(globalThis.HubCharts041){
+        target.querySelector('.factor-performance-legend').hidden=true;
+        const series=field=>[0,...(performance.benchmark?[1]:[])].map(i=>({name:i?'SPY':'월별 선택',color:i?'var(--muted-strong)':'var(--factor-color)',dashed:!!i,measure:field==='values'?'relative':'delta',unit:field==='values'?'지수':'%p',data:rows.map(r=>Number.isFinite(r[field][i])?r[field][i]*(field==='drawdowns'?100:1):null)}));
+        globalThis.HubCharts041.lines(frame,{title:'월별 선택과 SPY 누적성과·낙폭',dates:rows.map(r=>r.date),panels:[{title:'누적성과 · 시작일 100',unit:'지수',series:series('values')},{title:'낙폭',unit:'%',series:series('drawdowns'),axis:{max:0}}],onSelect:show});
+      }
     };
     draw();
     if (typeof ResizeObserver !== 'undefined') { factorPerformanceObserver=new ResizeObserver(draw);factorPerformanceObserver.observe(target); }
@@ -3870,6 +3888,14 @@
         if (Object.hasOwn(move, event.key)) { event.preventDefault(); pinnedDate = rows[move[event.key]].date; show(move[event.key]); }
       };
       show(selected);
+      if(globalThis.HubCharts041){
+        target.querySelector('.regime-trend-legend').hidden=true;
+        target.querySelectorAll('.qr-toolbar,.qr-range-readout').forEach(el=>el.remove());
+        const colors=['var(--regime-on)','var(--regime-transition)','var(--regime-off)'];
+        const timeline=[]; rows.forEach((row,i)=>{if(i&&Date.parse(row.date)-Date.parse(rows[i-1].date)>7*86400000)timeline.push({date:new Date(Date.parse(rows[i-1].date)+7*86400000).toISOString().slice(0,10),gap:true});timeline.push(row)});
+        const series=field=>REGIME_STATES.map((state,i)=>({name:labels[state],color:colors[i],unit:'%p',data:timeline.map(r=>r.gap?null:r[field][state]*100),extra:i===0?{markArea:{silent:true,label:{show:false},data:timeline.slice(0,-1).flatMap((r,j)=>r.gap||timeline[j+1].gap?[]:[[{xAxis:r.date,itemStyle:{color:colors[REGIME_STATES.indexOf(r[field==='memberships'?'currentState':'nextState'])],opacity:.045}},{xAxis:timeline[j+1].date}]])}}:undefined}));
+        globalThis.HubCharts041.lines(frame,{title:'국면 관측·예측·실제 결과',dates:timeline.map(r=>r.date),panels:[{title:observedLabel,unit:'%',axis:{min:0,max:100,interval:25},series:series('memberships')},{title:'1주 예측확률',unit:'%',axis:{min:0,max:100,interval:25},series:series('probabilities')},{title:'실제 t+1',axis:{min:0,max:2,interval:1,axisLabel:{formatter:v=>['Risk-on','Transition','Risk-off'][v]}},series:REGIME_STATES.map((state,i)=>({name:labels[state],color:colors[i],range:false,data:timeline.map(r=>r.actualState===state?i:null),extra:{type:'scatter',symbol:['circle','diamond','triangle'][i],symbolSize:6}}))}],onSelect:i=>{const row=timeline[i];if(!row.gap){pinnedDate=row.date;show(rows.indexOf(row))}}});
+      }
     };
     select.addEventListener('change', () => { period = select.value; draw(true); });
     draw();
@@ -3979,7 +4005,11 @@
     const draw = () => {
       const width = Math.max(220, Math.round(frame.clientWidth || 1000));
       lastWidth = width;
+      const focusPlot=document.activeElement===frame.querySelector('.qe-canvas041');
       frame.innerHTML = drawable.length ? renderSoxQuadrantChart(rows, width, currentTicker, pinnedTicker) : '<div class="sox-quadrant-empty">가격·실적 점수를 함께 가진 종목이 없습니다.</div>';
+      if(drawable.length&&globalThis.HubCharts041)globalThis.HubCharts041.scatter(frame,{title:'SOX 가격·실적 모멘텀',selectedIndex:Math.max(0,drawable.findIndex(r=>r.ticker===currentTicker)),height:390,dates:drawable.map(r=>r.ticker),xLabel:'가격 점수',yLabel:'실적 점수',xAxis:{min:0,max:1,interval:.25},yAxis:{min:0,max:1,interval:.25},points:drawable.map((r,i)=>({name:r.ticker,x:r.priceMomentum,y:r.earningsMomentum,index:i,current:r.ticker===currentTicker,showLabel:width>=600||r.rank<=5||r.ticker===currentTicker,color:r.ticker===currentTicker?'var(--primary-dark)':r.rank<=5?'var(--chart-1)':'var(--muted-strong)'})),series:{label:{show:true,formatter:p=>p.data.name,position:'top',fontSize:11},labelLayout:{hideOverlap:true},markLine:{silent:true,symbol:'none',label:{show:false},data:[{xAxis:.5},{yAxis:.5}]}},onSelect:i=>choose(drawable[i].ticker,true)});
+      if(focusPlot)frame.querySelector('.qe-canvas041')?.focus({preventScroll:true});
+
     };
     const choose = (ticker, pin = false) => {
       const row = rows.find((item) => item.ticker === ticker);
@@ -4060,6 +4090,12 @@
         lastWidth = width;
         slot.innerHTML = renderEtfMiniChart(records[index], { width, domain, limit });
         bindChartKeyboardFrames(slot, { frameSelector: '.etf-mini-plot', seriesSelector: '.etf-mini-series', pointSelector: '.etf-data-point', readoutSelector: '.etf-chart-readout', navigationLabel: '날짜/종목', pointerPreview: true, legendSelector: '.etf-legend-button', guideSelector: '.etf-selection-guide', renderReadout: (point) => renderEtfReadout(point.dataset.seriesLabel, point.dataset.date, finiteOrNull(point.dataset.weight)) });
+        if(globalThis.HubCharts041 && slot.querySelector('.etf-mini-plot')){
+          const dates=[...new Set(records.flatMap(r=>asRecords(r.chartSeries).flatMap(x=>asArray(x.points).map(p=>p.date??p[0]))))].sort();
+          const series=asRecords(records[index].chartSeries).slice(0,limit).map((item,i)=>{const values=new Map(asArray(item.points).map(p=>[p.date??p[0],p.value??p[1]]));return{name:item.label,color:COLORS[i%COLORS.length],dashed:i>=6,unit:'%p',data:dates.map(d=>Number.isFinite(values.get(d))?values.get(d)*100:null)}});
+          slot.querySelectorAll('.etf-mini-legend').forEach(e=>e.hidden=true);
+          globalThis.HubCharts041.lines(slot.querySelector('.etf-mini-plot'),{title:records[index].name+' 편입비중',dates,panels:[{title:'편입비중 · 공통 축',unit:'%',axis:{min:domain.yTicks[0]*100,max:domain.yTicks.at(-1)*100},series}],onSelect:i=>{const output=slot.querySelector('.etf-chart-readout');if(output)output.textContent=dates[i]+' · '+series.map(s=>s.name+' '+(s.data[i]===null?'—':formatNumber(s.data[i])+'%')).join(' · ')}});
+        }
       };
       card.querySelectorAll('[data-etf-limit]').forEach((button) => button.addEventListener('click', () => {
         limit = Number(button.dataset.etfLimit);
@@ -4515,6 +4551,12 @@
         }
       });
     });
+    if(globalThis.HubCharts041){
+      const normalized=normalizeChartSeries(chartSeries), dates=[...new Set(normalized.flatMap(s=>s.points.map(p=>p[0])))].sort(), indexed=card.dataset.dramScaleMode==='indexed';
+      const series=normalized.map((item,i)=>{const values=new Map(item.points),base=item.points[0][1];return{name:dramCompactName(item.name),color:COLORS[i%COLORS.length],dashed:i>=6,measure:'relative',data:dates.map(d=>Number.isFinite(values.get(d))?values.get(d)*(indexed?100/base:1):null)}});
+      const chart=globalThis.HubCharts041.lines(card.querySelector('.dram-chart-frame'),{title:source+' DRAM 가격',dates,legend:false,unit:indexed?'지수':'USD',panels:[{title:indexed?'각 제품 첫 관측 = 100':'제품별 가격',unit:indexed?'지수':'USD',series}],onSelect:i=>{const output=card.querySelector('.dram-chart-readout');if(output)output.textContent=dates[i]+' · '+series.map(s=>s.name+' '+(s.data[i]===null?'—':formatNumber(s.data[i]))).join(' · ')}});
+      card.querySelectorAll('.dram-legend-button').forEach((button,i)=>{const replacement=button.cloneNode(true);button.replaceWith(replacement);replacement.onclick=()=>{chart?.dispatchAction({type:'legendToggleSelect',name:series[i].name});replacement.setAttribute('aria-pressed',String(chart?.getOption().legend[0].selected[series[i].name]!==false));};});
+    }
   }
 
   function renderDramSourceChart(source, chartSeries, scaleMode = 'price', chartWidth = 920) {
@@ -5464,6 +5506,9 @@
       enrichRegimeSources,
       validateRegimeHistory,
       renderRegimeTrend,
+      renderFactorPerformance,
+      renderDramChart,
+      renderSoxQuadrant,
       windowedRegimeRows,
       regimeTrendGeometry,
       renderFearAndGreed,

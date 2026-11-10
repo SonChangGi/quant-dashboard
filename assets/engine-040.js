@@ -1,5 +1,5 @@
-document.documentElement.dataset.designEngine="0.4.0";
-/* v0.4.0 interaction audit: retain native sorting and range handlers. */
+document.documentElement.dataset.designEngine="0.4.1";
+/* v0.4.1 interaction audit: retain native sorting and range handlers. */
 (() => {
   const enhance = () => {
     document.querySelectorAll('.qr-toolbar').forEach(toolbar => {
@@ -8,6 +8,7 @@ document.documentElement.dataset.designEngine="0.4.0";
       const summary = document.createElement('summary'); summary.textContent = '차트 도구';
       toolbar.before(details); details.append(summary, toolbar);
     });
+    document.querySelectorAll('.qr-readout').forEach(readout => { readout.hidden = /^표시 순서대로 구간 선택/.test(readout.textContent); });
     document.querySelectorAll('table').forEach(table => {
       if (table.dataset.qeSearch) return;
       table.dataset.qeSearch = 'true';
