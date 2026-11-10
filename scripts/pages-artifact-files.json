@@ -94,5 +94,6 @@
   "shared/preferences/1.0.0/preferences.js",
   "shared/preferences/1.0.0/manifest.json",
   "shared/preferences/1.0.1/preferences.js",
-  "shared/preferences/1.0.1/manifest.json"
+  "shared/preferences/1.0.1/manifest.json",
+  "shared/design/tokens/0.4.2/shell.css"
 ]
