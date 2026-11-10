@@ -5,6 +5,7 @@ on:
     paths:
       - "platform/**"
       - "assets/**"
+      - "design-engine/**"
       - "shared/**"
       - "docs/**"
       - "scripts/**"
@@ -20,6 +21,7 @@ on:
     paths:
       - "platform/**"
       - "assets/**"
+      - "design-engine/**"
       - "shared/**"
       - "docs/**"
       - "scripts/**"
@@ -52,6 +54,10 @@ jobs:
           node-version: "22"
       - name: Validate Hub, design prompt, and static fallback
         run: npm test
+      - name: Install design engine test dependencies
+        run: npm ci --prefix design-engine
+      - name: Validate design engine behavior and examples
+        run: npm test --prefix design-engine && npm run check --prefix design-engine
 
   frontend:
     runs-on: ubuntu-latest
