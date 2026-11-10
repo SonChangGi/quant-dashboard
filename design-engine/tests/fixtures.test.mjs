@@ -10,6 +10,6 @@ test('table lab headline changes agree with the same row sparkline endpoints',()
 test('research example links resolve to shipped routes and chart patterns',async()=>{
  const {readFile}=await import('node:fs/promises');
  const coverage=JSON.parse(await readFile(new URL('../research/coverage.json',import.meta.url),'utf8'));
- assert.equal(coverage.version,'0.4.2');assert.equal(coverage.items.length,14);
+ assert.equal(coverage.version,'0.4.3');assert.equal(coverage.items.length,20);
  for(const item of coverage.items){assert.ok(['overview','compose','foundations','tables','charts'].includes(item.route));if(item.pattern)assert.ok(charts.some(c=>c.kind===item.pattern));assert.ok(item.applied&&item.code&&item.url.startsWith('https://'));}
 });

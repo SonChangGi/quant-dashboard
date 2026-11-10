@@ -1,0 +1,71 @@
+/* Quant 0.4.3: layered surfaces and chart interaction. Load explicitly after project styles. */
+html[data-theme="dark"]{--qs-bg:#101521;--qs-surface:#171e2d;--qs-raised:#222d42;--qs-text:#edf2fb;--qs-muted:#a8b5cc;--qs-border:#394961;--qs-accent:#78d9e1;--qs-grid:#2b3850;--qs-focus:#9cd9ff}
+html[data-theme="light"]{--qs-bg:#f2f5fa;--qs-surface:#ffffff;--qs-raised:#e9eff7;--qs-text:#18253a;--qs-muted:#526480;--qs-border:#c8d3e3;--qs-accent:#006970;--qs-grid:#dde5f0;--qs-focus:#195caa}
+html:root[data-theme] body.qd-v04,html:root[data-theme][data-quant-silicon] body.qd-v04{--qd-bg:var(--qs-bg)!important;--qd-surface:var(--qs-surface)!important;--qd-raised:var(--qs-raised)!important;--qd-text:var(--qs-text)!important;--qd-muted:var(--qs-muted)!important;--qd-border:var(--qs-border)!important;--qd-accent:var(--qs-accent)!important;background:var(--qs-bg)!important;color:var(--qs-text)!important}
+html[data-theme] body.qd-v04 :is(.qd-sidebar,.qd-shell){--qd-bg:var(--qs-bg)!important;--qd-surface:var(--qs-surface)!important;--qd-raised:var(--qs-raised)!important;--qd-text:var(--qs-text)!important;--qd-muted:var(--qs-muted)!important;--qd-border:var(--qs-border)!important;--qd-accent:var(--qs-accent)!important;--qd-soft:var(--qs-raised)!important;background:var(--qs-bg)!important;color:var(--qs-text)!important;border-color:var(--qs-border)!important}
+/* Explicit neutral component roles; semantic series/topic colors are inherited. */
+:root{--qs-card-padding:24px;--qs-card-gap:20px;--qs-section-gap:32px;--qs-card-radius:16px;--qs-line:color-mix(in srgb,var(--qs-text) 10%,transparent)}
+html[data-theme] body [data-quant-card],html:root[data-theme] body.qd-v04 :is([data-quant-card],#quant-neutral-card-role){min-width:0;padding:var(--qs-card-padding)!important;border:1px solid var(--qs-line)!important;border-radius:var(--qs-card-radius)!important;background:var(--qs-surface)!important;box-shadow:none!important}
+html[data-theme] body [data-quant-card] [data-quant-card],html:root[data-theme] body.qd-v04 :is([data-quant-card],#quant-neutral-card-role) [data-quant-card]{padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
+[data-quant-card]>:is(h2,h3,h4):first-child{margin-top:0}
+[data-quant-section]{min-width:0;margin-block-start:var(--qs-section-gap)}
+[data-quant-section]:first-child{margin-block-start:0}
+[data-quant-card-grid]{display:grid;gap:var(--qs-card-gap)}
+[data-quant-metrics]{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,140px),1fr));gap:var(--qs-card-gap);font-variant-numeric:tabular-nums}
+[data-quant-metrics] strong{font-size:clamp(20px,2vw,28px);line-height:1.25;letter-spacing:-.025em}
+[data-quant-table-wrap]{max-width:100%;overflow:auto}
+[data-quant-table]{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+[data-quant-table] :is(th,td){padding:12px 14px;border-bottom:1px solid var(--qs-line);line-height:1.6}
+[data-quant-table] th{color:var(--qs-muted);font-size:12px;font-weight:600;text-align:left}
+[data-quant-table] [data-numeric]{text-align:right}
+@media(max-width:640px){:root{--qs-card-padding:20px;--qs-card-gap:16px;--qs-section-gap:24px}[data-quant-table] :is(th,td){padding:11px 12px}}
+
+/* Separate data, chrome and raised inspection surfaces. */
+html[data-theme] body [data-quant-card] {color:var(--qs-text)}
+html[data-theme] body [data-quant-card] :is(h2,h3,h4) {letter-spacing:-.025em;text-wrap:pretty}
+html[data-theme] body :is([data-quant-card],[data-quant-table]) :focus-visible {outline:2px solid var(--qs-focus);outline-offset:3px}
+html[data-theme] body [data-quant-table] tbody tr:hover {background:color-mix(in srgb,var(--qs-raised) 58%,transparent)}
+html[data-theme] body [data-quant-card] [data-quant-muted] {color:var(--qs-muted)}
+html[data-theme] body [data-quant-touch-chart] {position:relative;touch-action:pan-y;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;user-select:none}
+[data-quant-touch-chart][data-quant-gesture=armed]::after {
+  position:absolute;left:var(--qs-gesture-x);top:var(--qs-gesture-y);z-index:12;
+  transform:translate(-50%,-50%);width:14px;height:14px;border-radius:50%;
+  border:2px solid var(--qs-accent,#78d9e1);box-shadow:0 0 0 5px color-mix(in srgb,var(--qs-accent,#78d9e1) 22%,transparent);
+  background:var(--qs-raised,#222d42);content:"";pointer-events:none;
+}
+html[data-theme] body [data-quant-chart-readout]:not([hidden]) {
+  display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 16px;
+  margin-block:8px 4px;padding:10px 12px;min-width:0;border:1px solid var(--qs-line);
+  border-radius:10px;background:color-mix(in srgb,var(--qs-raised) 64%,var(--qs-surface));
+  color:var(--qs-text);font-size:13px;line-height:1.55;font-variant-numeric:tabular-nums;
+}
+[data-quant-chart-readout] > strong:first-child {flex-basis:100%;font-weight:650}
+[data-quant-chart-readout] > span {min-width:0;overflow-wrap:anywhere}
+html[data-theme] body button[data-quant-reset-view]:not([hidden]) {
+  min-height:36px;padding:4px 8px;border:1px solid transparent;border-radius:7px;
+  background:transparent;box-shadow:none;color:var(--qs-accent);font:inherit;font-size:12px;
+}
+html[data-theme] body button[data-quant-reset-view]:hover {background:var(--qs-raised)}
+@media(max-width:640px) {
+  html[data-theme] body button[data-quant-reset-view]:not([hidden]) {min-height:44px}
+  html[data-theme] body [data-quant-chart-readout]:not([hidden]) {gap:4px 12px;font-size:12px}
+}
+
+/* Adapters already read these neutral aliases. Data series and status colors stay scoped to their projects. */
+html:root[data-theme] {
+  --qe-bg:var(--qs-bg)!important;
+  --qe-surface:var(--qs-surface)!important;
+  --qe-raised:var(--qs-raised)!important;
+  --qe-text:var(--qs-text)!important;
+  --qe-muted:var(--qs-muted)!important;
+  --qe-border:var(--qs-border)!important;
+  --qe-accent:var(--qs-accent)!important;
+}
+
+.quant-gesture-marker {fill:var(--qs-raised);stroke:var(--qs-accent);stroke-width:2;pointer-events:none}
+html[data-theme] body [data-quant-live-range]:not([hidden]) {
+  position:fixed;z-index:110;inset:auto max(12px,calc((100vw - 540px)/2)) max(12px,env(safe-area-inset-bottom)) !important;
+  max-height:34dvh;overflow:hidden;margin:0!important;padding:10px 12px!important;
+  border:1px solid var(--qs-border)!important;border-radius:12px;background:var(--qs-raised)!important;
+  color:var(--qs-text)!important;box-shadow:0 10px 28px #06091355;pointer-events:none;
+}

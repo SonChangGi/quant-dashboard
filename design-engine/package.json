@@ -1,6 +1,6 @@
 {
   "name": "@quant/design-engine",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "private": true,
   "type": "module",
   "description": "Quant's framework-neutral research interface engine",
@@ -31,7 +31,7 @@
   "scripts": {
     "dev": "python3 -m http.server 4400 --bind 127.0.0.1",
     "test": "node --test tests/*.test.mjs",
-    "check": "node --check engine/index.js && node --check engine/charts.js && node --check engine/table.js && node --check engine/metrics.js && node --check engine/tokens.js && node --check engine/compare.js && node --check demo/app.js && node --check demo/research-view.js"
+    "check": "node --check engine/touch.js && node --check engine/drag.js && node --check engine/index.js && node --check engine/charts.js && node --check engine/table.js && node --check engine/metrics.js && node --check engine/tokens.js && node --check engine/compare.js && node --check demo/app.js && node --check demo/research-view.js"
   },
   "devDependencies": {
     "jsdom": "29.1.1"

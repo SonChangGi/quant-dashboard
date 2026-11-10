@@ -113,7 +113,7 @@ test('tiny observations are not rounded into zero; unknown and infinite values r
 
 function mockMount(spec=line,events={}) {
   const attrs=new Map(),listeners=new Map(),handlers=new Map();let option,disposed=false;
-  const element={getAttribute:k=>attrs.get(k)??null,setAttribute:(k,v)=>attrs.set(k,v),removeAttribute:k=>attrs.delete(k),addEventListener:(k,v)=>listeners.set(k,v),removeEventListener:k=>listeners.delete(k)};
+  const element={style:{removeProperty(){}},dataset:{},getAttribute:k=>attrs.get(k)??null,setAttribute:(k,v)=>attrs.set(k,v),removeAttribute:k=>attrs.delete(k),addEventListener:(k,v)=>listeners.set(k,v),removeEventListener:k=>listeners.delete(k)};
   const actions=[];
   const chart={setOption:o=>{option=o;element.setAttribute('role','img');},getOption:()=>option,on:(k,v)=>handlers.set(k,v),dispatchAction:a=>actions.push(a),resize(){element.setAttribute('role','img');},dispose(){disposed=true;}};
   const selections=[],ranges=[];
@@ -164,7 +164,7 @@ test('an initial renderer failure releases observer, listeners, host attributes 
   const previous=globalThis.ResizeObserver;let disconnected=false,disposeCount=0,resize;
   const attrs=new Map([['role','region'],['tabindex','-1'],['aria-label','Original host']]);
   const listeners=new Map(),events=new Map(),zrEvents=new Map();
-  const element={getAttribute:k=>attrs.get(k)??null,setAttribute:(k,v)=>attrs.set(k,v),removeAttribute:k=>attrs.delete(k),addEventListener:(k,v)=>listeners.set(k,v),removeEventListener:k=>listeners.delete(k)};
+  const element={style:{removeProperty(){}},dataset:{},getAttribute:k=>attrs.get(k)??null,setAttribute:(k,v)=>attrs.set(k,v),removeAttribute:k=>attrs.delete(k),addEventListener:(k,v)=>listeners.set(k,v),removeEventListener:k=>listeners.delete(k)};
   const originalError=new Error('initial SVG failure');
   const chart={getZr:()=>({on:(k,v)=>zrEvents.set(k,v),off:k=>zrEvents.delete(k)}),on:(k,v)=>events.set(k,v),off:k=>events.delete(k),setOption(){element.setAttribute('role','img');throw originalError;},resize(){throw new Error('disposed observer must not resize');},dispose(){disposeCount++;}};
   globalThis.ResizeObserver=class{constructor(callback){resize=callback;}observe(){}disconnect(){disconnected=true;}};

@@ -1,5 +1,5 @@
 <!doctype html>
-<html data-design-engine="0.4.2" lang="ko" data-theme="dark">
+<html data-design-engine="0.4.3" lang="ko" data-theme="dark">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -12,15 +12,16 @@
   <script src="assets/theme.js?v=20260728-hub-ui"></script>
   <link rel="stylesheet" href="assets/styles.css?v=398f7b040050" />
   <link rel="stylesheet" href="assets/shared-nav.css?v=20260728-shared-nav" />
-  <link rel="stylesheet" href="assets/engine-040.css?v=6cda2bad30f6">
+  <link rel="stylesheet" href="assets/engine-040.css?v=9f533c673a2a">
   <link rel="stylesheet" href="https://sonchanggi.github.io/quant-dashboard/shared/navigation/v1/nav.css">
   <script src="https://sonchanggi.github.io/quant-dashboard/shared/preferences/1.0.1/preferences.js"></script>
-  <link rel="stylesheet" data-quant-common href="https://sonchanggi.github.io/quant-dashboard/shared/design/tokens/0.4.2/shell.css?v=d3ef280dc5d3">
+  <link rel="stylesheet" data-quant-common href="https://sonchanggi.github.io/quant-dashboard/shared/design/tokens/0.4.3/shell.css?v=8414ab0c137f">
 <link rel="stylesheet" href="https://sonchanggi.github.io/quant-dashboard/shared/design/startup/1.2.0/quant-dashboard.css" data-quant-first-paint-css>
   <script src="https://sonchanggi.github.io/quant-dashboard/shared/design/startup/1.2.0/start.js" data-quant-design-project="quant-dashboard"></script>
-  <script defer src="assets/engine-040.js?v=b3e847a67000"></script>
+  <script defer src="https://sonchanggi.github.io/quant-dashboard/shared/design/tokens/0.4.3/touch.js?v=2f4fb1f32f46"></script>
+  <script defer src="assets/engine-040.js?v=e9aa8ccd6aac"></script>
   <script defer src="design-engine/vendor/echarts.min.js"></script>
-  <script defer src="assets/charts-041.js?v=206f50f19576"></script>
+  <script defer src="assets/charts-041.js?v=13a658e1ddba"></script>
   <script src="assets/app.js?v=242fd2aa09c5" defer></script>
   <script src="https://sonchanggi.github.io/quant-dashboard/shared/navigation/v1/nav.js" data-quant-project="hub" defer></script>
 </head>
@@ -59,23 +60,13 @@
 
   <main id="main-content" tabindex="-1">
     <nav class="section section-index" aria-label="허브 결과 빠른 탐색">
-      <a href="#news">뉴스</a>
       <a href="#market">시장 상태</a>
       <a href="#factors">팩터 전략</a>
       <a href="#semiconductors">반도체</a>
       <a href="#holdings">ETF</a>
+      <a href="#news">뉴스</a>
       <a href="#operations">데이터 상태</a>
     </nav>
-    <section class="section news-section" id="news" aria-labelledby="news-title">
-      <article class="panel panel--news" id="news-panel">
-        <div class="panel-header">
-          <h2 id="news-title">주요 뉴스</h2>
-          <a class="panel-link" id="news-report-link" href="https://sonchanggi.github.io/news/">전체 브리핑 열기</a>
-        </div>
-        <p class="status-line" id="news-status" aria-live="polite">발행 정보 확인 중</p>
-        <div id="news-summary" class="news-summary" aria-live="polite"><div class="skeleton-line">주요 뉴스를 불러오는 중...</div></div>
-      </article>
-    </section>
     <section class="section dashboard-section" aria-labelledby="dashboard-title">
       <div class="section-heading">
         <h2 id="dashboard-title">프로젝트별 최신 결과</h2>
@@ -86,6 +77,17 @@
           <div class="skeleton-line">요약 패널을 준비하는 중...</div>
         </article>
       </div>
+    </section>
+
+    <section class="section news-section" id="news" aria-labelledby="news-title">
+      <article class="panel panel--news" id="news-panel">
+        <div class="panel-header">
+          <h2 id="news-title">주요 뉴스</h2>
+          <a class="panel-link" id="news-report-link" href="https://sonchanggi.github.io/news/">전체 브리핑 열기</a>
+        </div>
+        <p class="status-line" id="news-status" aria-live="polite">발행 정보 확인 중</p>
+        <div id="news-summary" class="news-summary" aria-live="polite"><div class="skeleton-line">주요 뉴스를 불러오는 중...</div></div>
+      </article>
     </section>
 
     <section class="section operations-section" id="operations" aria-label="데이터와 운영 정보">
@@ -102,7 +104,7 @@
             <div class="skeleton-line">공개 JSON 최신성과 fallback 여부를 확인하는 중...</div>
           </div>
           <div id="news-health" class="health-list" aria-live="polite"></div>
-          <p><a href="design-engine/">공통 디자인 지침 · 엔진 v0.4.2 ↗</a></p>
+          <p><a href="design-engine/">공통 디자인 지침 · 엔진 v0.4.3 ↗</a></p>
         </div>
       </details>
     </section>

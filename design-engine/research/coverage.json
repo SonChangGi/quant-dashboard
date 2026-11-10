@@ -1,5 +1,5 @@
 {
-  "version": "0.4.2",
+  "version": "0.4.3",
   "checkedAt": "2026-11-10",
   "items": [
     {
@@ -129,7 +129,7 @@
       "route": "foundations",
       "pattern": "",
       "url": "https://toss.im/",
-      "code": "engine/tokens.js; shared/design/tokens/0.4.2/shell.css",
+      "code": "engine/tokens.js; shared/design/tokens/0.4.3/shell.css",
       "status": "직접 관찰 · 적용"
     },
     {
@@ -141,6 +141,66 @@
       "url": "https://www.tossinvest.com/",
       "code": "engine/styles.css; demo/demo.css; shared shell.css",
       "status": "다크·라이트 직접 관찰 · 적용"
+    },
+    {
+      "source": "토스 디자인 시스템",
+      "url": "https://toss.tech/article/43385",
+      "strength": "명도와 색상 역할을 분리",
+      "applied": "바탕·카드·툴팁의 밝기 단계와 의미색을 별도 토큰으로 관리",
+      "route": "foundations",
+      "pattern": "",
+      "code": "engine/index.js; shell.css",
+      "status": "공식 디자인 글"
+    },
+    {
+      "source": "TradingView Advanced Charts",
+      "url": "https://www.tradingview.com/charting-library-docs/latest/mobile_specifics/",
+      "strength": "손가락 조작을 입력 의도별로 분리",
+      "applied": "가로 관측값 탐색·정지 후 비교·핀치·세로 스크롤을 독립 상태로 구현",
+      "route": "compose",
+      "pattern": "",
+      "code": "engine/touch.js",
+      "status": "공식 조작 문서 · 요구에 맞게 구현"
+    },
+    {
+      "source": "Robinhood Legend",
+      "url": "https://robinhood.com/newsroom/introducing-robinhood-legend-charts-on-mobile/",
+      "strength": "금융 계열이 앞에 오는 낮은 강조 밀도",
+      "applied": "보조 격자와 계열을 분리하고 차트 제목 옆 설정 메뉴를 제거",
+      "route": "charts",
+      "pattern": "",
+      "code": "engine/styles.css; engine/index.js",
+      "status": "공식 모바일 제품 시연"
+    },
+    {
+      "source": "Koyfin",
+      "url": "https://www.koyfin.com/features/advanced-graphing/",
+      "strength": "여러 축과 벤치마크 비교",
+      "applied": "연결 패널의 날짜 좌표 정렬과 계열 간 선 색·모양 분리",
+      "route": "compose",
+      "pattern": "",
+      "code": "engine/charts.js; Factor·Regime 어댑터",
+      "status": "공식 제품 화면"
+    },
+    {
+      "source": "Stock Analysis",
+      "url": "https://stockanalysis.com/stocks/aapl/",
+      "strength": "작은 화면에서 숫자와 추세 우선",
+      "applied": "모바일에서 차트 옆 제어판을 없애고 표·정확값을 그래프 아래에 배치",
+      "route": "charts",
+      "pattern": "",
+      "code": "engine/index.js; shell.css",
+      "status": "모바일 실화면"
+    },
+    {
+      "source": "Yahoo Finance",
+      "url": "https://finance.yahoo.com/quote/AAPL/chart/",
+      "strength": "통화·현재값·축의 분명한 레이아웃",
+      "applied": "통화·단위·기준일을 가격과 함께 표시하고 보조 데이터 접근을 분리",
+      "route": "charts",
+      "pattern": "",
+      "code": "DRAM 가격 어댑터; engine/charts.js",
+      "status": "데스크톱 실화면"
     }
   ]
 }

@@ -132,7 +132,7 @@ assert(contains(files.app, 'parseIntegratedMomentum') && contains(files.app, "ex
 assert(!contains(files.app, 'best-factor/data/summary.json'), 'retired Best JSON is not fetched');
 assert(contains(files.app, 'parseFearAndGreed'), 'Fear & Greed parser exists');
 assert(contains(files.app, 'normalizeFearAndGreedUnavailable'), 'Fear & Greed uses unavailable rather than hardcoded market fallback');
-assert(files.html.indexOf('id="news"') < files.html.indexOf('dashboard-section') && !files.html.includes('cockpit-section'), 'News leads the page while other sections retain their order');
+assert(files.html.indexOf('dashboard-section') < files.html.indexOf('id="news"') && files.html.indexOf('id="news"') < files.html.indexOf('id="operations"') && !files.html.includes('cockpit-section'), 'Market charts precede news and operations');
 assert(!contains(files.html, 'research-disclaimer') && !contains(files.html, 'operations-lead'), 'repeated instruction and disclaimer copy is removed');
 assert(contains(files.app, "id: 'fearngreed'"), 'Fear & Greed project registry entry exists');
 assert(contains(files.app, 'MOMENTUM_SUMMARY_CONTRACT') && contains(files.app, 'expectedVersion: 5'), 'legacy momentum fixtures retain their schemaVersion 5 contract');
@@ -247,7 +247,7 @@ assert(
   ].every((url) => contains(files.webDesign, url)),
   'web design prompt retains the active price and market reference sites',
 );
-assert(contains(files.webDesign, '버전: `2.10.0`'), 'web design prompt version is pinned');
+assert(contains(files.webDesign, '버전: `2.11.0`'), 'web design prompt version is pinned');
 assert(contains(files.webDesign, '## 1. 절대 보호 경계') && contains(files.webDesign, '계산·normalization·selection·aggregation 함수는 동결'), 'web design prompt protects analysis and result behavior');
 assert(contains(files.webDesign, '### 1.4 입력의 네 종류를 먼저 선언한다') && ['`display`', '`result_selector`', '`analysis`', '`operation`'].every((kind) => contains(files.webDesign, kind)), 'web design prompt classifies every visible control before implementation');
 assert(contains(files.webDesign, '### 1.5 현재 6개 사이트의 입력 기준선') && contains(files.webDesign, 'command 생성만으로 완료 처리하지 않는다'), 'web design prompt records the audited six-site input baseline');

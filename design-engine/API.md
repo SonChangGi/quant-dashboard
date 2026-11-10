@@ -1,4 +1,4 @@
-# API · v0.4.2
+# API · v0.4.3
 
 ## 공통
 
@@ -74,8 +74,12 @@ absolute는 value−comparison.value. unit='%'이면 변화 단위는 %p. relati
 
 ## 직접 조작 기본값
 
-line/area는 기본적으로 값 읽기와 inside 확대·이동을 함께 제공한다. 상시 모드 버튼과 슬라이더는 표시하지 않는다. `zoom:false`는 확대를 끈다. 기본 드래그는 구간 비교이며 `onRange` 없이도 시작·끝 값과 변화량을 표시한다. `brush:false`만 구간 선택을 끈다. Alt+드래그로 이동하고 휠로 확대한다. 터치에서는 수평 드래그로 비교, 두 손가락으로 확대·이동하며 세로 스크롤을 유지한다. `renderer.resetZoom()`은 범위만 복원하며 계열·관측 선택은 유지한다. 기존 `resetView()`는 전체 상태 복원 API로 유지한다. `setMode('inspect')`는 이제 값 읽기와 기본 확대·이동이 함께 가능한 상태다.
+line/area는 기본적으로 값 읽기와 inside 확대·이동을 함께 제공한다. 상시 모드 버튼과 슬라이더는 표시하지 않는다. `zoom:false`는 확대를 끈다. 마우스 드래그와 터치 길게 누른 뒤 드래그는 구간 비교이며 `onRange` 없이도 시작·끝 값과 변화량을 표시한다. `brush:false`만 구간 선택을 끈다. Alt+드래그로 이동하고 휠로 확대한다. 터치에서는 짧게 눌러 한 관측일을 읽고 바로 수평으로 끌어 관측값을 탐색한다. 420ms 머문 뒤 끌면 구간을 비교한다. 두 손가락으로 확대·이동하며 세로 스크롤을 유지한다. `renderer.resetZoom()`은 범위만 복원하며 계열·관측 선택은 유지한다. 기존 `resetView()`는 전체 상태 복원 API로 유지한다. `setMode('inspect')`는 이제 값 읽기와 기본 확대·이동이 함께 가능한 상태다.
 
 ## 범례 연결
 
 `engine.mount(host, spec, {onLegendChange(visible) {}})`는 사용자 범례 변경 시 계열명→표시 여부를 전달한다. 비교 예제는 이 이벤트로 체크박스·카드·표를 갱신하며 차트는 재생성하지 않는다. `renderer.setLegend(name, visible)`는 다른 입력에서 범례를 제어한다.
+
+### 다른 차트 렌더러 연결
+
+`engine/touch.js`의 `bindTouchChart(element, {hit, inspect, compare, clear, navigate, enabled, axis})`를 사용한다. `hit`은 차트 원점 기준 CSS 좌표를 받아 관측 인덱스 또는 좌표를 돌려준다. 실제 plot 밖에서 시작한 입력은 `null`로 처리한다. 반환된 정리 함수를 렌더러 해제 시 호출한다. React에서는 입력 바인딩을 확대·기간에 따라 교체하지 않고 콜백이 현재 데이터 창을 보도록 연결한다. classic script 소비자는 같은 소스에서 생성한 `shared/design/tokens/0.4.3/touch.js`의 `QuantTouchChart`를 쓴다.

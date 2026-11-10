@@ -97,5 +97,9 @@
   "shared/preferences/1.0.1/manifest.json",
   "shared/design/tokens/0.4.2/shell.css",
   "design-engine/engine/drag.js",
-  "design-engine/quant-design-engine-0.4.2.tgz"
+  "design-engine/quant-design-engine-0.4.2.tgz",
+  "shared/design/tokens/0.4.3/shell.css",
+  "shared/design/tokens/0.4.3/touch.js",
+  "design-engine/engine/touch.js",
+  "design-engine/quant-design-engine-0.4.3.tgz"
 ]

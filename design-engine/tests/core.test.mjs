@@ -74,7 +74,7 @@ test('waterfall arithmetic tolerates binary roundoff while rejecting non-finite 
 });
 
 test('theme contract exposes the same role tokens in dark and light and recognized chart kinds are unique',()=>{
-  const expected=['bg','surface','raised','text','muted','border','accent','positive','negative','palette'];
+  const expected=['bg','surface','raised','text','muted','border','grid','accent','positive','negative','palette'];
   for(const theme of Object.values(themes)){
     assert.deepEqual(Object.keys(theme),expected);
     for(const key of expected.filter(x=>x!=='palette'))assert.match(theme[key],/^#[0-9a-f]{6}$/i);
@@ -150,13 +150,14 @@ test('direct chart interaction exposes reset only after zoom and keeps source da
  const v=e.engine.mount(e.host,{...line,x:['a','b','c'],series:[{name:'A',data:[100,110.00000000000001,null]}]});
  assert.equal(e.host.querySelector('.qe-observation-steps'),null);
  assert.equal(e.host.querySelector('.qe-chart-help'),null);
- const reset=[...e.host.querySelectorAll('button')].find(b=>b.textContent==='전체 보기');
+ const reset=[...e.host.querySelectorAll('button')].find(b=>b.textContent==='전체 기간');
  assert.equal(reset.hidden,true);v.renderer.setZoom(20,70);assert.equal(reset.hidden,false);
  v.renderer.setLegend('A',false);reset.click();assert.equal(reset.hidden,true);assert.equal(v.getState().legend.A,false);
  v.renderer.setLegend('A',true);v.renderer.select(1);assert.equal(e.host.querySelector('.qe-readout').textContent,'bA 110');
  v.renderer.select(null);assert.equal(e.host.querySelector('.qe-readout').textContent,'');
- const data=[...e.host.querySelectorAll('button')].find(b=>b.textContent==='데이터 보기');
- assert.equal(e.host.querySelector('.qe-data').hidden,true);data.click();assert.equal(e.host.querySelector('.qe-data').hidden,false);
+ const data=e.host.querySelector('.qe-data');
+ assert.equal(e.host.querySelector('.qe-chart-menu'),null);
+ assert.equal(data.open,false);data.querySelector('summary').click();assert.equal(data.open,true);
  assert.equal(e.host.querySelector('.qe-spec-source').open,false);
  e.engine.destroy();e.dom.window.close();
 });

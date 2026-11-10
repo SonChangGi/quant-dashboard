@@ -1,4 +1,4 @@
-@import './table.css?v=042';
+@import './table.css?v=043';
 @font-face{font-family:Pretendard;src:url('../vendor/PretendardVariable.woff2') format('woff2');font-display:swap}
 [data-qe-theme]{font-family:Pretendard,system-ui,sans-serif;color:var(--qe-text);background:var(--qe-bg);font-variant-numeric:tabular-nums;line-height:1.55}
 [data-qe-theme] *{box-sizing:border-box}[data-qe-theme] button,[data-qe-theme] input,[data-qe-theme] select,[data-qe-theme] textarea{font:inherit;color:inherit;background:var(--qe-raised);border:1px solid var(--qe-border);border-radius:var(--qe-control-radius,7px);padding:8px 12px;max-width:100%}[data-qe-theme] button{cursor:pointer}[data-qe-theme] button:hover{border-color:var(--qe-accent)}[data-qe-theme] :focus-visible{outline:2px solid var(--qe-accent);outline-offset:3px}[data-qe-theme] a{color:var(--qe-accent)}
@@ -16,24 +16,26 @@
 @media(max-width:650px){.qe-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.qe-controls button,.qe-observation-steps button{min-height:44px}.qe-chart-help{margin:12px var(--qe-card-inset-mobile,18px)}.qe-observation-steps{padding-inline:var(--qe-card-inset-mobile,18px)}.qe-readout{padding-inline:var(--qe-card-inset-mobile,18px);font-size:13px}.qe-data>summary{min-height:44px;display:flex;align-items:center}}
 /* Direct manipulation: the plot is the primary control. */
 [data-qe-theme] [hidden]{display:none!important}
-.qe-frame-header{position:relative}.qe-frame:has(.qe-chart-actions)>.qe-frame-header{padding-right:80px}
 .qe-chart-actions{position:absolute;right:16px;top:16px;display:flex;gap:6px;align-items:center;z-index:10}
-.qe-chart-actions>button{font-size:12px;min-height:36px;padding:6px 10px}
-.qe-chart-menu>summary{display:grid;place-items:center;list-style:none;cursor:pointer;width:36px;height:36px;border-radius:7px;font-size:23px;color:var(--qe-muted)}.qe-chart-menu>summary::-webkit-details-marker{display:none}.qe-chart-menu>summary:hover,.qe-chart-menu[open]>summary{background:var(--qe-raised);color:var(--qe-text)}
-.qe-chart-options{position:absolute;right:0;top:calc(100% + 6px);width:180px;background:var(--qe-surface);border:1px solid var(--qe-border);border-radius:9px;padding:6px;box-shadow:0 8px 20px #0002;display:grid;gap:4px}
-.qe-chart-options button{border:0;text-align:left;background:transparent;font-size:13px;min-height:40px}
-.qe-frame[data-selecting=true] .qe-chart-body{outline:1px solid var(--qe-accent);outline-offset:-2px}
 .qe-frame .qe-chart-body,.qe-frame .qe-chart-body>div{touch-action:pan-y!important}
-.qe-frame[data-selecting=true] .qe-chart-body,.qe-frame[data-selecting=true] .qe-chart-body>div{touch-action:none!important}
 .qe-readout{font-size:12px;padding-top:8px}.qe-readout:empty{display:none!important}
-@media(max-width:650px){.qe-chart-actions{right:12px;top:12px}.qe-chart-menu>summary,.qe-chart-actions>button{min-height:44px}.qe-chart-menu>summary{width:44px}.qe-chart-options button{min-height:44px}.qe-frame:has(.qe-chart-actions)>.qe-frame-header{padding-right:76px}}
 .qe-controls{display:flex;justify-content:flex-end;padding-bottom:8px}.qe-controls:not(:has(button:not([hidden]))){display:none}.qe-controls button{min-height:36px}.qe-controls button:last-child{margin-left:0}@media(max-width:650px){.qe-controls button{min-height:44px}}
 
 .qe-range-readout{display:flex;flex-wrap:wrap;gap:10px 20px;padding:14px 20px;border-top:1px solid var(--qe-border);font-size:13px;font-variant-numeric:tabular-nums}.qe-range-readout[hidden]{display:none}.qe-range-readout strong{flex-basis:100%}.qe-chart-body{touch-action:pan-y}
 
 /* One surface and inset per component, supplied by the shared contract. */
-html[data-theme] .qe-frame[data-quant-card]{overflow:visible}.qe-frame[data-quant-card]>.qe-frame-header{padding:0 52px 16px 0}.qe-frame[data-quant-card] .qe-chart-actions{right:0;top:0}.qe-frame[data-quant-card]>.qe-chart-body{margin:0}.qe-frame[data-quant-card]>.qe-controls,.qe-frame[data-quant-card]>.qe-readout,.qe-frame[data-quant-card]>.qe-metric-body,.qe-frame[data-quant-card]>.qe-table-body{padding-inline:0}.qe-frame[data-quant-card]>.qe-range-readout{padding:16px 0 0;margin-top:16px;border-color:var(--qs-line,var(--qe-border))}.qe-frame[data-quant-card]>.qe-data{padding:16px 0 0;margin-top:16px;border-color:var(--qs-line,var(--qe-border))}
+html[data-theme] .qe-frame[data-quant-card]{overflow:visible}.qe-frame[data-quant-card]>.qe-frame-header{padding:0 0 12px}.qe-frame[data-quant-card]>.qe-chart-body{margin:0}.qe-frame[data-quant-card]>.qe-controls,.qe-frame[data-quant-card]>.qe-readout,.qe-frame[data-quant-card]>.qe-metric-body,.qe-frame[data-quant-card]>.qe-table-body{padding-inline:0}.qe-frame[data-quant-card]>.qe-range-readout{padding:16px 0 0;margin-top:16px;border-color:var(--qs-line,var(--qe-border))}.qe-frame[data-quant-card]>.qe-data{padding:16px 0 0;margin-top:16px;border-color:var(--qs-line,var(--qe-border))}
 /* Explicit design controls override role variables, not the shared component rules. */
 [data-qe-theme]{--qs-card-padding:var(--qe-card-inset,24px);--qs-card-radius:var(--qe-card-radius,16px);--qs-section-gap:var(--qe-section-gap,32px)}
 @media(max-width:640px){[data-qe-theme]{--qs-card-padding:var(--qe-card-inset-mobile,20px)}}
 .qe-frame[data-quant-card]>.qe-metric-body{padding-bottom:0}.qe-frame[data-quant-card] .qe-metric-spark{height:32px;margin-top:18px}
+
+.qe-frame[data-quant-card]>.qe-frame-header{padding:0 0 12px}
+.qe-frame[data-quant-card]>.qe-chart-body{margin:0}
+.qe-frame[data-quant-card]>:is(.qe-controls,.qe-readout,.qe-metric-body,.qe-table-body){padding-inline:0}
+.qe-frame[data-quant-card]>:is(.qe-range-readout,.qe-data){padding:12px 0 0;margin-top:12px;border-color:var(--qs-line,var(--qe-border))}
+.qe-frame:has(.qe-range-readout:not([hidden]))>.qe-readout {display:none!important}
+.qe-readout:empty {display:none!important}
+.qe-data>summary {width:fit-content}
+.qe-frame[data-quant-card] {padding:var(--qe-card-inset,24px)}
+@media(max-width:640px){.qe-frame[data-quant-card]{padding:var(--qe-card-inset-mobile,20px)}}

@@ -1,13 +1,7 @@
-document.documentElement.dataset.designEngine="0.4.2";
-/* v0.4.2 interaction audit: retain native sorting and range handlers. */
+document.documentElement.dataset.designEngine="0.4.3";
+/* v0.4.3 interaction audit: retain native sorting and range handlers. */
 (() => {
   const enhance = () => {
-    document.querySelectorAll('.qr-toolbar').forEach(toolbar => {
-      if (toolbar.parentElement.matches('.qe-chart-tools')) return;
-      const details = document.createElement('details'); details.className = 'qe-chart-tools';
-      const summary = document.createElement('summary'); summary.textContent = '차트 도구';
-      toolbar.before(details); details.append(summary, toolbar);
-    });
     document.querySelectorAll('.qr-readout').forEach(readout => { readout.hidden = /^표시 순서대로 구간 선택/.test(readout.textContent); });
     document.querySelectorAll('table').forEach(table => {
       table.setAttribute('data-quant-table', '');

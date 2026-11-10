@@ -1,5 +1,5 @@
-import {bindRangeDrag,rangeSeries} from './drag.js?v=042';
-import {contrastRatio,mixColor} from './tokens.js?v=042';
+import {bindRangeDrag,navigateChartWindow,rangeSeries} from './drag.js?v=043';
+import {contrastRatio,mixColor} from './tokens.js?v=043';
 /** Quant chart renderer. Pure specs in, ECharts options out; no data fetching or aggregation. */
 export const CHART_KINDS = Object.freeze(['line', 'area', 'bar', 'diverging', 'slope', 'dumbbell', 'scatter', 'heatmap', 'boxplot', 'histogram', 'waterfall', 'range', 'small-multiples', 'calendar', 'fan', 'bullet', 'treemap']);
 
@@ -132,7 +132,7 @@ export function buildOption(spec,tokens={}) {
   const labelOn=color=>contrastRatio(t.text,color)>=4.5?t.text:contrastRatio('#ffffff',color)>contrastRatio('#101416',color)?'#ffffff':'#101416';
   const fmt=v=>`${formatChartNumber(v)}${v==null?'':unit}`;
   const cat=(data,extra={})=>({type:'category',data:[...data],axisLine:{lineStyle:{color:t.border}},axisTick:{show:false},axisLabel:{color:t.muted,hideOverlap:true},...extra});
-  const val=(extra={})=>({type:'value',name:spec.yLabel||unit,nameTextStyle:{color:t.muted},axisLabel:{color:t.muted,formatter:formatChartNumber},splitLine:{lineStyle:{color:t.border,type:'dashed'}},axisLine:{show:false},...extra});
+  const val=(extra={})=>({type:'value',name:spec.yLabel||unit,nameTextStyle:{color:t.muted},axisLabel:{color:t.muted,formatter:formatChartNumber},splitLine:{lineStyle:{color:t.grid||t.border,type:'dashed'}},axisLine:{show:false},...extra});
   const o={backgroundColor:'transparent',color:[...t.palette],animation:false,textStyle:{fontFamily:'inherit',color:t.text},aria:{enabled:true,label:{enabled:true,description:spec.description||`${spec.title||spec.kind}. ${unit?`단위 ${unit}. `:''}정확한 값은 함께 제공된 데이터 표에서 확인할 수 있습니다.`}},grid:{left:16,right:24,top:40,bottom:24,containLabel:true},tooltip:{trigger:'item',renderMode:'richText',confine:true,backgroundColor:t.raised,borderColor:t.border,textStyle:{color:t.text},valueFormatter:fmt},series:[]};
   const legend={type:'scroll',top:0,textStyle:{color:t.muted},pageTextStyle:{color:t.muted},pageIconColor:t.text,pageIconInactiveColor:t.border};
   switch(spec.kind) {
@@ -283,7 +283,7 @@ export function buildOption(spec,tokens={}) {
 }
 
 /** Inject a full ECharts build. Returns a small controlled interface; no global engine required. */
-export function mountChart(element,spec,{echarts,tokens={},onSelect=()=>{},onRange=()=>{},onStateChange=()=>{},onLegendChange=()=>{}}={}) {
+export function mountChart(element,spec,{echarts,tokens={},onSelect=()=>{},onRange=()=>{},onStateChange=()=>{},onLegendChange=()=>{},rangeReadout}={}) {
   if(!element||typeof element.addEventListener!=='function')throw new TypeError('mountChart requires a DOM element');
   if(!echarts?.init)throw new TypeError('mountChart requires an injected ECharts instance');
   let currentSpec=spec,currentTokens=tokensWithDefaults(tokens),disposed=false,brushAnchor=null;
@@ -306,9 +306,11 @@ export function mountChart(element,spec,{echarts,tokens={},onSelect=()=>{},onRan
   }
   function setRange(start,end) {
     if(!isLine()||disposed)return;
-    if(start==null||end==null){state.range=null;chart.dispatchAction({type:'brush',areas:[]});onRange(null);notify();return;}
+    if(start==null||end==null){if(state.range)chart.setOption({tooltip:{showContent:true}});state.range=null;chart.dispatchAction({type:'brush',areas:[]});onRange(null);notify();return;}
     const a=safeIndex(Math.min(start,end)),b=safeIndex(Math.max(start,end));
+    if(!state.range)chart.setOption({tooltip:{showContent:false}});
     state.range={startIndex:a,endIndex:b,start:currentSpec.x[a],end:currentSpec.x[b]};
+    chart.dispatchAction({type:'hideTip'});
     if(currentSpec.brush!==false)chart.dispatchAction({type:'brush',areas:[{brushType:'lineX',xAxisIndex:0,coordRange:[a,b]}]});
     onRange({...state.range});notify();
   }
@@ -318,6 +320,7 @@ export function mountChart(element,spec,{echarts,tokens={},onSelect=()=>{},onRan
     // ECharts' automatic description gives the host role=img on every redraw,
     // hiding its keyboard interaction semantics from assistive technologies.
     o.aria={...o.aria,enabled:false};
+    if(o.tooltip&&state.range)o.tooltip.showContent=false;
     if(o.legend){state.legend=Object.fromEntries((currentSpec.series?.map(s=>s.name)||o.series.map(s=>s.name)).map(name=>[name,state.legend[name]??o.legend.selected?.[name]??true]));o.legend.selected={...state.legend};}
     if(o.dataZoom)o.dataZoom=o.dataZoom.map(z=>({...z,...state.zoom,...(z.type==='inside'?{zoomOnMouseWheel:true,moveOnMouseMove:'alt'}:{})}));
     chart.setOption(o,{notMerge:true,lazyUpdate:false});
@@ -327,7 +330,7 @@ export function mountChart(element,spec,{echarts,tokens={},onSelect=()=>{},onRan
     const accessibleTitle=currentSpec.title||currentSpec.kind;
     const description=o.aria?.label?.description||currentSpec.description||'';
     const accessibleDetail=description.startsWith(accessibleTitle+'. ')?description.slice(accessibleTitle.length+2):description;
-    element.setAttribute('aria-label',`${accessibleTitle}. ${isLine()?`좌우 방향키로 관측값 선택, +/-로 확대/축소, 0으로 전체 보기. 수평 드래그로 구간 비교, Alt 드래그로 이동. Shift와 방향키로 구간 선택. Escape로 선택 해제. `:''}${accessibleDetail}`);
+    element.setAttribute('aria-label',`${accessibleTitle}. ${isLine()?`좌우 방향키로 관측값 선택, +/-로 확대/축소, 0으로 전체 보기. 마우스로 드래그하거나 터치한 채 잠깐 멈춘 뒤 드래그하면 구간을 비교합니다. 터치한 뒤 바로 가로로 움직이면 관측값을 읽습니다. Shift와 방향키로 구간 선택. Escape로 선택 해제. `:''}${accessibleDetail}`);
     if(state.range&&currentSpec.brush!==false)chart.dispatchAction({type:'brush',areas:[{brushType:'lineX',xAxisIndex:0,coordRange:[state.range.startIndex,state.range.endIndex]}]});
     if(currentSpec.brush!==false)chart.dispatchAction({type:'takeGlobalCursor',key:'brush',brushOption:{brushType:false}});
     if(state.selectedIndex!==null)select(state.selectedIndex);
@@ -347,9 +350,13 @@ export function mountChart(element,spec,{echarts,tokens={},onSelect=()=>{},onRan
   const dragCleanup=bindRangeDrag(element,{
     enabled:()=>isLine()&&currentSpec.brush!==false,
     hit:(point,clamp)=>{const grids=currentSpec.kind==='small-multiples'?currentSpec.series.length:1;for(let i=0;i<grids;i++){if(!clamp&&!chart.containPixel?.({gridIndex:i},point))continue;const at=chart.convertFromPixel?.({xAxisIndex:i},point[0]);if(Number.isFinite(at))return safeIndex(at);}return null;},
-    onRange:setRange,onClear:()=>setRange(null,null),
-    onPan:delta=>{const span=state.zoom.end-state.zoom.start,start=Math.max(0,Math.min(100-span,state.zoom.start-delta*span));if(currentSpec.zoom!==false)setZoom(start,start+span);},
-    onPinch:(factor,anchor)=>{if(currentSpec.zoom===false)return;const span=state.zoom.end-state.zoom.start,next=Math.min(100,Math.max(2,span*factor)),center=state.zoom.start+span*anchor,start=Math.max(0,Math.min(100-next,center-next*anchor));setZoom(start,start+next);}
+    rangeReadout,onInspect:select,onRange:setRange,onClear:()=>setRange(null,null),
+    onNavigate:currentSpec.zoom===false?undefined:(previous,next)=>{
+      if(currentSpec.zoom===false)return;
+      const rect=chart.getModel().getComponent('grid',0).coordinateSystem.getRect();
+      const {start,end}=navigateChartWindow(state.zoom.start,state.zoom.end,previous,next,rect.x,rect.width);
+      if(start!==state.zoom.start||end!==state.zoom.end)setZoom(start,end);
+    }
   });
   function pointerClick(event){
     if(!isLine())return;
