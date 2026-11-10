@@ -1,7 +1,7 @@
 document.documentElement.dataset.theme='dark';
-import {createEngine,themes,contrastRatio,rebaseComparison} from '../engine/index.js?v=043';
-import {charts,tables,principles,metrics,tableLab,chartCategories} from './fixtures.js?v=043';
-import {renderResearch} from './research-view.js?v=043';
+import {createEngine,themes,contrastRatio,rebaseComparison} from '../engine/index.js?v=044';
+import {charts,tables,principles,metrics,tableLab,chartCategories} from './fixtures.js?v=044';
+import {renderResearch} from './research-view.js?v=044';
 const root=document.querySelector('#app'),content=document.querySelector('#content');
 const engine=createEngine(root);let mounts=new Set(),revision=0,cleanup=()=>{};
 const el=(tag,cls,text)=>{const n=document.createElement(tag);n.className=cls||'';if(text!==undefined)n.textContent=text;return n;};

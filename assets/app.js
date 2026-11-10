@@ -3755,7 +3755,7 @@
 
   function renderEtfTracking(summary, mode, error, project) {
     const metrics = $(panelSelector(project, 'metrics'));
-    if (metrics) metrics.innerHTML = '<strong>최근 1개월 편입비중</strong><span>현재 TOP10 종목 · 공통 비중 축</span>';
+    if (metrics) metrics.innerHTML = '<strong>최근 1개월 편입비중</strong><span>현재 표시 종목 · 공통 비중 축</span>';
     renderRows(panelSelector(project, 'rows'), summary.rows, (row) => [
       `${row.name}${row.code ? ` (${row.code})` : ''}`,
       formatMaybeDate(row.date),
@@ -4013,20 +4013,33 @@
       lastWidth = width;
       const focusPlot=document.activeElement===frame.querySelector('.qe-canvas041');
       frame.innerHTML = drawable.length ? renderSoxQuadrantChart(rows, width, currentTicker, pinnedTicker) : '<div class="sox-quadrant-empty">가격·실적 점수를 함께 가진 종목이 없습니다.</div>';
-      if(drawable.length&&globalThis.HubCharts041)globalThis.HubCharts041.scatter(frame,{title:'SOX 가격·실적 모멘텀',selectedIndex:Math.max(0,drawable.findIndex(r=>r.ticker===currentTicker)),height:390,dates:drawable.map(r=>r.ticker),xLabel:'가격 점수',yLabel:'실적 점수',xAxis:{min:0,max:1,interval:.25},yAxis:{min:0,max:1,interval:.25},points:drawable.map((r,i)=>({name:r.ticker,x:r.priceMomentum,y:r.earningsMomentum,index:i,current:r.ticker===currentTicker,showLabel:width>=600||r.rank<=5||r.ticker===currentTicker,color:r.ticker===currentTicker?'var(--primary-dark)':r.rank<=5?'var(--chart-1)':'var(--muted-strong)'})),series:{label:{show:true,formatter:p=>p.data.name,position:'top',fontSize:11},labelLayout:{hideOverlap:true},markLine:{silent:true,symbol:'none',label:{show:false},data:[{xAxis:.5},{yAxis:.5}]}},onSelect:i=>choose(drawable[i].ticker,true)});
+      if(drawable.length&&globalThis.HubCharts041)globalThis.HubCharts041.scatter(frame,{
+        title:'SOX 가격·실적 모멘텀. 점선은 0.5점, 방향키로 종목 선택',quadrant:true,
+        selectedIndex:Math.max(0,drawable.findIndex(r=>r.ticker===currentTicker)),height:width<500?310:390,
+        dates:drawable.map(r=>r.ticker),xLabel:'가격 점수',yLabel:'실적 점수',
+        xAxis:{min:0,max:1,interval:.25},yAxis:{min:0,max:1,interval:.25},
+        points:drawable.map((r,i)=>({name:r.ticker,x:r.priceMomentum,y:r.earningsMomentum,index:i,
+          current:r.ticker===currentTicker,hollow:r.ticker===currentTicker,
+          showLabel:r.rank<=(width<500?3:5)||r.ticker===currentTicker,
+          color:r.ticker===currentTicker?'var(--qs-accent)':r.rank<=5?'var(--chart-1)':'var(--qs-muted)'})),
+        series:{label:{show:false,formatter:'{b}',textBorderWidth:0},labelLayout:{hideOverlap:true},
+          markLine:{silent:true,symbol:'none',label:{show:false},lineStyle:{color:'var(--qs-muted)',opacity:.62,width:1,type:'dashed'},data:[{xAxis:.5},{yAxis:.5}]}},
+        onSelect:i=>{if(drawable[i])choose(drawable[i].ticker,true);}
+      });
       if(focusPlot)frame.querySelector('.qe-canvas041')?.focus({preventScroll:true});
 
     };
     const choose = (ticker, pin = false) => {
       const row = rows.find((item) => item.ticker === ticker);
       if (!row) return;
+      const changed=currentTicker!==ticker;
       if (pin) pinnedTicker = ticker;
       currentTicker = ticker;
       readout.innerHTML = soxQuadrantReadout(row);
       frame.setAttribute('aria-label', `SOX 가격·실적 사분면. ${row.ticker} 가격 ${formatNumber(row.priceMomentum)}, 실적 ${formatNumber(row.earningsMomentum)}. 방향키로 종목 선택.`);
       select.value = pinnedTicker;
       target.querySelectorAll('[data-sox-select]').forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.soxSelect === pinnedTicker)));
-      draw();
+      if(changed)draw();
     };
     target.querySelectorAll('[data-sox-select]').forEach((button) => {
       button.addEventListener('click', () => choose(button.dataset.soxSelect, true));
@@ -4061,14 +4074,17 @@
     }
   }
 
-  function etfComparisonDomain(rows) {
-    const points = asRecords(rows).flatMap((row) => asRecords(row.chartSeries).flatMap((series) => asArray(series.points)));
+  function etfComparisonDomain(rows, limits = []) {
+    const points = asRecords(rows).flatMap((row,index) => asRecords(row.chartSeries).slice(0,limits[index]??10).flatMap((series) => asArray(series.points)));
     const dates = points.map((point) => Date.parse(point?.date ?? point?.[0])).filter(Number.isFinite);
     const values = points.map((point) => finiteOrNull(point?.value ?? point?.[1])).filter((value) => value !== null);
+    const axis = globalThis.QuantRangeReadout?.zeroBasedAxis(values.map(value=>value*100));
     return {
       minDate: dates.length ? Math.min(...dates) : null,
       maxDate: dates.length ? Math.max(...dates) : null,
-      yTicks: buildNiceTicks(0, Math.max(0.04, ...values), 6, 0.01),
+      yTicks: axis?Array.from({length:Math.round(axis.max/axis.interval)+1},(_,i)=>roundTick(i*axis.interval/100)):
+        buildNiceTicks(0, Math.max(0.04, ...values), 6, 0.01),
+      axis,
     };
   }
 
@@ -4077,7 +4093,8 @@
     const target = $(selector);
     if (!target) return;
     etfChartObserver?.disconnect();
-    const records = asRecords(rows), domain = etfComparisonDomain(records);
+    const records = asRecords(rows), limits = records.map(()=>5);
+    let domain = etfComparisonDomain(records,limits);
     target.innerHTML = `<div class="etf-detail-grid">${records.map((row, index) => `
       <article class="etf-detail-card" data-quant-card data-etf-index="${index}">
         <header class="etf-card-heading"><h4>${escapeHtml(row.name)}</h4><p>${escapeHtml(row.code || '')} · ${escapeHtml(formatMaybeDate(row.date))}</p></header>
@@ -4089,11 +4106,12 @@
     const draws = new Map();
     target.querySelectorAll?.('.etf-detail-card').forEach((card, index) => {
       const slot = card.querySelector('.etf-chart-slot');
-      let limit = 5, lastWidth = 0;
+      let lastWidth = 0, trend;
       const draw = (force = false) => {
         const width = Math.max(220, Math.round(slot.clientWidth || 360));
         if (!force && Math.abs(width - lastWidth) < 2) return;
         lastWidth = width;
+        const limit=limits[index];
         slot.innerHTML = renderEtfMiniChart(records[index], { width, domain, limit });
         bindChartKeyboardFrames(slot, { frameSelector: '.etf-mini-plot', seriesSelector: '.etf-mini-series', pointSelector: '.etf-data-point', readoutSelector: '.etf-chart-readout', navigationLabel: '날짜/종목', pointerPreview: true, legendSelector: '.etf-legend-button', guideSelector: '.etf-selection-guide', renderReadout: (point) => renderEtfReadout(point.dataset.seriesLabel, point.dataset.date, finiteOrNull(point.dataset.weight)) });
         if(globalThis.HubCharts041 && slot.querySelector('.etf-mini-plot')){
@@ -4101,14 +4119,37 @@
           const series=asRecords(records[index].chartSeries).slice(0,limit).map((item,i)=>{const values=new Map(asArray(item.points).map(p=>[p.date??p[0],p.value??p[1]]));return{name:item.label,color:COLORS[i%COLORS.length],dashed:i>=6,unit:'%p',data:dates.map(d=>Number.isFinite(values.get(d))?values.get(d)*100:null)}});
           slot.querySelectorAll('.etf-mini-legend').forEach(e=>e.hidden=true);
           const etfReadout=slot.querySelector('.etf-chart-readout');if(etfReadout)slot.querySelector('.etf-mini-plot').after(etfReadout);
-          globalThis.HubCharts041.lines(slot.querySelector('.etf-mini-plot'),{title:records[index].name+' 편입비중',dates,panels:[{title:'편입비중 · 공통 축',unit:'%',axis:{min:domain.yTicks[0]*100,max:domain.yTicks.at(-1)*100},series}],onSelect:i=>{const output=slot.querySelector('.etf-chart-readout');if(output)output.textContent=dates[i]+' · '+series.map(s=>s.name+' '+(s.data[i]===null?'—':formatNumber(s.data[i])+'%')).join(' · ')}});
+          let legendWidth=0,legendRows=1;
+          for(const item of series){
+            const entryWidth=24+[...item.name].reduce((n,c)=>n+(c.charCodeAt(0)>255?11:6.4),0);
+            if(legendWidth&&legendWidth+entryWidth>width-26){legendRows++;legendWidth=0;}
+            legendWidth+=entryWidth;
+          }
+          trend=globalThis.HubCharts041.lines(slot.querySelector('.etf-mini-plot'),{
+            title:records[index].name+' 편입비중',dates,plotLeft:44,hidePanelTitle:true,
+            legendOptions:{type:'plain',icon:'roundRect',itemWidth:10,itemHeight:3,itemGap:8,padding:0,width:'96%',textStyle:{fontSize:11}},
+            legendReserve:legendRows*18+12,height:legendRows*18+202,
+            panels:[{title:'편입비중',unit:'%',axis:{...(domain.axis||{min:domain.yTicks[0]*100,max:domain.yTicks.at(-1)*100}),axisLabel:{formatter:value=>value+'%'}},series}],
+            onRangeState:active=>{if(etfReadout)etfReadout.hidden=active;},
+            onSelect:i=>{if(etfReadout)etfReadout.textContent=dates[i]+' · '+series.map(s=>s.name+' '+(s.data[i]===null?'—':formatNumber(s.data[i])+'%')).join(' · ');}
+          });
         }
       };
       card.querySelectorAll('[data-etf-limit]').forEach((button) => button.addEventListener('click', () => {
-        limit = Number(button.dataset.etfLimit);
+        const limit=Number(button.dataset.etfLimit);
+        if(limits[index]===limit)return;
+        limits[index]=limit;
+        const previousTop=domain.yTicks.at(-1),previousInterval=domain.axis?.interval;
+        domain=etfComparisonDomain(records,limits);
         card.querySelectorAll('[data-etf-limit]').forEach((control) => control.setAttribute('aria-pressed', String(Number(control.dataset.etfLimit) === limit)));
         draw(true);
+        if(previousTop!==domain.yTicks.at(-1)||previousInterval!==domain.axis?.interval)for(const [other,redraw] of draws)if(other!==slot)redraw.axis();
+
       }));
+      draw.axis=()=>{
+        if(trend&&!trend.isDisposed()&&domain.axis){trend.setOption({yAxis:domain.axis});trend.dispatchAction({type:'dataZoom',start:trend.getOption().dataZoom[0].start,end:trend.getOption().dataZoom[0].end});}
+        else draw(true);
+      };
       draws.set(slot, draw);
       draw();
     });

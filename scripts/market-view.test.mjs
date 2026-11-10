@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 const context = vm.createContext({console, URL});
+vm.runInContext(fs.readFileSync('shared/design/tokens/0.4.4/range.js','utf8'),context);
 vm.runInContext(readQuantFormatter(new URL('../shared/design/releases/0.7.0/number.js',import.meta.url),'utf8'),context);vm.runInContext(fs.readFileSync('assets/app.js', 'utf8'), context);
 const api = context.__QUANT_DASHBOARD_TESTS__;
 
@@ -32,16 +33,19 @@ test('SOX relative scores remain 0–1 and missing values never become zero mark
   assert.equal(JSON.stringify(rows), snapshot);
 });
 
-test('ETF shared scale includes every fund and current Top10 history, independent of display limit', () => {
-  const rows = [{chartSeries:[{points:[{date:'2026-09-01',value:.08},{date:'2026-09-03',value:null}]}]}, {chartSeries:[{points:[{date:'2026-09-02',value:.13},{date:'2026-09-04',value:.12}]}]}];
-  const domain = api.etfComparisonDomain(rows);
-  assert.equal(domain.minDate, Date.parse('2026-09-01'));
-  assert.equal(domain.maxDate, Date.parse('2026-09-04'));
-  assert.equal(domain.yTicks[0], 0);
-  assert.ok(domain.yTicks.at(-1) >= .13);
-  const empty = api.etfComparisonDomain([]);
-  assert.equal(empty.minDate, null);
-  assert.equal(empty.maxDate, null);
+test('ETF shared scale follows every fund’s active limit without clipping its observed maximum', () => {
+  const point=(value,i)=>({points:[{date:'2026-09-0'+i,value}]});
+  const rows = [{chartSeries:[point(.084,1),point(.07,2),point(.05,3),point(.06,4),point(.071,4),point(.131,4)]},
+    {chartSeries:[point(.101,2),point(.09,3)]}];
+  const top5=api.etfComparisonDomain(rows,[5,5]), mixed=api.etfComparisonDomain(rows,[10,5]);
+  assert.equal(top5.minDate,Date.parse('2026-09-01'));
+  assert.equal(top5.maxDate,Date.parse('2026-09-04'));
+  assert.equal(top5.yTicks[0],0);
+  assert.equal(top5.yTicks.at(-1),.12);
+  assert.ok(mixed.yTicks.at(-1)>.131 && mixed.yTicks.at(-1)<=.15);
+  const empty=api.etfComparisonDomain([]);
+  assert.equal(empty.minDate,null);
+  assert.equal(empty.maxDate,null);
 });
 
 test('ETF display controls retain missing history as gaps, exact dates and all series on Top10', () => {

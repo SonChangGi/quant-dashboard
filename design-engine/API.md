@@ -83,3 +83,9 @@ line/area는 기본적으로 값 읽기와 inside 확대·이동을 함께 제�
 ### 다른 차트 렌더러 연결
 
 `engine/touch.js`의 `bindTouchChart(element, {hit, inspect, compare, clear, navigate, enabled, axis})`를 사용한다. `hit`은 차트 원점 기준 CSS 좌표를 받아 관측 인덱스 또는 좌표를 돌려준다. 실제 plot 밖에서 시작한 입력은 `null`로 처리한다. 반환된 정리 함수를 렌더러 해제 시 호출한다. React에서는 입력 바인딩을 확대·기간에 따라 교체하지 않고 콜백이 현재 데이터 창을 보도록 연결한다. classic script 소비자는 같은 소스에서 생성한 `shared/design/tokens/0.4.3/touch.js`의 `QuantTouchChart`를 쓴다.
+
+## 구간 표시 어댑터 · 0.4.4
+
+브라우저에서 `range.js`와 `shell.css`의 불변 버전을 로드하거나 패키지의 엔진을 사용한다. `QuantRangeReadout.createRangeReadout(plot, output, overlayHost?)`에 플롯과 그 직후의 기존 `output`을 건넨다. SVG의 경우 상대 위치를 잡을 HTML 래퍼를 세 번째 인자로 지정한다.
+
+`show({start, end, title?, items: [{name, change, color?, detail?}], note?, dense?}, {bounds, band?, avoid?})`는 어댑터가 계산하고 서식을 붙인 결과를 렌더링한다. 좌표는 플롯 원점 기준 CSS 픽셀이다. `bounds`는 `left, top, width, height`이며 `band`는 두 X 좌표, `avoid`는 가리면 안 되는 점 배열이다. 확대·크기 변경에는 `place(geometry)`, 해제에는 `clear()`, 플롯을 제거할 때는 `destroy()`를 부른다. `echartsGeometry`는 ECharts grid를 같은 좌표로 변환한다.

@@ -1,3 +1,4 @@
+import './range.js';
 import {bindRangeDrag,navigateChartWindow,rangeSeries} from './drag.js?v=043';
 import {contrastRatio,mixColor} from './tokens.js?v=043';
 /** Quant chart renderer. Pure specs in, ECharts options out; no data fetching or aggregation. */
@@ -374,7 +375,7 @@ export function mountChart(element,spec,{echarts,tokens={},onSelect=()=>{},onRan
   function resetZoom(){setZoom(0,100);}
   function doubleClick(){resetZoom();}
   element.addEventListener('dblclick',doubleClick);
-  function resizeChart(){if(!disposed){chart.resize();element.setAttribute('role','group');}}
+  function resizeChart(){if(!disposed){chart.resize();element.setAttribute('role','group');if(state.range)notify();}}
   let observer=null;
   function destroy(){
     if(disposed)return;
@@ -400,6 +401,15 @@ export function mountChart(element,spec,{echarts,tokens={},onSelect=()=>{},onRan
     setZoom,resetZoom,
     resetView(){if(disposed)return;state.zoom={start:0,end:100};state.selectedIndex=null;state.range=null;state.mode='inspect';for(const name of Object.keys(state.legend))state.legend[name]=true;brushAnchor=null;render();onSelect(null);onRange(null);},
     getState(){return {selectedIndex:state.selectedIndex,cursor:state.selectedIndex,range:state.range?{...state.range}:null,legend:{...state.legend},hidden:Object.keys(state.legend).filter(name=>state.legend[name]===false),zoom:{...state.zoom},mode:state.mode};},
+    rangeGeometry(){
+      if(!state.range||disposed)return null;
+      const {startIndex,endIndex}=state.range;
+      const endpoints=[startIndex,endIndex];
+      const band=endpoints.map(i=>chart.convertToPixel?.({xAxisIndex:0},i));
+      const avoid=rangeSeries(currentSpec).filter(s=>state.legend[s.name]!==false).flatMap(s=>endpoints.flatMap(i=>
+        Number.isFinite(s.data[i])?[chart.convertToPixel?.({gridIndex:0},[i,s.data[i]])]:[]));
+      return globalThis.QuantRangeReadout.echartsGeometry(chart,band,avoid);
+    },
     resize:resizeChart,
     destroy
   };

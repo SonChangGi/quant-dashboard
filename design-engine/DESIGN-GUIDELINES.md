@@ -21,20 +21,20 @@
 
 | 주요 출처 | 채택한 장점·기능 | 현재 예제 |
 |---|---|---|
-| [Hallmark](https://www.usehallmark.com/themes/dusk/) | 주요 KPI와 비교 차트를 먼저 배치 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.3#overview) |
-| [shadcn/ui](https://ui.shadcn.com/view/new-york-v4/dashboard-01) | 기간·범례·계열 선택이 요약과 표에 함께 반영 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.3#compose) |
-| [Astryx](https://astryx.atmeta.com/sandbox/pages/example-cards/) | 강조색·밀도·모서리를 같은 엔진에서 변경 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.3#foundations) |
-| [Carbon](https://carbondesignsystem.com/data-visualization/overview/) | 단위·증감 방향·빈 값·로딩·복구 상태 분리 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.3#foundations) |
-| [TanStack Table](https://tanstack.com/table/latest/docs/guide/row-models) | 검색·범위·정렬·페이지·CSV가 같은 결과 사용 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.3#tables) |
-| [AG Grid](https://www.ag-grid.com/javascript-data-grid/sparklines-overview/) | 공통 척도와 결측 구간을 유지하는 스파크라인 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.3#tables) |
-| [Observable Plot / D3](https://observablehq.com/plot/features/facets) | 공통 축의 작은 다중 차트와 분포 패턴 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.3&pattern=small-multiples#charts) |
-| [Vega-Lite](https://vega.github.io/vega-lite/docs/errorband.html) | 예측 경계·중앙선·중첩된 구간을 분리 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.3&pattern=fan#charts) |
-| [Apache ECharts](https://echarts.apache.org/en/index.html) | 17종 SVG 차트·확대·이동·원자료 접근 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.3#charts) |
-| [Lightweight Charts](https://tradingview.github.io/lightweight-charts/docs/api/interfaces/HandleScaleOptions) | 모드 전환 없이 값 확인·확대·이동, 조건부 복원 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.3#compose) |
-| [Base UI / Radix](https://base-ui.com/) | 필요한 상태에서만 도구 표시, 포커스 복귀 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.3#compose) |
-| [Magic UI / React Bits / Motion](https://magicui.design/docs/components/bento-grid) | 크기가 다른 정보 영역, 지속적인 장식 애니메이션 제외 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.3#overview) |
+| [Hallmark](https://www.usehallmark.com/themes/dusk/) | 주요 KPI와 비교 차트를 먼저 배치 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.4#overview) |
+| [shadcn/ui](https://ui.shadcn.com/view/new-york-v4/dashboard-01) | 기간·범례·계열 선택이 요약과 표에 함께 반영 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.4#compose) |
+| [Astryx](https://astryx.atmeta.com/sandbox/pages/example-cards/) | 강조색·밀도·모서리를 같은 엔진에서 변경 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.4#foundations) |
+| [Carbon](https://carbondesignsystem.com/data-visualization/overview/) | 단위·증감 방향·빈 값·로딩·복구 상태 분리 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.4#foundations) |
+| [TanStack Table](https://tanstack.com/table/latest/docs/guide/row-models) | 검색·범위·정렬·페이지·CSV가 같은 결과 사용 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.4#tables) |
+| [AG Grid](https://www.ag-grid.com/javascript-data-grid/sparklines-overview/) | 공통 척도와 결측 구간을 유지하는 스파크라인 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.4#tables) |
+| [Observable Plot / D3](https://observablehq.com/plot/features/facets) | 공통 축의 작은 다중 차트와 분포 패턴 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.4&pattern=small-multiples#charts) |
+| [Vega-Lite](https://vega.github.io/vega-lite/docs/errorband.html) | 예측 경계·중앙선·중첩된 구간을 분리 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.4&pattern=fan#charts) |
+| [Apache ECharts](https://echarts.apache.org/en/index.html) | 17종 SVG 차트·확대·이동·원자료 접근 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.4#charts) |
+| [Lightweight Charts](https://tradingview.github.io/lightweight-charts/docs/api/interfaces/HandleScaleOptions) | 모드 전환 없이 값 확인·확대·이동, 조건부 복원 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.4#compose) |
+| [Base UI / Radix](https://base-ui.com/) | 필요한 상태에서만 도구 표시, 포커스 복귀 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.4#compose) |
+| [Magic UI / React Bits / Motion](https://magicui.design/docs/components/bento-grid) | 크기가 다른 정보 영역, 지속적인 장식 애니메이션 제외 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.4#overview) |
 
-[적용 확인과 코드 위치](research/APPLIED.md) · [로컬 적용 현황](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.3#research)
+[적용 확인과 코드 위치](research/APPLIED.md) · [로컬 적용 현황](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.4#research)
 
 ## 배포본에 적용할 때
 
@@ -110,3 +110,12 @@
 비교는 날짜·시작값·끝값·변화량을 보여준다. 양수 가격은 %, 수익률·확률 수준은 %p, 점수는 절대 차이를 사용한다. 시작값이 0 이하이면 절대 차이와 변화율 —를 표시한다. 결측값을 보간하지 않는다. 역방향 드래그는 시간순으로 정규화한다. 카테고리 차트와 산점도는 구간 합계·대상 수 등 각 차트의 의미로 해석한다.
 
 모바일 검증은 터치 시작만 한 상태, 미세 이동, 연속 탐색, 길게 누른 뒤 역방향 비교, 두 손가락 전환, 세로 스크롤을 각각 확인한다. 320px와 390px에서 숫자, 범례, 차트 아래의 결과를 읽을 수 있는지 확인한다. 1440px에서 휠·키보드·테마를 점검한다. 브라우저 터치 에뮬레이션과 실제 기기 조작을 구분해 기록한다.
+
+## v0.4.4 · 구간 결과, 비교 축과 기사 상단
+
+- 시간 구간의 두 끝을 표시하고, 선택 중에는 한 시점의 툴팁을 감춘다. 변화량은 공간이 충분한 플롯 모서리에 배치한다. 구간과 값 사이의 시선 이동을 줄이고 끝점·축 눈금·손가락 위치가 가려지지 않는 쪽을 우선한다.
+- 좁은 화면은 두 계열, 넓은 화면은 세 계열까지 플롯 안에서 읽을 수 있는지 먼저 확인한다. 실제 픽셀과 텍스트 높이가 기준이다. 더 많거나 여러 패널에 걸치면 바로 아래에 날짜, 계열, 증감 값, 양 끝 관측을 정렬한다. 화면 하단에 띄우지 않는다. 확대·범례 변경·가로 폭이 바뀌어도 구간과 값은 같이 움직인다.
+- 가격은 시작값이 양수일 때 상대 변화율, 이미 %로 표현된 누적 수익률·확률·편입 비중은 %p 차이를 쓴다. 0 이하에서 상대 변화율을 계산하지 않는다. 결측은 대시와 관측 없음으로 구분한다. 영역 선택은 종목 수와 축 범위, 순위 막대 선택은 합계나 범위를 기존 의미대로 표시한다.
+- 같은 측정값을 옆에서 비교하는 축은 0을 유지하고 현재 표시 대상의 실제 최댓값을 조금 넘는 눈금으로 맞춘다. Top 5와 Top 10 혼용 시 세 카드의 축을 함께 갱신한다. 사분면에는 기준선을 표시하고 상위와 선택된 종목을 한 번에 구분한다. 라벨은 채운 글자와 위치 조정으로 읽히게 하고, 모든 점을 이름으로 덮지 않는다.
+- News는 주제 태그의 의미색을 유지하면서 출처·시각·저장을 한 묶음으로 배치한다. 링크와 저장 상태는 원래 노드를 사용한다. 한 줄에 안 들어가면 출처와 저장이 같이 다음 줄로 이동한다.
+- [공통 구현 지침](https://github.com/SonChangGi/quant-dashboard/blob/main/docs/web-design.md) · [실화면 리서치와 적용 결정](research/RANGE-AND-DENSITY.md)

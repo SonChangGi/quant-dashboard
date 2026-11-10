@@ -1,5 +1,6 @@
+import './range.js';
 import {rangeValues} from './drag.js?v=043';
-import {buildOption,mountChart,CHART_KINDS} from './charts.js?v=043';
+import {buildOption,mountChart,CHART_KINDS} from './charts.js?v=044';
 import {mountTable} from './table.js?v=043';
 import {validateMetric,mountMetric} from './metrics.js?v=043';
 import {designDefaults,validateDesign,resolveDesign} from './tokens.js?v=043';
@@ -63,7 +64,7 @@ export function createEngine(root, {theme = 'dark', echarts = globalThis.echarts
   function mount(host, input, {onSelect, onRange, onRetry, onLegendChange} = {}) {
     ensureAlive();
     if (host?.nodeType !== 1 || !root.contains(host)) throw new TypeError('host는 engine root 내부 요소여야 합니다.');
-    let spec = structuredClone(input), dead = false, renderer, syncChart=()=>{}, paintRange=()=>{};
+    let spec = structuredClone(input), dead = false, renderer, rangePresenter, syncChart=()=>{}, paintRange=()=>{};
     validateSpec(spec);
     const frame = doc.createElement('section'); frame.className = 'qe-frame';frame.setAttribute('data-quant-card','');
     frame.dataset.kind=spec.kind;const header = doc.createElement('header'); header.className = 'qe-frame-header';
@@ -88,7 +89,7 @@ export function createEngine(root, {theme = 'dark', echarts = globalThis.echarts
     function destroy() {
       if (dead) return;
       dead = true;
-      try { renderer?.destroy(); } finally { frame.remove(); handles.delete(entry); }
+      try { rangePresenter?.destroy(); renderer?.destroy(); } finally { frame.remove(); handles.delete(entry); }
     }
     host.append(frame); // ECharts requires the host to participate in layout.
     try {
@@ -112,12 +113,25 @@ export function createEngine(root, {theme = 'dark', echarts = globalThis.echarts
       } else {
         const rangeOutput=doc.createElement('output');rangeOutput.className='qe-range-readout';rangeOutput.dataset.quantChartReadout='';rangeOutput.setAttribute('aria-live','polite');rangeOutput.hidden=true;frame.append(rangeOutput);
         renderer = mountChart(body, spec, {echarts, tokens: resolvedTokens, rangeReadout:()=>rangeOutput, onSelect: select, onRange:value=>{paintRange(value);onRange?.(value);}, onLegendChange, onStateChange:()=>syncChart()});
+        const presentation=globalThis.QuantRangeReadout;
+        rangePresenter=presentation.createRangeReadout(body,rangeOutput);
         const reset=doc.createElement('button');reset.type='button';reset.dataset.quantResetView='';reset.textContent='전체 기간';reset.hidden=true;
         reset.onclick=()=>{renderer.resetZoom();body.focus();};controls.append(reset);
         body.after(controls);
         const rangeClear=doc.createElement('button');rangeClear.type='button';rangeClear.textContent='구간 해제';rangeClear.hidden=true;controls.append(rangeClear);rangeClear.onclick=()=>{renderer.setRange(null,null);body.focus();};
         const format=v=>v==null?'미제공':new Intl.NumberFormat('ko-KR',{maximumFractionDigits:2}).format(v);
-        paintRange=value=>{rangeOutput.replaceChildren();rangeOutput.hidden=!value;if(!value)return;const dates=doc.createElement('strong');dates.textContent=`${value.start} → ${value.end}`;rangeOutput.append(dates);for(const row of rangeValues(spec,value,renderer?.getState().legend)){const item=doc.createElement('span');item.textContent=`${row.name} ${format(row.start)} → ${format(row.end)} · ${row.change==null?(row.difference==null?'—':`Δ ${format(row.difference)} · 변화율 —`):`${row.change>0?'+':''}${format(row.change)}${row.unit}`}`;rangeOutput.append(item);}};
+        paintRange=value=>{
+          readout.hidden=!!value;
+          if(!value){rangePresenter.clear();return;}
+          const active=renderer?.getState().legend;
+          const items=rangeValues(spec,value,active).map(row=>{
+            const i=spec.series?.findIndex(s=>s.name===row.name)??-1;
+            const color=i<0?undefined:spec.series[i].color||resolvedTokens.palette[i%resolvedTokens.palette.length];
+            return {name:row.name,change:row.change===null?(row.difference===null?'—':'Δ '+presentation.signedChange(row.difference,spec.unit||'')):presentation.signedChange(row.change,row.unit),
+              detail:format(row.start)+' → '+format(row.end)+(row.change===null&&row.difference!==null?' · 상대 변화율 미제공':''),color};
+          });
+          rangePresenter.show({start:value.start,end:value.end,items,dense:spec.kind==='small-multiples'},renderer?.rangeGeometry());
+        };
         syncChart=()=>{if(!renderer)return;const state=renderer.getState();reset.hidden=!(state.zoom&&(state.zoom.start>.01||state.zoom.end<99.99));rangeClear.hidden=!state.range;paintRange(state.range);};syncChart();
         const details = doc.createElement('details'); details.className = 'qe-data';
         const summary = doc.createElement('summary'); summary.textContent = '데이터 표 · 원자료';

@@ -1,5 +1,5 @@
-document.documentElement.dataset.designEngine="0.4.3";
-/* v0.4.3 interaction audit: retain native sorting and range handlers. */
+document.documentElement.dataset.designEngine="0.4.4";
+/* v0.4.4 interaction audit: retain native sorting and range handlers. */
 (() => {
   const enhance = () => {
     document.querySelectorAll('.qr-readout').forEach(readout => { readout.hidden = /^표시 순서대로 구간 선택/.test(readout.textContent); });

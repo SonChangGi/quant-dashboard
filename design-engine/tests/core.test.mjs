@@ -165,7 +165,11 @@ test('direct chart interaction exposes reset only after zoom and keeps source da
 test('every time-series has immediate range output without a mode button or consumer',()=>{
  const e=environment(fakeEcharts());const v=e.engine.mount(e.host,{...line,x:['a','b','c'],series:[{name:'A',data:[100,110,120]}]});
  assert.equal([...e.host.querySelectorAll('button')].some(b=>b.textContent==='구간 선택'),false);
- v.renderer.setRange(2,0);assert.match(e.host.querySelector('.qe-range-readout').textContent,/a → c.*100 → 120.*20%/);
+ v.renderer.setRange(2,0);
+ const output=e.host.querySelector('.qe-range-readout');
+ assert.equal(output.querySelector('.qs-range-period').textContent,'a → c');
+ assert.equal(output.querySelector('.qs-range-value').textContent,'+20%');
+ assert.equal(output.querySelector('.qs-range-detail').textContent,'100 → 120');
  v.renderer.setRange(null,null);assert.equal(e.host.querySelector('.qe-range-readout').hidden,true);
  e.engine.destroy();e.dom.window.close();
 });

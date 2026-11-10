@@ -101,5 +101,10 @@
   "shared/design/tokens/0.4.3/shell.css",
   "shared/design/tokens/0.4.3/touch.js",
   "design-engine/engine/touch.js",
-  "design-engine/quant-design-engine-0.4.3.tgz"
+  "design-engine/quant-design-engine-0.4.3.tgz",
+  "shared/design/tokens/0.4.4/range.js",
+  "shared/design/tokens/0.4.4/shell.css",
+  "design-engine/engine/range.js",
+  "design-engine/research/RANGE-AND-DENSITY.md",
+  "design-engine/quant-design-engine-0.4.4.tgz"
 ]
