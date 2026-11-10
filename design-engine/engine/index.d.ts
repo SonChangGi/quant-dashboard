@@ -1,6 +1,6 @@
 export type Theme = 'dark'|'light';
-export interface Meta { title:string; description?:string; source?:string; unit?:string;dataState?:'observed'|'simulated'|'forecast';asOf?:string }
-export interface Series { id?:string; name:string; data:(number|null)[]; visible?:boolean;dashed?:boolean;color?:string }
+export interface Meta { title:string; description?:string; source?:string; unit?:string;measure?:'relative'|'pp'|'absolute';dataState?:'observed'|'simulated'|'forecast';asOf?:string }
+export interface Series { id?:string; name:string; data:(number|null)[]; visible?:boolean;dashed?:boolean;color?:string;measure?:'relative'|'pp'|'absolute' }
 export type ChartSpec = Meta & (
  {kind:'line'|'area'|'small-multiples';x:string[];series:Series[];brush?:boolean;zoom?:boolean;xLabel?:string;yLabel?:string} |
  {kind:'bar'|'diverging';rows:{name:string;value:number|null}[]} |

@@ -1,8 +1,8 @@
-# Quant Design Engine · v0.4.1
+# Quant Design Engine · v0.4.2
 
 개인 연구 웹페이지의 공통 디자인 엔진과 작동하는 예제.
 
-[로컬 미리보기](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.1) · [리서치 적용 현황](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.1#research) · [운영 적용 기록](RELEASE.md)
+[로컬 미리보기](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.2) · [리서치 적용 현황](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.2#research) · [운영 적용 기록](RELEASE.md)
 
 ```sh
 cd quant-design-engine
@@ -18,7 +18,7 @@ npm run dev
 
 [공통 지침](DESIGN-GUIDELINES.md), [리서치 적용표](research/APPLIED.md), [API](API.md), [검증](QA.md).
 
-`engine/`과`vendor/`를 함께 사용하거나 `quant-design-engine-0.4.1.tgz`를 로컬 패키지로 사용한다. `demo/consumer.html`은 같은 모듈의 독립 예제다.
+`engine/`과`vendor/`를 함께 사용하거나 `quant-design-engine-0.4.2.tgz`를 로컬 패키지로 사용한다. `demo/consumer.html`은 같은 모듈의 독립 예제다.
 
 ```js
 import {createEngine} from './engine/index.js';

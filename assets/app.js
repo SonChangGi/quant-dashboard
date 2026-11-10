@@ -657,6 +657,7 @@
     article.className = `panel panel-wide panel--${contentType} panel--${project.id}`;
     article.id = panelDomId(project, 'panel');
     article.dataset.projectId = project.id;
+    article.setAttribute('data-quant-card', '');
     article.setAttribute('aria-labelledby', panelDomId(project, 'title'));
 
     const content = contentType === 'regime-trend'
@@ -688,6 +689,7 @@
     article.className = `panel panel-wide panel--link panel--${project.id}`;
     article.id = panelDomId(project, 'panel');
     article.dataset.projectId = project.id;
+    article.setAttribute('data-quant-card', '');
     article.setAttribute('aria-labelledby', panelDomId(project, 'title'));
     article.innerHTML = `
       <div class="project-link-card">
@@ -3701,7 +3703,8 @@
           <strong class="factor-weight">${percentage}</strong>${integrated ? '' : `<span class="factor-signal" aria-label="${momentum ? '신호' : '팩터 점수'} ${escapeAttribute(formatNumber(row.value))}">${escapeHtml(formatNumber(row.value))}</span>`}
         </li>`;
       }).join('')}</ol>`;
-    globalThis.QuantRange?.categories({id:'hub-allocation-'+project.id,element:target.querySelector('.factor-holdings'),host:target,itemSelector:'li',domain:allocation.rows.map(r=>({key:r.symbol,label:r.symbol})),series:[{id:'weight',label:'모델 비중',unit:'%',measure:'pp',scale:100,aggregate:'sum',points:allocation.rows.map(r=>({key:r.symbol,value:r.weight}))}]});
+    if(globalThis.HubCharts041?.categories)globalThis.HubCharts041.categories(target,allocation.rows);
+    else globalThis.QuantRange?.categories({id:'hub-allocation-'+project.id,element:target.querySelector('.factor-holdings'),host:target,itemSelector:'li',domain:allocation.rows.map(r=>({key:r.symbol,label:r.symbol})),series:[{id:'weight',label:'모델 비중',unit:'%',measure:'pp',scale:100,aggregate:'sum',points:allocation.rows.map(r=>({key:r.symbol,value:r.weight}))}]});
   }
 
   function renderIntegratedMomentum(summary, mode, error, project) {
@@ -4076,7 +4079,7 @@
     etfChartObserver?.disconnect();
     const records = asRecords(rows), domain = etfComparisonDomain(records);
     target.innerHTML = `<div class="etf-detail-grid">${records.map((row, index) => `
-      <article class="etf-detail-card" data-etf-index="${index}">
+      <article class="etf-detail-card" data-quant-card data-etf-index="${index}">
         <header class="etf-card-heading"><h4>${escapeHtml(row.name)}</h4><p>${escapeHtml(row.code || '')} · ${escapeHtml(formatMaybeDate(row.date))}</p></header>
         <div class="etf-exposure"><span>TOP10 비중</span><strong>${escapeHtml(formatPercent(row.top10Weight))}</strong></div>
         <div class="etf-plot-heading"><span>편입비중 추이</span><div class="etf-series-control" role="group" aria-label="${escapeAttribute(row.name)} 표시 종목 수" data-control-kind="display"><button type="button" data-etf-limit="5" aria-pressed="true">Top 5</button><button type="button" data-etf-limit="10" aria-pressed="false">Top 10</button></div></div>
@@ -4661,7 +4664,7 @@
     const sourceId = String(source || 'unknown').toLowerCase().replace(/[^a-z0-9_-]+/g, '-');
     const titleId = `dram-${sourceId}-${mode}-title`;
     const descId = `dram-${sourceId}-${mode}-desc`;
-    return `<article class="dram-source-card" data-dram-source="${escapeAttribute(source)}" data-dram-scale-mode="${mode}">
+    return `<article class="dram-source-card" data-quant-card data-dram-source="${escapeAttribute(source)}" data-dram-scale-mode="${mode}">
       <div class="dram-source-heading">
         <div><h4>${escapeHtml(sourceName)}</h4><p>${escapeHtml(firstDate)} — ${escapeHtml(lastDate)}</p></div>
       </div>

@@ -134,7 +134,7 @@ test('keyboard cursor reports gaps; Shift range and Escape are separate from zoo
   key('ArrowRight',true);assert.equal(m.api.getState().range.startIndex,1);assert.equal(m.api.getState().range.endIndex,2);
   key('Escape');assert.equal(m.api.getState().range,null);assert.equal(m.api.getState().cursor,null);assert.deepEqual(m.api.getState().zoom,{start:20,end:90});
   m.api.setMode('zoom');assert.equal(m.option.dataZoom[0].zoomOnMouseWheel,true);
-  m.api.setMode('select');assert.equal(m.option.dataZoom[0].zoomOnMouseWheel,false);
+  m.api.setMode('select');assert.equal(m.option.dataZoom[0].zoomOnMouseWheel,true);
   m.api.resetView();assert.deepEqual(m.api.getState().zoom,{start:0,end:100});m.api.destroy();
 });
 test('invalid update leaves active chart intact; replacing x resets out-of-date selections',()=>{
@@ -188,7 +188,7 @@ test('bundled ECharts renders all declared species to valid SVG, including custo
 
 test('default gestures need no mode switch, keyboard zoom is reversible without changing series',()=>{
  const m=mockMount();assert.equal(m.option.dataZoom.length,1);assert.equal(m.option.dataZoom[0].type,'inside');
- assert.equal(m.option.dataZoom[0].zoomOnMouseWheel,true);assert.equal(m.option.dataZoom[0].moveOnMouseMove,true);
+ assert.equal(m.option.dataZoom[0].zoomOnMouseWheel,true);assert.equal(m.option.dataZoom[0].moveOnMouseMove,'alt');
  m.api.setLegend('SPY',false);m.api.select(2);
  const key=k=>m.listeners.get('keydown')({key:k,target:m.element,preventDefault(){}});
  key('+');assert.ok(m.api.getState().zoom.start>0);key('0');assert.deepEqual(m.api.getState().zoom,{start:0,end:100});

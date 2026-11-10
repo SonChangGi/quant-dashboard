@@ -1,9 +1,10 @@
-import {buildOption,mountChart,CHART_KINDS} from './charts.js?v=041';
-import {mountTable} from './table.js?v=041';
-import {validateMetric,mountMetric} from './metrics.js';
-import {designDefaults,validateDesign,resolveDesign} from './tokens.js';
-export {metricChange} from './metrics.js';
-export {designDefaults,designPresets} from './tokens.js';
+import {rangeValues} from './drag.js?v=042';
+import {buildOption,mountChart,CHART_KINDS} from './charts.js?v=042';
+import {mountTable} from './table.js?v=042';
+import {validateMetric,mountMetric} from './metrics.js?v=042';
+import {designDefaults,validateDesign,resolveDesign} from './tokens.js?v=042';
+export {metricChange} from './metrics.js?v=042';
+export {designDefaults,designPresets} from './tokens.js?v=042';
 export const themes = Object.freeze({dark:{bg:'#101416',surface:'#171d20',raised:'#20282c',text:'#edf3f2',muted:'#a6b4b6',border:'#364247',accent:'#69d3cf',positive:'#78c6a3',negative:'#ee9298',palette:['#69d3cf','#dcb878','#9ca9ee','#dd9bc3','#92bb83','#76afd9']},light:{bg:'#f2f5f4',surface:'#ffffff',raised:'#e9efed',text:'#172725',muted:'#536762',border:'#c6d3ce',accent:'#007e79',positive:'#227b53',negative:'#b44150',palette:['#007e79','#966515','#6556ab','#a5487d','#537e35','#356fab']}});
 export {CHART_KINDS};
 export function validateSpec(spec) {
@@ -62,9 +63,9 @@ export function createEngine(root, {theme = 'dark', echarts = globalThis.echarts
   function mount(host, input, {onSelect, onRange, onRetry, onLegendChange} = {}) {
     ensureAlive();
     if (host?.nodeType !== 1 || !root.contains(host)) throw new TypeError('host는 engine root 내부 요소여야 합니다.');
-    let spec = structuredClone(input), dead = false, renderer, syncChart=()=>{};
+    let spec = structuredClone(input), dead = false, renderer, syncChart=()=>{}, paintRange=()=>{};
     validateSpec(spec);
-    const frame = doc.createElement('section'); frame.className = 'qe-frame';
+    const frame = doc.createElement('section'); frame.className = 'qe-frame';frame.setAttribute('data-quant-card','');
     frame.dataset.kind=spec.kind;const header = doc.createElement('header'); header.className = 'qe-frame-header';
     const title = doc.createElement('h2'), desc = doc.createElement('p'), meta = doc.createElement('small');
     header.append(title, desc, meta);
@@ -109,7 +110,7 @@ export function createEngine(root, {theme = 'dark', echarts = globalThis.echarts
         body.className = 'qe-table-body'; renderer = mountTable(body, spec, {onSelect: select});
         renderer.setTheme(currentTheme);
       } else {
-        renderer = mountChart(body, spec, {echarts, tokens: resolvedTokens, onSelect: select, onRange, onLegendChange, onStateChange:()=>syncChart()});
+        renderer = mountChart(body, spec, {echarts, tokens: resolvedTokens, onSelect: select, onRange:value=>{paintRange(value);onRange?.(value);}, onLegendChange, onStateChange:()=>syncChart()});
         const actions=doc.createElement('div');actions.className='qe-chart-actions';header.append(actions);
         const reset=doc.createElement('button');reset.type='button';reset.textContent='전체 보기';reset.hidden=true;
         reset.onclick=()=>{renderer.resetZoom();body.focus();};controls.append(reset);
@@ -118,15 +119,11 @@ export function createEngine(root, {theme = 'dark', echarts = globalThis.echarts
         const options=doc.createElement('div');options.className='qe-chart-options';menu.append(menuTitle,options);actions.append(menu);
         menu.addEventListener('keydown',e=>{if(e.key==='Escape'){menu.open=false;menuTitle.focus();}});
         const dataButton=doc.createElement('button');dataButton.type='button';dataButton.textContent='데이터 보기';options.append(dataButton);
-        let rangeButton,rangeDone,rangeClear;
-        if(spec.brush&&onRange){
-          rangeButton=doc.createElement('button');rangeButton.type='button';rangeButton.textContent='구간 선택';options.append(rangeButton);
-          rangeDone=doc.createElement('button');rangeDone.type='button';rangeDone.textContent='선택 마침';rangeDone.hidden=true;controls.prepend(rangeDone);
-          rangeButton.onclick=()=>{renderer.setMode('select');menu.open=false;body.focus();};
-          rangeDone.onclick=()=>{renderer.setMode('inspect');body.focus();};
-          rangeClear=doc.createElement('button');rangeClear.type='button';rangeClear.textContent='구간 해제';rangeClear.hidden=true;controls.prepend(rangeClear);rangeClear.onclick=()=>{renderer.setRange(null,null);renderer.setMode('inspect');body.focus();};
-        }
-        syncChart=()=>{if(!renderer)return;const state=renderer.getState();reset.hidden=!(state.zoom&&(state.zoom.start>.01||state.zoom.end<99.99));if(rangeDone)rangeDone.hidden=!['select','range'].includes(state.mode);if(rangeClear)rangeClear.hidden=!state.range||['select','range'].includes(state.mode);frame.dataset.selecting=String(['select','range'].includes(state.mode));};syncChart();
+        const rangeOutput=doc.createElement('output');rangeOutput.className='qe-range-readout';rangeOutput.setAttribute('aria-live','polite');rangeOutput.hidden=true;frame.append(rangeOutput);
+        const rangeClear=doc.createElement('button');rangeClear.type='button';rangeClear.textContent='구간 해제';rangeClear.hidden=true;controls.append(rangeClear);rangeClear.onclick=()=>{renderer.setRange(null,null);body.focus();};
+        const format=v=>v==null?'미제공':new Intl.NumberFormat('ko-KR',{maximumFractionDigits:2}).format(v);
+        paintRange=value=>{rangeOutput.replaceChildren();rangeOutput.hidden=!value;if(!value)return;const dates=doc.createElement('strong');dates.textContent=`${value.start} → ${value.end}`;rangeOutput.append(dates);for(const row of rangeValues(spec,value,renderer?.getState().legend)){const item=doc.createElement('span');item.textContent=`${row.name} ${format(row.start)} → ${format(row.end)} · ${row.change==null?(row.difference==null?'—':`Δ ${format(row.difference)} · 변화율 —`):`${row.change>0?'+':''}${format(row.change)}${row.unit}`}`;rangeOutput.append(item);}};
+        syncChart=()=>{if(!renderer)return;const state=renderer.getState();reset.hidden=!(state.zoom&&(state.zoom.start>.01||state.zoom.end<99.99));rangeClear.hidden=!state.range;paintRange(state.range);};syncChart();
         const details = doc.createElement('details'); details.className = 'qe-data';details.hidden=true;dataButton.onclick=()=>{details.hidden=!details.hidden;details.open=!details.hidden;dataButton.textContent=details.hidden?'데이터 보기':'데이터 닫기';menu.open=false;if(!details.hidden)summary.focus();};
         const summary = doc.createElement('summary'); summary.textContent = '데이터 표 · 원자료';
         const pre = doc.createElement('pre'); pre.textContent = JSON.stringify(spec, null, 2);
@@ -179,5 +176,5 @@ function fillDataTable(host,spec,doc){
  headers.forEach(h=>{const th=doc.createElement('th');th.scope='col';th.textContent=h;hr.append(th);});head.append(hr);
  rows.forEach(r=>{const tr=doc.createElement('tr');r.forEach((v,i)=>{const cell=doc.createElement(i===0?'th':'td');if(i===0)cell.scope='row';cell.textContent=v==null?'미제공':Array.isArray(v)?v.map(x=>x??'미제공').join(' / '):String(v);tr.append(cell);});body.append(tr);});table.append(head,body);host.replaceChildren(table);
 }
-export {rebaseComparison} from './compare.js';
-export {contrastRatio} from './tokens.js';
+export {rebaseComparison} from './compare.js?v=042';
+export {contrastRatio} from './tokens.js?v=042';

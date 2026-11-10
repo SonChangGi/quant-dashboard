@@ -161,11 +161,10 @@ test('direct chart interaction exposes reset only after zoom and keeps source da
  e.engine.destroy();e.dom.window.close();
 });
 
-test('range action is offered only to charts with an explicit analysis consumer',()=>{
- const e=environment(fakeEcharts());const spec={...line,brush:true};
- let v=e.engine.mount(e.host,spec);assert.equal([...e.host.querySelectorAll('button')].some(b=>b.textContent==='구간 선택'),false);v.destroy();
- v=e.engine.mount(e.host,spec,{onRange(){}});const start=[...e.host.querySelectorAll('button')].find(b=>b.textContent==='구간 선택');
- start.click();assert.equal(v.getState().mode,'select');assert.equal(e.host.querySelector('[data-selecting]').dataset.selecting,'true');
- const done=[...e.host.querySelectorAll('button')].find(b=>b.textContent==='선택 마침');done.click();assert.equal(v.getState().mode,'inspect');assert.equal(done.hidden,true);
+test('every time-series has immediate range output without a mode button or consumer',()=>{
+ const e=environment(fakeEcharts());const v=e.engine.mount(e.host,{...line,x:['a','b','c'],series:[{name:'A',data:[100,110,120]}]});
+ assert.equal([...e.host.querySelectorAll('button')].some(b=>b.textContent==='구간 선택'),false);
+ v.renderer.setRange(2,0);assert.match(e.host.querySelector('.qe-range-readout').textContent,/a → c.*100 → 120.*20%/);
+ v.renderer.setRange(null,null);assert.equal(e.host.querySelector('.qe-range-readout').hidden,true);
  e.engine.destroy();e.dom.window.close();
 });

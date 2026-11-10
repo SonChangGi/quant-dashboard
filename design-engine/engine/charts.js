@@ -1,4 +1,5 @@
-import {contrastRatio,mixColor} from './tokens.js';
+import {bindRangeDrag,rangeSeries} from './drag.js?v=042';
+import {contrastRatio,mixColor} from './tokens.js?v=042';
 /** Quant chart renderer. Pure specs in, ECharts options out; no data fetching or aggregation. */
 export const CHART_KINDS = Object.freeze(['line', 'area', 'bar', 'diverging', 'slope', 'dumbbell', 'scatter', 'heatmap', 'boxplot', 'histogram', 'waterfall', 'range', 'small-multiples', 'calendar', 'fan', 'bullet', 'treemap']);
 
@@ -146,9 +147,9 @@ export function buildOption(spec,tokens={}) {
         o.yAxis.min=low;o.yAxis.max=high===low?1:high;
       }
       o.grid.bottom=24;
-      if(spec.zoom!==false)o.dataZoom=[{type:'inside',xAxisIndex:0,filterMode:'none',zoomOnMouseWheel:true,moveOnMouseMove:true,moveOnMouseWheel:false,preventDefaultMouseMove:false}];
-      if(spec.brush){
-        o.brush={xAxisIndex:0,brushType:'lineX',brushMode:'single',transformable:true,brushStyle:{color:t.accent+'22',borderColor:t.accent},toolbox:[]};
+      if(spec.zoom!==false)o.dataZoom=[{type:'inside',xAxisIndex:0,filterMode:'none',zoomOnMouseWheel:true,moveOnMouseMove:'alt',moveOnMouseWheel:false,preventDefaultMouseMove:false}];
+      if(spec.brush!==false){
+        o.brush={xAxisIndex:0,brushType:'lineX',brushMode:'single',transformable:false,brushStyle:{color:t.accent+'22',borderColor:t.accent},toolbox:[]};
         // Brush may synthesize toolbox features internally; host controls own them.
         o.toolbox={show:false};
       }
@@ -157,6 +158,8 @@ export function buildOption(spec,tokens={}) {
       break;
     }
     case 'fan': {
+      if(spec.zoom!==false)o.dataZoom=[{type:'inside',xAxisIndex:0,filterMode:'none',zoomOnMouseWheel:true,moveOnMouseMove:'alt',moveOnMouseWheel:false}];
+      if(spec.brush!==false){o.brush={xAxisIndex:0,brushType:'lineX',brushMode:'single',transformable:false,brushStyle:{color:t.accent+'22',borderColor:t.accent},toolbox:[]};o.toolbox={show:false};}
       const labels={prediction:'예측구간',confidence:'신뢰구간',scenario:'시나리오 범위 수준'};
       const intervalLabel=band=>`${formatChartNumber(band.level*100)}% ${labels[spec.intervalKind]}`;
       o.grid.top=64;o.legend={...legend,selectedMode:false};
@@ -262,6 +265,9 @@ export function buildOption(spec,tokens={}) {
       o.title=spec.series.map((s,i)=>({text:s.name,left:45,top:`${i*100/count}%`,textStyle:{fontSize:12,fontWeight:500,color:t.text}}));
       o.xAxis=spec.series.map((s,i)=>cat(spec.x,{gridIndex:i,boundaryGap:false,axisLabel:{color:t.muted,show:i===count-1,hideOverlap:true}}));
       o.yAxis=spec.series.map((s,i)=>val({gridIndex:i,min,max,splitNumber:2,name:''}));
+      if(spec.zoom!==false)o.dataZoom=[{type:'inside',xAxisIndex:spec.series.map((_,i)=>i),filterMode:'none',zoomOnMouseWheel:true,moveOnMouseMove:'alt',moveOnMouseWheel:false,preventDefaultMouseMove:false}];
+      if(spec.brush!==false)o.brush={xAxisIndex:'all',brushType:'lineX',brushMode:'single',transformable:false,brushStyle:{color:t.accent+'22',borderColor:t.accent},toolbox:[]};
+      o.toolbox={show:false};
       o.series=spec.series.map((s,i)=>({name:s.name,type:'line',xAxisIndex:i,yAxisIndex:i,data:[...s.data],showSymbol:false,connectNulls:false,lineStyle:{width:2},itemStyle:{color:t.palette[i%t.palette.length]}}));o.tooltip.trigger='axis';o.axisPointer={link:[{xAxisIndex:'all'}]};break;
     }
     case 'calendar': {
@@ -287,14 +293,14 @@ export function mountChart(element,spec,{echarts,tokens={},onSelect=()=>{},onRan
   const notify=()=>onStateChange({...state,zoom:{...state.zoom},legend:{...state.legend}});
   const priorTabIndex=element.getAttribute('tabindex'),priorRole=element.getAttribute('role'),priorLabel=element.getAttribute('aria-label');
   element.setAttribute('tabindex','0');element.setAttribute('role','group');
-  const isLine=()=>['line','area','small-multiples'].includes(currentSpec.kind);
+  const isLine=()=>['line','area','small-multiples','fan'].includes(currentSpec.kind);
   const safeIndex=i=>Math.max(0,Math.min(currentSpec.x.length-1,Math.round(i)));
-  function selectionPayload(i){return {index:i,x:currentSpec.x[i],series:currentSpec.series.filter(s=>state.legend[s.name]!==false).map(s=>({name:s.name,value:s.data[i]}))};}
+  function selectionPayload(i){return {index:i,x:currentSpec.x[i],series:rangeSeries(currentSpec).filter(s=>state.legend[s.name]!==false).map(s=>({name:s.name,value:s.data[i]}))};}
   function select(index) {
     if(!isLine()||disposed)return;
     state.selectedIndex=index===null?null:safeIndex(index);
     if(index===null){chart.dispatchAction({type:'hideTip'});onSelect(null);notify();return;}
-    const first=currentSpec.series.findIndex(s=>state.legend[s.name]!==false);
+    let first=rangeSeries(currentSpec).findIndex(s=>state.legend[s.name]!==false);if(currentSpec.kind==='fan'&&first>=0)first+=currentSpec.intervals.length;
     if(first>=0)chart.dispatchAction({type:'showTip',seriesIndex:first,dataIndex:state.selectedIndex});
     onSelect(selectionPayload(state.selectedIndex));notify();
   }
@@ -303,7 +309,7 @@ export function mountChart(element,spec,{echarts,tokens={},onSelect=()=>{},onRan
     if(start==null||end==null){state.range=null;chart.dispatchAction({type:'brush',areas:[]});onRange(null);notify();return;}
     const a=safeIndex(Math.min(start,end)),b=safeIndex(Math.max(start,end));
     state.range={startIndex:a,endIndex:b,start:currentSpec.x[a],end:currentSpec.x[b]};
-    if(currentSpec.brush)chart.dispatchAction({type:'brush',areas:[{brushType:'lineX',xAxisIndex:0,coordRange:[a,b]}]});
+    if(currentSpec.brush!==false)chart.dispatchAction({type:'brush',areas:[{brushType:'lineX',xAxisIndex:0,coordRange:[a,b]}]});
     onRange({...state.range});notify();
   }
   function render() {
@@ -313,7 +319,7 @@ export function mountChart(element,spec,{echarts,tokens={},onSelect=()=>{},onRan
     // hiding its keyboard interaction semantics from assistive technologies.
     o.aria={...o.aria,enabled:false};
     if(o.legend){state.legend=Object.fromEntries((currentSpec.series?.map(s=>s.name)||o.series.map(s=>s.name)).map(name=>[name,state.legend[name]??o.legend.selected?.[name]??true]));o.legend.selected={...state.legend};}
-    if(o.dataZoom)o.dataZoom=o.dataZoom.map(z=>({...z,...state.zoom,...(z.type==='inside'?{zoomOnMouseWheel:!['select','range'].includes(state.mode),moveOnMouseMove:!['select','range'].includes(state.mode)}:{})}));
+    if(o.dataZoom)o.dataZoom=o.dataZoom.map(z=>({...z,...state.zoom,...(z.type==='inside'?{zoomOnMouseWheel:true,moveOnMouseMove:'alt'}:{})}));
     chart.setOption(o,{notMerge:true,lazyUpdate:false});
     // ECharts' automatic ARIA pass assigns role=img to its host. This host is
     // also our keyboard interaction group, so restore its interactive context.
@@ -321,9 +327,9 @@ export function mountChart(element,spec,{echarts,tokens={},onSelect=()=>{},onRan
     const accessibleTitle=currentSpec.title||currentSpec.kind;
     const description=o.aria?.label?.description||currentSpec.description||'';
     const accessibleDetail=description.startsWith(accessibleTitle+'. ')?description.slice(accessibleTitle.length+2):description;
-    element.setAttribute('aria-label',`${accessibleTitle}. ${isLine()?`좌우 방향키로 관측값 선택, +/-로 확대/축소, 0으로 전체 보기.${currentSpec.brush?' Shift와 방향키로 구간 선택.':''} Escape로 선택 해제. `:''}${accessibleDetail}`);
-    if(state.range&&currentSpec.brush)chart.dispatchAction({type:'brush',areas:[{brushType:'lineX',xAxisIndex:0,coordRange:[state.range.startIndex,state.range.endIndex]}]});
-    if(currentSpec.brush)chart.dispatchAction({type:'takeGlobalCursor',key:'brush',brushOption:{brushType:['range','select'].includes(state.mode)?'lineX':false}});
+    element.setAttribute('aria-label',`${accessibleTitle}. ${isLine()?`좌우 방향키로 관측값 선택, +/-로 확대/축소, 0으로 전체 보기. 수평 드래그로 구간 비교, Alt 드래그로 이동. Shift와 방향키로 구간 선택. Escape로 선택 해제. `:''}${accessibleDetail}`);
+    if(state.range&&currentSpec.brush!==false)chart.dispatchAction({type:'brush',areas:[{brushType:'lineX',xAxisIndex:0,coordRange:[state.range.startIndex,state.range.endIndex]}]});
+    if(currentSpec.brush!==false)chart.dispatchAction({type:'takeGlobalCursor',key:'brush',brushOption:{brushType:false}});
     if(state.selectedIndex!==null)select(state.selectedIndex);
     notify();
   }
@@ -334,12 +340,19 @@ export function mountChart(element,spec,{echarts,tokens={},onSelect=()=>{},onRan
     if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
     event.preventDefault();const prior=state.selectedIndex??0;
     const next=event.key==='Home'?0:event.key==='End'?currentSpec.x.length-1:prior+(event.key==='ArrowRight'?1:-1);
-    if(event.shiftKey&&currentSpec.brush){brushAnchor??=prior;select(next);setRange(brushAnchor,state.selectedIndex);}else{brushAnchor=null;select(next);}
+    if(event.shiftKey&&currentSpec.brush!==false){brushAnchor??=prior;select(next);setRange(brushAnchor,state.selectedIndex);}else{brushAnchor=null;select(next);}
   }
   element.addEventListener('keydown',keydown);
   const zr=chart.getZr?.();
+  const dragCleanup=bindRangeDrag(element,{
+    enabled:()=>isLine()&&currentSpec.brush!==false,
+    hit:(point,clamp)=>{const grids=currentSpec.kind==='small-multiples'?currentSpec.series.length:1;for(let i=0;i<grids;i++){if(!clamp&&!chart.containPixel?.({gridIndex:i},point))continue;const at=chart.convertFromPixel?.({xAxisIndex:i},point[0]);if(Number.isFinite(at))return safeIndex(at);}return null;},
+    onRange:setRange,onClear:()=>setRange(null,null),
+    onPan:delta=>{const span=state.zoom.end-state.zoom.start,start=Math.max(0,Math.min(100-span,state.zoom.start-delta*span));if(currentSpec.zoom!==false)setZoom(start,start+span);},
+    onPinch:(factor,anchor)=>{if(currentSpec.zoom===false)return;const span=state.zoom.end-state.zoom.start,next=Math.min(100,Math.max(2,span*factor)),center=state.zoom.start+span*anchor,start=Math.max(0,Math.min(100-next,center-next*anchor));setZoom(start,start+next);}
+  });
   function pointerClick(event){
-    if(!['line','area'].includes(currentSpec.kind)||['range','select'].includes(state.mode))return;
+    if(!isLine())return;
     const point=[event.offsetX,event.offsetY];
     if(!chart.containPixel({gridIndex:0},point))return;
     const coordinate=chart.convertFromPixel({gridIndex:0},point);
@@ -358,7 +371,7 @@ export function mountChart(element,spec,{echarts,tokens={},onSelect=()=>{},onRan
   let observer=null;
   function destroy(){
     if(disposed)return;
-    disposed=true;observer?.disconnect();zr?.off('click',pointerClick);element.removeEventListener('keydown',keydown);element.removeEventListener('dblclick',doubleClick);
+    disposed=true;dragCleanup();observer?.disconnect();zr?.off('click',pointerClick);element.removeEventListener('keydown',keydown);element.removeEventListener('dblclick',doubleClick);
     for(const event of ['click','legendselectchanged','datazoom','brushEnd'])chart.off?.(event);
     for(const [key,value] of [['tabindex',priorTabIndex],['role',priorRole],['aria-label',priorLabel]]){if(value===null)element.removeAttribute(key);else element.setAttribute(key,value);}
     chart.dispose();
@@ -375,7 +388,7 @@ export function mountChart(element,spec,{echarts,tokens={},onSelect=()=>{},onRan
     update(nextSpec){if(disposed)return;buildOption(nextSpec,currentTokens);const changedX=JSON.stringify(currentSpec.x)!==JSON.stringify(nextSpec.x);currentSpec=nextSpec;if(changedX||!isLine()){state.selectedIndex=null;state.range=null;brushAnchor=null;state.zoom={start:0,end:100};}render();},
     setTheme(nextTokens){if(disposed)return;currentTokens=tokensWithDefaults(nextTokens);render();},
     select,setRange,
-    setLegend(name,visible){if(disposed)return;if(!currentSpec.series?.some(s=>s.name===name)&&!chart.getOption().series?.some(s=>s.name===name))throw new TypeError(`Unknown series: ${name}`);state.legend[name]=Boolean(visible);chart.dispatchAction({type:visible?'legendSelect':'legendUnSelect',name});if(state.selectedIndex!==null)onSelect(selectionPayload(state.selectedIndex));},
+    setLegend(name,visible){if(disposed)return;if(!currentSpec.series?.some(s=>s.name===name)&&!chart.getOption().series?.some(s=>s.name===name))throw new TypeError(`Unknown series: ${name}`);state.legend[name]=Boolean(visible);chart.dispatchAction({type:visible?'legendSelect':'legendUnSelect',name});if(state.selectedIndex!==null)onSelect(selectionPayload(state.selectedIndex));notify();},
     setMode(mode){if(disposed)return;if(!['inspect','range','select','zoom'].includes(mode))throw new TypeError('Chart mode must be inspect, select or zoom');state.mode=mode;render();},
     setZoom,resetZoom,
     resetView(){if(disposed)return;state.zoom={start:0,end:100};state.selectedIndex=null;state.range=null;state.mode='inspect';for(const name of Object.keys(state.legend))state.legend[name]=true;brushAnchor=null;render();onSelect(null);onRange(null);},

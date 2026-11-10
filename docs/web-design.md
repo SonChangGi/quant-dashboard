@@ -921,7 +921,7 @@ https://github.com/SonChangGi/quant-dashboard/blob/main/docs/web-design.md
 
 ## 2026-11-10 · 공통 엔진 운영 적용판
 
-[공통 지침·작동 예제 v0.4.1](../design-engine/index.html)과 [화면별 적용 범위](../design-engine/RELEASE.md)를 함께 따른다. 엔진 API·어댑터0.4.0은 호환되며 공유 shell UI0.7/startup1.2의 버전과 구분한다. 실제 배포 소스를 기준으로 수정하고 계산·데이터·URL을 보존한다.
+[공통 지침·작동 예제 v0.4.2](../design-engine/index.html)과 [화면별 적용 범위](../design-engine/RELEASE.md)를 함께 따른다. 엔진 API·어댑터0.4.0은 호환되며 공유 shell UI0.7/startup1.2의 버전과 구분한다. 실제 배포 소스를 기준으로 수정하고 계산·데이터·URL을 보존한다.
 
 
 ## 공통 환경설정 1.0.1
@@ -940,3 +940,8 @@ https://github.com/SonChangGi/quant-dashboard/blob/main/docs/web-design.md
 고정 폭 그래프의 가로 스크롤만으로 모바일 대응을 완료하지 않는다. 전체 기간·축·범례를 화면 안에 맞추고 세부는 직접 확대·이동으로 탐색한다. 기존 렌더러보다 실제 차트 라이브러리 예제의 가독성과 조작 계약을 우선한다.
 
 주제·상태·증감·계열의 의미색은 보존 목록으로 관리한다. 전역 글자색 덮어쓰기, 원자료·계산·기능 누락 없이 카드·표·그래프를 개선한다. 저장 설정과 기본 레이아웃을 먼저 복원하고, 미수신 데이터를 0으로 표시하지 않는다. 각 차트 유형과 주요 탭의 데스크톱·모바일 검증, 실제 배포본 대조를 완료 조건으로 삼는다.
+
+
+## v0.4.2 공통 화면 계약
+
+모든 소비자는 중앙 `shared/design/tokens/0.4.2/shell.css?v=d3ef280dc5d3`를 실제 stylesheet로 참조한다. 주요 중립 카드에는 `data-quant-card`, 표에는 `data-quant-table`을 적용한다. 카드 여백은 24px(모바일 20px), 간격 20px(16px), 섹션 간격 32px(24px), 모서리 16px다. 중첩 카드는 배경과 테두리를 겹치지 않는다. 주제·계열·상태의 의미색은 유지한다.

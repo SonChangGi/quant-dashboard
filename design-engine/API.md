@@ -1,4 +1,4 @@
-# API · v0.4.1
+# API · v0.4.2
 
 ## 공통
 
@@ -74,7 +74,7 @@ absolute는 value−comparison.value. unit='%'이면 변화 단위는 %p. relati
 
 ## 직접 조작 기본값
 
-line/area는 기본적으로 값 읽기와 inside 확대·이동을 함께 제공한다. 상시 모드 버튼과 슬라이더는 표시하지 않는다. `zoom:false`는 확대를 끈다. `brush:true`와 `onRange`가 함께 있을 때만 옵션에 구간 선택을 표시한다. `renderer.resetZoom()`은 범위만 복원하며 계열·관측 선택은 유지한다. 기존 `resetView()`는 전체 상태 복원 API로 유지한다. `setMode('inspect')`는 이제 값 읽기와 기본 확대·이동이 함께 가능한 상태다.
+line/area는 기본적으로 값 읽기와 inside 확대·이동을 함께 제공한다. 상시 모드 버튼과 슬라이더는 표시하지 않는다. `zoom:false`는 확대를 끈다. 기본 드래그는 구간 비교이며 `onRange` 없이도 시작·끝 값과 변화량을 표시한다. `brush:false`만 구간 선택을 끈다. Alt+드래그로 이동하고 휠로 확대한다. 터치에서는 수평 드래그로 비교, 두 손가락으로 확대·이동하며 세로 스크롤을 유지한다. `renderer.resetZoom()`은 범위만 복원하며 계열·관측 선택은 유지한다. 기존 `resetView()`는 전체 상태 복원 API로 유지한다. `setMode('inspect')`는 이제 값 읽기와 기본 확대·이동이 함께 가능한 상태다.
 
 ## 범례 연결
 

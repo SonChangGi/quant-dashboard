@@ -1,4 +1,4 @@
-@import './table.css?v=040';
+@import './table.css?v=042';
 @font-face{font-family:Pretendard;src:url('../vendor/PretendardVariable.woff2') format('woff2');font-display:swap}
 [data-qe-theme]{font-family:Pretendard,system-ui,sans-serif;color:var(--qe-text);background:var(--qe-bg);font-variant-numeric:tabular-nums;line-height:1.55}
 [data-qe-theme] *{box-sizing:border-box}[data-qe-theme] button,[data-qe-theme] input,[data-qe-theme] select,[data-qe-theme] textarea{font:inherit;color:inherit;background:var(--qe-raised);border:1px solid var(--qe-border);border-radius:var(--qe-control-radius,7px);padding:8px 12px;max-width:100%}[data-qe-theme] button{cursor:pointer}[data-qe-theme] button:hover{border-color:var(--qe-accent)}[data-qe-theme] :focus-visible{outline:2px solid var(--qe-accent);outline-offset:3px}[data-qe-theme] a{color:var(--qe-accent)}
@@ -28,3 +28,11 @@
 .qe-readout{font-size:12px;padding-top:8px}.qe-readout:empty{display:none!important}
 @media(max-width:650px){.qe-chart-actions{right:12px;top:12px}.qe-chart-menu>summary,.qe-chart-actions>button{min-height:44px}.qe-chart-menu>summary{width:44px}.qe-chart-options button{min-height:44px}.qe-frame:has(.qe-chart-actions)>.qe-frame-header{padding-right:76px}}
 .qe-controls{display:flex;justify-content:flex-end;padding-bottom:8px}.qe-controls:not(:has(button:not([hidden]))){display:none}.qe-controls button{min-height:36px}.qe-controls button:last-child{margin-left:0}@media(max-width:650px){.qe-controls button{min-height:44px}}
+
+.qe-range-readout{display:flex;flex-wrap:wrap;gap:10px 20px;padding:14px 20px;border-top:1px solid var(--qe-border);font-size:13px;font-variant-numeric:tabular-nums}.qe-range-readout[hidden]{display:none}.qe-range-readout strong{flex-basis:100%}.qe-chart-body{touch-action:pan-y}
+
+/* One surface and inset per component, supplied by the shared contract. */
+html[data-theme] .qe-frame[data-quant-card]{overflow:visible}.qe-frame[data-quant-card]>.qe-frame-header{padding:0 52px 16px 0}.qe-frame[data-quant-card] .qe-chart-actions{right:0;top:0}.qe-frame[data-quant-card]>.qe-chart-body{margin:0}.qe-frame[data-quant-card]>.qe-controls,.qe-frame[data-quant-card]>.qe-readout,.qe-frame[data-quant-card]>.qe-metric-body,.qe-frame[data-quant-card]>.qe-table-body{padding-inline:0}.qe-frame[data-quant-card]>.qe-range-readout{padding:16px 0 0;margin-top:16px;border-color:var(--qs-line,var(--qe-border))}.qe-frame[data-quant-card]>.qe-data{padding:16px 0 0;margin-top:16px;border-color:var(--qs-line,var(--qe-border))}
+/* Explicit design controls override role variables, not the shared component rules. */
+[data-qe-theme]{--qs-card-padding:var(--qe-card-inset,24px);--qs-card-radius:var(--qe-card-radius,16px);--qs-section-gap:var(--qe-section-gap,32px)}
+@media(max-width:640px){[data-qe-theme]{--qs-card-padding:var(--qe-card-inset-mobile,20px)}}

@@ -1,4 +1,4 @@
-# 공통 디자인 지침 · v0.4.1
+# 공통 디자인 지침 · v0.4.2
 
 ## 화면과 조작
 
@@ -21,20 +21,20 @@
 
 | 주요 출처 | 채택한 장점·기능 | 현재 예제 |
 |---|---|---|
-| [Hallmark](https://www.usehallmark.com/themes/dusk/) | 주요 KPI와 비교 차트를 먼저 배치 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.1#overview) |
-| [shadcn/ui](https://ui.shadcn.com/view/new-york-v4/dashboard-01) | 기간·범례·계열 선택이 요약과 표에 함께 반영 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.1#compose) |
-| [Astryx](https://astryx.atmeta.com/sandbox/pages/example-cards/) | 강조색·밀도·모서리를 같은 엔진에서 변경 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.1#foundations) |
-| [Carbon](https://carbondesignsystem.com/data-visualization/overview/) | 단위·증감 방향·빈 값·로딩·복구 상태 분리 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.1#foundations) |
-| [TanStack Table](https://tanstack.com/table/latest/docs/guide/row-models) | 검색·범위·정렬·페이지·CSV가 같은 결과 사용 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.1#tables) |
-| [AG Grid](https://www.ag-grid.com/javascript-data-grid/sparklines-overview/) | 공통 척도와 결측 구간을 유지하는 스파크라인 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.1#tables) |
-| [Observable Plot / D3](https://observablehq.com/plot/features/facets) | 공통 축의 작은 다중 차트와 분포 패턴 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.1&pattern=small-multiples#charts) |
-| [Vega-Lite](https://vega.github.io/vega-lite/docs/errorband.html) | 예측 경계·중앙선·중첩된 구간을 분리 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.1&pattern=fan#charts) |
-| [Apache ECharts](https://echarts.apache.org/en/index.html) | 17종 SVG 차트·확대·이동·원자료 접근 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.1#charts) |
-| [Lightweight Charts](https://tradingview.github.io/lightweight-charts/docs/api/interfaces/HandleScaleOptions) | 모드 전환 없이 값 확인·확대·이동, 조건부 복원 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.1#compose) |
-| [Base UI / Radix](https://base-ui.com/) | 필요한 상태에서만 도구 표시, 포커스 복귀 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.1#compose) |
-| [Magic UI / React Bits / Motion](https://magicui.design/docs/components/bento-grid) | 크기가 다른 정보 영역, 지속적인 장식 애니메이션 제외 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.1#overview) |
+| [Hallmark](https://www.usehallmark.com/themes/dusk/) | 주요 KPI와 비교 차트를 먼저 배치 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.2#overview) |
+| [shadcn/ui](https://ui.shadcn.com/view/new-york-v4/dashboard-01) | 기간·범례·계열 선택이 요약과 표에 함께 반영 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.2#compose) |
+| [Astryx](https://astryx.atmeta.com/sandbox/pages/example-cards/) | 강조색·밀도·모서리를 같은 엔진에서 변경 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.2#foundations) |
+| [Carbon](https://carbondesignsystem.com/data-visualization/overview/) | 단위·증감 방향·빈 값·로딩·복구 상태 분리 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.2#foundations) |
+| [TanStack Table](https://tanstack.com/table/latest/docs/guide/row-models) | 검색·범위·정렬·페이지·CSV가 같은 결과 사용 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.2#tables) |
+| [AG Grid](https://www.ag-grid.com/javascript-data-grid/sparklines-overview/) | 공통 척도와 결측 구간을 유지하는 스파크라인 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.2#tables) |
+| [Observable Plot / D3](https://observablehq.com/plot/features/facets) | 공통 축의 작은 다중 차트와 분포 패턴 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.2&pattern=small-multiples#charts) |
+| [Vega-Lite](https://vega.github.io/vega-lite/docs/errorband.html) | 예측 경계·중앙선·중첩된 구간을 분리 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.2&pattern=fan#charts) |
+| [Apache ECharts](https://echarts.apache.org/en/index.html) | 17종 SVG 차트·확대·이동·원자료 접근 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.2#charts) |
+| [Lightweight Charts](https://tradingview.github.io/lightweight-charts/docs/api/interfaces/HandleScaleOptions) | 모드 전환 없이 값 확인·확대·이동, 조건부 복원 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.2#compose) |
+| [Base UI / Radix](https://base-ui.com/) | 필요한 상태에서만 도구 표시, 포커스 복귀 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.2#compose) |
+| [Magic UI / React Bits / Motion](https://magicui.design/docs/components/bento-grid) | 크기가 다른 정보 영역, 지속적인 장식 애니메이션 제외 | [예제](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.2#overview) |
 
-[적용 확인과 코드 위치](research/APPLIED.md) · [로컬 적용 현황](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.1#research)
+[적용 확인과 코드 위치](research/APPLIED.md) · [로컬 적용 현황](https://sonchanggi.github.io/quant-dashboard/design-engine/?v=0.4.2#research)
 
 ## 배포본에 적용할 때
 
@@ -70,3 +70,13 @@
 - 정책·레버리지·비용·기간 입력을 바꿀 때마다 그래프·표·체결 원장이 같은 조건과 범위를 사용하는지 확인한다. 선택한 기간의 끝값을 원자료 및 표의 값과 대조한다.
 - 기존 렌더러와 새 키보드 핸들러가 한 입력을 중복 처리하지 않게 한다. 방향키 한 번에 관측일 하나만 이동하며, 툴팁·선택 날짜·상세 값이 함께 바뀌는지 연속 입력으로 확인한다.
 - 진입·청산·교체 마커는 실제 체결 원장의 상태와 대조한다. 각 상태에 대응하는 색·기호를 유지하고, 렌더러 변경 전후에 거래 날짜와 마커가 일치하는지 확인한다.
+
+## 공통 표면과 직접 조작 · 0.4.2
+
+모든 프로젝트는 초기 HTML에서 [공통 shell.css](https://sonchanggi.github.io/quant-dashboard/shared/design/tokens/0.4.2/shell.css)를 참조한다. 앱 CSS 뒤에 로드하며, 기존 startup 계약이 있는 앱에서는 startup CSS 바로 앞에 둔다. 역할은 `data-quant-card`, `data-quant-card-grid`, `data-quant-section`, `data-quant-metrics`, `data-quant-table`로 연결한다. 프로젝트별 복사본은 공통 파일의 대체 원본으로 편집하지 않는다.
+
+카드는 24px, 모바일 20px 안쪽 여백과 16px 모서리를 사용한다. 카드 간격은 20/16px, 섹션 간격은 32/24px이다. 카드 안에 카드를 겹쳐 감싸지 않는다. 표와 차트는 같은 표면에서 정렬하고, 차트 안쪽 여백은 축과 데이터 가독성에 필요한 만큼만 둔다.
+
+[토스](https://toss.im/)의 명확한 제목·여백 위계와 [토스증권](https://www.tossinvest.com/)의 다크 화면에서 확인한 낮은 대비 구분선, 목록 중심 배치, 절제된 컨트롤을 반영한다. 청록은 선택·주요 행동에 사용하며 뉴스 주제색, 상승·하락, 차트 계열색은 각 의미를 보존한다. 과도한 설명·중복 사용법·장식용 강조선은 추가하지 않는다.
+
+시계열 차트는 모드 선택 없이 드래그하는 동안 날짜·시작값·끝값·변화량을 표시한다. 양수 가격은 %, 수익률·확률 수준은 %p, 점수는 절대 차이를 사용한다. 시작값이 0 이하이면 절대 차이와 변화율 —를 표시한다. 결측을 보간해서 비교하지 않는다. 역방향 드래그는 시간순으로 정규화한다. 휠 확대·Alt 드래그 이동·두 손가락 확대/이동을 유지한다. 카테고리 차트는 구간 합계·범위 등 의미에 맞게 선택하며 수익률로 바꾸지 않는다.
