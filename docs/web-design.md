@@ -924,9 +924,9 @@ https://github.com/SonChangGi/quant-dashboard/blob/main/docs/web-design.md
 [공통 지침·작동 예제 v0.4.1](../design-engine/index.html)과 [화면별 적용 범위](../design-engine/RELEASE.md)를 함께 따른다. 엔진 API·어댑터0.4.0은 호환되며 공유 shell UI0.7/startup1.2의 버전과 구분한다. 실제 배포 소스를 기준으로 수정하고 계산·데이터·URL을 보존한다.
 
 
-## 공통 환경설정 1.0.0
+## 공통 환경설정 1.0.1
 
-프로젝트 메뉴는 고정 프로젝트 ID를 사용한다. 즐겨찾기·메뉴 접힘·화면 밀도·테마는 `shared/preferences/1.0.0/preferences.js`가 관리하고 기존 shell 저장키와 호환한다. 스크립트는 head에서 첫 화면 초기화보다 먼저 동기로 한 번만 로드한다.
+프로젝트 메뉴는 고정 프로젝트 ID를 사용한다. 즐겨찾기·메뉴 접힘·화면 밀도·테마는 `shared/preferences/1.0.1/preferences.js`가 관리하고 기존 shell 저장키와 호환한다. 스크립트는 head에서 첫 화면 초기화보다 먼저 동기로 한 번만 로드한다.
 
 같은 도메인의 열린 탭은 storage 이벤트와 복귀 시 병합으로 반영한다. 다른 도메인은 공통 프로젝트 링크로 이동할 때 UI 설정만 fragment로 전달하고, 목적지에서 즉시 소비·제거한다. 원래 앵커와 검색 조건을 보존하며 외부 기사·다운로드에는 전달하지 않는다. 데이터·로그인·기사 저장 상태는 공통 설정에 포함하지 않는다.
 

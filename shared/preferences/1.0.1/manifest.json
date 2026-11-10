@@ -1,0 +1,15 @@
+{
+  "version": "1.0.1",
+  "files": {
+    "preferences.js": "ab430c89b425891288de7b6db09a6f33ed93bc4f5bda7052305fbf200b6ca769"
+  },
+  "storage_key": "quant-preferences-v1",
+  "compatible_shell": "0.7.0",
+  "transport": "trusted-project-link-fragment",
+  "settings": [
+    "favorites",
+    "rail",
+    "density",
+    "theme"
+  ]
+}

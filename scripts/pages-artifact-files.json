@@ -91,5 +91,7 @@
   "shared/navigation/v1/nav.css",
   "shared/navigation/v1/nav.js",
   "shared/preferences/1.0.0/preferences.js",
-  "shared/preferences/1.0.0/manifest.json"
+  "shared/preferences/1.0.0/manifest.json",
+  "shared/preferences/1.0.1/preferences.js",
+  "shared/preferences/1.0.1/manifest.json"
 ]

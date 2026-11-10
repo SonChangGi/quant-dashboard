@@ -2,8 +2,8 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const vm=require('node:vm');
 const fs=require('node:fs');
-const source=fs.readFileSync('shared/preferences/1.0.0/preferences.js','utf8');
-const {KEY,clean,merge,value,projectId,migrate,capsule}=require('../shared/preferences/1.0.0/preferences.js');
+const source=fs.readFileSync('shared/preferences/1.0.1/preferences.js','utf8');
+const {KEY,clean,merge,value,projectId,migrate,capsule}=require('../shared/preferences/1.0.1/preferences.js');
 const field=(key,v,at=10,by='a')=>({v:1,fields:{[key]:{value:v,at,by}}});
 test('stable project IDs accept only the ten trusted projects',()=>{
  assert.equal(projectId('https://sonchanggi.github.io/factor/?x=1'),'factor');
@@ -33,11 +33,11 @@ test('incoming data rejects unsupported settings and forged clocks',()=>{
  assert.equal(capsule('x'.repeat(6001)),null);assert.equal(capsule('bad'),null);
 });
 function browser(origin,shared=new Map(),hash=''){
- const events={},root={dataset:{},style:{}},location=new URL(origin+hash);
- const document={documentElement:root,readyState:'loading',addEventListener(){},querySelector:()=>null,querySelectorAll:()=>[]};
- const context={document,location,URL,localStorage:{getItem:k=>shared.get(k)??null,setItem:(k,v)=>shared.set(k,v)},history:{state:null,replaceState(_a,_b,u){context.location=new URL(u)}},crypto:{randomUUID:()=>origin},structuredClone,atob,btoa,console,Event,Date,Math,queueMicrotask,addEventListener:(k,f)=>events[k]=f};
+ const docEvents={},events={},root={dataset:{},style:{}},location=new URL(origin+hash);
+ const document={documentElement:root,readyState:'loading',body:{},addEventListener:(k,f,options)=>{(docEvents[k]??=[]).push({f,capture:options===true})},querySelector:()=>null,querySelectorAll:()=>[]};
+ const context={document,location,URL,localStorage:{getItem:k=>shared.get(k)??null,setItem:(k,v)=>shared.set(k,v)},history:{state:null,replaceState(_a,_b,u){context.location=new URL(u)}},crypto:{randomUUID:()=>origin},structuredClone,atob,btoa,console,Event,Date,Math,queueMicrotask,dispatchEvent(){},MutationObserver:class{observe(){}},addEventListener:(k,f)=>events[k]=f};
  context.window=context;vm.runInNewContext(source,context);
- return {context,events,shared,api:context.QuantPreferences};
+ return {context,events,docEvents,shared,api:context.QuantPreferences};
 }
 test('same-origin storage and focus reconcile without reload',()=>{
  const shared=new Map(),a=browser('https://sonchanggi.github.io/factor/',shared),b=browser('https://sonchanggi.github.io/news/',shared);
@@ -54,4 +54,18 @@ test('cross-origin capsule restores before first paint and retains original anch
 });
 test('blocked storage leaves usable in-memory preferences',()=>{
  const b=browser('https://sonchanggi.github.io/news/');b.context.localStorage.setItem=()=>{throw Error('blocked')};b.api.set('rail',true);assert(value(b.api.get(),'rail'));
+});
+test('native picker reopening cannot redraw stale favorites',()=>{
+ const b=browser('https://sonchanggi.github.io/quant-dashboard/');
+ const group={children:[],replaceChildren(...nodes){this.children=nodes},append(n){this.children.push(n)}};
+ const factor={href:'https://sonchanggi.github.io/factor/',hidden:false,cloneNode(){return {href:this.href,hidden:this.hidden}}};
+ const doc=b.context.document;doc.createElement=()=>({});
+ doc.querySelector=s=>s==='.q4-favorites'?group:null;
+ doc.querySelectorAll=s=>s==='.qd-nav-group:not(.q4-favorites)>a'?[factor]:[];
+ b.events['quant-design-ready']();b.api.set('favorite:factor',true);
+ assert.equal(group.children.length,2);
+ // The existing shell's picker onclick redraws from its initial favorites.
+ group.replaceChildren({textContent:'즐겨찾기'});factor.hidden=false;
+ for(const {f,capture} of b.docEvents.click)if(!capture)f({target:{closest:s=>s==='.q4-picker'?{}:null}});
+ assert.equal(group.children.length,2);assert.equal(factor.hidden,true);
 });
