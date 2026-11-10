@@ -1,5 +1,5 @@
 {
-  "version": "0.4.1",
+  "version": "0.4.2",
   "checkedAt": "2026-11-10",
   "items": [
     {
@@ -121,6 +121,26 @@
       "url": "https://magicui.design/docs/components/bento-grid",
       "code": "demo/demo.css",
       "status": "선택 채택"
+    },
+    {
+      "source": "토스",
+      "strength": "명확한 제목과 여백 위계",
+      "applied": "24/20px 카드 여백과 섹션 간격으로 정보 위계 정돈",
+      "route": "foundations",
+      "pattern": "",
+      "url": "https://toss.im/",
+      "code": "engine/tokens.js; shared/design/tokens/0.4.2/shell.css",
+      "status": "직접 관찰 · 적용"
+    },
+    {
+      "source": "토스증권",
+      "strength": "절제된 다크 금융 UI",
+      "applied": "낮은 대비 구분선·하나의 표면·목록 정렬, 의미색 보존",
+      "route": "overview",
+      "pattern": "",
+      "url": "https://www.tossinvest.com/",
+      "code": "engine/styles.css; demo/demo.css; shared shell.css",
+      "status": "다크·라이트 직접 관찰 · 적용"
     }
   ]
 }

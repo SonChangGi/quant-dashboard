@@ -36,3 +36,4 @@ html[data-theme] .qe-frame[data-quant-card]{overflow:visible}.qe-frame[data-quan
 /* Explicit design controls override role variables, not the shared component rules. */
 [data-qe-theme]{--qs-card-padding:var(--qe-card-inset,24px);--qs-card-radius:var(--qe-card-radius,16px);--qs-section-gap:var(--qe-section-gap,32px)}
 @media(max-width:640px){[data-qe-theme]{--qs-card-padding:var(--qe-card-inset-mobile,20px)}}
+.qe-frame[data-quant-card]>.qe-metric-body{padding-bottom:0}.qe-frame[data-quant-card] .qe-metric-spark{height:32px;margin-top:18px}
