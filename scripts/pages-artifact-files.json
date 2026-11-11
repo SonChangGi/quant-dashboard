@@ -106,5 +106,6 @@
   "shared/design/tokens/0.4.4/shell.css",
   "design-engine/engine/range.js",
   "design-engine/research/RANGE-AND-DENSITY.md",
-  "design-engine/quant-design-engine-0.4.4.tgz"
+  "design-engine/quant-design-engine-0.4.4.tgz",
+  "assets/sox-labels.js"
 ]

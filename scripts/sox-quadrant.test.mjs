@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 const context = vm.createContext({console, URL});
 vm.runInContext(readQuantFormatter(new URL('../shared/design/releases/0.7.0/number.js',import.meta.url),'utf8'),context);vm.runInContext(fs.readFileSync('assets/app.js','utf8'), context);
+vm.runInContext(fs.readFileSync('assets/sox-labels.js','utf8'), context);
 const api = context.__QUANT_DASHBOARD_TESTS__;
 const fixture = () => {
   const constituents = Array.from({length:6}, (_,i) => ({rank:i+1,ticker:`S${i}`,name:`Stock ${i}`,proxyWeight:(6-i)/21,scores:{priceMomentum:1-i*.15,earningsMomentum:.95-i*.1,combined:.975-i*.125,label:'original label'}}));
@@ -80,6 +81,7 @@ test('quadrant geometry never shifts underlying coordinates to avoid label colli
     const g=api.soxQuadrantGeometry(rows,width,'S5');
     assert.equal(g.points.length,6);
     for(const point of g.points) {assert.equal(point.x,g.centerX);assert.equal(point.y,g.centerY);}
+    assert.equal(g.labels.length,g.points.length);
     assert.ok(g.labels.some(l=>l.ticker==='S5'));
     for(const a of g.labels) {
       assert.ok(a.x>=g.bounds.left && a.x+a.width<=g.bounds.right);
@@ -93,4 +95,33 @@ test('chart failure is visible in health without discarding valid summary rows',
   const record={mode:'live',project:{id:'sox'},summary:{quadrantError:'publication mismatch',meta:{statusState:'ok'}}};
   assert.equal(api.visibleHealthLabel(record),'차트 확인 필요');
   assert.equal(api.healthTone(record),'warn');
+});
+
+test('30 ticker labels stay inside a narrow plot and avoid every mark and text collision', () => {
+  const grid = {x: 37, y: 39, width: 180, height: 225};
+  const points = Array.from({length: 30}, (_, index) => ({
+    ticker: `SOX${index+1}`, index, radius: 5,
+    x: index < 24 ? 120 : (index % 2 ? 37 : 217),
+    y: index < 24 ? 111 + (index % 3) * 3 : (index % 3 ? 39 : 264),
+  }));
+  const original = JSON.stringify(points);
+  const place = () => context.QuantSoxLabels.layout(points, grid, ticker => ticker.length * 6.5);
+  const labels = place();
+  assert.equal(labels.length, points.length);
+  assert.equal(new Set(labels.map(l => l.ticker)).size, 30);
+  assert.equal(JSON.stringify(labels), JSON.stringify(place()));
+  assert.equal(JSON.stringify(points), original);
+  for (const a of labels) {
+    assert.equal(a.pointX, points[a.index].x);
+    assert.equal(a.pointY, points[a.index].y);
+    assert.ok(a.x >= grid.x && a.y >= grid.y && a.x+a.width <= grid.x+grid.width && a.y+a.height <= grid.y+grid.height);
+    for (const b of labels.filter(b => b !== a)) {
+      assert.ok(a.x+a.width <= b.x || b.x+b.width <= a.x || a.y+a.height <= b.y || b.y+b.height <= a.y);
+    }
+    for (const p of points) {
+      const dx = Math.max(a.x - p.x, 0, p.x - a.x - a.width);
+      const dy = Math.max(a.y - p.y, 0, p.y - a.y - a.height);
+      assert.ok(Math.hypot(dx,dy) >= p.radius);
+    }
+  }
 });

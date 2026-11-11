@@ -9,7 +9,7 @@ function theme(host){const s=getComputedStyle(host),get=(k,v)=>s.getPropertyValu
 function mount(host, config){
  if(!host||!host.isConnected)return;
  host.dataset.chartEngine='echarts-042';
- const prior=live.get(host);let saved=prior?.chart.getOption();prior?.touchCleanup?.();prior?.presenter?.destroy();prior?.chart.dispose();prior?.ro.disconnect();host.replaceChildren();
+ const prior=live.get(host);let saved=prior?.chart.getOption();prior?.touchCleanup?.();prior?.presenter?.destroy();prior?.labels?.destroy();prior?.chart.dispose();prior?.ro.disconnect();host.replaceChildren();
  host.classList.add('qe-plot041');host.style.minWidth='0';host.style.overflow='visible';host.onpointermove=null;host.onpointerleave=null;host.onclick=null;host.onkeydown=null;
  const plot=document.createElement('div');plot.className='qe-canvas041';plot.style.height=(config.height||320)+'px';plot.style.width='100%';plot.tabIndex=0;plot.setAttribute('role','img');plot.setAttribute('aria-label',config.title);host.append(plot);
 
@@ -24,10 +24,13 @@ function mount(host, config){
  if(saved?.legend?.[0]?.selected&&option.legend)option.legend.selected=saved.legend[0].selected;
  chart.setOption(option);
  const presenter=presentation?.createRangeReadout(plot,range);
+ const labels=config.quadrant?globalThis.QuantSoxLabels?.mount(plot,chart,config.points.map(p=>({
+   ticker:p.name,value:[p.x,p.y],leader:p.leader,radius:6,
+ })),config.points[config.selectedIndex]?.name,{pointRing:true}):null;
 
  const zoomState=()=>{reset.hidden=!(chart.getOption().dataZoom||[]).some(z=>z.start>0||z.end<100);};chart.on('datazoom',zoomState);zoomState();reset.onclick=()=>{chart.dispatchAction({type:'dataZoom',start:0,end:100});};
  let selected=config.selectedIndex??(config.dates?.length-1||0),anchor=null;
- const select=i=>{selected=Math.max(0,Math.min((config.dates?.length||1)-1,i));config.onSelect?.(selected);if(!chart.isDisposed())chart.dispatchAction({type:'showTip',seriesIndex:0,dataIndex:selected});};
+ const select=i=>{selected=Math.max(0,Math.min((config.dates?.length||1)-1,i));config.onSelect?.(selected);if(!chart.isDisposed()&&!labels)chart.dispatchAction({type:'showTip',seriesIndex:0,dataIndex:selected});};
  plot.addEventListener('keydown',e=>{const n=config.dates?.length;if(!n)return;const move={ArrowLeft:selected-1,ArrowUp:selected-1,ArrowRight:selected+1,ArrowDown:selected+1,Home:0,End:n-1};if(e.key==='Escape'){clearRange();e.preventDefault();e.stopImmediatePropagation();chart.dispatchAction({type:'hideTip'});return;}if(!(e.key in move))return;e.preventDefault();e.stopImmediatePropagation();if(e.shiftKey&&anchor===null)anchor=selected;select(move[e.key]);if(e.shiftKey&&config.rangeSeries?.length)showRange(anchor,selected);},true);
  chart.on('click',p=>{if(Number.isInteger(p.dataIndex)){config.onSelect?.(p.data?.index??p.dataIndex);selected=p.dataIndex;}});
  chart.on('updateAxisPointer',e=>{const i=e.axesInfo?.[0]?.value;if(Number.isInteger(i)){selected=i;config.onSelect?.(i);}});
@@ -93,7 +96,7 @@ function mount(host, config){
    if(presenter)presenter.show({title,items,note:rows.map(row=>row.name).join(' · '),dense:rows.length>4},geometry());
    else {range.hidden=false;range.textContent=title+' · '+items.map(item=>item.name+' '+item.change).join(' · ');}
  }
- chart.on('datazoom',drawRange);chart.on('legendselectchanged',()=>{if(selection?.kind==='line')showRange(selection.lo,selection.hi);});
+ chart.on('datazoom',()=>{drawRange();labels?.schedule();});chart.on('legendselectchanged',()=>{if(selection?.kind==='line')showRange(selection.lo,selection.hi);});
  let drag=null,suppressClick=false;
  const local=e=>{const r=plot.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top];};
  const inside=p=>chart.getOption().grid.some((_,i)=>chart.containPixel({gridIndex:i},p));
@@ -102,7 +105,7 @@ function mount(host, config){
  const seriesMode=Boolean(config.rangeSeries?.length);
  const touchCleanup=globalThis.QuantTouchChart?.bindTouchChart(plot,{
    hit:(p,clamped)=>clamped||inside(p)?(seriesMode?index(p):clamp(p)):null,
-   inspect:(value)=>{if(seriesMode){select(value);return;}const [x,y]=value;const i=nearestPoint(x,y);if(i>=0){config.onSelect?.(config.points[i].index??i);chart.dispatchAction({type:'showTip',seriesIndex:0,dataIndex:i});}},
+   inspect:(value)=>{if(seriesMode){select(value);return;}const [x,y]=value;const i=labels?.hit(x,y)??nearestPoint(x,y);if(i>=0){config.onSelect?.(config.points[i].index??i);if(!chart.isDisposed()&&!labels)chart.dispatchAction({type:'showTip',seriesIndex:0,dataIndex:i});}},
    compare:(a,b)=>seriesMode?showRange(a,b):showArea(a,b),
    clear:clearRange,rangeReadout:()=>range,
    navigate:(a,b)=>globalThis.QuantTouchChart.navigateECharts(chart,a,b,.2)
@@ -116,15 +119,26 @@ function mount(host, config){
  plot.addEventListener('pointerdown',e=>{if(e.pointerType==='touch'||e.button!==0)return;suppressClick=false;const p=local(e);if(!inside(p)||e.altKey)return;anchor=null;drag={id:e.pointerId,start:p,active:false};},true);
  plot.addEventListener('pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;const p=local(e),dx=p[0]-drag.start[0],dy=p[1]-drag.start[1];if(!drag.active){if(Math.hypot(dx,dy)<6)return;drag.active=true;chart.dispatchAction({type:'hideTip'});try{plot.setPointerCapture?.(e.pointerId);}catch{}}e.preventDefault();e.stopImmediatePropagation();if(seriesMode)showRange(index(drag.start),index(p));else showArea(clamp(drag.start),clamp(p));},true);
  const release=e=>{if(drag?.id===e.pointerId){suppressClick=drag.active;drag=null;}};plot.addEventListener('pointerup',release,true);plot.addEventListener('pointercancel',release,true);
- plot.addEventListener('click',e=>{if(suppressClick){suppressClick=false;e.preventDefault();e.stopImmediatePropagation();return;}if(inside(local(e)))clearRange();},true);
+ plot.addEventListener('click',e=>{
+   if(suppressClick){suppressClick=false;e.preventDefault();e.stopImmediatePropagation();return;}
+   const pixel=local(e);
+   if(!inside(pixel))return;
+   clearRange();
+   const i=labels?.hit(...pixel);
+   if(i!==undefined){e.stopImmediatePropagation();select(i);}
+ },true);
  plot.addEventListener('dblclick',()=>reset.click());
  plot.addEventListener('keydown',e=>{if(e.key==='0'){reset.click();e.preventDefault();}},true);
- const ro=new ResizeObserver(()=>{chart.resize();drawRange();});ro.observe(plot);live.set(host,{chart,ro,config,touchCleanup,presenter});
+ const ro=new ResizeObserver(()=>{chart.resize();drawRange();labels?.schedule();});ro.observe(plot);
+ live.set(host,{chart,ro,config,touchCleanup,presenter,labels,selectScatter(i){
+   if(!labels)return false;
+   selected=Math.max(0,i);config.selectedIndex=i;labels.setSelected(config.points[i]?.name??'');return true;
+ }});
  return chart;
 }
 function axis(t,unit=''){return {type:'value',scale:true,name:unit,nameLocation:'end',nameGap:15,nameTextStyle:{color:t.muted},axisLabel:{color:t.muted,fontSize:11,formatter:fmt},splitNumber:4,splitLine:{lineStyle:{color:t.border,type:'dashed'}},axisLine:{show:false}};}
 function lines(host,c){const dates=c.dates,panels=c.panels||[{title:c.title,unit:c.unit,series:c.series}],plotLeft=c.plotLeft??(panels.some(p=>p.axis?.axisLabel?.formatter)?86:panels.length>1?56:48);return mount(host,{...c,dates,height:c.height||Math.max(245,panels.length*215+30),columns:['날짜',...panels.flatMap(p=>p.series.map(s=>(panels.length>1?p.title+' · ':'')+s.name+(p.unit?' ('+p.unit+')':'')))],rows:dates.map((d,i)=>[d,...panels.flatMap(p=>p.series.map(s=>s.data[i]))]),rangeSeries:panels.flatMap((p,panel)=>p.series.map((s,colorIndex)=>({...s,panel,colorIndex,pointUnit:p.unit||c.unit||'',rangeLabel:panels.length>1?s.name+' '+p.title:s.name}))).filter(s=>s.range!==false),option:t=>({legend:{show:c.legend!==false,type:'scroll',top:0,pageIconColor:t.text,...c.legendOptions,textStyle:{color:t.muted,...c.legendOptions?.textStyle}},grid:panels.map((p,i)=>({left:plotLeft,right:20,top:(c.legendReserve??55)+i*215,bottom:undefined,height:155,containLabel:false})),title:c.hidePanelTitle?[]:panels.map((p,i)=>({text:p.title+(p.unit?' · '+p.unit:''),left:12,top:30+i*215,textStyle:{fontSize:12,color:t.muted,fontWeight:500}})),xAxis:panels.map((p,i)=>({type:'category',gridIndex:i,data:dates,boundaryGap:false,axisTick:{show:false},axisLabel:{show:i===panels.length-1,color:t.muted,fontSize:11,hideOverlap:true,showMinLabel:true,showMaxLabel:true,alignMinLabel:'left',alignMaxLabel:'right',formatter:v=>v.slice(2,10)},axisLine:{lineStyle:{color:t.border}}})),yAxis:panels.map((p,i)=>({...axis(t),gridIndex:i,...p.axis,axisLabel:{...axis(t).axisLabel,...p.axis?.axisLabel}})),tooltip:{trigger:'axis',axisPointer:{type:'line'},valueFormatter:fmt},axisPointer:{link:[{xAxisIndex:'all'}]},dataZoom:[{type:'inside',xAxisIndex:panels.map((_,i)=>i),filterMode:'none',preventDefaultMouseMove:false,moveOnMouseMove:'alt',moveOnMouseWheel:false}],brush:{xAxisIndex:0,brushMode:'single',toolbox:[]},toolbox:{show:false},series:panels.flatMap((p,i)=>p.series.map((s,j)=>({name:s.name,type:'line',xAxisIndex:i,yAxisIndex:i,data:s.data,showSymbol:false,connectNulls:false,smooth:false,lineStyle:{width:2.4,type:s.dashed?'dashed':'solid',color:s.color||t.colors[j%6]},itemStyle:{color:s.color||t.colors[j%6]},emphasis:{focus:'series'},...s.extra})))})});}
-function scatter(host,c){return mount(host,{...c,columns:c.columns||['대상',c.xLabel,c.yLabel],rows:c.points.map(p=>[p.name,p.x,p.y]),option:t=>({dataZoom:[{type:'inside',xAxisIndex:0,filterMode:'none',moveOnMouseMove:'alt',moveOnMouseWheel:false,preventDefaultMouseMove:false},{type:'inside',yAxisIndex:0,filterMode:'none',moveOnMouseMove:'alt',moveOnMouseWheel:false,preventDefaultMouseMove:false}],grid:{left:12,right:24,top:42,bottom:50,containLabel:true},xAxis:{...axis(t,c.xLabel),nameLocation:'middle',nameGap:28,...c.xAxis},yAxis:{...axis(t,c.yLabel),...c.yAxis},tooltip:{trigger:'item',formatter:p=>p.data.name+'\n'+c.xLabel+' '+fmt(p.value[0])+'\n'+c.yLabel+' '+fmt(p.value[1])},series:[{type:'scatter',data:c.points.map((p,i)=>({name:p.name,label:p.showLabel?(c.quadrant?presentation?.scatterLabel(p.current?t.text:t.muted,p.x,p.y,c.xAxis.max)||{show:true,color:t.text,textBorderWidth:0}: {show:true}):{show:false},value:[p.x,p.y],index:p.index??i,symbol:p.symbol||'circle',itemStyle:{color:p.hollow?t.surface:p.color||t.colors[0],borderColor:p.color||t.colors[0],borderWidth:p.current?2:1},symbolSize:p.current?11:p.showLabel?8:6})),emphasis:{focus:'self'},...c.series},...(c.extra?.(t)||[])]})});}
+function scatter(host,c){return mount(host,{...c,columns:c.columns||['대상',c.xLabel,c.yLabel],rows:c.points.map(p=>[p.name,p.x,p.y]),option:t=>({dataZoom:[{type:'inside',xAxisIndex:0,filterMode:'none',moveOnMouseMove:'alt',moveOnMouseWheel:false,preventDefaultMouseMove:false},{type:'inside',yAxisIndex:0,filterMode:'none',moveOnMouseMove:'alt',moveOnMouseWheel:false,preventDefaultMouseMove:false}],grid:{left:12,right:24,top:42,bottom:50,containLabel:true},xAxis:{...axis(t,c.xLabel),nameLocation:'middle',nameGap:28,...c.xAxis},yAxis:{...axis(t,c.yLabel),...c.yAxis},tooltip:{trigger:'item',formatter:p=>p.data.name+'\n'+c.xLabel+' '+fmt(p.value[0])+'\n'+c.yLabel+' '+fmt(p.value[1])},series:[{type:'scatter',data:c.points.map((p,i)=>({name:p.name,label:p.showLabel?(c.quadrant?presentation?.scatterLabel(p.current?t.text:t.muted,p.x,p.y,c.xAxis.max)||{show:true,color:t.text,textBorderWidth:0}: {show:true}):{show:false},value:[p.x,p.y],index:p.index??i,symbol:p.symbol||'circle',itemStyle:{color:p.hollow?t.surface:p.color||t.colors[0],borderColor:p.color||t.colors[0],borderWidth:p.current?2:1},symbolSize:p.current?11:(p.leader||p.showLabel)?8:6})),emphasis:{focus:'self'},...c.series},...(c.extra?.(t)||[])]})});}
 function categories(host,rows){
  const plot=host.querySelector('.factor-holdings'),items=[...plot.children],output=document.createElement('output');output.className='qe-range041';output.hidden=true;output.dataset.quantChartReadout='';host.append(output);plot.tabIndex=0;plot.style.touchAction='pan-y';let gesture=null,blocked=false,cursor=0,anchor=0;
  const presenter=presentation?.createRangeReadout(plot,output);
@@ -148,7 +162,7 @@ function categories(host,rows){
  plot.addEventListener('pointerup',()=>{blocked=!!gesture?.active;gesture=null;});plot.addEventListener('pointercancel',()=>{gesture=null;});plot.addEventListener('click',()=>{if(blocked){blocked=false;return;}clear();});
  plot.addEventListener('keydown',e=>{if(e.key==='Escape'){clear();e.preventDefault();return;}if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(e.key))return;e.preventDefault();if(!e.shiftKey)anchor=cursor;cursor=e.key==='Home'?0:e.key==='End'?items.length-1:Math.max(0,Math.min(items.length-1,cursor+(['ArrowLeft','ArrowUp'].includes(e.key)?-1:1)));show(e.shiftKey?anchor:cursor,cursor);});
 }
-new MutationObserver(()=>{for(const [el,v] of live)if(!el.isConnected){v.touchCleanup?.();v.presenter?.destroy();v.chart.dispose();v.ro.disconnect();live.delete(el);}}).observe(document.body,{childList:true,subtree:true});
+new MutationObserver(()=>{for(const [el,v] of live)if(!el.isConnected){v.touchCleanup?.();v.presenter?.destroy();v.labels?.destroy();v.chart.dispose();v.ro.disconnect();live.delete(el);}}).observe(document.body,{childList:true,subtree:true});
 new MutationObserver(()=>{for(const [host,v] of [...live])mount(host,v.config);}).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
-globalThis.HubCharts041={lines,scatter,categories};
+globalThis.HubCharts041={lines,scatter,categories,selectScatter:(host,i)=>live.get(host)?.selectScatter(i)};
 })();

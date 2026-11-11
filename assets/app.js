@@ -3941,6 +3941,11 @@
     const y = (score) => bounds.bottom - score * (bounds.bottom - bounds.top);
     const points = asRecords(rows).filter((row) => soxScore(row.priceMomentum) !== null && soxScore(row.earningsMomentum) !== null)
       .map((row) => ({ ...row, x: x(row.priceMomentum), y: y(row.earningsMomentum) }));
+    const placement = globalThis.QuantSoxLabels?.layout(points.map((p,index)=>({...p,index,radius:7})),{
+      x:bounds.left,y:bounds.top-20,width:bounds.right-bounds.left,height:bounds.bottom-bounds.top+20,
+    },ticker=>ticker.length*9+3,20);
+    if(placement?.length===points.length)return {width:w,height:h,compact,bounds,points,
+      labels:placement.map(label=>({...label,rank:points[label.index].rank,anchorX:label.pointX,anchorY:label.pointY})),centerX:x(.5),centerY:y(.5)};
     const priority = [...points].sort((a, b) => (b.ticker === selectedTicker) - (a.ticker === selectedTicker) || a.rank - b.rank);
     const labels = [];
     const overlaps = (a, b, gap = 4) => a.x < b.x + b.width + gap && a.x + a.width + gap > b.x && a.y < b.y + b.height + gap && a.y + a.height + gap > b.y;
@@ -3975,7 +3980,7 @@
       const active = label.ticker === selectedTicker, leader = label.rank <= 5;
       const endX = Math.max(label.x, Math.min(label.x + label.width, label.anchorX));
       const endY = Math.max(label.y, Math.min(label.y + label.height, label.anchorY));
-      return `<g class="sox-ticker-label${leader ? ' is-leader' : ''}${active ? ' is-selected' : ''}" data-sox-ticker="${escapeAttribute(label.ticker)}"><line x1="${label.anchorX}" y1="${label.anchorY}" x2="${endX}" y2="${endY}"/><rect x="${label.x}" y="${label.y}" width="${label.width}" height="${label.height}" rx="13"/><text x="${label.x + label.width / 2}" y="${label.y + (g.compact ? 17 : 20)}" text-anchor="middle">${escapeHtml(label.ticker)}</text></g>`;
+      return `<g class="sox-ticker-label${leader ? ' is-leader' : ''}${active ? ' is-selected' : ''}" data-sox-ticker="${escapeAttribute(label.ticker)}"><line x1="${label.anchorX}" y1="${label.anchorY}" x2="${endX}" y2="${endY}"/><rect x="${label.x}" y="${label.y}" width="${label.width}" height="${label.height}" rx="13"/><text x="${label.x + label.width / 2}" y="${label.y + label.height / 2}" dominant-baseline="central" text-anchor="middle">${escapeHtml(label.ticker)}</text></g>`;
     }).join('');
     return `<svg data-qr-spec="${encodeURIComponent(JSON.stringify({id:"hub-sox",kind:"scatter",scatter:g.points.map(p=>({id:p.ticker,label:p.ticker,x:p.priceMomentum,y:p.earningsMomentum})),scatterAxes:{xLabel:"가격 점수",yLabel:"실적 점수"},bounds:b,xDomain:[0,1],yDomain:[0,1]}))}" class="sox-quadrant-svg" viewBox="0 0 ${g.width} ${g.height}" role="img" aria-label="가격과 실적 모멘텀 상대점수, ${g.points.length}종목">
       <rect class="sox-quadrant-surface" x="${b.left}" y="${b.top}" width="${b.right - b.left}" height="${b.bottom - b.top}" rx="8"/>
@@ -4012,20 +4017,20 @@
       const width = Math.max(220, Math.round(frame.clientWidth || 1000));
       lastWidth = width;
       const focusPlot=document.activeElement===frame.querySelector('.qe-canvas041');
-      frame.innerHTML = drawable.length ? renderSoxQuadrantChart(rows, width, currentTicker, pinnedTicker) : '<div class="sox-quadrant-empty">가격·실적 점수를 함께 가진 종목이 없습니다.</div>';
       if(drawable.length&&globalThis.HubCharts041)globalThis.HubCharts041.scatter(frame,{
         title:'SOX 가격·실적 모멘텀. 점선은 0.5점, 방향키로 종목 선택',quadrant:true,
         selectedIndex:Math.max(0,drawable.findIndex(r=>r.ticker===currentTicker)),height:width<500?310:390,
         dates:drawable.map(r=>r.ticker),xLabel:'가격 점수',yLabel:'실적 점수',
         xAxis:{min:0,max:1,interval:.25},yAxis:{min:0,max:1,interval:.25},
-        points:drawable.map((r,i)=>({name:r.ticker,x:r.priceMomentum,y:r.earningsMomentum,index:i,
-          current:r.ticker===currentTicker,hollow:r.ticker===currentTicker,
-          showLabel:r.rank<=(width<500?3:5)||r.ticker===currentTicker,
-          color:r.ticker===currentTicker?'var(--qs-accent)':r.rank<=5?'var(--chart-1)':'var(--qs-muted)'})),
-        series:{label:{show:false,formatter:'{b}',textBorderWidth:0},labelLayout:{hideOverlap:true},
+        points:drawable.map((r,i)=>({name:r.ticker,x:r.priceMomentum,y:r.earningsMomentum,index:i,leader:r.rank<=5,
+          current:!globalThis.QuantSoxLabels&&r.ticker===currentTicker,hollow:!globalThis.QuantSoxLabels&&r.ticker===currentTicker,
+          showLabel:!globalThis.QuantSoxLabels,
+          color:r.rank<=5?'var(--chart-1)':'var(--qs-muted)'})),
+        series:{label:{show:false,formatter:'{b}',textBorderWidth:0},
           markLine:{silent:true,symbol:'none',label:{show:false},lineStyle:{color:'var(--qs-muted)',opacity:.62,width:1,type:'dashed'},data:[{xAxis:.5},{yAxis:.5}]}},
         onSelect:i=>{if(drawable[i])choose(drawable[i].ticker,true);}
       });
+      else frame.innerHTML = drawable.length ? renderSoxQuadrantChart(rows, width, currentTicker, pinnedTicker) : '<div class="sox-quadrant-empty">가격·실적 점수를 함께 가진 종목이 없습니다.</div>';
       if(focusPlot)frame.querySelector('.qe-canvas041')?.focus({preventScroll:true});
 
     };
@@ -4039,7 +4044,7 @@
       frame.setAttribute('aria-label', `SOX 가격·실적 사분면. ${row.ticker} 가격 ${formatNumber(row.priceMomentum)}, 실적 ${formatNumber(row.earningsMomentum)}. 방향키로 종목 선택.`);
       select.value = pinnedTicker;
       target.querySelectorAll('[data-sox-select]').forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.soxSelect === pinnedTicker)));
-      if(changed)draw();
+      if(changed&&!globalThis.HubCharts041?.selectScatter(frame,drawable.findIndex(r=>r.ticker===currentTicker)))draw();
     };
     target.querySelectorAll('[data-sox-select]').forEach((button) => {
       button.addEventListener('click', () => choose(button.dataset.soxSelect, true));
