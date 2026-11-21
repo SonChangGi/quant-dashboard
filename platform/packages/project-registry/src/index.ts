@@ -15,7 +15,6 @@ export function normalizeNavigationId(id: string): string { return id === "momen
 /**
  * Existing public summary ids are protected data contracts. Keep translation
  * here instead of rewriting generated JSON to match navigation/API ids.
- * Regime uses its own weekly-regime-result-v5 contract, not a summary id.
  */
 export const publicSummaryProjectIds = {
   "fear-greed": "fearngreed",

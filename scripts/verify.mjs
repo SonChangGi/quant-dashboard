@@ -22,7 +22,7 @@ const files = {
 };
 
 const navigationMenu = JSON.parse(readFileSync('shared/navigation/v1/menu.json', 'utf8'));
-const navigationSection = files.webDesign.split('## 4. 10개 공통 메뉴')[1]?.split('### 4.1')[0] || '';
+const navigationSection = files.webDesign.split('## 4. 9개 공통 메뉴')[1]?.split('### 4.1')[0] || '';
 const documentedNavigation = [...navigationSection.matchAll(/^\| (\d+) \| (.+?) \| `([^`]+)` \|$/gm)].map(([,order,label,url])=>({order:Number(order),label,url}));
 const expectedNavigation = [navigationMenu.brand,...navigationMenu.projects].map(({label,url},index)=>({order:index+1,label,url}));
 
@@ -40,7 +40,6 @@ const projectUrls = [
   'https://sonchanggi.github.io/dram-price/',
   'https://sonchanggi.github.io/etf-tracking/',
   'https://sonchanggi.github.io/sox/',
-  'https://sonchanggi.github.io/regime/',
 ];
 for (const url of projectUrls) {
   assert(contains(files.html, url) || contains(files.app, url), `project URL present: ${url}`);
@@ -57,14 +56,12 @@ const dataUrls = [
   'https://sonchanggi.github.io/etf-tracking/data/dashboard.json',
   'https://sonchanggi.github.io/etf-tracking/data/history.json',
   'https://sonchanggi.github.io/sox/data/summary.json',
-  'https://sonchanggi.github.io/regime/data/regime-core.json',
 ];
 for (const url of dataUrls) {
   assert(contains(files.app, url), `public data endpoint present: ${url}`);
 }
 
 assert(contains(files.app, 'const PROJECTS = ['), 'project registry exists');
-assert(contains(files.app, "id: 'regime'"), 'Regime project registry entry exists');
 assert(contains(files.app, 'PANEL_ADAPTERS'), 'panel adapter manifest exists');
 assert(contains(files.app, 'quant-research-summary'), 'common summary contract is validated');
 assert(contains(files.app, 'summaryEntities'), 'common summary entities feed dossier search');
@@ -178,8 +175,6 @@ assert(contains(files.app, 'parseEtfTracking'), 'ETF Tracking parser exists');
 assert(contains(files.app, 'parseSox'), 'SOX summary parser exists');
 assert(contains(files.app, 'renderSox'), 'SOX dashboard panel renderer exists');
 assert(contains(files.app, 'SOX 구성종목 · 가격 vs 실적'), 'SOX central summary panel copy exists');
-assert(contains(files.app, 'parseRegime') && contains(files.app, 'renderRegime'), 'Regime public-result parser and summary panel renderer exist');
-assert(contains(files.app, "['demo', 'live'].includes(meta.mode)") && contains(files.app, "synthetic_fixture") && contains(files.app, "private_noncommercial") && contains(files.app, "user_confirmed_ml_storage_derived"), 'Regime adapter validates demo and exact live-derived source contracts');
 assert(contains(files.app, 'PROJECT_EXPECTED_FRESHNESS_DAYS') && contains(files.app, 'expectedFreshnessDays'), 'every panel has a project-level freshness fallback');
 assert(contains(files.app, 'ETF별 TOP10 비중'), 'ETF Tracking detail panel label exists');
 assert(contains(files.app, '최근 1개월 편입비중'), 'ETF Tracking chart copy names the one-month history window');
@@ -236,7 +231,7 @@ assert(
     && contains(files.controlAudit, 'Analysis controls'),
   'README links the audited frontend/backend boundary and implementation architecture',
 );
-assert(['fearngreed', 'momentum', 'dram', 'etf', 'sox', 'regime'].every(id => contains(files.app, `id: '${id}'`)), 'Hub keeps the six active research panels');
+assert(['fearngreed', 'momentum', 'dram', 'etf', 'sox'].every(id => contains(files.app, `id: '${id}'`)), 'Hub keeps the five active research panels');
 assert(
   [
     'https://sonchanggi.github.io/dram-price/',
@@ -259,7 +254,7 @@ assert(contains(files.webDesign, 'applied_config') && contains(files.webDesign, 
 assert(contains(files.webDesign, 'effective_config_hash') && contains(files.webDesign, 'config_hash == effective_config_hash'), 'web design prompt binds requested and fallback-effective configurations separately');
 assert(contains(files.webDesign, 'packages/') && contains(files.webDesign, 'data-client/') && contains(files.webDesign, '프로젝트별 view-model'), 'web design prompt defines reusable frontend boundaries without centralizing project calculations');
 assert(contains(files.webDesign, '## 13. 기존 페이지 개선 절차') && contains(files.webDesign, '## 14. 신규 프로젝트 구현 절차') && contains(files.webDesign, 'local preview'), 'web design prompt covers existing and new project workflows');
-assert(contains(files.webDesign, '## 4. 10개 공통 메뉴') && contains(files.webDesign, 'aria-current="page"') && contains(files.webDesign, 'Quant Research Hub'), 'web design prompt fixes the shared navigation contract');
+assert(contains(files.webDesign, '## 4. 9개 공통 메뉴') && contains(files.webDesign, 'aria-current="page"') && contains(files.webDesign, 'Quant Research Hub'), 'web design prompt fixes the shared navigation contract');
 assert(contains(files.webDesign, '## 9. Table') && contains(files.webDesign, 'tabular') && contains(files.webDesign, '## 10. Chart') && contains(files.webDesign, 'plot 안 선택값·구간 측정 HUD'), 'web design prompt fixes table and chart contracts');
 assert(contains(files.webDesign, 'multi-series comparison chart에만') && contains(files.webDesign, 'date-axis chart에만') && contains(files.webDesign, 'bar·quadrant'), 'web design prompt keeps chart interactions domain-conditional');
 assert(contains(files.webDesign, 'TDS UI Kit') && contains(files.webDesign, '향후에도 Toss 자료에서 새 값을 직접 가져오지 않는다'), 'web design prompt records the Toss reference and reuse boundary');
@@ -317,7 +312,7 @@ assert(contains(files.pagesWorkflow, 'Build an allowlisted Pages artifact') && c
 assert(contains(files.pagesWorkflow, 'public-site-health:') && contains(files.pagesWorkflow, 'Fail only when the existing public Hub is unusable'), 'automatic Pages failures are notification-gated by live Hub usability');
 assert(!contains(files.pagesWorkflow, 'actions/checkout@v') && !contains(files.pagesWorkflow, 'actions/deploy-pages@v'), 'Pages workflow pins third-party Actions by commit SHA');
 assert(contains(files.liveSmoke, 'validateAdapterContract'), 'live contract smoke rejects incompatible contract versions');
-assert(contains(files.liveSmoke, "['fearngreed', 'momentum', 'dram', 'etf', 'sox', 'regime']") && contains(files.liveSmoke, 'REQUIRED_PROJECT_IDS'), 'live contract smoke requires all six active panels after Best integration');
+assert(contains(files.liveSmoke, "['fearngreed', 'momentum', 'dram', 'etf', 'sox']") && contains(files.liveSmoke, 'REQUIRED_PROJECT_IDS'), 'live contract smoke requires all five active panels after Best integration');
 assert(
   files.liveSmoke.indexOf('class PublicFetchError') >= 0
     && files.liveSmoke.indexOf('class PublicFetchError') < files.liveSmoke.indexOf('for (const project of panelProjects)'),

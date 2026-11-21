@@ -13,7 +13,7 @@
   'use strict';
   const menuUrl = 'https://sonchanggi.github.io/quant-dashboard/shared/navigation/v1/menu.json';
   // BEGIN GENERATED FALLBACK
-  const fallbackMenu = {"schemaVersion":"quant-navigation/v1","brand":{"id":"hub","label":"Quant Research Hub","url":"https://sonchanggi.github.io/quant-dashboard/"},"projects":[{"id":"factor","label":"Factor","url":"https://sonchanggi.github.io/factor/"},{"id":"dram","label":"DRAM","url":"https://sonchanggi.github.io/dram-price/"},{"id":"etf","label":"ETF","url":"https://sonchanggi.github.io/etf-tracking/"},{"id":"sox","label":"SOX","url":"https://sonchanggi.github.io/sox/"},{"id":"fear-greed","label":"Fear & Greed","url":"https://sonchanggi.github.io/fearNgreed/"},{"id":"regime","label":"Regime","url":"https://sonchanggi.github.io/regime/"},{"id":"news","label":"News","url":"https://sonchanggi.github.io/news/"},{"id":"investment-journal","label":"투자일지","url":"https://invest.changgi-son.chatgpt.site/"},{"id":"observatory","label":"알파 하우스","url":"https://research-observatory-changgi.changgi-son.chatgpt.site/"}]};
+  const fallbackMenu = {"schemaVersion":"quant-navigation/v1","brand":{"id":"hub","label":"Quant Research Hub","url":"https://sonchanggi.github.io/quant-dashboard/"},"projects":[{"id":"factor","label":"Factor","url":"https://sonchanggi.github.io/factor/"},{"id":"dram","label":"DRAM","url":"https://sonchanggi.github.io/dram-price/"},{"id":"etf","label":"ETF","url":"https://sonchanggi.github.io/etf-tracking/"},{"id":"sox","label":"SOX","url":"https://sonchanggi.github.io/sox/"},{"id":"fear-greed","label":"Fear & Greed","url":"https://sonchanggi.github.io/fearNgreed/"},{"id":"news","label":"News","url":"https://sonchanggi.github.io/news/"},{"id":"investment-journal","label":"투자일지","url":"https://invest.changgi-son.chatgpt.site/"},{"id":"observatory","label":"알파 하우스","url":"https://research-observatory-changgi.changgi-son.chatgpt.site/"}]};
   // END GENERATED FALLBACK
   const aliases = Object.freeze({momentum: 'factor', 'momentum-factor-lab': 'factor', fearngreed: 'fear-greed', fearNgreed: 'fear-greed', 'dram-price': 'dram', 'etf-tracking': 'etf'});
   const normalizeId = id => aliases[id] || id;
@@ -120,7 +120,7 @@ const localArchiveHost=['127.0.0.1','localhost'].includes(location.hostname);
 let archivePath=location.pathname.endsWith('/')?location.pathname+'index.html':location.pathname;
 if(localArchiveHost&&!archivePath.startsWith('/news/'))archivePath='/news'+archivePath;
 const aliases={momentum:'factor',hub:'quant-dashboard',fearngreed:'fearNgreed','fear-greed':'fearNgreed',dram:'dram-price',etf:'etf-tracking',observatory:'alpha-house'};
-const projects=new Set(['quant-dashboard','factor','regime','fearNgreed','etf-tracking','dram-price','sox','news','alpha-house','investment-journal']);
+const projects=new Set(['quant-dashboard','factor','fearNgreed','etf-tracking','dram-price','sox','news','alpha-house','investment-journal']);
 function begin(){
  const nav=document.querySelector('[data-quant-project]');
  const hostedProjects={'alpha-house.changgi-son.chatgpt.site':'alpha-house','research-observatory-changgi.changgi-son.chatgpt.site':'alpha-house','invest.changgi-son.chatgpt.site':'investment-journal'};

@@ -6,7 +6,7 @@ import { ThemeProvider } from "@quant-research/ui";
 
 afterEach(cleanup);
 
-it("renders Regime in shared navigation and moves the active page to it", () => {
+it("marks Fear & Greed as the active page in shared navigation", () => {
   const { getByRole, rerender } = render(
     <ThemeProvider>
       <SharedNavigation currentProject="hub" />
@@ -15,18 +15,18 @@ it("renders Regime in shared navigation and moves the active page to it", () => 
   const navigation = getByRole("navigation", { name: "프로젝트" });
   const links = within(navigation).getAllByRole("link");
   expect(links.map((link) => link.textContent)).toEqual([
-    "Factor", "DRAM", "ETF", "SOX", "Fear & Greed", "Regime", "News", "투자일지", "알파 하우스",
+    "Factor", "DRAM", "ETF", "SOX", "Fear & Greed", "News", "투자일지", "알파 하우스",
   ]);
-  const regime = within(navigation).getByRole("link", { name: "Regime" });
-  expect(regime.getAttribute("href")).toBe("https://sonchanggi.github.io/regime/");
-  expect(regime.getAttribute("aria-current")).toBeNull();
+  const fear = within(navigation).getByRole("link", { name: "Fear & Greed" });
+  expect(fear.getAttribute("href")).toBe("https://sonchanggi.github.io/fearNgreed/");
+  expect(fear.getAttribute("aria-current")).toBeNull();
 
   rerender(
     <ThemeProvider>
-      <SharedNavigation currentProject="regime" />
+      <SharedNavigation currentProject="fear-greed" />
     </ThemeProvider>,
   );
-  expect(within(navigation).getAllByRole("link", { current: "page" })).toEqual([regime]);
+  expect(within(navigation).getAllByRole("link", { current: "page" })).toEqual([fear]);
   expect(getByRole("link", { name: "Quant Research Hub" }).getAttribute("aria-current")).toBeNull();
 });
 
@@ -34,12 +34,12 @@ it("uses the shared validated runtime while React owns its links", async () => {
   const menu = {
     schemaVersion: "quant-navigation/v1" as const,
     brand: {id: "hub", label: "Quant Research Hub", url: "https://sonchanggi.github.io/quant-dashboard/"},
-    projects: [{id:"factor",label:"Factor",url:"https://sonchanggi.github.io/factor/"},{id:"regime",label:"Regime",url:"https://sonchanggi.github.io/regime/"}],
+    projects: [{id:"factor",label:"Factor",url:"https://sonchanggi.github.io/factor/"},{id:"fear-greed",label:"Fear & Greed",url:"https://sonchanggi.github.io/fearNgreed/"}],
   };
   window.QuantNavigationV1 = {getMenu: () => menu, getLinks: () => []};
   const {getByRole} = render(<ThemeProvider><SharedNavigation currentProject="momentum" /></ThemeProvider>);
   const navigation = getByRole("navigation", {name:"프로젝트"});
-  expect(within(navigation).getAllByRole("link").map(link=>link.textContent)).toEqual(["Factor","Regime"]);
+  expect(within(navigation).getAllByRole("link").map(link=>link.textContent)).toEqual(["Factor","Fear & Greed"]);
   expect(within(navigation).getByRole("link",{name:"Factor"}).getAttribute("aria-current")).toBe("page");
   expect(navigation.closest('[data-quant-navigation-managed="react"]')).not.toBeNull();
   delete window.QuantNavigationV1;

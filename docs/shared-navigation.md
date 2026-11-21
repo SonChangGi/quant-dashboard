@@ -13,7 +13,7 @@ Public paths:
 
 Navigation ids are separate from legacy calculation/API ids. `momentum` remains an explicit navigation alias for `factor`; the old public summary schema is not relabelled.
 
-Current navigation contains the Hub brand and nine project links: Factor, DRAM, ETF, SOX, Fear & Greed, Regime, News, 투자일지, and 알파 하우스. 투자일지 links to `https://invest.changgi-son.chatgpt.site/`; its existing username/password sign-in remains required, and no credentials or tokens are included in the navigation URL. Best and SPO are not navigation entries. Retired ids are rejected; they are never aliases for Factor. The central JSON remains the authority when this list changes.
+Current navigation contains the Hub brand and eight project links: Factor, DRAM, ETF, SOX, Fear & Greed, News, 투자일지, and 알파 하우스. 투자일지 links to `https://invest.changgi-son.chatgpt.site/`; its existing username/password sign-in remains required, and no credentials or tokens are included in the navigation URL. Best and SPO are not navigation entries. Retired ids are rejected; they are never aliases for Factor. The central JSON remains the authority when this list changes.
 
 Project links follow creation order. Factor inherits the original Momentum project and is first. For each new project, append its entry immediately before `observatory` in `menu.json` (after 투자일지 today); preserve the existing project order. Alpha House stays at the trailing edge of the links, followed by the existing theme button. The navigation remains one 59px row at every viewport; narrow screens scroll only the project links.
 

@@ -12,12 +12,12 @@ async function run({path='/',host='sonchanggi.github.io',project,fail=false,earl
  await new Promise(r=>setTimeout(r,10));return{nodes,window,root,footer};
 }
 test('all ten projects use only their prepared runtime',async()=>{
- for(const project of ['quant-dashboard','factor','regime','fearNgreed','etf-tracking','dram-price','sox','news','alpha-house','investment-journal']){
+ for(const project of ['quant-dashboard','factor','fearNgreed','etf-tracking','dram-price','sox','news','alpha-house','investment-journal']){
   const r=await run({project,early:true});assert.equal(r.nodes.length,1);assert.equal(r.nodes[0].tag,'script');assert(String(r.nodes[0].src).endsWith('/startup/1.2.0/runtime.js'));assert.equal(r.window.__quantDesignV3.state,'loading');
  }
 });
 test('missing startup never falls back to a retired dynamic design',async()=>{
- for(const project of ['hub','momentum','factor','regime','fearngreed','fear-greed','dram','sox','etf','news','observatory','investment-journal']){
+ for(const project of ['hub','momentum','factor','fearngreed','fear-greed','dram','sox','etf','news','observatory','investment-journal']){
   const r=await run({project});assert.equal(r.nodes.length,0);assert.equal(r.window.__quantDesignV3.state,'error');assert.equal(r.window.__quantDesignUnified,undefined);
  }
 });

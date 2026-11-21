@@ -51,7 +51,7 @@ assert(
 );
 assert(
   api.NAVIGATION_PROJECTS.map((project) => project.shortName).join('|')
-    === 'Factor|DRAM|ETF|SOX|Fear & Greed|Regime|News|알파 하우스',
+    === 'Factor|DRAM|ETF|SOX|Fear & Greed|News|알파 하우스',
   'project manifest preserves the canonical navigation order after Hub',
 );
 assert(
@@ -61,7 +61,6 @@ assert(
     dram: 'dram',
     etf: 'etf',
     sox: 'sox',
-    regime: 'regime',
   }),
   'Hub maps public summary ids to canonical platform project identities',
 );
@@ -1655,128 +1654,7 @@ const validSox = api.parseSox({
 assert(validSox.rows.length === 2 && validSox.rows[0].ticker === 'AAA', 'recorded valid SOX fixture sorts summary rows by combined score');
 assert(validSox.topWeight.ticker === 'BBB' && validSox.entities.some((entity) => entity.symbol === 'AAA'), 'SOX parser preserves top proxy weight and dossier entities');
 
-const validRegimePayload = {
-  meta: {
-    mode: 'demo',
-    result_version: 'weekly-regime-result-v4',
-    generated_at: '2026-08-08T00:00:00Z',
-    data_as_of: '2026-08-07T20:00:00Z',
-  },
-  sources: [
-    { id: 'synthetic_market_fixture', license_class: 'synthetic_fixture' },
-    { id: 'synthetic_macro_fixture', license_class: 'synthetic_fixture' },
-  ],
-  weekly: [{
-    date: '2026-08-07',
-    current: {
-      state: 'risk_on',
-      probabilities: { risk_on: 0.6, transition: 0.3, risk_off: 0.1 },
-      confidence: 0.6,
-    },
-    next_week: {
-      state: 'transition',
-      probabilities: { risk_on: 0.3, transition: 0.6, risk_off: 0.1 },
-      confidence: 0.6,
-      date: '2026-08-14',
-    },
-    transition_probability: 0.7,
-    transition_risk: {
-      '1w': { probability: 0.7, target_end: '2026-08-14' },
-      '4w': { probability: 0.8, target_end: '2026-09-04' },
-      '13w': { probability: 0.9, target_end: '2026-11-06' },
-    },
-  }],
-};
-const validRegime = api.parseRegime(validRegimePayload);
-assert(
-  api.PANEL_ADAPTERS.regime.hasUsableData(validRegime)
-    && validRegime.currentStateLabel === '위험 선호'
-    && validRegime.nextStateLabel === '전환'
-    && validRegime.transitionRisk13w === 0.9,
-  'Regime adapter parses current, next-week, and 1/4/13-week probabilities from a synthetic demo',
-);
-assert(
-  api.briefingItemForRecord({ project: { id: 'regime' }, summary: validRegime }).detail.includes('13주 90%'),
-  'Regime briefing derives risk and date values from the public demo payload',
-);
-const validLiveRegimePayload = {
-  ...validRegimePayload,
-  meta: { ...validRegimePayload.meta, mode: 'live', status: 'degraded' },
-  sources: [
-    { id: 'alpha_vantage', license_class: 'private_noncommercial' },
-    { id: 'alfred', license_class: 'user_confirmed_ml_storage_derived' },
-  ],
-};
-const validLiveRegime = api.parsePanelSafely(api.PANEL_ADAPTERS.regime, {
-  summary: validLiveRegimePayload,
-});
-assert(
-  validLiveRegime.ok
-    && validLiveRegime.data.publicPayloadValid
-    && validLiveRegime.data.meta.dataModeLabel === 'Live 파생 결과'
-    && validLiveRegime.data.meta.statusState === 'degraded',
-  'Regime adapter accepts the exact personal noncommercial live-derived source contract',
-);
-const rejectedProviderRegime = api.parsePanelSafely(api.PANEL_ADAPTERS.regime, {
-  summary: {
-    ...validRegimePayload,
-    sources: [{ id: 'alpha_vantage', license_class: 'private_noncommercial' }],
-  },
-});
-assert(
-  !rejectedProviderRegime.ok && /not synthetic/.test(rejectedProviderRegime.error),
-  'Regime demo adapter rejects provider-derived source metadata',
-);
-const rejectedLicenseRegime = api.parsePanelSafely(api.PANEL_ADAPTERS.regime, {
-  summary: {
-    ...validRegimePayload,
-    sources: [{ id: 'synthetic_market_fixture', license_class: 'private_noncommercial' }],
-  },
-});
-assert(
-  !rejectedLicenseRegime.ok && /not synthetic_fixture/.test(rejectedLicenseRegime.error),
-  'Regime adapter requires synthetic_fixture licensing for every public source',
-);
-const rejectedLiveLicenseRegime = api.parsePanelSafely(api.PANEL_ADAPTERS.regime, {
-  summary: {
-    ...validLiveRegimePayload,
-    sources: [
-      { id: 'alpha_vantage', license_class: 'synthetic_fixture' },
-      { id: 'alfred', license_class: 'user_confirmed_ml_storage_derived' },
-    ],
-  },
-});
-assert(
-  !rejectedLiveLicenseRegime.ok && /invalid license_class/.test(rejectedLiveLicenseRegime.error),
-  'Regime live adapter rejects a mismatched provider license contract',
-);
-const rejectedProbabilityRegime = api.parsePanelSafely(api.PANEL_ADAPTERS.regime, {
-  summary: {
-    ...validRegimePayload,
-    weekly: [{
-      ...validRegimePayload.weekly[0],
-      current: {
-        ...validRegimePayload.weekly[0].current,
-        probabilities: { risk_on: 0.8, transition: 0.3, risk_off: 0.1 },
-      },
-    }],
-  },
-});
-assert(
-  !rejectedProbabilityRegime.ok && /sum to one/.test(rejectedProbabilityRegime.error),
-  'Regime adapter rejects malformed three-state probability distributions',
-);
-const unavailableRegime = api.PANEL_ADAPTERS.regime.fallback();
-assert(
-  unavailableRegime.unavailable === true
-    && unavailableRegime.dataAsOf === ''
-    && unavailableRegime.currentConfidence === null
-    && unavailableRegime.transitionRisk13w === null,
-  'Regime unavailable fallback contains no hardcoded market state, probability, or date',
-);
-
-assert(Object.keys(api.PANEL_ADAPTERS).length === 6 && !api.PANEL_ADAPTERS.best && !api.PROJECTS.some(project => project.id === 'best'), 'panel adapter manifest has six active panels without a retired Best card');
-assert(Object.keys(api.PANEL_ADAPTERS.regime.sourceUrls).length === 1, 'Regime adapter reads only its public result JSON');
+assert(Object.keys(api.PANEL_ADAPTERS).length === 5 && !api.PANEL_ADAPTERS.best && !api.PROJECTS.some(project => project.id === 'best'), 'panel adapter manifest has five active panels without a retired Best card');
 
 const nullEntryMomentum = api.parseMomentum({
   ...momentumSummaryV4,
@@ -1885,14 +1763,13 @@ context.document = {
 };
 api.renderProjectNavigation();
 api.renderDashboardPanels();
-assert(domTargets['#top-nav'].children.length === 8, 'manifest renderer creates eight project links including 알파 하우스');
+assert(domTargets['#top-nav'].children.length === 7, 'manifest renderer creates seven project links including 알파 하우스');
 const renderedPanels = domTargets['#summary-grid'].children.filter((child) => child.dataset.projectId);
-assert(renderedPanels.length === 6 && new Set(renderedPanels.map((child) => child.dataset.projectId)).size === 6, 'grouped renderer preserves every public summary panel exactly once');
-assert(renderedPanels.map((child) => child.dataset.projectId).join('|') === 'fearngreed|regime|momentum|dram|sox|etf', 'display groups keep related research panels adjacent');
+assert(renderedPanels.length === 5 && new Set(renderedPanels.map((child) => child.dataset.projectId)).size === 5, 'grouped renderer preserves every public summary panel exactly once');
+assert(renderedPanels.map((child) => child.dataset.projectId).join('|') === 'fearngreed|momentum|dram|sox|etf', 'display groups keep related research panels adjacent');
 assert(renderedPanels.every((child) => /열기|통합 팩터 탐색/.test(child.innerHTML)), 'dashboard panel shells preserve project page links');
 assert(domTargets['#summary-grid'].children.some((child) => /panel-detail/.test(child.innerHTML)), 'ETF panel shell includes detail mount for TOP10 cards');
 assert(domTargets['#summary-grid'].children.some((child) => /SOX 구성종목/.test(child.innerHTML)), 'SOX panel shell appears in the central summary grid');
-assert(domTargets['#summary-grid'].children.some((child) => /국면 추이/.test(child.innerHTML)), 'Regime public result panel appears in the central summary grid');
 api.renderEtfDetailCards('#etf-details', validEtf.rows);
 assert(/etf-detail-card/.test(domTargets['#etf-details'].innerHTML), 'ETF detail renderer creates per-ETF card markup');
 assert(/AAA/.test(domTargets['#etf-details'].innerHTML) && /BBB/.test(domTargets['#etf-details'].innerHTML), 'ETF detail renderer includes TOP10 holdings');

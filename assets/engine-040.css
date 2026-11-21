@@ -15,8 +15,8 @@ html[data-design-engine="0.4.4"] .qe-chart-tools .qr-toolbar{opacity:1;pointer-e
 .qe-table-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:14px 0}.qe-table-tools input{min-width:140px;flex:1}.qe-table-tools output{font-variant-numeric:tabular-nums;color:var(--qe-muted)}.qe-table-tools :is(input,button,summary){min-height:44px;padding:10px;border:1px solid var(--qe-border);border-radius:7px;background:var(--qe-surface);color:var(--qe-text)}.qe-table-tools [hidden]{display:none!important}.qe-table-tools details{position:relative}.qe-table-tools details[open]>button{position:absolute;right:0;top:100%;min-width:110px;z-index:5}
 @media(max-width:600px){.qe-chart-tools>summary{min-height:44px}}
 
-html[data-design-engine="0.4.4"] .qd-hub :is(.regime-trend-legend,.factor-performance-legend,.etf-mini-legend) button{appearance:none;min-height:44px!important;padding:8px 12px;border:1px solid var(--qe-border);border-radius:var(--qe-control-radius);background:var(--qe-surface);color:var(--qe-text);font:inherit;cursor:pointer}
-html[data-design-engine="0.4.4"] .qd-hub :is(.regime-trend-legend,.factor-performance-legend,.etf-mini-legend) button:hover{background:var(--qe-raised)}
+html[data-design-engine="0.4.4"] .qd-hub :is(.factor-performance-legend,.etf-mini-legend) button{appearance:none;min-height:44px!important;padding:8px 12px;border:1px solid var(--qe-border);border-radius:var(--qe-control-radius);background:var(--qe-surface);color:var(--qe-text);font:inherit;cursor:pointer}
+html[data-design-engine="0.4.4"] .qd-hub :is(.factor-performance-legend,.etf-mini-legend) button:hover{background:var(--qe-raised)}
 
 /* v0.4.1 plots: intrinsic width, native gestures, quiet optional tools. */
 .qe-plot041 {width:100%;min-width:0!important;overflow:visible!important;position:relative}
@@ -32,8 +32,8 @@ html[data-design-engine="0.4.4"] .qd-hub :is(.regime-trend-legend,.factor-perfor
 .qe-options041 td {white-space:nowrap;text-align:right}
 .qe-options041 td:first-child {text-align:left}
 .qe-range041 {display:block;margin:8px 0;font-size:12px;font-variant-numeric:tabular-nums}
-.qe-plot041 [hidden],.factor-performance-legend[hidden],.regime-trend-legend[hidden],.etf-mini-legend[hidden] {display:none!important}
-@media(max-width:640px){.qe-options041 button,.qe-plot041>button{min-height:44px}.qe-options041>summary{min-height:36px}.factor-performance-frame,.regime-trend-frame,.etf-mini-plot,.dram-chart-frame{max-width:100%}.regime-trend-vectors{gap:12px}.regime-trend-readout{padding:12px}}
+.qe-plot041 [hidden],.factor-performance-legend[hidden],.etf-mini-legend[hidden] {display:none!important}
+@media(max-width:640px){.qe-options041 button,.qe-plot041>button{min-height:44px}.qe-options041>summary{min-height:36px}.factor-performance-frame,.etf-mini-plot,.dram-chart-frame{max-width:100%}.regime-trend-vectors{gap:12px}.regime-trend-readout{padding:12px}}
 .qd-hub .dram-source-card > .dram-chart-readout {padding:12px 0!important;margin:0!important;border:0!important;border-radius:0!important;background:transparent!important;color:var(--muted-strong);font-size:12px;line-height:1.65}
 html[data-design-engine="0.4.4"] #dram-chart .dram-legend-button[aria-pressed] {border:1px solid var(--line)!important;background:var(--panel)!important;color:var(--ink)!important}
 .qd-hub .dram-legend-button[aria-pressed="false"] {opacity:.45}

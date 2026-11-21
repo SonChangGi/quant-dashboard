@@ -37,7 +37,6 @@ try {
   if (!app.includes('parseEtfTracking')) throw new Error('ETF Tracking parser missing');
   if (!app.includes('parseFearScatter') || !app.includes('수익률 × 개인 순매수대금')) throw new Error('Fear & Greed scatter parser/panel missing');
   if (!app.includes('parseSox') || !app.includes('SOX 구성종목 · 가격 vs 실적')) throw new Error('SOX parser/panel missing');
-  if (!app.includes('parseRegime') || !app.includes('국면 추이')) throw new Error('Regime public-result parser/panel missing');
   if (!app.includes('renderEtfDetailCards') || !app.includes('renderEtfMiniChart')) throw new Error('ETF Tracking detail card/chart renderer missing');
   if (!app.includes('parseIntegratedMomentum') || !app.includes('buildDramAxisTicks') || !app.includes('buildEtfPercentAxisTicks')) throw new Error('dashboard readability improvements missing');
   if (!app.includes('renderDramSourceChart') || !app.includes('data-dram-scale="indexed"') || app.includes('dram-value-layer')) throw new Error('DRAM chart collision fix missing');

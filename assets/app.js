@@ -167,7 +167,6 @@
     dram: (metrics) => `${metrics.kind || '가격'} · ${formatMaybeDate(metrics.date)} · ${metrics.source || 'source N/A'}`,
     sox: (metrics) => `SOX proxy ${formatPercent(metrics.weight)} · 가격 ${formatNumber(metrics.priceMomentum)} · 실적 ${formatNumber(metrics.earningsMomentum)}`,
     fearngreed: (metrics) => `상태 ${metrics.signalState || '산출 불가'} · 백분위 ${formatNumber(metrics.sentimentPercentile)} · 잔차 z ${formatNumber(metrics.residualZ)} · 포지션 ${formatFearPosition(metrics.position)}`,
-    regime: (metrics) => `현재 ${metrics.currentStateLabel || '-'} · ${metrics.currentMeasureLabel || '확률'} ${formatPercent(metrics.currentConfidence)} · ${formatMaybeDate(metrics.nextDate)} 예측 ${metrics.nextStateLabel || '-'} · 확률 ${formatPercent(metrics.nextConfidence)} · 1주 이탈 ${formatPercent(metrics.transitionRisk1w)}`,
   };
 
   const PROJECTS = [
@@ -263,24 +262,9 @@
         },
       },
     },
-    {
-      id: 'regime',
-      shortName: 'Regime',
-      title: 'US Market Regime Lab',
-      description: '미국 증시의 현재 국면과 다음 주 확률을 확인합니다.',
-      url: 'https://sonchanggi.github.io/regime/',
-      accent: 'RG',
-      panelAdapter: 'regime',
-      panel: {
-        eyebrow: 'US Market Regime',
-        title: '국면 추이',
-        contentType: 'regime-trend',
-        metricLoading: 'Regime 공개 요약을 불러오는 중...',
-      },
-    },
   ];
   const NAVIGATION_PROJECTS = [
-    ...['momentum', 'dram', 'etf', 'sox', 'fearngreed', 'regime'].map(id => PROJECTS.find(project => project.id === id)),
+    ...['momentum', 'dram', 'etf', 'sox', 'fearngreed'].map(id => PROJECTS.find(project => project.id === id)),
     { id: 'news', shortName: 'News', url: 'https://sonchanggi.github.io/news/' },
     { id: 'observatory', shortName: '알파 하우스', url: 'https://research-observatory-changgi.changgi-son.chatgpt.site/' },
   ];
@@ -290,7 +274,6 @@
     dram: 'dram',
     etf: 'etf',
     sox: 'sox',
-    regime: 'regime',
   };
   const PROJECT_EXPECTED_FRESHNESS_DAYS = Object.freeze({
     fearngreed: 5,
@@ -298,25 +281,8 @@
     dram: 5,
     etf: 5,
     sox: 5,
-    regime: 10,
   });
 
-  const REGIME_RESULT_VERSIONS = new Set(['weekly-regime-result-v3', 'weekly-regime-result-v4', 'weekly-regime-result-v5']);
-  const REGIME_CORE_VERSIONS = new Set(['regime-dashboard-core/1', 'regime-dashboard-core/2']);
-  const REGIME_STATES = Object.freeze(['risk_on', 'transition', 'risk_off']);
-  const REGIME_LIVE_SOURCE_LICENSES = Object.freeze({
-    alpha_vantage: 'private_noncommercial',
-    alfred: 'user_confirmed_ml_storage_derived',
-  });
-  const REGIME_V5_LIVE_SOURCE_LICENSES = Object.freeze({
-    ...REGIME_LIVE_SOURCE_LICENSES,
-    frb_h10: 'federal_reserve_board_public_domain_citation_requested',
-  });
-  const REGIME_STATE_LABELS = Object.freeze({
-    risk_on: '위험 선호',
-    transition: '전환',
-    risk_off: '위험 회피',
-  });
   const SUMMARY_CONTRACT = { versionField: 'schemaVersion', expectedVersion: 1, requiredKeys: ['contract', 'projectId', 'status', 'primaryEntities'] };
   const MOMENTUM_SUMMARY_CONTRACT = {
     versionField: 'schemaVersion',
@@ -396,19 +362,6 @@
       fallback: normalizeSoxFallback,
       render: renderSox,
       emptyReason: 'SOX summary did not contain usable constituents.',
-    },
-    regime: {
-      sourceUrls: {
-        summary: 'https://sonchanggi.github.io/regime/data/regime-core.json',
-      },
-      primarySourceKey: 'summary',
-      parse: (sources) => parseRegimePanel(sources),
-      enrichSources: enrichRegimeSources,
-      enrichmentFailure: (sources, message) => ({ dataSources: { ...sources, regimeHistoryError: message }, fetchResults: { regimeHistory: { ok: false, error: message } } }),
-      hasUsableData: (summary) => Boolean(summary?.publicPayloadValid && summary.unavailable !== true),
-      fallback: normalizeRegimeUnavailable,
-      render: renderRegime,
-      emptyReason: 'Regime public payload did not satisfy the demo or live-derived contract.',
     },
   };
 
@@ -502,7 +455,7 @@
     if (!summaryGrid) return;
     // Display groups only: the source registry, loaders and result identities stay unchanged.
     const groups = [
-      { id: 'market', title: '시장 상태', label: '심리와 국면', projects: ['fearngreed', 'regime'] },
+      { id: 'market', title: '시장 상태', label: '시장 심리', projects: ['fearngreed'] },
       { id: 'factors', title: '팩터 전략', label: '연구 결과와 모델 포트폴리오', projects: ['momentum'] },
       { id: 'semiconductors', title: '반도체', label: '메모리 가격과 SOX 구성종목', projects: ['dram', 'sox'] },
       { id: 'holdings', title: 'ETF 보유종목', label: 'TOP10 비중과 변화', projects: ['etf'] },
@@ -660,9 +613,7 @@
     article.setAttribute('data-quant-card', '');
     article.setAttribute('aria-labelledby', panelDomId(project, 'title'));
 
-    const content = contentType === 'regime-trend'
-      ? `<div class="regime-trend-mount" id="${escapeAttribute(panelDomId(project, 'chart'))}"><div class="skeleton-line">국면 추이를 불러오는 중...</div></div>`
-      : contentType === 'scatter'
+    const content = contentType === 'scatter'
       ? `<div class="fear-scatter-mount" id="${escapeAttribute(panelDomId(project, 'chart'))}"><div class="skeleton-line">차트를 불러오는 중...</div></div>`
       : contentType === 'chart'
       ? chartPanelMarkup(project)
@@ -2653,325 +2604,6 @@
     });
   }
 
-  function unwrapRegimePayload(document) {
-    if (!isRecord(document)) throw new Error('Regime payload must be an object.');
-    if (!Object.hasOwn(document, 'schema_version') && !Object.hasOwn(document, 'payload')) return document;
-    if (!REGIME_CORE_VERSIONS.has(document.schema_version)) {
-      throw new Error(`Unsupported Regime core version: ${document.schema_version || 'missing'}.`);
-    }
-    const payload = document.payload;
-    if (!isRecord(payload) || payload.meta?.result_version !== 'weekly-regime-result-v5') {
-      throw new Error('Regime core must contain a v5 payload.');
-    }
-    if (typeof document.generation_id !== 'string' || !document.generation_id.trim()
-      || document.generation_id !== payload.meta.generation_id) {
-      throw new Error('Regime core generation does not match its payload.');
-    }
-    if (typeof document.source_payload_sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(document.source_payload_sha256)) {
-      throw new Error('Regime core source payload SHA-256 is missing or invalid.');
-    }
-    return payload;
-  }
-
-  function regimeHistoryDescriptors(core) {
-    unwrapRegimePayload(core);
-    const descriptors = core.history_sidecars || [];
-    if (!Array.isArray(descriptors)) throw new Error('Regime history manifest is invalid.');
-    const paths = new Set();
-    for (const item of descriptors) {
-      if (!isRecord(item) || !/^regime-history-\d{3}\.json$/.test(item.path)
-        || paths.has(item.path) || !LOWERCASE_SHA256.test(item.sha256 || '')
-        || !Number.isInteger(item.row_count) || item.row_count < 1 || item.row_count > 104) throw new Error('Regime history descriptor is invalid.');
-      requireRegimeDate(item.start, 'history.start'); requireRegimeDate(item.end, 'history.end');
-      if (item.start > item.end) throw new Error('Regime history range is reversed.');
-      paths.add(item.path);
-    }
-    const firstCurrent = core.payload?.weekly?.[0]?.date;
-    if (descriptors.some((item, index) => (index > 0 && item.start <= descriptors[index - 1].end) || (firstCurrent && item.end >= firstCurrent))) throw new Error('Regime history ranges overlap.');
-    return descriptors;
-  }
-
-  function validateRegimeHistory(history, core, descriptor) {
-    if (!isRecord(history) || history.schema_version !== 'regime-dashboard-history/1'
-      || history.generation_id !== core.generation_id || history.source_payload_sha256 !== core.source_payload_sha256
-      || !Array.isArray(history.weekly) || history.weekly.length !== descriptor.row_count
-      || history.weekly[0]?.date !== descriptor.start || history.weekly.at(-1)?.date !== descriptor.end
-      || history.weekly.some((row, index) => !isRecord(row) || (index > 0 && row.date <= history.weekly[index - 1].date))) {
-      throw new Error('Regime history identity or range mismatch.');
-    }
-    return history.weekly;
-  }
-
-  async function enrichRegimeSources(sources, fetchJson) {
-    // Keep the existing summary usable when a separate history file fails.
-    parseRegime(sources.summary);
-    const core = sources.summary;
-    const descriptors = regimeHistoryDescriptors(core);
-    const entries = await Promise.all(descriptors.map(async (descriptor) => {
-      const url = `https://sonchanggi.github.io/regime/data/${descriptor.path}`;
-      const result = await fetchJson(url, 12000, descriptor.sha256);
-      if (result.ok) {
-        try { validateRegimeHistory(result.data, core, descriptor); }
-        catch (error) { return [descriptor.path, { ...result, ok: false, error: error.message }]; }
-      }
-      return [descriptor.path, result];
-    }));
-    const failed = entries.find(([, result]) => !result.ok);
-    return {
-      dataSources: { ...sources, regimeHistory: Object.fromEntries(entries.map(([path, result]) => [path, result.ok ? result.data : null])),
-        regimeHistoryError: failed ? `${failed[0]}: ${failed[1].error}` : '' },
-      fetchResults: Object.fromEntries(entries),
-    };
-  }
-
-  function parseRegimePanel(sources) {
-    const summary = parseRegime(sources.summary);
-    try {
-      if (sources.regimeHistoryError) throw new Error(sources.regimeHistoryError);
-      return { ...summary, trend: parseRegimeTrend(sources.summary, sources.regimeHistory) };
-    } catch (error) {
-      return { ...summary, trend: null, trendError: error.message };
-    }
-  }
-
-  function parseRegimeTrend(core, history = {}) {
-    const summary = parseRegime(core), payload = unwrapRegimePayload(core);
-    if (['blocked', 'error'].includes(payload.meta.status)) throw new Error('Regime chart unavailable.');
-    const descriptors = regimeHistoryDescriptors(core);
-    const rows = descriptors.flatMap((item) => validateRegimeHistory(history[item.path], core, item)).concat(payload.weekly);
-    const expectedCount = payload.model?.evidence_artifacts?.weekly_state_forecasts?.row_count;
-    if (Number.isInteger(expectedCount) && rows.length !== expectedCount) throw new Error('Regime history coverage mismatch.');
-    const seen = new Set(), isV5 = payload.meta.result_version === 'weekly-regime-result-v5';
-    const parsed = rows.map((row, index) => {
-      const date = requireRegimeDate(row.date, `history[${index}].date`);
-      if (seen.has(date) || date > summary.dataAsOf) throw new Error('Regime history contains duplicate or future observations.');
-      seen.add(date);
-      const current = isV5 ? parseRegimeMembership(row.current, `history[${index}].current`) : parseRegimeEstimate(row.current, `history[${index}].current`);
-      const forecast = parseRegimeEstimate(row.next_week, `history[${index}].next_week`);
-      const nextDate = requireRegimeDate(row.next_week.date, `history[${index}].next_week.date`);
-      if (Date.parse(nextDate) - Date.parse(date) !== 7 * 86400000) throw new Error('Regime history forecast horizon is not one week.');
-      const entropy = row.next_week.entropy == null ? null : requireRegimeProbability(row.next_week.entropy, 'forecast.entropy');
-      return { date, nextDate, currentState: current.state, memberships: current.values || current.probabilities,
-        probabilities: forecast.probabilities, nextState: forecast.state, entropy };
-    }).sort((a, b) => a.date.localeCompare(b.date));
-    if (!parsed.length || parsed.at(-1).date !== summary.dataAsOf) throw new Error('Regime chart endpoint mismatch.');
-    const byDate = new Map(parsed.map((row) => [row.date, row]));
-    return { currentMeasureLabel: summary.currentMeasureLabel,
-      rows: parsed.map((row) => ({ ...row, actualState: byDate.get(row.nextDate)?.currentState || null })) };
-  }
-
-  function parseRegime(document) {
-    const payload = unwrapRegimePayload(document);
-    if (!isRecord(payload)) throw new Error('Regime payload must be an object.');
-    const meta = payload.meta;
-    if (!isRecord(meta) || !['demo', 'live'].includes(meta.mode)) {
-      throw new Error('Regime public payload must declare meta.mode=demo or live.');
-    }
-    if (!REGIME_RESULT_VERSIONS.has(meta.result_version)) {
-      throw new Error(`Unsupported Regime result version: ${meta.result_version || 'missing'}.`);
-    }
-    const isV5 = meta.result_version === 'weekly-regime-result-v5';
-
-    const sources = payload.sources;
-    if (!Array.isArray(sources) || !sources.length || sources.some((source) => !isRecord(source))) {
-      throw new Error('Regime public payload must contain sources.');
-    }
-    if (meta.mode === 'demo') {
-      sources.forEach((source, index) => {
-        if (typeof source.id !== 'string' || !source.id.startsWith('synthetic_')) {
-          throw new Error(`Regime sources[${index}].id is not synthetic.`);
-        }
-        if (source.license_class !== 'synthetic_fixture') {
-          throw new Error(`Regime sources[${index}].license_class is not synthetic_fixture.`);
-        }
-      });
-    } else {
-      const expectedLicenses = isV5 ? REGIME_V5_LIVE_SOURCE_LICENSES : REGIME_LIVE_SOURCE_LICENSES;
-      const liveSources = new Map(sources.map((source) => [source.id, source]));
-      if (liveSources.size !== sources.length
-        || liveSources.size !== Object.keys(expectedLicenses).length) {
-        throw new Error('Regime live-derived payload must contain the exact provider source set.');
-      }
-      Object.entries(expectedLicenses).forEach(([sourceId, expectedLicense]) => {
-        if (liveSources.get(sourceId)?.license_class !== expectedLicense) {
-          throw new Error(`Regime live source ${sourceId} has an invalid license_class.`);
-        }
-      });
-    }
-
-    if (!Array.isArray(payload.weekly) || !payload.weekly.length || payload.weekly.some((row) => !isRecord(row))) {
-      throw new Error('Regime weekly results are missing.');
-    }
-    const datedWeeks = payload.weekly.map((row, index) => ({
-      row,
-      date: requireRegimeDate(row.date, `weekly[${index}].date`),
-    })).sort((left, right) => left.date.localeCompare(right.date));
-    const { row: latest, date } = datedWeeks.at(-1);
-    const generatedAt = stringOr(meta.generated_at, '');
-    if (!generatedAt || !Number.isFinite(Date.parse(generatedAt))) {
-      throw new Error('Regime meta.generated_at is missing or invalid.');
-    }
-    const declaredDataAsOf = requireRegimeDatePrefix(meta.data_as_of, 'meta.data_as_of');
-    if (declaredDataAsOf !== date) {
-      throw new Error('Regime meta.data_as_of does not match the latest observation week.');
-    }
-
-    const current = isV5
-      ? parseRegimeMembership(latest.current, 'weekly.latest.current')
-      : parseRegimeEstimate(latest.current, 'weekly.latest.current');
-    const nextWeek = parseRegimeEstimate(latest.next_week, 'weekly.latest.next_week');
-    const nextDate = requireRegimeDate(latest.next_week?.date, 'weekly.latest.next_week.date');
-    const horizonDate = (weeks) => new Date(Date.parse(`${date}T00:00:00Z`) + weeks * 7 * 86_400_000).toISOString().slice(0, 10);
-    if (nextDate !== horizonDate(1)) throw new Error('Regime next-week date must be one week after the observation week.');
-
-    const transitionRisk = {};
-    for (const horizon of [1, 4, 13]) {
-      const key = `${horizon}w`;
-      const item = latest.transition_risk?.[key];
-      if (!isRecord(item)) throw new Error(`Regime transition_risk.${key} is missing.`);
-      transitionRisk[key] = {
-        probability: requireRegimeProbability(item.probability, `transition_risk.${key}.probability`),
-        targetEnd: requireRegimeDate(item.target_end, `transition_risk.${key}.target_end`),
-      };
-      if (transitionRisk[key].targetEnd !== horizonDate(horizon)) {
-        throw new Error(`Regime ${key} transition target does not match its observation horizon.`);
-      }
-    }
-    if (transitionRisk['1w'].targetEnd !== nextDate) {
-      throw new Error('Regime 1w transition target does not match the next-week date.');
-    }
-    if (!(transitionRisk['1w'].probability <= transitionRisk['4w'].probability + 1e-8
-      && transitionRisk['4w'].probability <= transitionRisk['13w'].probability + 1e-8)) {
-      throw new Error('Regime transition risks must be monotone across 1w, 4w, and 13w.');
-    }
-
-    const transitionProbability = requireRegimeProbability(latest.transition_probability, 'transition_probability');
-    const canonicalTransition = 1 - nextWeek.probabilities[current.state];
-    if (Math.abs(transitionProbability - canonicalTransition) > 1e-6
-      || Math.abs(transitionProbability - transitionRisk['1w'].probability) > 1e-6) {
-      throw new Error('Regime 1w transition probability is internally inconsistent.');
-    }
-
-    const isLive = meta.mode === 'live';
-    const liveStatus = ['ok', 'degraded', 'stale', 'blocked', 'error'].includes(meta.status)
-      ? meta.status
-      : 'degraded';
-    const statusState = isLive ? liveStatus : 'demo';
-    const statusLabel = isLive
-      ? (liveStatus === 'ok' ? '정상' : '주의')
-      : '합성 데모';
-    const summary = {
-      publicPayloadValid: true,
-      healthAssessment: regimeHealthAssessment(payload, latest),
-      generatedAt,
-      dataAsOf: date,
-      nextDate,
-      resultVersion: meta.result_version,
-      currentState: current.state,
-      currentStateLabel: REGIME_STATE_LABELS[current.state],
-      currentConfidence: current.confidence,
-      currentMeasureLabel: isV5 ? '소속도' : '확률',
-      nextState: nextWeek.state,
-      nextStateLabel: REGIME_STATE_LABELS[nextWeek.state],
-      nextConfidence: nextWeek.confidence,
-      transitionRisk1w: transitionRisk['1w'].probability,
-      transitionRisk4w: transitionRisk['4w'].probability,
-      transitionRisk13w: transitionRisk['13w'].probability,
-      status: statusLabel,
-      rows: [],
-      entities: [],
-      meta: {
-        statusState,
-        statusLabel,
-        dataModeLabel: isLive ? 'Live 파생 결과' : '합성 데모',
-        dataAsOf: date,
-        cadence: 'weekly',
-        expectedFreshnessDays: PROJECT_EXPECTED_FRESHNESS_DAYS.regime,
-        limitations: asArray(meta.warnings).filter((value) => typeof value === 'string'),
-        degradedReasons: asArray(payload.model?.model_health?.reasons).filter((value) => typeof value === 'string'),
-        sourceCount: sources.length,
-      },
-    };
-    summary.entities = [{
-      id: 'us-market-regime',
-      symbol: 'US Market',
-      name: '미국 증시 국면',
-      label: `미국 증시 · ${summary.currentStateLabel}`,
-      sector: 'United States',
-      sectorLabel: 'United States',
-      themes: ['Regime', '미국 증시'],
-      metrics: { ...summary },
-      signals: [`현재 ${summary.currentStateLabel}`, `다음 주 ${summary.nextStateLabel}`],
-      warnings: [...summary.meta.limitations, ...summary.meta.degradedReasons],
-      status: statusState,
-    }];
-    return summary;
-  }
-
-  function parseRegimeEstimate(value, context) {
-    const result = parseRegimeDistribution(value, context, 'probabilities', 'confidence');
-    return { state: result.state, probabilities: result.values, confidence: result.confidence };
-  }
-
-  function parseRegimeMembership(value, context) {
-    if (!isRecord(value) || value.method !== 'risk_score_anchor_membership') {
-      throw new Error(`${context} must declare risk_score_anchor_membership.`);
-    }
-    // The observed hysteresis state is authoritative, even when another membership is larger.
-    return parseRegimeDistribution(value, context, 'memberships', 'primary_membership', false);
-  }
-
-  function parseRegimeDistribution(value, context, valuesKey, confidenceKey, requireDominantState = true) {
-    if (!isRecord(value) || !isRecord(value[valuesKey])) {
-      throw new Error(`${context} is missing ${valuesKey}.`);
-    }
-    const keys = Object.keys(value[valuesKey]);
-    if (keys.length !== REGIME_STATES.length || REGIME_STATES.some((state) => !keys.includes(state))) {
-      throw new Error(`${context} must contain the exact three Regime ${valuesKey} keys.`);
-    }
-    const values = Object.fromEntries(REGIME_STATES.map((state) => [
-      state,
-      requireRegimeProbability(value[valuesKey][state], `${context}.${valuesKey}.${state}`),
-    ]));
-    const total = Object.values(values).reduce((sum, probability) => sum + probability, 0);
-    if (Math.abs(total - 1) > 1e-6) throw new Error(`${context} ${valuesKey} must sum to one.`);
-    const state = value.state;
-    if (!REGIME_STATES.includes(state)) throw new Error(`${context}.state is invalid.`);
-    const confidence = requireRegimeProbability(value[confidenceKey], `${context}.${confidenceKey}`);
-    const winningValue = Math.max(...Object.values(values));
-    if (Math.abs(confidence - values[state]) > 1e-6
-      || (requireDominantState && Math.abs(values[state] - winningValue) > 1e-6)) {
-      throw new Error(`${context} state and ${confidenceKey} do not match its ${valuesKey}.`);
-    }
-    return { state, values, confidence };
-  }
-
-  function requireRegimeProbability(value, context) {
-    if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value > 1) {
-      throw new Error(`${context} must be a finite probability.`);
-    }
-    return value;
-  }
-
-  function requireRegimeDate(value, context) {
-    const parsed = typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
-      ? new Date(`${value}T00:00:00Z`)
-      : null;
-    if (!parsed || Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value) {
-      throw new Error(`${context} must be an ISO date.`);
-    }
-    return value;
-  }
-
-  function requireRegimeDatePrefix(value, context) {
-    if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}/.test(value) || !Number.isFinite(Date.parse(value))) {
-      throw new Error(`${context} must contain an ISO date.`);
-    }
-    return requireRegimeDate(value.slice(0, 10), context);
-  }
-
-  // Qualify an upstream warning only when the same publication includes the
-  // evidence for it. Never change upstream status or waive freshness failures.
   function fearHealthAssessment(summary, dashboard) {
     if (summary?.status?.state !== 'degraded' || dashboard?.status?.state !== 'degraded'
         || !summary.dataAsOf || summary.dataAsOf !== dashboard.dataAsOf
@@ -3020,27 +2652,6 @@
     return {
       kind: 'provenance', label: filledRows ? '과거 보정 포함' : '대체 출처 확인',
       detail: `해당 기준일 자료 교차검증 통과.${usesFallback ? ' 인증 KRX 대체 출처 사용.' : ''}${filledRows ? ` ETF ${filledEtfs}종의 과거 ${filledRows}개 종목·일자 가격에 조정계수 보정 포함, 미해결 누락 0건.` : ''}`,
-    };
-  }
-
-  function regimeHealthAssessment(payload, latest) {
-    const meta = payload?.meta, model = payload?.model;
-    const exactReason = (value) => Array.isArray(value) && value.length === 1 && value[0] === 'low_transition_recall';
-    if (meta?.mode !== 'live' || meta.status !== 'degraded' || meta.freshness?.status !== 'current'
-        || latest?.health?.status !== 'ok' || !Array.isArray(payload.sources) || !payload.sources.length
-        || payload.sources.some((source) => source.status !== 'ok' || !Array.isArray(source.issues) || source.issues.length)
-        || model?.model_health?.status !== 'review_due' || !exactReason(model.model_health.reasons)
-        || model.probability_health?.status !== 'ok' || model.holdout_diagnostic?.status !== 'ok') return null;
-    const early = model.early_warning_health;
-    if (early?.status !== 'review_due' || !exactReason(early.reasons) || early.evaluation_split !== 'retrospective_diagnostic'
-        || !Number.isInteger(early.event_count) || early.event_count < 12
-        || !Number.isInteger(early.on_time_departure_count) || early.on_time_departure_count < 0 || early.on_time_departure_count > early.event_count
-        || typeof early.on_time_recall !== 'number' || !Number.isFinite(early.on_time_recall)
-        || early.on_time_recall < 0 || early.on_time_recall >= 0.2
-        || Math.abs(early.on_time_recall - early.on_time_departure_count / early.event_count) > 1e-6) return null;
-    return {
-      kind: 'model_quality', label: '조기경보 성능 주의',
-      detail: `수집·주간 데이터 확인 통과. 사후 진단에서 전환 ${early.event_count}건 중 적시 경보 ${early.on_time_departure_count}건(${globalThis.QuantFormat.number(100 * early.on_time_recall)}%, 진단 기준 20% 미만). 확률 건전성 진단은 정상.`,
     };
   }
 
@@ -3764,151 +3375,6 @@
       formatPercent(row.returnCoverage),
     ], 5);
     renderEtfDetailCards(panelSelector(project, 'details'), summary.rows);
-    setStatus(panelSelector(project, 'status'), buildStatusText(mode, summary.generatedAt, error, summary.status, summaryDataAsOf(summary)), mode);
-  }
-
-  function windowedRegimeRows(trend, weeks = 52) {
-    const rows = Array.isArray(trend?.rows) ? trend.rows : [];
-    return weeks === 'all' ? rows.slice() : rows.slice(-([26, 52, 104].includes(Number(weeks)) ? Number(weeks) : 52));
-  }
-
-  function regimeTrendGeometry(rows, width = 580) {
-    const w = Math.max(280, width), compact = w < 460, h = compact ? 384 : 410;
-    const left = 40, right = w - (compact ? 62 : 112), panelHeight = compact ? 125 : 138;
-    const observedTop = 26, forecastTop = observedTop + panelHeight + 44;
-    const outcomeY = forecastTop + panelHeight + 26, dateY = h - 5;
-    const day = 86400000, times = rows.map((row) => Date.parse(`${row.date}T00:00:00Z`));
-    const span = times.length > 1 ? times.at(-1) - times[0] : 0;
-    const xAt = (time) => span ? left + (time - times[0]) / span * (right - left) : (left + right) / 2;
-    const x = (index) => xAt(times[index]), y = (value, top) => top + (1 - value) * panelHeight;
-    const panels = [
-      { key: 'observed', top: observedTop, field: 'memberships', state: 'currentState' },
-      { key: 'forecast', top: forecastTop, field: 'probabilities', state: 'nextState' },
-    ].map((panel) => {
-      const bands = [];
-      rows.forEach((row, index) => {
-        const start = index ? (times[index] - times[index - 1] <= 7 * day ? (times[index] + times[index - 1]) / 2 : times[index] - 3.5 * day) : times[index];
-        const end = index < rows.length - 1 ? (times[index + 1] - times[index] <= 7 * day ? (times[index] + times[index + 1]) / 2 : times[index] + 3.5 * day) : times[index];
-        const band = { state: row[panel.state], left: rows.length === 1 ? left : xAt(start), right: rows.length === 1 ? right : xAt(end) };
-        const previous = bands.at(-1);
-        if (previous && previous.state === band.state && Math.abs(previous.right - band.left) < .01) previous.right = band.right;
-        else bands.push(band);
-      });
-      const series = REGIME_STATES.map((state) => ({ state, points: rows.map((row, index) => ({ x: x(index), y: y(row[panel.field][state], panel.top), value: row[panel.field][state], index })) }));
-      const endpoints = series.filter((item) => item.points.length).map((item) => ({ ...item.points.at(-1), state: item.state }))
-        .map((point) => ({ ...point, labelY: Math.max(panel.top + 9, Math.min(panel.top + panelHeight - 9, point.y)) }))
-        .sort((a, b) => a.labelY - b.labelY);
-      for (let i = 1; i < endpoints.length; i += 1) endpoints[i].labelY = Math.max(endpoints[i].labelY, endpoints[i - 1].labelY + 18);
-      if (endpoints.length && endpoints.at(-1).labelY > panel.top + panelHeight - 9) {
-        endpoints.at(-1).labelY = panel.top + panelHeight - 9;
-        for (let i = endpoints.length - 2; i >= 0; i -= 1) endpoints[i].labelY = Math.min(endpoints[i].labelY, endpoints[i + 1].labelY - 18);
-      }
-      return { ...panel, bands, series, endpoints };
-    });
-    const tickCount = Math.min(rows.length, Math.max(2, Math.floor((right - left) / 110) + 1));
-    const tickIndices = [...new Set(Array.from({ length: tickCount }, (_, i) => tickCount === 1 ? 0 : Math.round(i / (tickCount - 1) * (rows.length - 1))))];
-    return { w, h, compact, left, right, panelHeight, observedTop, forecastTop, outcomeY, dateY, times, x, y, panels, tickIndices };
-  }
-
-  let regimeTrendObserver;
-  function renderRegimeTrend(trend, project) {
-    const target = $(panelSelector(project, 'chart'));
-    if (!target) return;
-    regimeTrendObserver?.disconnect();
-    if (!trend?.rows?.length) {
-      target.innerHTML = '<p class="empty-state">차트 데이터를 불러올 수 없습니다.</p>';
-      return;
-    }
-    const labels = { risk_on: 'Risk-on', transition: 'Transition', risk_off: 'Risk-off' };
-    const percent = (value) => `${globalThis.QuantFormat.number(value * 100)}%`;
-    const observedLabel = `관측 ${trend.currentMeasureLabel || '소속도'}`;
-    const readoutId = `${project.id}-trend-readout`;
-    let period = trend.rows.length >= 52 ? '52' : 'all', selected = 0, pinnedDate = trend.rows.at(-1).date, previousWidth = 0;
-    target.innerHTML = `<figure class="regime-trend">
-      <div class="regime-trend-toolbar"><span class="regime-trend-range"></span><label>분석 기간 <select class="regime-trend-window" aria-label="국면 추이 분석 기간">${[26, 52, 104, 'all'].map((n) => `<option value="${n}"${n !== 'all' && n > trend.rows.length ? ' disabled' : ''}>${n === 'all' ? '전체' : `${n}주`}</option>`).join('')}</select></label></div>
-      <div class="regime-trend-legend">${REGIME_STATES.map((state) => `<button type="button" class="${state}" data-qr-chart-id="hub-regime" data-qr-series-id="observed${state}"><i aria-hidden="true"></i>${labels[state]}</button>`).join('')}<small>배경 · 국면</small><small>● ◆ ▼ 실제 1주 후</small></div>
-      <figcaption id="${escapeAttribute(readoutId)}" class="regime-trend-readout" aria-live="polite"></figcaption>
-      <div class="regime-trend-frame" tabindex="0" role="group" aria-label="국면 추이. 좌우 방향키로 관측일 이동" aria-describedby="${escapeAttribute(readoutId)}"></div>
-    </figure>`;
-    const select = target.querySelector('.regime-trend-window'), frame = target.querySelector('.regime-trend-frame'), readout = target.querySelector('.regime-trend-readout');
-    select.value = period;
-    frame.after(readout);
-    const draw = (force = false) => {
-      const width = Math.max(280, Math.round(target.clientWidth || 580));
-      if (!force && width === previousWidth) return;
-      previousWidth = width;
-      const rows = windowedRegimeRows(trend, period), g = regimeTrendGeometry(rows, width);
-      if (!rows.some((row) => row.date === pinnedDate)) pinnedDate = rows.at(-1).date;
-      selected = rows.findIndex((row) => row.date === pinnedDate);
-      target.querySelector('.regime-trend-range').textContent = `${rows.length}주 · ${rows[0].date.slice(0, 7).replace('-', '.')}–${rows.at(-1).date.slice(0, 7).replace('-', '.')}`;
-      const line = (x1, y1, x2, y2, cls) => `<line class="${cls}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
-      const panels = g.panels.map((panel) => {
-        const title = panel.key === 'observed' ? observedLabel : '1주 예측확률';
-        const bands = panel.bands.map((band) => `<rect class="regime-trend-band ${band.state}" data-panel="${panel.key}" data-state="${band.state}" x="${band.left}" y="${panel.top}" width="${band.right - band.left}" height="${g.panelHeight}"/>`).join('');
-        const grid = [0, .25, .5, .75, 1].map((v) => `${line(g.left, g.y(v, panel.top), g.right, g.y(v, panel.top), 'regime-trend-grid')}<text x="${g.left - 7}" y="${g.y(v, panel.top) + 4}" text-anchor="end">${v * 100}%</text>`).join('');
-        const curves = panel.series.map((series) => `<path data-qr-series-id="${panel.key}${series.state}" class="regime-trend-line ${series.state} ${panel.key}" data-panel="${panel.key}" data-state="${series.state}" d="${series.points.map((p, index) => `${index && g.times[index] - g.times[index - 1] <= 7 * 86400000 ? 'L' : 'M'}${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' ')}"/>`).join('');
-        const ends = panel.endpoints.map((p) => `<path class="regime-trend-leader ${p.state}" d="M${p.x},${p.y} L${p.x + 6},${p.labelY} H${p.x + 10}"/><circle class="regime-trend-end ${p.state}" cx="${p.x}" cy="${p.y}" r="3"/><text class="regime-trend-end-label ${p.state}" x="${p.x + 14}" y="${p.labelY + 4}">${escapeHtml(`${g.compact ? '' : `${REGIME_STATE_LABELS[p.state].replaceAll(' ', '')} `}${percent(p.value)}`)}</text>`).join('');
-        const focus = REGIME_STATES.map((state) => `<circle class="regime-trend-focus ${state}" data-panel="${panel.key}" data-state="${state}" r="3.5"/>`).join('');
-        return `<text class="regime-trend-title" x="${g.left}" y="${panel.top - 11}">${escapeHtml(title)}</text>${bands}${grid}${curves}${ends}${focus}`;
-      }).join('');
-      const markerRadius = Math.min(3.5, (g.right - g.left) / Math.max(1, rows.length - 1) * .4);
-      const outcomes = rows.map((row, i) => {
-        const x = g.x(i), y = g.outcomeY, r = markerRadius, state = row.actualState, cls = `regime-trend-outcome ${state || 'pending'}`;
-        const description = escapeHtml(`${row.date} → ${row.nextDate} · ${state ? labels[state] : row.nextDate > trend.rows.at(-1).date ? '결과 대기' : '결과 없음'}`);
-        const title = `<title>${description}</title>`;
-        if (state === 'transition') return `<path data-date="${row.date}" class="${cls}" d="M${x},${y - r} L${x + r},${y} L${x},${y + r} L${x - r},${y} Z">${title}</path>`;
-        if (state === 'risk_off') return `<path data-date="${row.date}" class="${cls}" d="M${x - r},${y - r} L${x + r},${y - r} L${x},${y + r} Z">${title}</path>`;
-        return `<circle data-date="${row.date}" class="${cls}" cx="${x}" cy="${y}" r="${r}">${title}</circle>`;
-      }).join('');
-      const dates = g.tickIndices.map((i) => `<text x="${g.x(i)}" y="${g.dateY}" text-anchor="${i === 0 ? 'start' : i === rows.length - 1 ? 'end' : 'middle'}">${rows.length <= 26 ? rows[i].date.slice(5).replace('-', '.') : rows[i].date.slice(0, 7).replace('-', '.')}</text>`).join('');
-      frame.innerHTML = `<svg viewBox="0 0 ${g.w} ${g.h}" role="img" aria-label="${escapeAttribute(`${observedLabel}와 1주 예측확률, ${rows.length}주`)}">${panels}${line(g.left, g.outcomeY, g.right, g.outcomeY, 'regime-trend-grid')}<text class="regime-trend-outcome-title" x="${g.left}" y="${g.outcomeY - 10}">실제 t+1</text>${outcomes}${dates}${line(g.x(selected), g.observedTop, g.x(selected), g.outcomeY + 7, 'regime-trend-cursor')}</svg>`;
-      const svg = frame.querySelector('svg'), cursor = frame.querySelector('.regime-trend-cursor');
-      globalThis.QuantRange?.svg({id:'hub-regime',element:svg,host:target,currentIndex:()=>selected,onSeriesRequest:(id,ctx)=>{if(Number.isInteger(ctx.index)){pinnedDate=rows[ctx.index].date;show(ctx.index)}},onReset:()=>{pinnedDate=rows.at(-1).date;show(rows.length-1)},domain:rows.map(r=>({key:r.date,label:r.date})),series:g.panels.flatMap(panel=>panel.series.map(s=>({id:panel.key+s.state,label:(panel.key==='observed'?'관측 ':'예측 ')+labels[s.state],unit:'%',measure:'pp',scale:100,points:s.points.map((p,i)=>({key:rows[i].date,value:p.value}))}))),x:i=>g.x(i),plotTop:g.observedTop,plotBottom:g.outcomeY});
-      const show = (index) => {
-        selected = index;
-        const row = rows[index];
-        cursor.setAttribute('x1', g.x(index)); cursor.setAttribute('x2', g.x(index));
-        for (const point of frame.querySelectorAll('.regime-trend-focus')) {
-          const panel = g.panels.find((item) => item.key === point.dataset.panel);
-          point.setAttribute('cx', g.x(index)); point.setAttribute('cy', g.y(row[panel.field][point.dataset.state], panel.top));
-        }
-        for (const marker of frame.querySelectorAll('.regime-trend-outcome')) marker.classList.toggle('is-active', marker.dataset.date === row.date);
-        const actual = row.actualState ? labels[row.actualState] : row.nextDate > trend.rows.at(-1).date ? '결과 대기' : '결과 없음';
-        const vector = (values) => REGIME_STATES.map((state) => `<div class="${state}"><dt>${labels[state]}</dt><dd>${percent(values[state])}</dd></div>`).join('');
-        readout.innerHTML = `<div class="regime-trend-date"><strong>${escapeHtml(formatMaybeDate(row.date))}</strong><span>→ ${escapeHtml(formatMaybeDate(row.nextDate))}</span></div><div class="regime-trend-vectors"><div><span>${escapeHtml(observedLabel)}</span><dl>${vector(row.memberships)}</dl></div><div><span>1주 예측확률</span><dl>${vector(row.probabilities)}</dl></div></div><div class="regime-trend-result"><span>예측 <b>${labels[row.nextState]}</b></span><span>실제 <b>${actual}</b></span><span>엔트로피 <b>${Number.isFinite(row.entropy) ? globalThis.QuantFormat.number(row.entropy) : '—'}</b></span></div>`;
-      };
-      const nearest = (event) => {
-        const rect = svg.getBoundingClientRect();
-        if (!rect.width) return selected;
-        const px = (event.clientX - rect.left) * g.w / rect.width;
-        let closest = 0;
-        rows.forEach((_, i) => { if (Math.abs(g.x(i) - px) < Math.abs(g.x(closest) - px)) closest = i; });
-        return closest;
-      };
-      frame.onpointermove = (event) => { if (event.pointerType !== 'touch') show(nearest(event)); };
-      frame.onclick = (event) => { if(!event.target.closest?.('[data-qr-series-id]'))return;const index = nearest(event); pinnedDate = rows[index].date; show(index); frame.focus({ preventScroll: true }); };
-      frame.onpointerleave = () => show(rows.findIndex((row) => row.date === pinnedDate));
-      frame.onkeydown = (event) => {
-        const move = { ArrowLeft: Math.max(0, selected - 1), ArrowUp: Math.max(0, selected - 1), ArrowRight: Math.min(rows.length - 1, selected + 1), ArrowDown: Math.min(rows.length - 1, selected + 1), Home: 0, End: rows.length - 1, Escape: rows.length - 1 };
-        if (Object.hasOwn(move, event.key)) { event.preventDefault(); pinnedDate = rows[move[event.key]].date; show(move[event.key]); }
-      };
-      show(selected);
-      if(globalThis.HubCharts041){
-        target.querySelector('.regime-trend-legend').hidden=true;
-        target.querySelectorAll('.qr-toolbar,.qr-range-readout').forEach(el=>el.remove());
-        const colors=['var(--regime-on)','var(--regime-transition)','var(--regime-off)'];
-        const timeline=[]; rows.forEach((row,i)=>{if(i&&Date.parse(row.date)-Date.parse(rows[i-1].date)>7*86400000)timeline.push({date:new Date(Date.parse(rows[i-1].date)+7*86400000).toISOString().slice(0,10),gap:true});timeline.push(row)});
-        const series=field=>REGIME_STATES.map((state,i)=>({name:labels[state],color:colors[i],unit:'%p',data:timeline.map(r=>r.gap?null:r[field][state]*100),extra:i===0?{markArea:{silent:true,label:{show:false},data:timeline.slice(0,-1).flatMap((r,j)=>r.gap||timeline[j+1].gap?[]:[[{xAxis:r.date,itemStyle:{color:colors[REGIME_STATES.indexOf(r[field==='memberships'?'currentState':'nextState'])],opacity:.045}},{xAxis:timeline[j+1].date}]])}}:undefined}));
-        globalThis.HubCharts041.lines(frame,{title:'국면 관측·예측·실제 결과',dates:timeline.map(r=>r.date),panels:[{title:observedLabel,unit:'%',axis:{min:0,max:100,interval:25},series:series('memberships')},{title:'1주 예측확률',unit:'%',axis:{min:0,max:100,interval:25},series:series('probabilities')},{title:'실제 t+1',axis:{min:0,max:2,interval:1,axisLabel:{formatter:v=>['Risk-on','Transition','Risk-off'][v]}},series:REGIME_STATES.map((state,i)=>({name:labels[state],color:colors[i],range:false,data:timeline.map(r=>r.actualState===state?i:null),extra:{type:'scatter',symbol:['circle','diamond','triangle'][i],symbolSize:6}}))}],onSelect:i=>{const row=timeline[i];if(!row.gap){pinnedDate=row.date;show(rows.indexOf(row))}}});
-      }
-    };
-    select.addEventListener('change', () => { period = select.value; draw(true); });
-    draw();
-    if (typeof ResizeObserver !== 'undefined') { regimeTrendObserver = new ResizeObserver(() => draw()); regimeTrendObserver.observe(target); }
-  }
-
-  function renderRegime(summary, mode, error, project) {
-    renderRegimeTrend(summary?.trend || null, project);
     setStatus(panelSelector(project, 'status'), buildStatusText(mode, summary.generatedAt, error, summary.status, summaryDataAsOf(summary)), mode);
   }
 
@@ -4835,36 +4301,6 @@
     };
   }
 
-  function normalizeRegimeUnavailable() {
-    return {
-      unavailable: true,
-      publicPayloadValid: false,
-      generatedAt: '',
-      dataAsOf: '',
-      nextDate: '',
-      currentState: '',
-      currentStateLabel: '',
-      currentConfidence: null,
-      nextState: '',
-      nextStateLabel: '',
-      nextConfidence: null,
-      transitionRisk1w: null,
-      transitionRisk4w: null,
-      transitionRisk13w: null,
-      status: 'Regime 공개 결과를 사용할 수 없습니다.',
-      rows: [],
-      entities: [],
-      meta: {
-        statusState: 'unavailable',
-        statusLabel: 'unavailable',
-        dataModeLabel: '사용 불가',
-        cadence: 'weekly',
-        expectedFreshnessDays: PROJECT_EXPECTED_FRESHNESS_DAYS.regime,
-        limitations: [],
-      },
-    };
-  }
-
   function renderResearchBriefing(records = []) {
     const target = $('#research-briefing');
     if (!target) return;
@@ -4927,22 +4363,6 @@
         kicker: 'SOX',
         title: topScore ? `${topScore.ticker} 종합 ${formatNumber(topScore.score)} · ${formatMaybeDate(summary.dataAsOf)}` : 'SOX 요약 확인 필요',
         detail: `${topWeight ? `최대 proxy ${topWeight.ticker} ${formatPercent(topWeight.weight)} · ` : ''}${firstLimitation(summary.meta || {})}`,
-        tone: summary.meta?.statusState === 'ok' ? '' : 'warning',
-      };
-    }
-    if (record.project.id === 'regime') {
-      if (summary.unavailable || !summary.publicPayloadValid) {
-        return {
-          kicker: 'Regime',
-          title: '공개 요약 확인 필요',
-          detail: '공개 결과 계약을 확인할 수 없습니다.',
-          tone: 'warning',
-        };
-      }
-      return {
-        kicker: `Regime · ${summary.meta?.dataModeLabel || '공개 결과'}`,
-        title: `현재 ${summary.currentStateLabel} · ${summary.currentMeasureLabel} ${formatPercent(summary.currentConfidence)} · ${formatMaybeDate(summary.nextDate)} 예측 ${summary.nextStateLabel} · 확률 ${formatPercent(summary.nextConfidence)}`,
-        detail: `이탈 1주 ${formatPercent(summary.transitionRisk1w)} · 4주 ${formatPercent(summary.transitionRisk4w)} · 13주 ${formatPercent(summary.transitionRisk13w)} · 기준일 ${formatMaybeDate(summary.dataAsOf)}`,
         tone: summary.meta?.statusState === 'ok' ? '' : 'warning',
       };
     }
@@ -5554,23 +4974,13 @@
       dramAutomationAssessment,
       latestDramExpectedRun,
       parseEtfTracking,
-      parseRegime,
       parseSox,
       renderSox,
-      renderRegime,
-      parseRegimePanel,
-      parseRegimeTrend,
-      enrichRegimeSources,
-      validateRegimeHistory,
-      renderRegimeTrend,
       renderFactorPerformance,
       renderDramChart,
       renderSoxQuadrant,
-      windowedRegimeRows,
-      regimeTrendGeometry,
       renderFearAndGreed,
       fearHealthAssessment,
-      regimeHealthAssessment,
       parseFearPanel,
       parseFearScatter,
       fearScatterGeometry,
@@ -5590,7 +5000,6 @@
       getJsonBestEffort,
       renderPanelStatus,
       visibleHealthLabel,
-      normalizeRegimeUnavailable,
       isMomentumSummaryV5,
       isMomentumDashboardV5,
       validMomentumFactorAccountingV5,

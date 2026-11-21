@@ -2,7 +2,7 @@
 (function(scope){
 'use strict';
 const KEY='quant-preferences-v1';
-const projects=[['quant-dashboard','대시보드'],['investment-journal','투자일지'],['factor','Factor'],['fearNgreed','Fear & Greed'],['regime','Regime'],['etf-tracking','ETF'],['dram-price','DRAM'],['sox','SOX'],['news','뉴스 브리핑'],['alpha-house','Alpha House']];
+const projects=[['quant-dashboard','대시보드'],['investment-journal','투자일지'],['factor','Factor'],['fearNgreed','Fear & Greed'],['etf-tracking','ETF'],['dram-price','DRAM'],['sox','SOX'],['news','뉴스 브리핑'],['alpha-house','Alpha House']];
 const defaults={'theme':'dark','density':'comfortable','rail':false};
 const defaultFavorites=['quant-dashboard','investment-journal','news'];
 const legacy={theme:'quant-research-theme',density:'quant-ui-v04-density',rail:'quant-ui-v04-rail'};

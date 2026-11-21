@@ -33,11 +33,6 @@ export const sharedNavigationFallback = {
       "url": "https://sonchanggi.github.io/fearNgreed/"
     },
     {
-      "id": "regime",
-      "label": "Regime",
-      "url": "https://sonchanggi.github.io/regime/"
-    },
-    {
       "id": "news",
       "label": "News",
       "url": "https://sonchanggi.github.io/news/"

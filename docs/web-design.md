@@ -286,7 +286,7 @@ Quant Research 제품군은 다음처럼 보여야 한다.
 
 프로젝트에 없는 날짜 역할을 새로 만들지 않는다.
 
-## 4. 10개 공통 메뉴
+## 4. 9개 공통 메뉴
 
 메뉴 원본은 `shared/navigation/v1/menu.json`이다. Hub 브랜드 1개와 프로젝트 9개, 총 10개 사이트를 등록한다. 다음 표는 registry 순서이며 즐겨찾기·사이드바 그룹의 표시 순서는 별도 UI 상태다. 표시 순서를 바꾸어 등록 항목이나 URL을 누락하지 않는다.
 
@@ -298,10 +298,9 @@ Quant Research 제품군은 다음처럼 보여야 한다.
 | 4 | ETF | `https://sonchanggi.github.io/etf-tracking/` |
 | 5 | SOX | `https://sonchanggi.github.io/sox/` |
 | 6 | Fear & Greed | `https://sonchanggi.github.io/fearNgreed/` |
-| 7 | Regime | `https://sonchanggi.github.io/regime/` |
-| 8 | News | `https://sonchanggi.github.io/news/` |
-| 9 | 투자일지 | `https://invest.changgi-son.chatgpt.site/` |
-| 10 | 알파 하우스 | `https://research-observatory-changgi.changgi-son.chatgpt.site/` |
+| 7 | News | `https://sonchanggi.github.io/news/` |
+| 8 | 투자일지 | `https://invest.changgi-son.chatgpt.site/` |
+| 9 | 알파 하우스 | `https://research-observatory-changgi.changgi-son.chatgpt.site/` |
 
 ### 4.1 Canonical navigation
 

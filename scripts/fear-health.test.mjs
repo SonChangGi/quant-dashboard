@@ -150,5 +150,4 @@ test('monitor keeps provenance as a warning with original reasons and rejects un
   for (const patch of [{ healthAssessment: null }, { scatterError: 'invalid scatter' }, { priceError: 'price mismatch' }]) {
     assert.ok(operationalFindingsFor('fearngreed', { ...summary, ...patch }).every((f) => f.category === 'operation'));
   }
-  assert.ok(operationalFindingsFor('regime', summary).every((f) => f.category === 'operation'));
 });

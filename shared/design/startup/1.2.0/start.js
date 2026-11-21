@@ -21,7 +21,7 @@ const api={version:'1.0.0',number};scope.QuantFormat=api;if(typeof module!=='und
 if(window.QuantFirstPaint)return;
 const root=document.documentElement,script=document.currentScript;
 const project=script?.dataset.quantDesignProject;
-const projects=['quant-dashboard','factor','dram-price','etf-tracking','sox','fearNgreed','regime','news','investment-journal','alpha-house'];
+const projects=['quant-dashboard','factor','dram-price','etf-tracking','sox','fearNgreed','news','investment-journal','alpha-house'];
 const sheet=document.querySelector('link[data-quant-first-paint-css]');
 if(!projects.includes(project)||!sheet?.sheet||typeof CSSScopeRule==='undefined')return;
 const valid=t=>t==='light'||t==='dark';

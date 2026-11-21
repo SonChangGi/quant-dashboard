@@ -175,7 +175,7 @@ FastAPI, Supabase, Vercel, React 또는 TypeScript 전환은 별도 아키텍처
 
 ## 5. 파일럿 당시 탐색·테마 셸 · 비규범 역사 기록
 
-- 프로젝트 메뉴의 기준 순서는 `Hub → Fear & Greed → Momentum → DRAM → Best Factor → ETF → SOX → Regime`다.
+- 프로젝트 메뉴의 기준 순서는 `Hub → Fear & Greed → Momentum → DRAM → Best Factor → ETF → SOX`다.
 - 위 8개 항목과 공개 URL을 공통 메뉴 registry로 취급한다. 완료된 일부 프로젝트나 현재 프로젝트와 Hub만 따로 하드코딩하지 않는다.
 - 데스크톱에서는 8개 링크를 직접 보여 주거나 메뉴 자체 가로 스크롤로 제공하고, 좁은 화면에서는 펼침 메뉴를 사용할 수 있다. 어느 방식이든 사용자는 현재 페이지에서 8개 목적지에 접근할 수 있어야 한다.
 - 공통 compact shell은 높이 약 `58px`, brand는 `14px`, 메뉴 글자는 `12px / 650`, 조작 영역은 최소 `44px`로 구성한다. 현재 항목은 soft-blue surface와 primary text로 구분하되 기존 프로젝트 색 토큰을 사용한다.

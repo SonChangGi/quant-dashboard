@@ -17,8 +17,7 @@ export function operationalFindingsFor(projectId, summary = {}) {
   const state = firstString(summary?.meta?.statusState, summary?.state);
   const assessment = summary.healthAssessment;
   if (state === 'degraded' && !summary.scatterError && !summary.priceError && !summary.trendError
-      && ((projectId === 'fearngreed' && assessment?.kind === 'provenance')
-        || (projectId === 'regime' && assessment?.kind === 'model_quality'))
+      && (projectId === 'fearngreed' && assessment?.kind === 'provenance')
       && typeof assessment.detail === 'string' && assessment.detail.trim()) {
     return [{ project: projectId, category: assessment.kind, severity: 'transient',
       message: assessment.detail, upstreamState: state,

@@ -5,8 +5,8 @@ const release=new URL('../shared/design/releases/0.5.0/',import.meta.url);
 const extension=new URL('../shared/design/releases/0.7.0/',import.meta.url);
 const dest=new URL('../shared/design/startup/1.2.0/',import.meta.url);mkdirSync(dest,{recursive:true});
 const css={
- 'quant-dashboard':[],factor:['factor-regime.css'],regime:['factor-regime.css'],fearNgreed:['fear-etf.css','fear-etf-v03.css'],'etf-tracking':['fear-etf.css','fear-etf-v03.css'],'dram-price':['dram-sox.css'],sox:['dram-sox.css'],news:['news.css','news-v03.css'],'alpha-house':['alpha.css'],'investment-journal':['investment-journal.css']};
-const finance=['factor','regime','fearNgreed','etf-tracking','dram-price','sox'];
+ 'quant-dashboard':[],factor:['factor-regime.css'],fearNgreed:['fear-etf.css','fear-etf-v03.css'],'etf-tracking':['fear-etf.css','fear-etf-v03.css'],'dram-price':['dram-sox.css'],sox:['dram-sox.css'],news:['news.css','news-v03.css'],'alpha-house':['alpha.css'],'investment-journal':['investment-journal.css']};
+const finance=['factor','fearNgreed','etf-tracking','dram-price','sox'];
 const manifest={version:'1.2.0',uiVersion:'0.7.0',chartVersion:'1.3.0',foundation:'0.4.0',sources:{},files:{}};
 const hash=s=>createHash('sha256').update(s).digest('hex');
 function source(name){const s=readFileSync(new URL(name,release),'utf8');manifest.sources[name]=hash(s);return s}
@@ -22,7 +22,9 @@ for(const [project,domain] of Object.entries(css)){
 }
 let runtime="/* Ordered, single-task presentation initialization from immutable sources. */\n(()=>{if(window.QuantFirstPaint?.state!=='loading')return;try{\n";
 for(const name of ['foundation/boot.js','foundation/shell.js','foundation/focus.js','foundation/news-v03.js','foundation/v04.js','polish.js','adapters/finance.js','adapters/editorial.js']){
- const code=source(name).replace("for(const table of scope.querySelectorAll?.('table')||[]) {","for(const table of scope.querySelectorAll?.('table')||[]) {if(table.matches('[role=grid],.calendar-grid')||table.closest('dialog,[role=dialog]'))continue;");runtime+=(name==='foundation/news-v03.js'?"if(document.documentElement.dataset.quantDesignProject==='news'){\n"+code+'\n}':code)+'\n;\n';
+ let code=source(name).replace("for(const table of scope.querySelectorAll?.('table')||[]) {","for(const table of scope.querySelectorAll?.('table')||[]) {if(table.matches('[role=grid],.calendar-grid')||table.closest('dialog,[role=dialog]'))continue;");
+ if(name==='foundation/shell.js')code=code.replace("['regime','Regime','시장 국면','layers'],",'').replace(",'regime'",'');
+ runtime+=(name==='foundation/news-v03.js'?"if(document.documentElement.dataset.quantDesignProject==='news'){\n"+code+'\n}':code)+'\n;\n';
 }
 runtime+=extra('table-edges.js')+'\n;\n';
 runtime+=extra('tables.js')+'\n;\n'+extra('ui-copy.js')+'\n;\n';

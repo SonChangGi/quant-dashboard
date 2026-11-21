@@ -10,7 +10,7 @@ import {
 
 const MAX_PAYLOAD_BYTES = 8_000_000;
 const MAX_GENERATION_AGE_DAYS = 21;
-const REQUIRED_PROJECT_IDS = ['fearngreed', 'momentum', 'dram', 'etf', 'sox', 'regime'];
+const REQUIRED_PROJECT_IDS = ['fearngreed', 'momentum', 'dram', 'etf', 'sox'];
 const REQUIRED_PROJECT_COUNT = REQUIRED_PROJECT_IDS.length;
 const reportPath = argumentValue('--report');
 
@@ -64,16 +64,9 @@ for (const project of panelProjects) {
   }
 
   const projectFindingStart = findings.length;
-  let dataSources = Object.fromEntries(
+  const dataSources = Object.fromEntries(
     entries.map(([sourceKey, result]) => [sourceKey, result.data]),
   );
-  // Regime's current core intentionally omits its historical chart rows. Use
-  // the same manifest, SHA and identity checks as the browser before parsing.
-  if (project.id === 'regime') {
-    const enrichment = await api.enrichPanelSources(adapter, dataSources, fetchJson);
-    dataSources = enrichment.dataSources;
-    entries.push(...Object.entries(enrichment.fetchResults));
-  }
   const payloadBytes = entries.reduce((sum, [, result]) => sum + (result.bytes || 0), 0);
   const contractError = api.validateAdapterContract(adapter, dataSources);
   if (contractError) {
@@ -123,9 +116,6 @@ for (const project of panelProjects) {
   const soxFreshness = project.id === 'sox' ? api.soxFreshnessAssessment(record, freshnessNow) : null;
 
   check(project.id, usable, 'contract', `${project.id} live payload is not usable`);
-  if (project.id === 'regime' && summary?.trendError) {
-    addFinding(project.id, 'contract', 'hard', `Regime history validation failed: ${summary.trendError}`);
-  }
   check(project.id, payloadBytes > 0, 'contract', `${project.id} payload byte count is missing`);
   check(
     project.id,
